@@ -24,7 +24,8 @@ details.add summary{cursor:pointer;font-weight:600}
 .cc h3{margin:0;font-size:18px}
 .cc p{margin:4px 0 0;font-size:14px}
 .cc .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.cc .lnk{margin-top:8px;border-color:var(--s);color:var(--t)}
+.cc .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.cc .lnk{border-color:var(--s);color:var(--t)}
 </style>
 </head>
 <body>
@@ -151,15 +152,30 @@ function card(c, photoUrl) {
   }
   if (c.roast_date) b.appendChild(el("p", "", "Roasted " + ago(c.roast_date) + " (" + c.roast_date + ")"));
   if (c.open_date) b.appendChild(el("p", "", "Opened " + ago(c.open_date) + " (" + c.open_date + ")"));
-  else {
+  if (c.notes) b.appendChild(el("p", "", c.notes));
+  const acts = el("div", "acts");
+  if (!c.open_date) {
     const o = el("button", "lnk", "Opened today"); o.type = "button";
     o.onclick = async () => {
       const { error } = await db.from("coffees").update({ open_date: todayIso() }).eq("id", c.id);
       if (error) say("Could not update: " + error.message); else load();
     };
-    b.appendChild(o);
+    acts.appendChild(o);
   }
-  if (c.notes) b.appendChild(el("p", "", c.notes));
+  const del = el("button", "lnk", "Delete"); del.type = "button";
+  del.onclick = async () => {
+    if (!confirm("Delete \"" + c.name + "\" and everything logged for it? This cannot be undone.")) return;
+    const { data: gone, error } = await db.from("coffees").delete().eq("id", c.id).select();
+    if (error) { say("Could not delete: " + error.message); return; }
+    if (!gone.length) { say("Nothing was deleted."); return; }
+    if (c.photo_path) {
+      const r = await db.storage.from("bag-photos").remove([c.photo_path]);
+      if (r.error) say("Coffee deleted, but the photo could not be removed: " + r.error.message);
+    }
+    load();
+  };
+  acts.appendChild(del);
+  b.appendChild(acts);
   a.appendChild(b);
   return a;
 }
