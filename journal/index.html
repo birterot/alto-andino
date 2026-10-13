@@ -43,7 +43,7 @@ details.add summary{cursor:pointer;font-weight:600}
 <section id="app" hidden>
   <p class="sub"><span id="who"></span> <button class="lnk" id="out" type="button">Sign out</button></p>
   <details class="add" id="addbox">
-    <summary>Add a coffee</summary>
+    <summary id="addsum">Add a coffee</summary>
     <form id="cf">
       <label>Name<input id="f-name" required></label>
       <label>Roaster<input id="f-roaster"></label>
@@ -63,7 +63,9 @@ details.add summary{cursor:pointer;font-weight:600}
       <label>Open date<input type="date" id="f-od"></label>
       <label>Notes<textarea id="f-notes" rows="3"></textarea></label>
       <label>Bag photo<input type="file" id="f-photo" accept="image/*"></label>
-      <button class="go">Save coffee</button>
+      <p class="hint" id="photohint" hidden>Leave empty to keep the current photo.</p>
+      <button class="go" id="save">Save coffee</button>
+      <button class="lnk" id="cancel" type="button" hidden>Cancel</button>
     </form>
   </details>
   <h2>Our coffees</h2>
@@ -174,6 +176,9 @@ function card(c, photoUrl) {
     }
     load();
   };
+  const ed = el("button", "lnk", "Edit"); ed.type = "button";
+  ed.onclick = () => startEdit(c);
+  acts.appendChild(ed);
   acts.appendChild(del);
   b.appendChild(acts);
   a.appendChild(b);
@@ -195,6 +200,39 @@ async function load() {
   data.forEach(c => list.appendChild(card(c, urls[c.photo_path])));
 }
 
+let editing = null;
+function setSel(id, v) {
+  const s = $(id);
+  if (v && ![...s.options].some(o => o.value === v)) { const o = el("option", "", v); o.value = v; s.insertBefore(o, s.lastElementChild); }
+  s.value = v || "";
+}
+function endEdit() {
+  editing = null;
+  $("cf").reset();
+  ["f-process", "f-roast"].forEach(i => { $(i + "-new").hidden = true; $(i + "-new").required = false; });
+  $("addsum").textContent = "Add a coffee";
+  $("save").textContent = "Save coffee";
+  $("cancel").hidden = true;
+  $("photohint").hidden = true;
+  $("addbox").open = false;
+}
+function startEdit(c) {
+  editing = c;
+  $("cf").reset();
+  $("f-name").value = c.name; $("f-roaster").value = c.roaster || ""; $("f-origin").value = c.origin || "";
+  $("f-blend").checked = !!c.is_blend;
+  setSel("f-process", c.process); setSel("f-roast", c.roast_level);
+  $("f-tags").value = (c.flavour_tags || []).join(", ");
+  $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || "";
+  $("addsum").textContent = "Edit coffee";
+  $("save").textContent = "Save changes";
+  $("cancel").hidden = false;
+  $("photohint").hidden = !c.photo_path;
+  $("addbox").open = true;
+  $("addbox").scrollIntoView({ behavior: "smooth" });
+}
+$("cancel").onclick = endEdit;
+
 $("cf").onsubmit = async e => {
   e.preventDefault();
   say("Saving...");
@@ -212,11 +250,19 @@ $("cf").onsubmit = async e => {
       name: v("f-name"), roaster: v("f-roaster") || null, origin: v("f-origin") || null,
       is_blend: $("f-blend").checked, process: chosen("f-process") || null, roast_level: chosen("f-roast") || null,
       flavour_tags: v("f-tags").split(",").map(t => t.trim().toLowerCase()).filter(Boolean),
-      notes: v("f-notes") || null, roast_date: v("f-rd") || null, open_date: v("f-od") || null, photo_path: path
+      notes: v("f-notes") || null, roast_date: v("f-rd") || null, open_date: v("f-od") || null
     };
-    const { error } = await db.from("coffees").insert(row);
-    if (error) throw error;
-    $("cf").reset(); ["f-process", "f-roast"].forEach(i => { $(i + "-new").hidden = true; $(i + "-new").required = false; }); $("addbox").open = false; say("Saved."); load();
+    if (path) row.photo_path = path; else if (!editing) row.photo_path = null;
+    if (editing) {
+      const { data: done, error } = await db.from("coffees").update(row).eq("id", editing.id).select();
+      if (error) throw error;
+      if (!done.length) throw new Error("nothing was changed");
+      if (path && editing.photo_path) await db.storage.from("bag-photos").remove([editing.photo_path]);
+    } else {
+      const { error } = await db.from("coffees").insert(row);
+      if (error) throw error;
+    }
+    endEdit(); say("Saved."); load();
   } catch (err) { say("Could not save: " + err.message); }
 };
 
