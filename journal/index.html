@@ -7,44 +7,211 @@
 <link rel="stylesheet" href="../assets/css/base.css">
 <style>
 label{display:block;margin-top:12px;font-size:14px;color:var(--mut)}
-input{display:block;width:100%;max-width:360px;margin-top:4px;padding:10px;font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
-.go{margin-top:16px;padding:10px 20px;border-radius:8px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);cursor:pointer}
-#msg{color:var(--mut);min-height:1.5em}
+input,select,textarea{display:block;width:100%;max-width:420px;margin-top:4px;padding:10px;font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+label.chk{display:flex;align-items:center;gap:8px;color:var(--ink)}
+label.chk input{width:auto;margin:0}
+.go,.lnk{font:inherit;cursor:pointer;border-radius:8px}
+.go{margin-top:16px;padding:10px 20px;border:1px solid var(--ink);background:var(--ink);color:var(--bg)}
+.lnk{padding:2px 10px;border:1px solid var(--line);background:none;color:var(--mut);font-size:13px}
+.hint,#msg{color:var(--mut);font-size:14px}
+#msg{min-height:1.5em}
+details.add{margin:12px 0 24px;padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+details.add summary{cursor:pointer;font-weight:600}
+.clist{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.cc{background:var(--f);border:1px solid var(--s);color:var(--t);border-radius:14px;overflow:hidden}
+.cc img{display:block;width:100%;height:180px;object-fit:cover}
+.cc .in{padding:14px 16px}
+.cc h3{margin:0;font-size:18px}
+.cc p{margin:4px 0 0;font-size:14px}
+.cc .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cc .lnk{margin-top:8px;border-color:var(--s);color:var(--t)}
 </style>
 </head>
 <body>
 <main>
 <a class="back" href="../index.html">Coffee atlas</a>
 <h1>Coffee journal</h1>
+
 <form id="login" hidden>
   <p class="sub">Sign in with the account we created for you.</p>
   <label>Email<input id="em" type="email" autocomplete="username" required></label>
   <label>Password<input id="pw" type="password" autocomplete="current-password" required></label>
   <button class="go">Sign in</button>
 </form>
+
 <section id="app" hidden>
-  <p class="sub" id="who"></p>
-  <p id="count"></p>
-  <button class="go" id="out" type="button">Sign out</button>
+  <p class="sub"><span id="who"></span> <button class="lnk" id="out" type="button">Sign out</button></p>
+  <details class="add" id="addbox">
+    <summary>Add a coffee</summary>
+    <form id="cf">
+      <label>Name<input id="f-name" required></label>
+      <label>Roaster<input id="f-roaster"></label>
+      <label>Origin<input id="f-origin" placeholder="Country, region"></label>
+      <label class="chk"><input type="checkbox" id="f-blend"> Blend</label>
+      <label>Process
+        <select id="f-process"></select>
+        <input id="f-process-new" placeholder="Name of the new process" hidden>
+      </label>
+      <label>Roast level
+        <select id="f-roast"></select>
+        <input id="f-roast-new" placeholder="Name of the new roast level" hidden>
+      </label>
+      <label>Flavour notes<input id="f-tags" placeholder="chocolaty, nutty, red fruit"></label>
+      <p class="hint">Separate with commas. Sour, sweet, bitter and balance will always be available when logging a brew.</p>
+      <label>Roast date<input type="date" id="f-rd"></label>
+      <label>Open date<input type="date" id="f-od"></label>
+      <label>Notes<textarea id="f-notes" rows="3"></textarea></label>
+      <label>Bag photo<input type="file" id="f-photo" accept="image/*"></label>
+      <button class="go">Save coffee</button>
+    </form>
+  </details>
+  <h2>Our coffees</h2>
+  <div id="list" class="clist"></div>
 </section>
 <p id="msg" role="status"></p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script src="../assets/js/config.js"></script>
+<script src="../assets/js/lists.js"></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
 const $ = id => document.getElementById(id);
 const say = t => { $("msg").textContent = t || ""; };
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
+let me = null;
+
+const PAL = window.LISTS.process;
+const GREY = ["#F1EFE8","#2C2C2A","#5F5E5A","#B4B2A9","#444441","#D3D1C7"];
+
+// Dropdowns: the fixed list, plus everything used before, plus "Other (add new)".
+function fill(id, base, used) {
+  const s = $(id), keep = s.value;
+  s.textContent = "";
+  const add = (v, t) => { const o = el("option", "", t || v); o.value = v; s.appendChild(o); };
+  add("", "Unknown");
+  base.forEach(x => add(x));
+  used.filter(x => !base.includes(x)).sort().forEach(x => add(x));
+  add("__other", "Other (add new)...");
+  s.value = [...s.options].some(o => o.value === keep) ? keep : "";
+}
+function otherBox(id) {
+  const s = $(id), t = $(id + "-new");
+  s.onchange = () => { t.hidden = s.value !== "__other"; t.required = !t.hidden; };
+}
+function chosen(id) {
+  const s = $(id);
+  if (s.value !== "__other") return s.value;
+  const t = $(id + "-new").value.trim();
+  const same = [...s.options].find(o => o.value && o.value !== "__other" && o.text.toLowerCase() === t.toLowerCase());
+  return same ? same.value : t;
+}
+fill("f-process", Object.keys(PAL), []); fill("f-roast", window.LISTS.roast, []);
+otherBox("f-process"); otherBox("f-roast");
+
+function shrink(file, max = 1200) {
+  return new Promise((ok, no) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(b => b ? ok(b) : no(new Error("Could not process the photo")), "image/jpeg", 0.8);
+    };
+    img.onerror = () => no(new Error("Could not read the photo"));
+    img.src = url;
+  });
+}
+
+function ago(iso) {
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  const n = Math.round((t - new Date(iso + "T00:00:00")) / 864e5);
+  return n <= 0 ? "today" : n === 1 ? "1 day ago" : n + " days ago";
+}
+function todayIso() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+function card(c, photoUrl) {
+  const p = PAL[c.process] || GREY;
+  const a = el("article", "cc");
+  ["--f:" + p[0] + "," + p[1], "--s:" + p[2] + "," + p[3], "--t:" + p[4] + "," + p[5]].forEach(s => {
+    const [k, v] = s.split(":"); const [l, d] = v.split(",");
+    a.style.setProperty(k, "light-dark(" + l + "," + d + ")");
+  });
+  if (photoUrl) { const i = el("img"); i.src = photoUrl; i.alt = "Bag of " + c.name; i.loading = "lazy"; a.appendChild(i); }
+  const b = el("div", "in");
+  b.appendChild(el("h3", "", c.name));
+  const meta = [c.roaster, c.origin, c.is_blend ? "Blend" : null, c.process, c.roast_level].filter(Boolean).join(", ");
+  if (meta) b.appendChild(el("p", "", meta));
+  if (c.flavour_tags && c.flavour_tags.length) {
+    const t = el("div", "tags"); c.flavour_tags.forEach(x => t.appendChild(el("span", "chip", x))); b.appendChild(t);
+  }
+  if (c.roast_date) b.appendChild(el("p", "", "Roasted " + ago(c.roast_date) + " (" + c.roast_date + ")"));
+  if (c.open_date) b.appendChild(el("p", "", "Opened " + ago(c.open_date) + " (" + c.open_date + ")"));
+  else {
+    const o = el("button", "lnk", "Opened today"); o.type = "button";
+    o.onclick = async () => {
+      const { error } = await db.from("coffees").update({ open_date: todayIso() }).eq("id", c.id);
+      if (error) say("Could not update: " + error.message); else load();
+    };
+    b.appendChild(o);
+  }
+  if (c.notes) b.appendChild(el("p", "", c.notes));
+  a.appendChild(b);
+  return a;
+}
+
+async function load() {
+  const { data, error } = await db.from("coffees").select("*").order("created_at", { ascending: false });
+  if (error) { say("Could not load coffees: " + error.message); return; }
+  const uniq = k => [...new Set(data.map(c => c[k]).filter(Boolean))];
+  fill("f-process", Object.keys(PAL), uniq("process")); fill("f-roast", window.LISTS.roast, uniq("roast_level"));
+  const list = $("list"); list.textContent = "";
+  if (!data.length) { list.appendChild(el("p", "hint", "No coffees yet. Add your first one above.")); return; }
+  const paths = data.map(c => c.photo_path).filter(Boolean), urls = {};
+  if (paths.length) {
+    const { data: s } = await db.storage.from("bag-photos").createSignedUrls(paths, 3600);
+    (s || []).forEach(x => { if (x.signedUrl) urls[x.path] = x.signedUrl; });
+  }
+  data.forEach(c => list.appendChild(card(c, urls[c.photo_path])));
+}
+
+$("cf").onsubmit = async e => {
+  e.preventDefault();
+  say("Saving...");
+  try {
+    let path = null;
+    const f = $("f-photo").files[0];
+    if (f) {
+      const blob = await shrink(f);
+      path = me.id + "/" + crypto.randomUUID() + ".jpg";
+      const up = await db.storage.from("bag-photos").upload(path, blob, { contentType: "image/jpeg" });
+      if (up.error) throw up.error;
+    }
+    const v = id => $(id).value.trim();
+    const row = {
+      name: v("f-name"), roaster: v("f-roaster") || null, origin: v("f-origin") || null,
+      is_blend: $("f-blend").checked, process: chosen("f-process") || null, roast_level: chosen("f-roast") || null,
+      flavour_tags: v("f-tags").split(",").map(t => t.trim().toLowerCase()).filter(Boolean),
+      notes: v("f-notes") || null, roast_date: v("f-rd") || null, open_date: v("f-od") || null, photo_path: path
+    };
+    const { error } = await db.from("coffees").insert(row);
+    if (error) throw error;
+    $("cf").reset(); ["f-process", "f-roast"].forEach(i => { $(i + "-new").hidden = true; $(i + "-new").required = false; }); $("addbox").open = false; say("Saved."); load();
+  } catch (err) { say("Could not save: " + err.message); }
+};
 
 async function show(session) {
   $("login").hidden = !!session;
   $("app").hidden = !session;
+  me = session ? session.user : null;
   if (!session) return;
   $("who").textContent = "Signed in as " + session.user.email;
-  const { count, error } = await db.from("coffees").select("*", { count: "exact", head: true });
-  $("count").textContent = error ? "Could not read coffees: " + error.message : "Coffees in the journal: " + count;
+  load();
 }
-
 $("login").onsubmit = async e => {
   e.preventDefault();
   say("Signing in...");
