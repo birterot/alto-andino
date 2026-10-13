@@ -1,6 +1,6 @@
 // Supabase connection for every page. The URL and the publishable key are meant to be public.
 // NEVER put the secret or service_role key in this file.
 window.SUPA = {
-  url: "PASTE-PROJECT-URL-HERE",
-  key: "PASTE-PUBLISHABLE-KEY-HERE"
+  url: "https://csvpkzhjgbmenyjjescj.supabase.co",
+  key: "sb_publishable_jjW-cxshV7nBJip6FHJ7bQ_gwNf1CdR"
 };
