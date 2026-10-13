@@ -185,18 +185,23 @@ function card(c, photoUrl) {
   return a;
 }
 
+let loadId = 0;
 async function load() {
+  const my = ++loadId;   // only the newest load may draw, so parallel loads cannot add cards twice
   const { data, error } = await db.from("coffees").select("*").order("created_at", { ascending: false });
+  if (my !== loadId) return;
   if (error) { say("Could not load coffees: " + error.message); return; }
   const uniq = k => [...new Set(data.map(c => c[k]).filter(Boolean))];
   fill("f-process", Object.keys(PAL), uniq("process")); fill("f-roast", window.LISTS.roast, uniq("roast_level"));
-  const list = $("list"); list.textContent = "";
-  if (!data.length) { list.appendChild(el("p", "hint", "No coffees yet. Add your first one above.")); return; }
   const paths = data.map(c => c.photo_path).filter(Boolean), urls = {};
   if (paths.length) {
     const { data: s } = await db.storage.from("bag-photos").createSignedUrls(paths, 3600);
     (s || []).forEach(x => { if (x.signedUrl) urls[x.path] = x.signedUrl; });
+    if (my !== loadId) return;
   }
+  const list = $("list");
+  list.textContent = "";
+  if (!data.length) { list.appendChild(el("p", "hint", "No coffees yet. Add your first one above.")); return; }
   data.forEach(c => list.appendChild(card(c, urls[c.photo_path])));
 }
 
@@ -233,8 +238,11 @@ function startEdit(c) {
 }
 $("cancel").onclick = endEdit;
 
+let saving = false;
 $("cf").onsubmit = async e => {
   e.preventDefault();
+  if (saving) return;
+  saving = true; $("save").disabled = true;
   say("Saving...");
   try {
     let path = null;
@@ -264,6 +272,7 @@ $("cf").onsubmit = async e => {
     }
     endEdit(); say("Saved."); load();
   } catch (err) { say("Could not save: " + err.message); }
+  finally { saving = false; $("save").disabled = false; }
 };
 
 async function show(session) {
