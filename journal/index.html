@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Coffee journal</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+label{display:block;margin-top:12px;font-size:14px;color:var(--mut)}
+input{display:block;width:100%;max-width:360px;margin-top:4px;padding:10px;font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.go{margin-top:16px;padding:10px 20px;border-radius:8px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);cursor:pointer}
+#msg{color:var(--mut);min-height:1.5em}
+</style>
+</head>
+<body>
+<main>
+<a class="back" href="../index.html">Coffee atlas</a>
+<h1>Coffee journal</h1>
+<form id="login" hidden>
+  <p class="sub">Sign in with the account we created for you.</p>
+  <label>Email<input id="em" type="email" autocomplete="username" required></label>
+  <label>Password<input id="pw" type="password" autocomplete="current-password" required></label>
+  <button class="go">Sign in</button>
+</form>
+<section id="app" hidden>
+  <p class="sub" id="who"></p>
+  <p id="count"></p>
+  <button class="go" id="out" type="button">Sign out</button>
+</section>
+<p id="msg" role="status"></p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
+<script src="../assets/js/config.js"></script>
+<script>
+const db = supabase.createClient(SUPA.url, SUPA.key);
+const $ = id => document.getElementById(id);
+const say = t => { $("msg").textContent = t || ""; };
+
+async function show(session) {
+  $("login").hidden = !!session;
+  $("app").hidden = !session;
+  if (!session) return;
+  $("who").textContent = "Signed in as " + session.user.email;
+  const { count, error } = await db.from("coffees").select("*", { count: "exact", head: true });
+  $("count").textContent = error ? "Could not read coffees: " + error.message : "Coffees in the journal: " + count;
+}
+
+$("login").onsubmit = async e => {
+  e.preventDefault();
+  say("Signing in...");
+  const { error } = await db.auth.signInWithPassword({ email: $("em").value.trim(), password: $("pw").value });
+  say(error ? error.message : "");
+};
+$("out").onclick = () => db.auth.signOut();
+// Run queries outside the callback so the auth client is not blocked.
+db.auth.onAuthStateChange((_event, session) => setTimeout(() => show(session), 0));
+</script>
+</body>
+</html>
