@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stage 0 test</title>
+<style>
+:root{color-scheme:light dark}
+body{font:16px system-ui,sans-serif;margin:0 auto;max-width:480px;padding:max(20px,env(safe-area-inset-top)) 16px 40px}
+input,button{font:inherit;padding:10px;width:100%;margin-top:8px;box-sizing:border-box}
+li{margin:6px 0}
+#s{color:gray}
+</style>
+</head>
+<body>
+<h1>Stage 0 test</h1>
+<input id="n" placeholder="Write a test note">
+<button id="b">Save to Supabase</button>
+<p id="s"></p>
+<ul id="l"></ul>
+<script>
+// 1) Paste your Project URL and publishable key here (both are meant to be public).
+const URL_="PASTE-PROJECT-URL-HERE", KEY="PASTE-PUBLISHABLE-KEY-HERE";
+const H={apikey:KEY,"Content-Type":"application/json"};
+const s=t=>document.getElementById("s").textContent=t;
+async function load(){
+  try{
+    const r=await fetch(URL_+"/rest/v1/stage0_test?select=note&order=created_at.desc&limit=10",{headers:H});
+    if(!r.ok) throw new Error(r.status);
+    const l=document.getElementById("l"); l.textContent="";
+    (await r.json()).forEach(x=>{const li=document.createElement("li");li.textContent=x.note;l.appendChild(li)});
+  }catch(e){s("Could not load: "+e.message)}
+}
+document.getElementById("b").onclick=async()=>{
+  const n=document.getElementById("n"); if(!n.value.trim()) return;
+  s("Saving...");
+  try{
+    const r=await fetch(URL_+"/rest/v1/stage0_test",{method:"POST",headers:H,body:JSON.stringify({note:n.value.trim()})});
+    if(!r.ok) throw new Error(r.status);
+    n.value=""; s("Saved."); load();
+  }catch(e){s("Could not save: "+e.message)}
+};
+load();
+</script>
+</body>
+</html>
