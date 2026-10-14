@@ -90,6 +90,8 @@ a.btn{display:inline-block;text-decoration:none}
       <label>Name<input id="f-name" required></label>
       <label>Roaster<input id="f-roaster"></label>
       <label>Origin<input id="f-origin" placeholder="Country, region"></label>
+      <label>Altitude in metres (from)<input id="f-alt-min" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="e.g. 1700"></label>
+      <label>Altitude in metres (to, only if it is a range)<input id="f-alt-max" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="e.g. 1900"></label>
       <label class="chk"><input type="checkbox" id="f-blend"> Blend</label>
       <label>Process
         <select id="f-process"></select>
@@ -286,7 +288,7 @@ function card(c, photoUrl, nBrews, ratings, bags) {
   if (photoUrl) { const i = el("img"); i.src = photoUrl; i.alt = "Bag of " + c.name; i.loading = "lazy"; a.appendChild(i); }
   const b = el("div", "in");
   b.appendChild(el("h3", "", c.name));
-  const meta = [c.roaster, c.origin, c.is_blend ? "Blend" : null, c.process, c.roast_level].filter(Boolean).join(", ");
+  const meta = [c.roaster, c.origin, altText(c), c.is_blend ? "Blend" : null, c.process, c.roast_level].filter(Boolean).join(", ");
   if (meta) b.appendChild(el("p", "", meta));
   if (bags && bags.length > 1) b.appendChild(el("p", "age", "Bag " + bags.length + " of " + bags.length));
   if (c.flavour_tags && c.flavour_tags.length) {
@@ -416,10 +418,17 @@ function endEdit() {
   $("photohint").hidden = true;
   $("addbox").open = false;
 }
+function altText(c) {
+  if (c.altitude_min_m == null) return null;
+  const f = n => Number(n).toLocaleString("en-US");
+  return (c.altitude_max_m != null && c.altitude_max_m !== c.altitude_min_m
+    ? f(c.altitude_min_m) + "-" + f(c.altitude_max_m) : f(c.altitude_min_m)) + " m";
+}
 function startEdit(c) {
   editing = c;
   $("cf").reset();
   $("f-name").value = c.name; $("f-roaster").value = c.roaster || ""; $("f-origin").value = c.origin || "";
+  $("f-alt-min").value = c.altitude_min_m ?? ""; $("f-alt-max").value = (c.altitude_max_m != null && c.altitude_max_m !== c.altitude_min_m) ? c.altitude_max_m : "";
   $("f-blend").checked = !!c.is_blend;
   setSel("f-process", c.process); setSel("f-roast", c.roast_level);
   $("f-tags").value = (c.flavour_tags || []).join(", ");
@@ -458,7 +467,14 @@ $("cf").onsubmit = async e => {
     }
     const v = id => $(id).value.trim();
     if (v("f-url") && !safeUrl(v("f-url"))) throw new Error("the link must start with https:// or http://");
+    let amin = v("f-alt-min") === "" ? null : Math.round(Number(v("f-alt-min")));
+    let amax = v("f-alt-max") === "" ? null : Math.round(Number(v("f-alt-max")));
+    if (amin === null && amax !== null) { amin = amax; amax = null; }
+    if ((amin !== null && !(amin >= 0 && amin <= 5000)) || (amax !== null && !(amax >= 0 && amax <= 5000))) throw new Error("altitude must be between 0 and 5000 metres");
+    if (amax !== null && amax < amin) { const t = amin; amin = amax; amax = t; }
+    if (amax === amin) amax = null;
     const row = {
+      altitude_min_m: amin, altitude_max_m: amax,
       name: v("f-name"), roaster: v("f-roaster") || null, origin: v("f-origin") || null,
       is_blend: $("f-blend").checked, process: chosen("f-process") || null, roast_level: chosen("f-roast") || null,
       flavour_tags: v("f-tags").split(",").map(t => t.trim().toLowerCase()).filter(Boolean),
@@ -587,7 +603,7 @@ async function openCoffee(id) {
   ["bflt-device", "bflt-recipe", "bflt-sort"].forEach(i => { $(i).value = ""; });
   applyPal($("dhead"), c.process);
   $("dname").textContent = c.name;
-  $("dmeta").textContent = [c.roaster, c.origin, c.process, c.roast_level].filter(Boolean).join(", ") +
+  $("dmeta").textContent = [c.roaster, c.origin, altText(c), c.process, c.roast_level].filter(Boolean).join(", ") +
     (c.roast_date ? ". Roasted " + c.roast_date : "") + (c.open_date ? ", opened " + c.open_date : "") + ".";
   const bx = $("dbuy"); bx.textContent = ""; const bl = buyLink(c); if (bl) bx.appendChild(bl);
   const t = $("dtags"); t.textContent = "";
