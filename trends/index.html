@@ -3,16 +3,248 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Coffee">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Trends | Coffee atlas</title>
 <link rel="stylesheet" href="../assets/css/base.css">
+<style>
+:root{--c0:light-dark(#854F0B,#EF9F27);--c1:light-dark(#993556,#ED93B1);--c2:light-dark(#6F4E37,#C9A27A);--c3:light-dark(#0F6E56,#5DCAA5);--c4:light-dark(#185FA5,#85B7EB);--c5:light-dark(#534AB7,#AFA9EC);--c6:light-dark(#3B6D11,#97C459);--c7:light-dark(#993C1D,#F0997B)}
+.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin:16px 0 14px}
+.ctl select,.ctl button{font:inherit;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);min-width:0}
+.ctl button{cursor:pointer}
+.banner{margin:0 0 12px;padding:8px 12px;border-radius:8px;border:1px dashed var(--line);background:var(--card);font-size:14px}
+.chartbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+svg.ch{display:block;width:100%;height:auto}
+svg.ch text{font-size:12px;fill:var(--mut)}
+svg.ch .grid{stroke:var(--line);stroke-width:1;opacity:.6}
+.msg{padding:28px 12px;text-align:center;color:var(--mut)}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.leg{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);font:inherit;font-size:13px;cursor:pointer;color:var(--ink)}
+.leg i{width:10px;height:10px;border-radius:50%;background:var(--col)}
+.leg[aria-pressed=false]{opacity:.45}
+.hint{color:var(--mut);font-size:14px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+.wrap{overflow-x:auto}
+button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+</style>
 </head>
 <body>
 <main>
 <h1>Trends</h1>
-<p class="sub">How a coffee changes after roasting and after opening: your 0-10 scores plotted against the days since roast and since opening, per coffee and per recipe.</p>
-<p>Coming soon. Every brew you log now is already stored with its date, recipe and scores, so the graphs will start with your real history.</p>
-<p class="sub">A graph needs several brews of the same recipe over a few weeks, so the first useful trends will appear after a while of logging.</p>
+<p class="sub">How a coffee changes after roasting and after opening: your 0-10 scores against the days that passed. Pick a coffee and one recipe to compare like with like.</p>
+
+<div class="ctl">
+  <select id="t-coffee" aria-label="Coffee"></select>
+  <select id="t-recipe" aria-label="Recipe"></select>
+  <select id="t-x" aria-label="Days counted from"><option value="roast">Days after roast</option><option value="open">Days after opening</option></select>
+  <button id="t-demo" type="button">Show example data</button>
+</div>
+<p class="banner" id="banner" hidden>Example data to show how the chart will look. These are not your brews.</p>
+
+<div class="chartbox" id="chart"></div>
+<div class="legend" id="legend" role="group" aria-label="Flavours shown"></div>
+<p class="hint" id="note"></p>
+<details><summary>Show the numbers</summary><div class="wrap" id="table"></div></details>
+<p id="msg" class="hint" role="status"></p>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
+<script src="../assets/js/config.js"></script>
 <script src="../assets/js/nav.js" defer></script>
+<script>
+const db = supabase.createClient(SUPA.url, SUPA.key);
+const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const CORE = ["sour", "sweet", "bitter", "balance"];
+const state = { demo: false, signedIn: false, coffees: [], coffee: null, pts: [], recipe: "", hidden: new Set() };
+let pickId = 0;
+
+// Example data only, to show the design before there is real history.
+const DEMO_DAYS = [5, 7, 9, 12, 14, 17, 20, 24, 28];
+const DEMO = {
+  sour:      [8, 7, 7, 6, 5, 5, 4, 3, 3],
+  sweet:     [4, 5, 6, 7, 8, 7, 7, 6, 5],
+  bitter:    [2, 2, 3, 3, 3, 4, 5, 5, 6],
+  balance:   [4, 5, 6, 7, 8, 8, 7, 6, 5],
+  blueberry: [6, 7, 8, 7, 6, 5, 4, 3, 2]
+};
+function demoPoints() {
+  return DEMO_DAYS.map((d, i) => {
+    const scores = {}; Object.keys(DEMO).forEach(k => { scores[k] = DEMO[k][i]; });
+    return { recipe: "Flair, grind 25 clicks, 7 bar", roast: d, open: d - 4, scores };
+  });
+}
+
+function s(tag, attrs, text) {
+  const e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  return e;
+}
+const colorIndex = (attrs, a) => CORE.indexOf(a) >= 0 ? CORE.indexOf(a) : 4 + (attrs.filter(x => !CORE.includes(x)).indexOf(a) % 4);
+
+function draw(pts, attrs, xk, joined) {
+  const W = 680, H = 340, L = 40, R = 16, T = 14, B = 46;
+  const xs = pts.map(p => p[xk]);
+  let x0 = Math.min(...xs), x1 = Math.max(...xs);
+  if (x1 - x0 < 4) { const m = (x0 + x1) / 2; x0 = m - 2; x1 = m + 2; }
+  x0 = Math.floor(x0 - 1); x1 = Math.ceil(x1 + 1);
+  const sx = v => L + (v - x0) / (x1 - x0) * (W - L - R), sy = v => T + (10 - v) / 10 * (H - T - B);
+  const svg = s("svg", { class: "ch", viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "Flavour scores against days. The numbers are listed below the chart." });
+  for (let v = 0; v <= 10; v += 2) {
+    svg.appendChild(s("line", { class: "grid", x1: L, x2: W - R, y1: sy(v), y2: sy(v) }));
+    svg.appendChild(s("text", { x: L - 8, y: sy(v) + 4, "text-anchor": "end" }, v));
+  }
+  const step = Math.max(1, Math.ceil((x1 - x0) / 7));
+  for (let v = Math.ceil(x0 / step) * step; v <= x1; v += step) {
+    svg.appendChild(s("line", { class: "grid", x1: sx(v), x2: sx(v), y1: T, y2: H - B }));
+    svg.appendChild(s("text", { x: sx(v), y: H - B + 18, "text-anchor": "middle" }, v));
+  }
+  svg.appendChild(s("text", { x: (L + W - R) / 2, y: H - 6, "text-anchor": "middle" }, xk === "roast" ? "Days after roast" : "Days after opening"));
+  const my = (T + H - B) / 2;
+  svg.appendChild(s("text", { x: 12, y: my, "text-anchor": "middle", transform: "rotate(-90 12 " + my + ")" }, "Score"));
+  attrs.filter(a => !state.hidden.has(a)).forEach(a => {
+    const col = "var(--c" + colorIndex(attrs, a) + ")";
+    const sp = pts.filter(p => p.scores[a] != null).sort((p, q) => p[xk] - q[xk]);
+    if (joined && sp.length > 1) svg.appendChild(s("polyline", { points: sp.map(p => sx(p[xk]) + "," + sy(p.scores[a])).join(" "), fill: "none", stroke: col, "stroke-width": 2.5, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+    sp.forEach(p => {
+      const c = s("circle", { cx: sx(p[xk]), cy: sy(p.scores[a]), r: 4.5, fill: col });
+      c.appendChild(s("title", {}, a + " " + p.scores[a] + ", day " + Math.round(p[xk])));
+      svg.appendChild(c);
+    });
+  });
+  return svg;
+}
+
+function render() {
+  const xk = $("t-x").value;
+  const chart = $("chart"), legend = $("legend"), note = $("note"), table = $("table");
+  chart.textContent = ""; legend.textContent = ""; note.textContent = ""; table.textContent = "";
+  $("banner").hidden = !state.demo;
+  const all = state.pts.filter(p => !state.recipe || p.recipe === state.recipe);
+  const rated = all.filter(p => Object.keys(p.scores).length);
+  const usable = rated.filter(p => p[xk] !== null && p[xk] !== undefined);
+  const say = t => chart.appendChild(el("p", "msg", t));
+  if (!state.demo && !state.signedIn) { say("Sign in in the Journal first, then come back here. Until then you can look at the example data."); return; }
+  if (!state.coffee && !state.demo) { say("No coffees yet. Add one in the Journal, log a few brews, and the trends appear here."); return; }
+  if (!all.length) { say("No brews logged for this coffee yet."); return; }
+  if (!rated.length) { say("None of these brews has scores yet. Move the flavour sliders when you log a brew."); return; }
+  if (!usable.length) { say("This coffee has no " + (xk === "roast" ? "roast" : "open") + " date yet, so the days cannot be counted. Add it in the Journal, or count from the other date."); return; }
+
+  const attrs = [...new Set(usable.flatMap(p => Object.keys(p.scores)))].sort((a, b) => {
+    const i = k => CORE.includes(k) ? CORE.indexOf(k) : 99; return i(a) - i(b) || a.localeCompare(b);
+  });
+  attrs.forEach(a => {
+    const b = el("button", "leg"); b.type = "button";
+    b.style.setProperty("--col", "var(--c" + colorIndex(attrs, a) + ")");
+    b.append(el("i"), document.createTextNode(a));
+    b.setAttribute("aria-pressed", String(!state.hidden.has(a)));
+    b.onclick = () => { if (state.hidden.has(a)) state.hidden.delete(a); else state.hidden.add(a); render(); };
+    legend.appendChild(b);
+  });
+  chart.appendChild(draw(usable, attrs, xk, !!state.recipe));
+  note.textContent = !state.recipe
+    ? "All recipes are mixed here, so only the single brews are shown. Pick one recipe to see lines."
+    : usable.length < 3
+      ? "Only " + usable.length + " rated brew" + (usable.length === 1 ? "" : "s") + " with this recipe so far. A trend needs at least three brews of the same recipe, spread over a few weeks."
+      : "Lines only join brews of one recipe, so a change in the recipe is not mistaken for a change in the coffee. Other things, like dose or water, can still move the scores.";
+
+  const t = el("table"), head = el("tr");
+  ["Day", "Recipe", ...attrs].forEach(h => head.appendChild(el("th", "", h)));
+  t.appendChild(head);
+  usable.slice().sort((p, q) => p[xk] - q[xk]).forEach(p => {
+    const r = el("tr");
+    r.appendChild(el("td", "", String(Math.round(p[xk] * 10) / 10)));
+    r.appendChild(el("td", "", p.recipe));
+    attrs.forEach(a => r.appendChild(el("td", "", p.scores[a] != null ? String(p.scores[a]) : "-")));
+    t.appendChild(r);
+  });
+  table.appendChild(t);
+}
+
+function fillRecipes(setDefault) {
+  const counts = {};
+  state.pts.forEach(p => { counts[p.recipe] = (counts[p.recipe] || 0) + 1; });
+  const names = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  if (setDefault) state.recipe = names.length ? names[0] : "";
+  const sel = $("t-recipe"); sel.textContent = "";
+  const add = (v, t) => { const o = el("option", "", t); o.value = v; sel.appendChild(o); };
+  add("", "All recipes (points only)");
+  names.forEach(n => add(n, n + " (" + counts[n] + ")"));
+  sel.value = state.recipe;
+}
+
+function fillCoffees(counts) {
+  const sel = $("t-coffee"); sel.textContent = "";
+  if (state.demo) { const o = el("option", "", "Example coffee (not your data)"); o.value = ""; sel.appendChild(o); sel.disabled = true; return; }
+  sel.disabled = false;
+  if (!state.coffees.length) { const o = el("option", "", "No coffees yet"); o.value = ""; sel.appendChild(o); return; }
+  state.coffees.forEach(c => { const o = el("option", "", c.name + " (" + (counts[c.id] || 0) + " brews)"); o.value = c.id; sel.appendChild(o); });
+}
+
+async function pickCoffee(id) {
+  const my = ++pickId;
+  state.coffee = state.coffees.find(c => c.id === id) || null;
+  state.hidden = new Set();
+  state.pts = []; state.recipe = "";
+  if (!state.coffee) { fillRecipes(true); render(); return; }
+  const { data, error } = await db.from("brews").select("brewed_at,recipe,brew_scores(attribute,score)").eq("coffee_id", id).order("brewed_at");
+  if (my !== pickId) return;
+  if (error) { $("msg").textContent = "Could not load brews: " + error.message; return; }
+  const c = state.coffee;
+  state.pts = data.map(b => {
+    const t = new Date(b.brewed_at), scores = {};
+    (b.brew_scores || []).forEach(x => { scores[x.attribute] = x.score; });
+    return {
+      recipe: b.recipe || "(no recipe name)", scores,
+      roast: c.roast_date ? (t - new Date(c.roast_date + "T00:00:00")) / 864e5 : null,
+      open: c.open_date ? (t - new Date(c.open_date + "T00:00:00")) / 864e5 : null
+    };
+  });
+  fillRecipes(true);
+  render();
+}
+
+async function loadMine() {
+  const [{ data: cs, error }, { data: bs }] = await Promise.all([
+    db.from("coffees").select("id,name,roast_date,open_date").order("created_at", { ascending: false }),
+    db.from("brews").select("coffee_id")
+  ]);
+  if (error) { $("msg").textContent = "Could not load coffees: " + error.message; return; }
+  const counts = {}; (bs || []).forEach(b => { counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; });
+  state.coffees = cs.slice().sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0));   // the coffee with most brews first
+  fillCoffees(counts);
+  await pickCoffee(state.coffees.length ? state.coffees[0].id : null);
+}
+
+function enterDemo() {
+  state.demo = true; state.coffee = { name: "Example" }; state.hidden = new Set();
+  state.pts = demoPoints();
+  fillCoffees({}); fillRecipes(true);
+  $("t-demo").textContent = "Back to my data";
+  render();
+}
+function leaveDemo() {
+  state.demo = false;
+  $("t-demo").textContent = "Show example data";
+  if (state.signedIn) loadMine(); else { state.coffee = null; state.pts = []; fillCoffees({}); fillRecipes(true); render(); }
+}
+
+$("t-demo").onclick = () => state.demo ? leaveDemo() : enterDemo();
+$("t-coffee").onchange = () => pickCoffee($("t-coffee").value);
+$("t-recipe").onchange = () => { state.recipe = $("t-recipe").value; render(); };
+$("t-x").onchange = render;
+
+db.auth.onAuthStateChange((_e, session) => setTimeout(() => {
+  const was = state.signedIn;
+  state.signedIn = !!session;
+  if (state.demo) return;
+  if (session && !was) loadMine(); else if (!session) { state.coffee = null; state.pts = []; fillCoffees({}); fillRecipes(true); render(); }
+}, 0));
+</script>
 </body>
 </html>
