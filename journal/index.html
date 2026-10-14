@@ -53,7 +53,14 @@ details.add summary{cursor:pointer;font-weight:600}
 .pick{display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:12px;border-radius:10px;border:1px solid var(--line);border-top:3px solid var(--s);background:var(--f);color:var(--t);font:inherit;cursor:pointer}
 .pick small{display:block;margin-top:2px;opacity:.85}
 a.btn{display:inline-block;text-decoration:none}
-.cc .rate{font-size:13px;color:var(--t);opacity:.9}
+.rate{margin-top:10px}
+.rate .avg{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.rate .num{font-family:"Iowan Old Style",Palatino,Georgia,serif;font-size:28px;line-height:1;color:var(--accent)}
+.rate .st{font-size:18px;letter-spacing:2px;color:var(--accent)}
+.rate .lbl{font-size:13px;color:var(--mut)}
+.rate .best{margin-top:4px;font-size:14px;color:var(--ink)}
+.rate .best span{color:var(--accent);letter-spacing:2px}
+.rate .cnt{margin-top:2px;font-size:12px;color:var(--mut)}
 .stars{display:flex;gap:2px;margin-top:6px}
 .stars button{width:40px;height:40px;padding:0;border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--line)}
 .stars button.on{color:var(--accent)}
@@ -113,7 +120,7 @@ a.btn{display:inline-block;text-decoration:none}
 
   <div id="detail" hidden>
     <a class="back" href="#">All coffees</a>
-    <section id="dhead" class="cc"><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><p class="rate" id="drate"></p><div class="tags" id="dtags"></div><div class="acts" id="dbuy"></div></div></section>
+    <section id="dhead" class="cc"><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="drate"></div><div class="tags" id="dtags"></div><div class="acts" id="dbuy"></div></div></section>
     <details class="add" id="brewbox" open>
       <summary id="brewsum">Log a brew</summary>
       <form id="bf">
@@ -134,6 +141,7 @@ a.btn{display:inline-block;text-decoration:none}
         <label>Recipe name (optional)<input id="b-recipe" placeholder="Left empty it becomes: device, grind, pressure"></label>
         <label>Overall</label>
         <div class="stars" id="stars" role="group" aria-label="Overall rating"></div>
+        <label class="chk"><input type="checkbox" id="b-dialin"> Dial-in brew (kept in the history, not counted in the coffee's rating)</label>
         <label>How did it taste?</label>
         <p class="hint">Move a slider to score it from 0 to 10. Sliders you leave alone are not saved. The x clears one.</p>
         <div id="scorebox"></div>
@@ -235,13 +243,30 @@ function applyPal(a, process) {
 function safeUrl(u) {
   try { const x = new URL(u); return x.protocol === "https:" || x.protocol === "http:" ? x.href : null; } catch (e) { return null; }
 }
-// ratings: oldest first. Best brew, plus the average of the last three, so early dial-in brews do not drag the coffee down.
-function rateText(r) {
-  const v = (r || []).filter(x => x != null);
-  if (!v.length) return "";
-  const best = Math.max(...v), last = v.slice(-3), avg = last.reduce((a, b) => a + b, 0) / last.length;
-  const n = v.length + (v.length === 1 ? " rated brew" : " rated brews");
-  return v.length === 1 ? "\u2605 " + best + " (" + n + ")" : "\u2605 " + best + " best, " + avg.toFixed(1) + " average of the last " + last.length + " (" + n + ")";
+// list: [{r: stars or null, d: dial-in?}], oldest first.
+// Dial-in brews are not counted. Headline = average of the last three counted brews, below it the best counted brew.
+const starsOf = n => "\u2605".repeat(n) + "\u2606".repeat(5 - n);
+function rateBlock(list) {
+  const rated = (list || []).filter(x => x.r != null);
+  if (!rated.length) return null;
+  const counted = rated.filter(x => !x.d), dial = rated.length - counted.length;
+  const box = el("div", "rate");
+  if (!counted.length) {
+    box.appendChild(el("p", "lbl", "Only dial-in brews rated so far (" + dial + "). They do not count toward the rating."));
+    return box;
+  }
+  const last = counted.slice(-3), avg = last.reduce((a, b) => a + b.r, 0) / last.length;
+  const top = el("div", "avg");
+  top.appendChild(el("span", "num", avg.toFixed(1)));
+  const st = el("span", "st", starsOf(Math.round(avg))); st.setAttribute("aria-label", avg.toFixed(1) + " of 5 stars"); top.appendChild(st);
+  top.appendChild(el("span", "lbl", last.length === 1 ? "from 1 counted brew" : "average of the last " + last.length + " counted brews"));
+  box.appendChild(top);
+  if (counted.length > 1) {
+    const best = Math.max(...counted.map(x => x.r));
+    const b = el("p", "best", "Best brew "); const s = el("span", "", starsOf(best)); s.setAttribute("aria-label", best + " of 5 stars"); b.appendChild(s); box.appendChild(b);
+  }
+  if (dial) box.appendChild(el("p", "cnt", counted.length + " counted, " + dial + " dial-in"));
+  return box;
 }
 function buyLink(c) {
   const u = c.buy_url ? safeUrl(c.buy_url) : null;
@@ -261,7 +286,7 @@ function card(c, photoUrl, nBrews, ratings) {
   if (c.flavour_tags && c.flavour_tags.length) {
     const t = el("div", "tags"); c.flavour_tags.forEach(x => t.appendChild(el("span", "chip", x))); b.appendChild(t);
   }
-  const rt = rateText(ratings); if (rt) b.appendChild(el("p", "rate", rt));
+  const rt = rateBlock(ratings); if (rt) b.appendChild(rt);
   if (c.roast_date) b.appendChild(el("p", "", "Roasted " + ago(c.roast_date) + " (" + c.roast_date + ")"));
   if (c.open_date) b.appendChild(el("p", "", "Opened " + ago(c.open_date) + " (" + c.open_date + ")"));
   if (c.notes) b.appendChild(el("p", "", c.notes));
@@ -304,10 +329,10 @@ async function load() {
   const my = ++loadId;   // only the newest load may draw, so parallel loads cannot add cards twice
   const [{ data, error }, { data: bs }] = await Promise.all([
     db.from("coffees").select("*").order("created_at", { ascending: false }),
-    db.from("brews").select("coffee_id,rating").order("brewed_at")
+    db.from("brews").select("coffee_id,rating,is_dialin").order("brewed_at")
   ]);
   const counts = {}, rates = {};
-  (bs || []).forEach(b => { counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; (rates[b.coffee_id] = rates[b.coffee_id] || []).push(b.rating); });
+  (bs || []).forEach(b => { counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; (rates[b.coffee_id] = rates[b.coffee_id] || []).push({ r: b.rating, d: !!b.is_dialin }); });
   if (my !== loadId) return;
   if (error) { say("Could not load coffees: " + error.message); return; }
   const uniq = k => [...new Set(data.map(c => c[k]).filter(Boolean))];
@@ -505,7 +530,7 @@ function startBrewEdit(b) {
   editingBrew = b;
   $("bf").reset();
   buildScores(cur, (b.brew_scores || []).map(s => s.attribute));
-  setRating(b.rating == null ? null : b.rating);
+  setRating(b.rating == null ? null : b.rating); $("b-dialin").checked = !!b.is_dialin;
   setSel("b-device", b.device);
   const put = (id, v) => { $(id).value = v == null ? "" : v; };
   put("b-grind", b.grind); put("b-pressure", b.pressure_bar); put("b-pibar", b.preinfusion_bar); put("b-pis", b.preinfusion_s);
@@ -551,6 +576,7 @@ function brewCard(b) {
   const dr = cur.roast_date ? dayN(cur.roast_date, when) : null, dop = cur.open_date ? dayN(cur.open_date, when) : null;
   const age = [dr !== null ? "day " + dr + " after roast" : null, dop !== null ? "day " + dop + " after opening" : null].filter(Boolean).join(", ");
   if (age) a.appendChild(el("p", "age", age));
+  if (b.is_dialin) a.appendChild(el("p", "age", "Dial-in brew, not counted in the rating"));
   if (b.rating) { const s = el("p", "starsum", "\u2605".repeat(b.rating) + "\u2606".repeat(5 - b.rating)); s.setAttribute("aria-label", "Rated " + b.rating + " of 5"); a.appendChild(s); }
   if (b.recipe) a.appendChild(el("p", "", b.recipe));
   const set = settingsLabel(b);
@@ -583,7 +609,7 @@ async function loadBrews() {
   if (my !== brewLoadId) return;
   if (error) { say("Could not load brews: " + error.message); return; }
   brewData = data;
-  $("drate").textContent = rateText(data.slice().reverse().map(b => b.rating));
+  const dr = $("drate"); dr.textContent = ""; const rb = rateBlock(data.slice().reverse().map(b => ({ r: b.rating, d: !!b.is_dialin }))); if (rb) dr.appendChild(rb);
   const uniq = k => [...new Set(data.map(b => b[k]).filter(Boolean))].sort();
   fillFilter("bflt-device", "All devices", uniq("device"));
   fillFilter("bflt-recipe", "All recipes", uniq("recipe"));
@@ -612,7 +638,7 @@ $("bf").onsubmit = async e => {
     const row = {
       device: chosen("b-device") || null, grind: $("b-grind").value.trim() || null, pressure_bar: num("b-pressure"),
       preinfusion_bar: num("b-pibar"), preinfusion_s: num("b-pis"),
-      dose_g: num("b-dose"), yield_g: num("b-yield"), time_s: num("b-time"), notes: $("b-notes").value.trim() || null, rating
+      dose_g: num("b-dose"), yield_g: num("b-yield"), time_s: num("b-time"), notes: $("b-notes").value.trim() || null, rating, is_dialin: $("b-dialin").checked
     };
     row.recipe = $("b-recipe").value.trim() || settingsLabel(row) || null;
     let id;
