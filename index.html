@@ -3,18 +3,471 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Coffee atlas</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☕</text></svg>">
-<link rel="stylesheet" href="assets/css/base.css">
+<title>Coffee journal</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+label{display:block;margin-top:12px;font-size:14px;color:var(--mut)}
+input,select,textarea{display:block;width:100%;max-width:420px;margin-top:4px;padding:10px;font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+label.chk{display:flex;align-items:center;gap:8px;color:var(--ink)}
+label.chk input{width:auto;margin:0}
+.go,.lnk{font:inherit;cursor:pointer;border-radius:8px}
+.go{margin-top:16px;padding:10px 20px;border:1px solid var(--ink);background:var(--ink);color:var(--bg)}
+.lnk{padding:2px 10px;border:1px solid var(--line);background:none;color:var(--mut);font-size:13px}
+.hint,#msg{color:var(--mut);font-size:14px}
+#msg{min-height:1.5em}
+details.add{margin:12px 0 24px;padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+details.add summary{cursor:pointer;font-weight:600}
+.clist{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.cc{background:var(--f);border:1px solid var(--s);color:var(--t);border-radius:14px;overflow:hidden}
+.cc img{display:block;width:100%;height:180px;object-fit:cover}
+.cc .in{padding:14px 16px}
+.cc h3{margin:0;font-size:18px}
+.cc p{margin:4px 0 0;font-size:14px}
+.cc .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cc .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.cc .lnk{border-color:var(--s);color:var(--t)}
+.cc .btn{font:inherit;cursor:pointer;border-radius:8px;padding:2px 10px;font-size:13px;border:1px solid var(--s);background:var(--s);color:var(--bg)}
+#dhead{margin:8px 0 16px}
+#dhead h2{margin:0;font-size:24px}
+.nums{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;max-width:420px}
+.sc{display:grid;grid-template-columns:84px 1fr 22px 30px;gap:8px;align-items:center;margin-top:10px;max-width:420px}
+.sc input{padding:0;border:0;background:none;margin:0;max-width:none;accent-color:var(--ink)}
+.sc input:not(.on){opacity:.4}
+.sc .scv{text-align:right;font-weight:600}
+.sc .lnk{padding:0 6px}
+.bc{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:12px}
+.bc h3{margin:0;font-size:16px}
+.bc p{margin:4px 0 0;font-size:14px}
+.bc .age,.bc .set{color:var(--mut)}
+.bc .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.bc .chip{background:var(--bg);color:var(--ink);border-color:var(--line)}
+.bc .lnk{margin-top:10px}
+</style>
 </head>
 <body>
 <main>
-<h1>Coffee atlas</h1>
-<p class="sub">Our notes from The World Atlas of Coffee, one chapter at a time. Each chapter ends in the same cup card: acidity, body, bitterness and sweetness.</p>
-<div class="chapters">
-<a class="chcard" href="chapters/processing.html"><h3>Processing</h3><p>Washed, natural, honey and more: the path from cherry to green coffee.</p></a>
-<div class="chcard soon"><h3>Roasting</h3><p>Coming soon.</p></div>
-</div>
+<a class="back" href="../index.html">Coffee atlas</a>
+<h1>Coffee journal</h1>
+
+<form id="login" hidden>
+  <p class="sub">Sign in with the account we created for you.</p>
+  <label>Email<input id="em" type="email" autocomplete="username" required></label>
+  <label>Password<input id="pw" type="password" autocomplete="current-password" required></label>
+  <button class="go">Sign in</button>
+</form>
+
+<section id="app" hidden>
+  <p class="sub"><span id="who"></span> <button class="lnk" id="out" type="button">Sign out</button></p>
+  <div id="listview">
+  <details class="add" id="addbox">
+    <summary id="addsum">Add a coffee</summary>
+    <form id="cf">
+      <label>Name<input id="f-name" required></label>
+      <label>Roaster<input id="f-roaster"></label>
+      <label>Origin<input id="f-origin" placeholder="Country, region"></label>
+      <label class="chk"><input type="checkbox" id="f-blend"> Blend</label>
+      <label>Process
+        <select id="f-process"></select>
+        <input id="f-process-new" placeholder="Name of the new process" hidden>
+      </label>
+      <label>Roast level
+        <select id="f-roast"></select>
+        <input id="f-roast-new" placeholder="Name of the new roast level" hidden>
+      </label>
+      <label>Flavour notes<input id="f-tags" placeholder="chocolaty, nutty, red fruit"></label>
+      <p class="hint">Separate with commas. Sour, sweet, bitter and balance will always be available when logging a brew.</p>
+      <label>Roast date<input type="date" id="f-rd"></label>
+      <label>Open date<input type="date" id="f-od"></label>
+      <label>Notes<textarea id="f-notes" rows="3"></textarea></label>
+      <label>Bag photo<input type="file" id="f-photo" accept="image/*"></label>
+      <p class="hint" id="photohint" hidden>Leave empty to keep the current photo.</p>
+      <button class="go" id="save">Save coffee</button>
+      <button class="lnk" id="cancel" type="button" hidden>Cancel</button>
+    </form>
+  </details>
+  <h2>Our coffees</h2>
+  <div id="list" class="clist"></div>
+  </div>
+
+  <div id="detail" hidden>
+    <a class="back" href="#">All coffees</a>
+    <section id="dhead" class="cc"><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div class="tags" id="dtags"></div></div></section>
+    <details class="add" id="brewbox" open>
+      <summary>Log a brew</summary>
+      <form id="bf">
+        <label>Device
+          <select id="b-device"></select>
+          <input id="b-device-new" placeholder="Name of the new device" hidden>
+        </label>
+        <div class="nums">
+          <label>Grind<input id="b-grind" placeholder="25 clicks"></label>
+          <label>Pressure (bar)<input id="b-pressure" type="number" step="any" inputmode="decimal"></label>
+          <label>Dose (g)<input id="b-dose" type="number" step="any" inputmode="decimal"></label>
+          <label>Yield (g)<input id="b-yield" type="number" step="any" inputmode="decimal"></label>
+          <label>Time (s)<input id="b-time" type="number" step="any" inputmode="decimal"></label>
+        </div>
+        <label>Recipe name (optional)<input id="b-recipe" placeholder="Left empty it becomes: device, grind, pressure"></label>
+        <label>How did it taste?</label>
+        <p class="hint">Move a slider to score it from 0 to 10. Sliders you leave alone are not saved. The x clears one.</p>
+        <div id="scorebox"></div>
+        <label>Notes<textarea id="b-notes" rows="3"></textarea></label>
+        <button class="go" id="bsave">Save brew</button>
+      </form>
+    </details>
+    <h2>Brews</h2>
+    <div id="brews"></div>
+  </div>
+</section>
+<p id="msg" role="status"></p>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
+<script src="../assets/js/config.js"></script>
+<script src="../assets/js/lists.js"></script>
+<script>
+const db = supabase.createClient(SUPA.url, SUPA.key);
+const $ = id => document.getElementById(id);
+const say = t => { $("msg").textContent = t || ""; };
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
+let me = null;
+
+const PAL = window.LISTS.process;
+const GREY = ["#F1EFE8","#2C2C2A","#5F5E5A","#B4B2A9","#444441","#D3D1C7"];
+
+// Dropdowns: the fixed list, plus everything used before, plus "Other (add new)".
+function fill(id, base, used) {
+  const s = $(id), keep = s.value;
+  s.textContent = "";
+  const add = (v, t) => { const o = el("option", "", t || v); o.value = v; s.appendChild(o); };
+  add("", "Unknown");
+  base.forEach(x => add(x));
+  used.filter(x => !base.includes(x)).sort().forEach(x => add(x));
+  add("__other", "Other (add new)...");
+  s.value = [...s.options].some(o => o.value === keep) ? keep : "";
+}
+function otherBox(id) {
+  const s = $(id), t = $(id + "-new");
+  s.onchange = () => { t.hidden = s.value !== "__other"; t.required = !t.hidden; };
+}
+function chosen(id) {
+  const s = $(id);
+  if (s.value !== "__other") return s.value;
+  const t = $(id + "-new").value.trim();
+  const same = [...s.options].find(o => o.value && o.value !== "__other" && o.text.toLowerCase() === t.toLowerCase());
+  return same ? same.value : t;
+}
+fill("f-process", Object.keys(PAL), []); fill("f-roast", window.LISTS.roast, []);
+otherBox("f-process"); otherBox("f-roast");
+
+function shrink(file, max = 1200) {
+  return new Promise((ok, no) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(b => b ? ok(b) : no(new Error("Could not process the photo")), "image/jpeg", 0.8);
+    };
+    img.onerror = () => no(new Error("Could not read the photo"));
+    img.src = url;
+  });
+}
+
+function ago(iso) {
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  const n = Math.round((t - new Date(iso + "T00:00:00")) / 864e5);
+  return n <= 0 ? "today" : n === 1 ? "1 day ago" : n + " days ago";
+}
+function todayIso() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+function applyPal(a, process) {
+  const p = PAL[process] || GREY;
+  ["--f:" + p[0] + "," + p[1], "--s:" + p[2] + "," + p[3], "--t:" + p[4] + "," + p[5]].forEach(s => {
+    const [k, v] = s.split(":"); const [l, d] = v.split(",");
+    a.style.setProperty(k, "light-dark(" + l + "," + d + ")");
+  });
+}
+
+function card(c, photoUrl, nBrews) {
+  const a = el("article", "cc");
+  applyPal(a, c.process);
+  if (photoUrl) { const i = el("img"); i.src = photoUrl; i.alt = "Bag of " + c.name; i.loading = "lazy"; a.appendChild(i); }
+  const b = el("div", "in");
+  b.appendChild(el("h3", "", c.name));
+  const meta = [c.roaster, c.origin, c.is_blend ? "Blend" : null, c.process, c.roast_level].filter(Boolean).join(", ");
+  if (meta) b.appendChild(el("p", "", meta));
+  if (c.flavour_tags && c.flavour_tags.length) {
+    const t = el("div", "tags"); c.flavour_tags.forEach(x => t.appendChild(el("span", "chip", x))); b.appendChild(t);
+  }
+  if (c.roast_date) b.appendChild(el("p", "", "Roasted " + ago(c.roast_date) + " (" + c.roast_date + ")"));
+  if (c.open_date) b.appendChild(el("p", "", "Opened " + ago(c.open_date) + " (" + c.open_date + ")"));
+  if (c.notes) b.appendChild(el("p", "", c.notes));
+  const acts = el("div", "acts");
+  const bb = el("button", "btn", nBrews ? "Brews (" + nBrews + ")" : "Log a brew"); bb.type = "button";
+  bb.onclick = () => { location.hash = "c=" + c.id; };
+  acts.appendChild(bb);
+  if (!c.open_date) {
+    const o = el("button", "lnk", "Opened today"); o.type = "button";
+    o.onclick = async () => {
+      const { error } = await db.from("coffees").update({ open_date: todayIso() }).eq("id", c.id);
+      if (error) say("Could not update: " + error.message); else load();
+    };
+    acts.appendChild(o);
+  }
+  const del = el("button", "lnk", "Delete"); del.type = "button";
+  del.onclick = async () => {
+    if (!confirm("Delete \"" + c.name + "\" and everything logged for it? This cannot be undone.")) return;
+    const { data: gone, error } = await db.from("coffees").delete().eq("id", c.id).select();
+    if (error) { say("Could not delete: " + error.message); return; }
+    if (!gone.length) { say("Nothing was deleted."); return; }
+    if (c.photo_path) {
+      const r = await db.storage.from("bag-photos").remove([c.photo_path]);
+      if (r.error) say("Coffee deleted, but the photo could not be removed: " + r.error.message);
+    }
+    load();
+  };
+  const ed = el("button", "lnk", "Edit"); ed.type = "button";
+  ed.onclick = () => startEdit(c);
+  acts.appendChild(ed);
+  acts.appendChild(del);
+  b.appendChild(acts);
+  a.appendChild(b);
+  return a;
+}
+
+let loadId = 0;
+async function load() {
+  const my = ++loadId;   // only the newest load may draw, so parallel loads cannot add cards twice
+  const [{ data, error }, { data: bs }] = await Promise.all([
+    db.from("coffees").select("*").order("created_at", { ascending: false }),
+    db.from("brews").select("coffee_id")
+  ]);
+  const counts = {};
+  (bs || []).forEach(b => { counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; });
+  if (my !== loadId) return;
+  if (error) { say("Could not load coffees: " + error.message); return; }
+  const uniq = k => [...new Set(data.map(c => c[k]).filter(Boolean))];
+  fill("f-process", Object.keys(PAL), uniq("process")); fill("f-roast", window.LISTS.roast, uniq("roast_level"));
+  const paths = data.map(c => c.photo_path).filter(Boolean), urls = {};
+  if (paths.length) {
+    const { data: s } = await db.storage.from("bag-photos").createSignedUrls(paths, 3600);
+    (s || []).forEach(x => { if (x.signedUrl) urls[x.path] = x.signedUrl; });
+    if (my !== loadId) return;
+  }
+  const list = $("list");
+  list.textContent = "";
+  if (!data.length) { list.appendChild(el("p", "hint", "No coffees yet. Add your first one above.")); return; }
+  data.forEach(c => list.appendChild(card(c, urls[c.photo_path], counts[c.id] || 0)));
+}
+
+let editing = null;
+function setSel(id, v) {
+  const s = $(id);
+  if (v && ![...s.options].some(o => o.value === v)) { const o = el("option", "", v); o.value = v; s.insertBefore(o, s.lastElementChild); }
+  s.value = v || "";
+}
+function endEdit() {
+  editing = null;
+  $("cf").reset();
+  ["f-process", "f-roast"].forEach(i => { $(i + "-new").hidden = true; $(i + "-new").required = false; });
+  $("addsum").textContent = "Add a coffee";
+  $("save").textContent = "Save coffee";
+  $("cancel").hidden = true;
+  $("photohint").hidden = true;
+  $("addbox").open = false;
+}
+function startEdit(c) {
+  editing = c;
+  $("cf").reset();
+  $("f-name").value = c.name; $("f-roaster").value = c.roaster || ""; $("f-origin").value = c.origin || "";
+  $("f-blend").checked = !!c.is_blend;
+  setSel("f-process", c.process); setSel("f-roast", c.roast_level);
+  $("f-tags").value = (c.flavour_tags || []).join(", ");
+  $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || "";
+  $("addsum").textContent = "Edit coffee";
+  $("save").textContent = "Save changes";
+  $("cancel").hidden = false;
+  $("photohint").hidden = !c.photo_path;
+  $("addbox").open = true;
+  $("addbox").scrollIntoView({ behavior: "smooth" });
+}
+$("cancel").onclick = endEdit;
+
+let saving = false;
+$("cf").onsubmit = async e => {
+  e.preventDefault();
+  if (saving) return;
+  saving = true; $("save").disabled = true;
+  say("Saving...");
+  try {
+    let path = null;
+    const f = $("f-photo").files[0];
+    if (f) {
+      const blob = await shrink(f);
+      path = me.id + "/" + crypto.randomUUID() + ".jpg";
+      const up = await db.storage.from("bag-photos").upload(path, blob, { contentType: "image/jpeg" });
+      if (up.error) throw up.error;
+    }
+    const v = id => $(id).value.trim();
+    const row = {
+      name: v("f-name"), roaster: v("f-roaster") || null, origin: v("f-origin") || null,
+      is_blend: $("f-blend").checked, process: chosen("f-process") || null, roast_level: chosen("f-roast") || null,
+      flavour_tags: v("f-tags").split(",").map(t => t.trim().toLowerCase()).filter(Boolean),
+      notes: v("f-notes") || null, roast_date: v("f-rd") || null, open_date: v("f-od") || null
+    };
+    if (path) row.photo_path = path; else if (!editing) row.photo_path = null;
+    if (editing) {
+      const { data: done, error } = await db.from("coffees").update(row).eq("id", editing.id).select();
+      if (error) throw error;
+      if (!done.length) throw new Error("nothing was changed");
+      if (path && editing.photo_path) await db.storage.from("bag-photos").remove([editing.photo_path]);
+    } else {
+      const { error } = await db.from("coffees").insert(row);
+      if (error) throw error;
+    }
+    endEdit(); say("Saved."); load();
+  } catch (err) { say("Could not save: " + err.message); }
+  finally { saving = false; $("save").disabled = false; }
+};
+
+
+// ---------- Brews ----------
+const CORE = ["sour", "sweet", "bitter", "balance"];
+let cur = null, scores = {}, savingB = false, brewLoadId = 0;
+
+function route() {
+  if (!me) return;
+  const m = location.hash.match(/^#c=([0-9a-f-]+)$/);
+  $("listview").hidden = !!m; $("detail").hidden = !m;
+  if (m) openCoffee(m[1]); else load();
+}
+window.addEventListener("hashchange", route);
+
+function buildScores(c) {
+  scores = {};
+  const box = $("scorebox"); box.textContent = "";
+  [...CORE, ...(c.flavour_tags || []).filter(t => !CORE.includes(t))].forEach(a => {
+    const row = el("div", "sc"), val = el("span", "scv", "-");
+    const r = el("input"); r.type = "range"; r.min = 0; r.max = 10; r.step = 1; r.value = 5;
+    r.setAttribute("aria-label", a + ", score from 0 to 10");
+    const set = () => { scores[a] = +r.value; val.textContent = r.value; r.classList.add("on"); };
+    r.addEventListener("input", set); r.addEventListener("pointerdown", set);
+    const x = el("button", "lnk", "x"); x.type = "button"; x.setAttribute("aria-label", "Clear " + a);
+    x.onclick = () => { delete scores[a]; val.textContent = "-"; r.value = 5; r.classList.remove("on"); };
+    row.append(el("span", "", a), r, val, x);
+    box.appendChild(row);
+  });
+}
+
+async function openCoffee(id) {
+  const [{ data: c, error }, { data: dv }] = await Promise.all([
+    db.from("coffees").select("*").eq("id", id).single(),
+    db.from("brews").select("device")
+  ]);
+  if (error || !c) { say("Could not open this coffee."); location.hash = ""; return; }
+  cur = c;
+  applyPal($("dhead"), c.process);
+  $("dname").textContent = c.name;
+  $("dmeta").textContent = [c.roaster, c.origin, c.process, c.roast_level].filter(Boolean).join(", ") +
+    (c.roast_date ? ". Roasted " + c.roast_date : "") + (c.open_date ? ", opened " + c.open_date : "") + ".";
+  const t = $("dtags"); t.textContent = "";
+  (c.flavour_tags || []).forEach(x => t.appendChild(el("span", "chip", x)));
+  fill("b-device", window.LISTS.device || [], [...new Set((dv || []).map(b => b.device).filter(Boolean))]);
+  otherBox("b-device");
+  $("bf").reset(); $("b-device-new").hidden = true; $("b-device-new").required = false;
+  buildScores(c);
+  loadBrews();
+}
+
+function dayN(iso, when) {
+  const n = Math.floor((when - new Date(iso + "T00:00:00")) / 864e5);
+  return n >= 0 ? n : null;
+}
+
+function brewCard(b) {
+  const a = el("article", "bc"), when = new Date(b.brewed_at);
+  a.appendChild(el("h3", "", when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })));
+  const dr = cur.roast_date ? dayN(cur.roast_date, when) : null, dop = cur.open_date ? dayN(cur.open_date, when) : null;
+  const age = [dr !== null ? "day " + dr + " after roast" : null, dop !== null ? "day " + dop + " after opening" : null].filter(Boolean).join(", ");
+  if (age) a.appendChild(el("p", "age", age));
+  if (b.recipe) a.appendChild(el("p", "", b.recipe));
+  const set = [b.device, b.grind ? "grind " + b.grind : null, b.pressure_bar != null ? b.pressure_bar + " bar" : null].filter(Boolean).join(", ");
+  if (set && set !== b.recipe) a.appendChild(el("p", "set", set));
+  const nums = [b.dose_g != null ? b.dose_g + " g in" : null, b.yield_g != null ? b.yield_g + " g out" : null, b.time_s != null ? b.time_s + " s" : null,
+    b.dose_g && b.yield_g ? "ratio 1:" + (b.yield_g / b.dose_g).toFixed(1) : null].filter(Boolean).join(", ");
+  if (nums) a.appendChild(el("p", "", nums));
+  const sc = (b.brew_scores || []).slice().sort((x, y) => {
+    const i = k => CORE.includes(k) ? CORE.indexOf(k) : 99; return i(x.attribute) - i(y.attribute);
+  });
+  if (sc.length) { const t = el("div", "tags"); sc.forEach(s => t.appendChild(el("span", "chip", s.attribute + " " + s.score))); a.appendChild(t); }
+  if (b.notes) a.appendChild(el("p", "", b.notes));
+  const del = el("button", "lnk", "Delete"); del.type = "button";
+  del.onclick = async () => {
+    if (!confirm("Delete this brew? This cannot be undone.")) return;
+    const { data: gone, error } = await db.from("brews").delete().eq("id", b.id).select();
+    if (error) say("Could not delete: " + error.message); else if (!gone.length) say("Nothing was deleted."); else loadBrews();
+  };
+  a.appendChild(del);
+  return a;
+}
+
+async function loadBrews() {
+  const my = ++brewLoadId;
+  const { data, error } = await db.from("brews").select("*, brew_scores(attribute,score)").eq("coffee_id", cur.id).order("brewed_at", { ascending: false });
+  if (my !== brewLoadId) return;
+  if (error) { say("Could not load brews: " + error.message); return; }
+  const box = $("brews"); box.textContent = "";
+  if (!data.length) { box.appendChild(el("p", "hint", "No brews yet. Log the first one above.")); return; }
+  data.forEach(b => box.appendChild(brewCard(b)));
+}
+
+$("bf").onsubmit = async e => {
+  e.preventDefault();
+  if (savingB) return;
+  savingB = true; $("bsave").disabled = true;
+  say("Saving...");
+  try {
+    const num = id => { const v = $(id).value.trim(); return v === "" ? null : Number(v); };
+    const device = chosen("b-device") || null, grind = $("b-grind").value.trim() || null, pressure = num("b-pressure");
+    const auto = [device, grind ? "grind " + grind : null, pressure !== null ? pressure + " bar" : null].filter(Boolean).join(", ");
+    const row = {
+      coffee_id: cur.id, device, grind, pressure_bar: pressure, dose_g: num("b-dose"), yield_g: num("b-yield"), time_s: num("b-time"),
+      recipe: $("b-recipe").value.trim() || auto || null, notes: $("b-notes").value.trim() || null
+    };
+    const { data: b, error } = await db.from("brews").insert(row).select().single();
+    if (error) throw error;
+    const rows = Object.entries(scores).map(([attribute, score]) => ({ brew_id: b.id, attribute, score }));
+    if (rows.length) {
+      const r2 = await db.from("brew_scores").insert(rows);
+      if (r2.error) { await db.from("brews").delete().eq("id", b.id); throw r2.error; }
+    }
+    const keep = cur; openCoffee(keep.id);   // resets the form and reloads the list
+    say("Saved.");
+  } catch (err) { say("Could not save: " + err.message); }
+  finally { savingB = false; $("bsave").disabled = false; }
+};
+
+async function show(session) {
+  $("login").hidden = !!session;
+  $("app").hidden = !session;
+  me = session ? session.user : null;
+  if (!session) return;
+  $("who").textContent = "Signed in as " + session.user.email;
+  route();
+}
+$("login").onsubmit = async e => {
+  e.preventDefault();
+  say("Signing in...");
+  const { error } = await db.auth.signInWithPassword({ email: $("em").value.trim(), password: $("pw").value });
+  say(error ? error.message : "");
+};
+$("out").onclick = () => db.auth.signOut();
+// Run queries outside the callback so the auth client is not blocked.
+db.auth.onAuthStateChange((_event, session) => setTimeout(() => show(session), 0));
+</script>
 </body>
 </html>
