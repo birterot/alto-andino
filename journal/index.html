@@ -90,6 +90,9 @@ a.btn{display:inline-block;text-decoration:none}
       <label>Name<input id="f-name" required></label>
       <label>Roaster<input id="f-roaster"></label>
       <label>Origin<input id="f-origin" placeholder="Country, region"></label>
+      <label>Botanical variety<input id="f-variety" list="variety-list" placeholder="e.g. Gesha, Bourbon, Caturra" autocomplete="off"></label>
+      <datalist id="variety-list"><option value="Arabica"><option value="Robusta"><option value="Bourbon"><option value="Typica"><option value="Caturra"><option value="Catuai"><option value="Gesha"><option value="SL28"><option value="SL34"><option value="Pacamara"><option value="Heirloom"><option value="Sidra"><option value="Castillo"></datalist>
+      <p class="hint">Several varieties? Separate them with commas.</p>
       <label>Altitude in metres (from)<input id="f-alt-min" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="e.g. 1700"></label>
       <label>Altitude in metres (to, only if it is a range)<input id="f-alt-max" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="e.g. 1900"></label>
       <label class="chk"><input type="checkbox" id="f-blend"> Blend</label>
@@ -288,7 +291,7 @@ function card(c, photoUrl, nBrews, ratings, bags) {
   if (photoUrl) { const i = el("img"); i.src = photoUrl; i.alt = "Bag of " + c.name; i.loading = "lazy"; a.appendChild(i); }
   const b = el("div", "in");
   b.appendChild(el("h3", "", c.name));
-  const meta = [c.roaster, c.origin, altText(c), c.is_blend ? "Blend" : null, c.process, c.roast_level].filter(Boolean).join(", ");
+  const meta = [c.roaster, c.origin, c.variety, altText(c), c.is_blend ? "Blend" : null, c.process, c.roast_level].filter(Boolean).join(", ");
   if (meta) b.appendChild(el("p", "", meta));
   if (bags && bags.length > 1) b.appendChild(el("p", "age", "Bag " + bags.length + " of " + bags.length));
   if (c.flavour_tags && c.flavour_tags.length) {
@@ -377,7 +380,7 @@ function fillFilter(id, label, values) {
 
 function passCoffee(c) {
   const q = $("flt-q").value.trim().toLowerCase();
-  if (q && ![c.name, c.roaster, c.origin, ...(c.flavour_tags || [])].filter(Boolean).join(" ").toLowerCase().includes(q)) return false;
+  if (q && ![c.name, c.roaster, c.origin, c.variety, ...(c.flavour_tags || [])].filter(Boolean).join(" ").toLowerCase().includes(q)) return false;
   const p = $("flt-process").value, r = $("flt-roast").value, o = $("flt-open").value;
   if (p && c.process !== p) return false;
   if (r && c.roast_level !== r) return false;
@@ -428,7 +431,7 @@ function startEdit(c) {
   editing = c;
   $("cf").reset();
   $("f-name").value = c.name; $("f-roaster").value = c.roaster || ""; $("f-origin").value = c.origin || "";
-  $("f-alt-min").value = c.altitude_min_m ?? ""; $("f-alt-max").value = (c.altitude_max_m != null && c.altitude_max_m !== c.altitude_min_m) ? c.altitude_max_m : "";
+  $("f-variety").value = c.variety || ""; $("f-alt-min").value = c.altitude_min_m ?? ""; $("f-alt-max").value = (c.altitude_max_m != null && c.altitude_max_m !== c.altitude_min_m) ? c.altitude_max_m : "";
   $("f-blend").checked = !!c.is_blend;
   setSel("f-process", c.process); setSel("f-roast", c.roast_level);
   $("f-tags").value = (c.flavour_tags || []).join(", ");
@@ -474,7 +477,7 @@ $("cf").onsubmit = async e => {
     if (amax !== null && amax < amin) { const t = amin; amin = amax; amax = t; }
     if (amax === amin) amax = null;
     const row = {
-      altitude_min_m: amin, altitude_max_m: amax,
+      altitude_min_m: amin, altitude_max_m: amax, variety: v("f-variety") || null,
       name: v("f-name"), roaster: v("f-roaster") || null, origin: v("f-origin") || null,
       is_blend: $("f-blend").checked, process: chosen("f-process") || null, roast_level: chosen("f-roast") || null,
       flavour_tags: v("f-tags").split(",").map(t => t.trim().toLowerCase()).filter(Boolean),
@@ -603,7 +606,7 @@ async function openCoffee(id) {
   ["bflt-device", "bflt-recipe", "bflt-sort"].forEach(i => { $(i).value = ""; });
   applyPal($("dhead"), c.process);
   $("dname").textContent = c.name;
-  $("dmeta").textContent = [c.roaster, c.origin, altText(c), c.process, c.roast_level].filter(Boolean).join(", ") +
+  $("dmeta").textContent = [c.roaster, c.origin, c.variety, altText(c), c.process, c.roast_level].filter(Boolean).join(", ") +
     (c.roast_date ? ". Roasted " + c.roast_date : "") + (c.open_date ? ", opened " + c.open_date : "") + ".";
   const bx = $("dbuy"); bx.textContent = ""; const bl = buyLink(c); if (bl) bx.appendChild(bl);
   const t = $("dtags"); t.textContent = "";
