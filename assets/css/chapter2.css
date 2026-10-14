@@ -1,0 +1,48 @@
+/* Roasting and freshness pages. Colours are tokens so light and dark both work. */
+.roast,.fresh{
+  --f:light-dark(#EADFD2,#33281F);--s:light-dark(#7A5236,#C09670);--t:light-dark(#5A3A24,#E3C9AE);
+  --ca:light-dark(#4F6B55,#9DB8A1);--csw:light-dark(#8F6A2B,#D6AE6A);--cb:light-dark(#94512F,#D79A7A)}
+.fresh{--f:light-dark(#E4EAE0,#243026);--s:light-dark(#4F6B55,#9DB8A1);--t:light-dark(#34493A,#C5D6C7)}
+.mut{color:var(--mut)}
+small.mut{font-size:13px;font-weight:400}
+.keys{margin:0;padding:0;list-style:none;display:grid;gap:8px;max-width:62ch}
+.keys li{padding:10px 14px;border-left:3px solid var(--s);background:var(--card);border-radius:0 6px 6px 0;font-size:14px}
+.lab{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:28px;align-items:start;padding:20px;border:1px solid var(--line);border-top:3px solid var(--s);border-radius:10px;background:var(--card)}
+.chart svg{display:block;width:100%;height:auto}
+path.ca{stroke:var(--ca)} path.cs{stroke:var(--csw)} path.cb{stroke:var(--cb)}
+circle.cad{fill:var(--ca)} circle.csd{fill:var(--csw)} circle.cbd{fill:var(--cb)}
+.cat{fill:var(--ca)} .cst{fill:var(--csw)} .cbt{fill:var(--cb)}
+.g.ca{--c:var(--ca)} .g.cs{--c:var(--csw)} .g.cb{--c:var(--cb)}
+.g{margin-top:6px}
+.segc{display:block;height:14px;border-radius:2px;border:1px dashed var(--line)}
+.segc.on{background:var(--c);border:1px solid var(--c)}
+.sl{display:flex;justify-content:space-between;align-items:baseline;font-weight:600;margin-top:4px}
+.sl output{font-weight:400;color:var(--mut);font-size:14px}
+input[type=range]{width:100%;height:44px;margin:0;accent-color:var(--s);cursor:pointer}
+.ends{display:flex;justify-content:space-between;font-size:12px;color:var(--mut);margin:-8px 0 8px}
+.rpath .row{gap:12px}
+.rpath .row small{text-align:right}
+.rpath li.done::before{opacity:.9}
+.rpath li.now::after{box-shadow:0 0 0 4px var(--bg),0 0 0 6px var(--s)}
+.rpath li.now .row span{font-weight:700}
+.rpath li:not(.now):not(.done)::after{background:var(--bg);border:1.5px solid var(--s)}
+.pts{margin:0;padding-left:18px}
+.pts li{margin:2px 0}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.pcard{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:var(--card);font-size:14px}
+.pcard.hl{border-color:var(--s);background:var(--f);color:var(--t);box-shadow:0 0 0 1px var(--s)}
+.next{margin-top:48px}
+.next a{color:var(--accent)}
+/* freshness */
+.rules{counter-reset:r;list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.rules li{counter-increment:r;display:flex;gap:14px;align-items:flex-start;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:8px}
+.rules li::before{content:counter(r);flex:none;width:26px;height:26px;border-radius:50%;background:var(--f);color:var(--t);border:1px solid var(--s);display:grid;place-items:center;font-size:13px;font-weight:600}
+.rules.no li::before{content:"\00d7"}
+.rules li.warn{border-color:var(--cb)}
+.callout{padding:14px 18px;border-left:3px solid var(--s);background:var(--f);color:var(--t);border-radius:0 8px 8px 0;max-width:62ch}
+.calc{display:grid;gap:12px;padding:20px;border:1px solid var(--line);border-top:3px solid var(--s);border-radius:10px;background:var(--card);max-width:520px}
+.calc input[type=date]{font:inherit;padding:10px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--ink);min-height:44px;width:100%}
+.res{display:grid;gap:6px;font-size:15px}
+.res b{font-weight:600}
+@media (max-width:720px){.lab{grid-template-columns:1fr}}
+.legend a{color:var(--accent)}

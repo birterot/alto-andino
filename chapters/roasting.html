@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Coffee">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Roasting - Coffee atlas</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☕</text></svg>">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/chapter2.css">
+</head>
+<body>
+<main class="roast">
+<h1 id="ct"></h1>
+<p class="sub" id="cs"></p>
+<ul class="keys" id="keys"></ul>
+
+<h2>Roast lab</h2>
+<div class="lab">
+  <div class="labl">
+    <div id="chart" class="chart"></div>
+    <div id="gauges"></div>
+  </div>
+  <div class="labr">
+    <label class="sl" for="heat"><span>Heat</span><output id="heatout"></output></label>
+    <input type="range" id="heat" min="35" max="100" step="1" value="55">
+    <div class="ends"><span>Light</span><span>Dark</span></div>
+    <p class="mut" id="stageout"></p>
+    <label class="sl" for="time"><span>Time</span><output id="timeout"></output></label>
+    <input type="range" id="time" min="0" max="100" step="1" value="50">
+    <div class="ends"><span>Fast</span><span>Slow</span></div>
+    <p class="mut" id="timenote"></p>
+    <p class="legend">The curves are a sketch of the trend from the Atlas, not measured data. The Atlas does not say how time changes them, so only the heat slider moves the curves and the gauges.</p>
+  </div>
+</div>
+
+<h2>Stages of roasting</h2>
+<p class="legend">Tap a stage for details. The heat slider above shows where you are.</p>
+<ol class="path rpath" id="stages"></ol>
+
+<h2 id="qt"></h2>
+<p class="sub" id="qi"></p>
+<div class="pgrid" id="quench"></div>
+
+<h2>Types of coffee roasters</h2>
+<p class="legend">The time slider highlights the roasters that fit a fast or a slow roast.</p>
+<div class="pgrid" id="roasters"></div>
+
+<p class="next"><a href="freshness.html">Next: Freshness and storage →</a></p>
+</main>
+<script src="../data/roasting.js"></script>
+<script src="../assets/js/roasting.js"></script>
+<script src="../assets/js/nav.js" defer></script>
+</body>
+</html>
