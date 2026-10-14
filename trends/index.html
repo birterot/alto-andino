@@ -183,7 +183,7 @@ function fillCoffees(counts) {
   if (state.demo) { const o = el("option", "", "Example coffee (not your data)"); o.value = ""; sel.appendChild(o); sel.disabled = true; return; }
   sel.disabled = false;
   if (!state.coffees.length) { const o = el("option", "", "No coffees yet"); o.value = ""; sel.appendChild(o); return; }
-  state.coffees.forEach(c => { const o = el("option", "", c.name + " (" + (counts[c.id] || 0) + " brews)"); o.value = c.id; sel.appendChild(o); });
+  state.coffees.forEach(c => { const o = el("option", "", c.name + (c.roast_date ? ", roasted " + c.roast_date : "") + " (" + (counts[c.id] || 0) + " brews)"); o.value = c.id; sel.appendChild(o); });
 }
 
 async function pickCoffee(id) {

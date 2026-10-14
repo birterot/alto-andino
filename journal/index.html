@@ -53,6 +53,9 @@ details.add summary{cursor:pointer;font-weight:600}
 .pick{display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:12px;border-radius:10px;border:1px solid var(--line);border-top:3px solid var(--s);background:var(--f);color:var(--t);font:inherit;cursor:pointer}
 .pick small{display:block;margin-top:2px;opacity:.85}
 a.btn{display:inline-block;text-decoration:none}
+.older{margin-top:12px;font-size:13px}
+.older summary{cursor:pointer}
+.older .lnk{display:block;margin-top:6px;text-align:left}
 .rate{margin-top:10px}
 .rate .avg{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .rate .num{font-family:"Iowan Old Style",Palatino,Georgia,serif;font-size:28px;line-height:1;color:var(--accent)}
@@ -275,7 +278,9 @@ function buyLink(c) {
   return a;
 }
 
-function card(c, photoUrl, nBrews, ratings) {
+const gk = c => c.group_id || c.id;   // bags of one coffee share this key
+
+function card(c, photoUrl, nBrews, ratings, bags) {
   const a = el("article", "cc");
   applyPal(a, c.process);
   if (photoUrl) { const i = el("img"); i.src = photoUrl; i.alt = "Bag of " + c.name; i.loading = "lazy"; a.appendChild(i); }
@@ -283,6 +288,7 @@ function card(c, photoUrl, nBrews, ratings) {
   b.appendChild(el("h3", "", c.name));
   const meta = [c.roaster, c.origin, c.is_blend ? "Blend" : null, c.process, c.roast_level].filter(Boolean).join(", ");
   if (meta) b.appendChild(el("p", "", meta));
+  if (bags && bags.length > 1) b.appendChild(el("p", "age", "Bag " + bags.length + " of " + bags.length));
   if (c.flavour_tags && c.flavour_tags.length) {
     const t = el("div", "tags"); c.flavour_tags.forEach(x => t.appendChild(el("span", "chip", x))); b.appendChild(t);
   }
@@ -295,6 +301,7 @@ function card(c, photoUrl, nBrews, ratings) {
   bb.onclick = () => { location.hash = "c=" + c.id; };
   acts.appendChild(bb);
   const bl = buyLink(c); if (bl) acts.appendChild(bl);
+  const nb = el("button", "btn", "New bag"); nb.type = "button"; nb.onclick = () => startNewBag(c); acts.appendChild(nb);
   if (!c.open_date) {
     const o = el("button", "lnk", "Opened today"); o.type = "button";
     o.onclick = async () => {
@@ -305,7 +312,7 @@ function card(c, photoUrl, nBrews, ratings) {
   }
   const del = el("button", "lnk", "Delete"); del.type = "button";
   del.onclick = async () => {
-    if (!confirm("Delete \"" + c.name + "\" and everything logged for it? This cannot be undone.")) return;
+    if (!confirm("Delete this bag of \"" + c.name + "\" and every brew logged for it? This cannot be undone.")) return;
     const { data: gone, error } = await db.from("coffees").delete().eq("id", c.id).select();
     if (error) { say("Could not delete: " + error.message); return; }
     if (!gone.length) { say("Nothing was deleted."); return; }
@@ -320,6 +327,15 @@ function card(c, photoUrl, nBrews, ratings) {
   acts.appendChild(ed);
   acts.appendChild(del);
   b.appendChild(acts);
+  if (bags && bags.length > 1) {
+    const d = el("details", "older"); d.appendChild(el("summary", "", "Earlier bags (" + (bags.length - 1) + ")"));
+    bags.slice(1).forEach((o, i) => {
+      const r = el("button", "lnk", "Bag " + (bags.length - 1 - i) + (o.roast_date ? ", roasted " + o.roast_date : "") + ", " + (coffeeCounts[o.id] || 0) + " brews");
+      r.type = "button"; r.onclick = () => { location.hash = "c=" + o.id; };
+      d.appendChild(r);
+    });
+    b.appendChild(d);
+  }
   a.appendChild(b);
   return a;
 }
@@ -329,10 +345,10 @@ async function load() {
   const my = ++loadId;   // only the newest load may draw, so parallel loads cannot add cards twice
   const [{ data, error }, { data: bs }] = await Promise.all([
     db.from("coffees").select("*").order("created_at", { ascending: false }),
-    db.from("brews").select("coffee_id,rating,is_dialin").order("brewed_at")
+    db.from("brews").select("coffee_id,rating,is_dialin,brewed_at").order("brewed_at")
   ]);
   const counts = {}, rates = {};
-  (bs || []).forEach(b => { counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; (rates[b.coffee_id] = rates[b.coffee_id] || []).push({ r: b.rating, d: !!b.is_dialin }); });
+  (bs || []).forEach(b => { counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; (rates[b.coffee_id] = rates[b.coffee_id] || []).push({ r: b.rating, d: !!b.is_dialin, t: b.brewed_at }); });
   if (my !== loadId) return;
   if (error) { say("Could not load coffees: " + error.message); return; }
   const uniq = k => [...new Set(data.map(c => c[k]).filter(Boolean))];
@@ -368,24 +384,30 @@ function passCoffee(c) {
   return true;
 }
 
+function mergedRates(bags) {
+  return bags.flatMap(b => coffeeRates[b.id] || []).sort((x, y) => (x.t < y.t ? -1 : x.t > y.t ? 1 : 0));
+}
 function renderCoffees() {
   const list = $("list"); list.textContent = "";
   $("cfilters").hidden = coffeeData.length < 2;
   if (!coffeeData.length) { list.appendChild(el("p", "hint", "No coffees yet. Add your first one above.")); return; }
-  const shown = coffeeData.filter(passCoffee);
+  // one card per coffee, showing its newest bag; the data arrives newest first
+  const groups = new Map();
+  coffeeData.forEach(c => { const k = gk(c); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(c); });
+  const shown = [...groups.values()].filter(g => passCoffee(g[0]));
   if (!shown.length) { list.appendChild(el("p", "hint", "No coffees match these filters.")); return; }
-  shown.forEach(c => list.appendChild(card(c, coffeeUrls[c.photo_path], coffeeCounts[c.id] || 0, coffeeRates[c.id])));
+  shown.forEach(g => list.appendChild(card(g[0], coffeeUrls[g[0].photo_path], coffeeCounts[g[0].id] || 0, mergedRates(g), g)));
 }
 ["flt-q", "flt-process", "flt-roast", "flt-open"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderCoffees)));
 
-let editing = null;
+let editing = null, newBagOf = null;
 function setSel(id, v) {
   const s = $(id);
   if (v && ![...s.options].some(o => o.value === v)) { const o = el("option", "", v); o.value = v; s.insertBefore(o, s.lastElementChild); }
   s.value = v || "";
 }
 function endEdit() {
-  editing = null;
+  editing = null; newBagOf = null;
   $("cf").reset();
   ["f-process", "f-roast"].forEach(i => { $(i + "-new").hidden = true; $(i + "-new").required = false; });
   $("addsum").textContent = "Add a coffee";
@@ -408,6 +430,14 @@ function startEdit(c) {
   $("photohint").hidden = !c.photo_path;
   $("addbox").open = true;
   $("addbox").scrollIntoView({ behavior: "smooth" });
+}
+function startNewBag(c) {
+  startEdit(c);
+  editing = null; newBagOf = c;   // saves as a new row, in the same group
+  $("f-rd").value = ""; $("f-od").value = ""; $("f-notes").value = "";
+  $("addsum").textContent = "New bag of " + c.name;
+  $("save").textContent = "Save new bag";
+  $("photohint").hidden = true;
 }
 $("cancel").onclick = endEdit;
 
@@ -435,6 +465,7 @@ $("cf").onsubmit = async e => {
       notes: v("f-notes") || null, roast_date: v("f-rd") || null, open_date: v("f-od") || null, buy_url: v("f-url") ? safeUrl(v("f-url")) : null
     };
     if (path) row.photo_path = path; else if (!editing) row.photo_path = null;
+    if (newBagOf) row.group_id = gk(newBagOf);
     if (editing) {
       const { data: done, error } = await db.from("coffees").update(row).eq("id", editing.id).select();
       if (error) throw error;
@@ -475,12 +506,14 @@ function route() {
 
 // "Log a brew" in the menu: choose the coffee first. Opened coffees come first.
 async function pickList() {
-  const { data, error } = await db.from("coffees").select("id,name,roaster,process,open_date").order("created_at", { ascending: false });
+  const { data, error } = await db.from("coffees").select("id,name,roaster,process,open_date,group_id").order("created_at", { ascending: false });
   if (error) { say("Could not load coffees: " + error.message); return; }
   const box = $("picklist"); box.textContent = "";
+  const seen = new Set();
   if (!data.length) { box.appendChild(el("p", "hint", "No coffees yet. Add one in the Journal first.")); return; }
-  data.sort((a, b) => (a.open_date ? 0 : 1) - (b.open_date ? 0 : 1));
-  data.forEach(c => {
+  const newest = data.filter(c => { const k = gk(c); if (seen.has(k)) return false; seen.add(k); return true; });   // data is newest first
+  newest.sort((a, b) => (a.open_date ? 0 : 1) - (b.open_date ? 0 : 1));
+  newest.forEach(c => {
     const b = el("button", "pick"); b.type = "button"; applyPal(b, c.process);
     b.appendChild(el("strong", "", c.name));
     const sub = [c.roaster, c.process].filter(Boolean).join(", ");
