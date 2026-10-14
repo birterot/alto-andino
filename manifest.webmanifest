@@ -1,7 +1,7 @@
 {
-  "name": "Coffee atlas and journal",
+  "name": "Coffee",
   "short_name": "Coffee",
-  "start_url": "journal/index.html",
+  "start_url": "index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#2F2118",

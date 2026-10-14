@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Coffee">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Bean to cup</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☕</text></svg>">
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+.cups{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
+.mc{display:block;width:56px;text-align:center;font-size:11px;color:var(--mut)}
+.mc svg{display:block;width:100%;height:auto}
+</style>
+</head>
+<body>
+<main>
+<h1>Bean to cup</h1>
+<p class="sub">Our notes from The World Atlas of Coffee, one chapter at a time, from the bean to the cup.</p>
+<div class="chapters">
+  <a class="chcard" href="processing.html">
+    <h3>Processing</h3>
+    <p>From cherry to green coffee: washed, pulped natural, honey, natural and semi-washed.</p>
+    <div class="cups" id="cups"></div>
+  </a>
+  <a class="chcard" href="roasting.html">
+    <h3>Roasting</h3>
+    <p>Acidity, sweetness and bitterness as the roast gets darker, the five stages and the roaster types. With sliders to play with.</p>
+  </a>
+  <a class="chcard" href="freshness.html">
+    <h3>Freshness and storage</h3>
+    <p>Golden rules for buying and keeping coffee, and a quick check for your bag.</p>
+  </a>
+  <div class="chcard soon"><h3>Tasting and extraction</h3><p>Coming soon.</p></div>
+  <a class="chcard" href="devices.html">
+    <h3>Brewing devices</h3>
+    <p>French press, AeroPress, pour-over (with V60 and Chemex), moka pot and the Flair 58: ratio, grind, method and a calculator.</p>
+  </a>
+</div>
+</main>
+<script src="../assets/js/shared.js"></script>
+<script src="../data/processing.js"></script>
+<script>
+// One small cup per processing method, in the colours of the chapter.
+var row = document.getElementById("cups");
+window.CHAPTER.D.forEach(function (m) {
+  var s = document.createElement("span");
+  s.className = "mc";
+  ["f", "s", "t"].forEach(function (k) { s.style.setProperty("--" + k, "light-dark(" + m.c[k][0] + "," + m.c[k][1] + ")"); });
+  s.innerHTML = window.cupSvg().replace('class="steam"', "") + m.n;
+  row.appendChild(s);
+});
+</script>
+<script src="../assets/js/nav.js" defer></script>
+</body>
+</html>

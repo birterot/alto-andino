@@ -9,53 +9,55 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Coffee">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>Coffee atlas</title>
+<title>Coffee</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☕</text></svg>">
 <link rel="stylesheet" href="assets/css/base.css">
 <style>
-.cups{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
-.mc{display:block;width:56px;text-align:center;font-size:11px;color:var(--mut)}
-.mc svg{display:block;width:100%;height:auto}
+.hero{display:flex;align-items:center;gap:20px;margin:8px 0 32px;--f:light-dark(#EADFD2,#33281F);--s:light-dark(#7A5236,#C09670)}
+.hero svg{width:96px;height:auto;flex:none}
+.hero .sub{margin:6px 0 0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.tile{display:flex;flex-direction:column;gap:6px;padding:20px;min-height:132px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:inherit;text-decoration:none}
+.tile:hover{border-color:var(--ink)}
+.tile:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.tile svg{width:28px;height:28px;color:var(--accent)}
+.tile h2{margin:6px 0 0;font-size:19px}
+.tile p{margin:0;color:var(--mut);font-size:14px}
+.tile.main{grid-column:1/-1;flex-direction:row;align-items:center;gap:16px;min-height:0;background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tile.main svg,.tile.main p{color:var(--bg);opacity:.85}
+.tile.main h2{margin:0}
 </style>
 </head>
 <body>
 <main>
-<h1>Coffee atlas</h1>
-<p class="sub">Our notes from The World Atlas of Coffee, one chapter at a time. Every chapter ends in the same cup card: acidity, body, bitterness and sweetness.</p>
-<div class="chapters">
-  <a class="chcard" href="chapters/processing.html">
-    <h3>Processing</h3>
-    <p>From cherry to green coffee: washed, pulped natural, honey, natural and semi-washed.</p>
-    <div class="cups" id="cups"></div>
+<div class="hero">
+  <div id="cup" aria-hidden="true"></div>
+  <div>
+    <h1>Coffee</h1>
+    <p class="sub">Learn it, log it, taste the progress.</p>
+  </div>
+</div>
+<div class="tiles">
+  <a class="tile main" href="journal/index.html#log">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    <div><h2>Log a brew</h2><p>Pick a coffee, set the dial-in, rate the cup.</p></div>
   </a>
-  <a class="chcard" href="chapters/roasting.html">
-    <h3>Roasting</h3>
-    <p>Acidity, sweetness and bitterness as the roast gets darker, the five stages and the roaster types. With sliders to play with.</p>
+  <a class="tile" href="journal/index.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3V4z"/><path d="M5 17a3 3 0 013-3h11"/></svg>
+    <h2>Journal</h2><p>Our coffees, bags and brews.</p>
   </a>
-  <a class="chcard" href="chapters/freshness.html">
-    <h3>Freshness and storage</h3>
-    <p>Golden rules for buying and keeping coffee, and a quick check for your bag.</p>
+  <a class="tile" href="trends/index.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="M8 15l4-5 3 3 4-6"/></svg>
+    <h2>Trends</h2><p>How flavours change after roasting and opening.</p>
   </a>
-  <div class="chcard soon"><h3>Tasting and extraction</h3><p>Coming soon.</p></div>
-  <a class="chcard" href="chapters/devices.html">
-    <h3>Brewing devices</h3>
-    <p>French press, AeroPress, pour-over (with V60 and Chemex), moka pot and the Flair 58: ratio, grind, method and a calculator.</p>
+  <a class="tile" href="chapters/index.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20c-5 0-8-3.5-8-8 0-4.5 3-8 8-8s8 3.5 8 8c0 4.5-3 8-8 8z" transform="rotate(35 12 12)"/><path d="M12 4c-2 5 2 8 0 16"/></svg>
+    <h2>Bean to cup</h2><p>Notes from the book: processing, roasting, freshness and brewing devices.</p>
   </a>
 </div>
 </main>
 <script src="assets/js/shared.js"></script>
-<script src="data/processing.js"></script>
-<script>
-// One small cup per processing method, in the colours of the chapter.
-var row = document.getElementById("cups");
-window.CHAPTER.D.forEach(function (m) {
-  var s = document.createElement("span");
-  s.className = "mc";
-  ["f", "s", "t"].forEach(function (k) { s.style.setProperty("--" + k, "light-dark(" + m.c[k][0] + "," + m.c[k][1] + ")"); });
-  s.innerHTML = window.cupSvg().replace('class="steam"', "") + m.n;
-  row.appendChild(s);
-});
-</script>
+<script>document.getElementById("cup").innerHTML = window.cupSvg();</script>
 <script src="assets/js/nav.js" defer></script>
 </body>
 </html>
