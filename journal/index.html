@@ -42,11 +42,12 @@ details.add summary{cursor:pointer;font-weight:600}
 .bc .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .bc .chip{background:var(--bg);color:var(--ink);border-color:var(--line)}
 .bc .lnk{margin-top:10px}
+.pick{display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:10px;border-radius:12px;border:1px solid var(--s);background:var(--f);color:var(--t);font:inherit;cursor:pointer}
+.pick small{display:block;margin-top:2px;opacity:.85}
 </style>
 </head>
 <body>
 <main>
-<a class="back" href="../index.html">Coffee atlas</a>
 <h1>Coffee journal</h1>
 
 <form id="login" hidden>
@@ -117,12 +118,18 @@ details.add summary{cursor:pointer;font-weight:600}
     <h2>Brews</h2>
     <div id="brews"></div>
   </div>
+
+  <div id="pickview" hidden>
+    <h2>Which coffee?</h2>
+    <div id="picklist"></div>
+  </div>
 </section>
 <p id="msg" role="status"></p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script src="../assets/js/config.js"></script>
 <script src="../assets/js/lists.js"></script>
+<script src="../assets/js/nav.js" defer></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
 const $ = id => document.getElementById(id);
@@ -341,9 +348,28 @@ let cur = null, scores = {}, savingB = false, brewLoadId = 0;
 
 function route() {
   if (!me) return;
-  const m = location.hash.match(/^#c=([0-9a-f-]+)$/);
-  $("listview").hidden = !!m; $("detail").hidden = !m;
-  if (m) openCoffee(m[1]); else load();
+  const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)$/);
+  $("listview").hidden = !!m || hash === "#log";
+  $("detail").hidden = !m;
+  $("pickview").hidden = hash !== "#log";
+  if (m) openCoffee(m[1]); else if (hash === "#log") pickList(); else load();
+}
+
+// "Log a brew" in the menu: choose the coffee first. Opened coffees come first.
+async function pickList() {
+  const { data, error } = await db.from("coffees").select("id,name,roaster,process,open_date").order("created_at", { ascending: false });
+  if (error) { say("Could not load coffees: " + error.message); return; }
+  const box = $("picklist"); box.textContent = "";
+  if (!data.length) { box.appendChild(el("p", "hint", "No coffees yet. Add one in the Journal first.")); return; }
+  data.sort((a, b) => (a.open_date ? 0 : 1) - (b.open_date ? 0 : 1));
+  data.forEach(c => {
+    const b = el("button", "pick"); b.type = "button"; applyPal(b, c.process);
+    b.appendChild(el("strong", "", c.name));
+    const sub = [c.roaster, c.process].filter(Boolean).join(", ");
+    if (sub) b.appendChild(el("small", "", sub));
+    b.onclick = () => { location.hash = "c=" + c.id; };
+    box.appendChild(b);
+  });
 }
 window.addEventListener("hashchange", route);
 
