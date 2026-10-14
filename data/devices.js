@@ -1,5 +1,5 @@
 /* Chapter 4: brewing devices. Edit the text here, not in the HTML.
-   Device: id, name, kind, c (colours [light, dark]: fill f, line s, text t), tag, body,
+   Device: id, name, logAs (optional: the names the journal offers for this device, default = name), kind, c (colours [light, dark]: fill f, line s, text t), tag, body,
      ratios [[label, grams per litre, grind]] (default for all variants), water (default ml), time,
      variants [...], extra [[title, [[name, text]...]]] (shown for every variant).
    Variant: n (tab label), src (set it if the content is NOT from the Atlas), ratios, water, time,
@@ -49,6 +49,7 @@ window.DEVICES = {
     },
     {
       id: "pour", name: "Pour-over / filter", kind: "Percolation",
+      logAs: ["Hario V60", "Chemex", "Pour-over (other)"],   // names offered in the journal's device list
       c: { f: ["#E4EAE0", "#243026"], s: ["#4F6B55", "#9DB8A1"], t: ["#34493A", "#C5D6C7"] },
       tag: "Clean cup, many ways to adjust",
       body: "Filter brewers brew by percolation: water runs through the coffee bed and takes flavour with it. Pick the Atlas method, or a recipe for the V60 or the Chemex.",

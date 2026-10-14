@@ -178,6 +178,7 @@ a.btn{display:inline-block;text-decoration:none}
 <script src="../assets/js/config.js"></script>
 <script src="../assets/js/lists.js"></script>
 <script src="../assets/js/theme.js"></script>
+<script src="../data/devices.js"></script>
 <script src="../assets/js/nav.js" defer></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
@@ -190,6 +191,13 @@ const PAL = window.LISTS.process;
 const GREY = ["#F1EFE8","#2C2C2A","#5F5E5A","#B4B2A9","#444441","#D3D1C7"];
 
 // Dropdowns: the fixed list, plus everything used before, plus "Other (add new)".
+// Brewing devices: the ones from the atlas chapter (data/devices.js) plus any you added in lists.js.
+function deviceList() {
+  const out = [], add = x => { if (x && !out.includes(x)) out.push(x); };
+  ((window.DEVICES && window.DEVICES.D) || []).forEach(d => (d.logAs || [d.name]).forEach(add));
+  (window.LISTS.device || []).forEach(add);
+  return out;
+}
 function fill(id, base, used) {
   const s = $(id), keep = s.value;
   s.textContent = "";
@@ -611,7 +619,7 @@ async function openCoffee(id) {
   const bx = $("dbuy"); bx.textContent = ""; const bl = buyLink(c); if (bl) bx.appendChild(bl);
   const t = $("dtags"); t.textContent = "";
   (c.flavour_tags || []).forEach(x => t.appendChild(el("span", "chip", x)));
-  fill("b-device", window.LISTS.device || [], [...new Set((dv || []).map(b => b.device).filter(Boolean))]);
+  fill("b-device", deviceList(), [...new Set((dv || []).map(b => b.device).filter(Boolean))]);
   otherBox("b-device");
   buildScores(c);
   loadBrews();
