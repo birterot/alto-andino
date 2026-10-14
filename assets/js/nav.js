@@ -3,6 +3,7 @@
    To rename a section or add a menu entry, change the lists right below. */
 (function () {
   var root = new URL("../../", document.currentScript.src).href;
+  var BRAND = "Alto Andino";  // shown in the top bar of every page except the home page
   var BOOK = "Bean to cup";   // the name of the notes-from-the-book section
   var ITEMS = [               // key, label, link
     ["home", "Home", "index.html"],
@@ -27,7 +28,7 @@
     ".topnav{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:var(--bg,#fff);border-bottom:1px solid var(--line,#ccc)}" +
     ".topnav .bar{display:flex;align-items:center;gap:4px;max-width:900px;margin:0 auto;padding:6px 8px}" +
     ".topnav .iconbtn{width:44px;height:44px;display:grid;place-items:center;background:none;border:0;color:inherit;cursor:pointer;border-radius:8px;text-decoration:none;flex:none}" +
-    ".topnav .where{flex:1;font-family:'Iowan Old Style',Palatino,Georgia,serif;font-size:17px;color:var(--mut,#666);padding-left:4px}" +
+    ".topnav .where{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;font-family:'Iowan Old Style',Palatino,Georgia,serif;font-size:16px;letter-spacing:.14em;text-transform:uppercase;color:inherit;text-decoration:none}.topnav .where svg{color:var(--accent,#8A6A4A)}" +
     ".topnav nav{position:absolute;left:0;right:0;top:100%;background:var(--card,#fff);border-bottom:1px solid var(--line,#ccc);max-height:calc(100vh - 60px);overflow:auto}" +
     ".topnav nav[hidden]{display:none}" +
     ".topnav nav a{display:block;max-width:900px;margin:0 auto;padding:14px 20px;min-height:48px;color:inherit;text-decoration:none;font-size:17px}" +
@@ -42,7 +43,7 @@
   document.head.appendChild(css);
 
   var svg = function (d) { return '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + d + '"/></svg>'; };
-  var ICON_MENU = "M4 7h16M4 12h16M4 17h16", ICON_CLOSE = "M6 6l12 12M18 6L6 18", ICON_HOME = "M4 11l8-7 8 7M6 10v10h4v-6h4v6h4V10";
+  var ICON_MENU = "M4 7h16M4 12h16M4 17h16", ICON_CLOSE = "M6 6l12 12M18 6L6 18", ICON_HOME = "M4 11l8-7 8 7M6 10v10h4v-6h4v6h4V10", ICON_PEAKS = "M2 19l7-11 4 6 3-4 6 9z";
 
   var head = document.createElement("header");
   head.className = "topnav";
@@ -52,8 +53,9 @@
   btn.className = "iconbtn"; btn.type = "button";
   btn.setAttribute("aria-label", "Menu"); btn.setAttribute("aria-expanded", "false"); btn.setAttribute("aria-controls", "navmenu");
   btn.innerHTML = svg(ICON_MENU);
-  var where = document.createElement("span");
-  where.className = "where";
+  var where = document.createElement("a");
+  where.className = "where"; where.href = root + "index.html";
+  if (!isHome) { where.innerHTML = svg(ICON_PEAKS); where.appendChild(document.createTextNode(BRAND)); } else where.setAttribute("aria-hidden", "true");
   bar.appendChild(btn); bar.appendChild(where);
   if (!isHome) {
     var home = document.createElement("a");
@@ -89,12 +91,10 @@
     return "home";
   }
   function markActive() {
-    var now = current(), label = "";
+    var now = current();
     links.forEach(function (a) {
       if (a.dataset.k === now) { a.setAttribute("aria-current", "page"); } else a.removeAttribute("aria-current");
     });
-    if (now === "log") label = "Log a brew"; else if (now === "journal") label = "Journal"; else if (now === "trends") label = "Trends"; else if (inBook) label = BOOK;
-    where.textContent = label;
   }
   btn.addEventListener("click", function () { setOpen(menu.hidden); });
   menu.addEventListener("click", function (e) { if (e.target.closest("a")) setOpen(false); });

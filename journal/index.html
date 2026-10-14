@@ -31,29 +31,53 @@ details.add summary{cursor:pointer;font-weight:600}
 .cc h3{margin:0;font-size:18px}
 .cc p{margin:4px 0 0;font-size:14px}
 .cc .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.cc .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.cc .acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}
 .cc .lnk{border-color:var(--line);color:var(--t)}
-.cc .btn{font:inherit;cursor:pointer;border-radius:6px;padding:2px 10px;font-size:13px;border:1px solid var(--s);background:var(--s);color:var(--bg)}
+.btn{font:inherit;cursor:pointer;border-radius:8px;padding:8px 14px;min-height:40px;font-size:14px;border:1px solid var(--s,var(--ink));background:var(--s,var(--ink));color:var(--bg);display:inline-flex;align-items:center;gap:7px;text-decoration:none}
+.btn.ghost{background:none;color:var(--t,var(--ink))}
+.btn:focus-visible,.ib:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.btn svg{flex:none}
+.ibs{display:flex;gap:0;margin:-6px -8px 0 auto;flex:none}
+.hd{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.ib{width:40px;height:40px;display:grid;place-items:center;border-radius:8px;border:1px solid transparent;background:none;color:var(--t,var(--mut));opacity:.75;cursor:pointer}
+.ib:hover{opacity:1;border-color:var(--line)}
+.ib.del:hover{color:light-dark(#9A4A32,#E0A08A)}
+.ico{display:block;flex:none}
 #dhead{margin:8px 0 16px}
 #dhead h2{margin:0;font-size:24px}
 .nums{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;max-width:420px}
-.sc{display:grid;grid-template-columns:84px 1fr 22px 30px;gap:8px;align-items:center;margin-top:10px;max-width:420px}
-.sc input{padding:0;border:0;background:none;margin:0;max-width:none;accent-color:var(--ink)}
-.sc input:not(.on){opacity:.4}
-.sc .scv{text-align:right;font-weight:600}
-.sc .lnk{padding:0 6px}
+.sc{--ac:var(--accent);display:grid;grid-template-columns:auto 1fr auto auto;grid-template-areas:"i l v x" "r r r r";gap:0 10px;align-items:center;margin-top:16px;max-width:420px}
+.sc .si{grid-area:i;color:var(--ac)}
+.sc .slb{grid-area:l;font-weight:600;font-size:15px;text-transform:capitalize}
+.sc .scv{grid-area:v;min-width:34px;text-align:center;font-weight:600;font-size:14px;padding:1px 10px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
+.sc.on .scv{background:var(--ac);border-color:var(--ac);color:var(--card)}
+.sc .clr{grid-area:x;width:32px;height:32px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);background:none;color:var(--mut);cursor:pointer;padding:0}
+.sc .clr:hover{color:var(--ink);border-color:var(--ink)}
+.sc:not(.on) .clr{visibility:hidden}
+.sc input[type=range]{grid-area:r;-webkit-appearance:none;appearance:none;width:100%;max-width:none;height:32px;margin:2px 0 0;padding:0;border:0;background:none;cursor:pointer;--p:50%}
+.sc input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(to right,var(--ac) var(--p),var(--line) var(--p))}
+.sc input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--line)}
+.sc input[type=range]::-moz-range-progress{height:6px;border-radius:3px;background:var(--ac)}
+.sc input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-10px;border-radius:50%;background:var(--card);border:2px solid var(--ac);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.sc input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--card);border:2px solid var(--ac);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.sc:not(.on) input[type=range]::-webkit-slider-runnable-track{background:var(--line)}
+.sc:not(.on) input[type=range]::-moz-range-progress{background:transparent}
+.sc:not(.on) input[type=range]::-webkit-slider-thumb{border-color:var(--mut);border-style:dashed}
+.sc:not(.on) input[type=range]::-moz-range-thumb{border-color:var(--mut);border-style:dashed}
+.sc:not(.on) .si{color:var(--mut)}
 .bc{padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--card);margin-bottom:12px}
 .bc h3{margin:0;font-size:16px}
 .bc p{margin:4px 0 0;font-size:14px}
 .bc .age,.bc .set{color:var(--mut)}
 .bc .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .bc .chip{background:var(--bg);color:var(--ink);border-color:var(--line)}
-.bc .acts{display:flex;gap:8px;margin-top:10px}
+.bc .acts{display:flex;gap:8px;margin-top:6px}
+.bc .ib{color:var(--mut)}
+.bc .chip svg{color:var(--ac)}
 .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0 0 16px}
 .filters input,.filters select{margin:0;max-width:none}
 .pick{display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:12px;border-radius:10px;border:1px solid var(--line);border-top:3px solid var(--s);background:var(--f);color:var(--t);font:inherit;cursor:pointer}
 .pick small{display:block;margin-top:2px;opacity:.85}
-a.btn{display:inline-block;text-decoration:none}
 .older{margin-top:12px;font-size:13px}
 .older summary{cursor:pointer}
 .older .lnk{display:block;margin-top:6px;text-align:left}
@@ -285,10 +309,47 @@ function rateBlock(list) {
   if (dial) box.appendChild(el("p", "cnt", counted.length + " counted, " + dial + " dial-in"));
   return box;
 }
+// Small line icons. ico("edit", 18) returns an <svg>. Add an icon by adding a line of path data (24x24 grid).
+const ICONS = {
+  edit: "M4 20h4L19 9l-4-4L4 16v4z M13 7l4 4",
+  trash: "M4 7h16 M10 7V4h4v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6",
+  plus: "M12 5v14 M5 12h14",
+  check: "M4.5 12.5l5 5L19.5 7",
+  cup: "M5 9h11v5a5 5 0 01-5 5h-1a5 5 0 01-5-5V9z M16 10h2a2 2 0 010 4h-2 M8 3v3 M12 3v3",
+  bag: "M6 8h12l1 12H5L6 8z M9 8V6a3 3 0 016 0v2",
+  close: "M7 7l10 10 M17 7L7 17",
+  sour: "M4 12a8 8 0 1016 0 8 8 0 10-16 0 M12 4v16 M5.1 8l13.8 8 M5.1 16l13.8-8",
+  sweet: "M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z M12 12l8-4.5 M12 12v9 M12 12L4 7.5",
+  bitter: "M12 3c4 0 7 4 7 9s-3 9-7 9-7-4-7-9 3-9 7-9z M12 4c-3 4 3 12 0 16",
+  balance: "M12 4v16 M7 20h10 M5 7h14 M5 7l-3 6h6L5 7z M19 7l-3 6h6l-3-6z",
+  chocolaty: "M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z M5 9h14 M5 15h14 M12 3v18",
+  leaf: "M5 19C5 10 10 5 19 5c0 9-5 14-14 14z M5 19l8-8"
+};
+function ico(name, size) {
+  const NS = "http://www.w3.org/2000/svg", s = document.createElementNS(NS, "svg");
+  s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("width", size || 18); s.setAttribute("height", size || 18);
+  s.setAttribute("fill", "none"); s.setAttribute("stroke", "currentColor"); s.setAttribute("stroke-width", "1.7");
+  s.setAttribute("stroke-linecap", "round"); s.setAttribute("stroke-linejoin", "round"); s.setAttribute("aria-hidden", "true"); s.setAttribute("class", "ico");
+  const p = document.createElementNS(NS, "path"); p.setAttribute("d", ICONS[name] || ICONS.leaf); s.appendChild(p);
+  return s;
+}
+// Text button with an icon, and icon-only button (with a label for screen readers and a tooltip).
+function abtn(cls, label, icon, onclick) {
+  const b = el("button", cls); b.type = "button"; b.append(ico(icon, 17), el("span", "", label)); b.onclick = onclick; return b;
+}
+function ibtn(label, icon, onclick, cls) {
+  const b = el("button", "ib" + (cls ? " " + cls : "")); b.type = "button"; b.title = label; b.setAttribute("aria-label", label);
+  b.appendChild(ico(icon, 20)); b.onclick = onclick; return b;
+}
+// Colour and icon for a flavour score (core flavours get their own, your own flavour notes get a leaf).
+const ATTR = { sour: ["#6B7442", "#B4BC83"], sweet: ["#8F6A2B", "#D6AE6A"], bitter: ["#6F4E37", "#B58B63"], balance: ["#4F6572", "#9DB1BD"], chocolaty: ["#5A3A24", "#C09670"] };
+const attrIcon = a => ICONS[a] && ATTR[a] ? a : "leaf";
+const attrColor = a => ATTR[a] ? "light-dark(" + ATTR[a][0] + "," + ATTR[a][1] + ")" : "var(--accent)";
+
 function buyLink(c) {
   const u = c.buy_url ? safeUrl(c.buy_url) : null;
   if (!u) return null;
-  const a = el("a", "btn", "Buy again"); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer";
+  const a = el("a", "btn ghost"); a.append(ico("bag", 17), el("span", "", "Buy again")); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer";
   return a;
 }
 
@@ -299,7 +360,7 @@ function card(c, photoUrl, nBrews, ratings, bags) {
   applyPal(a, c.process);
   if (photoUrl) { const i = el("img"); i.src = photoUrl; i.alt = "Bag of " + c.name; i.loading = "lazy"; a.appendChild(i); }
   const b = el("div", "in");
-  b.appendChild(el("h3", "", c.name));
+  const hd = el("div", "hd"); hd.appendChild(el("h3", "", c.name)); b.appendChild(hd);
   const meta = [c.roaster, c.origin, c.variety, altText(c), c.is_blend ? "Blend" : null, c.process, c.roast_level].filter(Boolean).join(", ");
   if (meta) b.appendChild(el("p", "", meta));
   if (bags && bags.length > 1) b.appendChild(el("p", "age", "Bag " + bags.length + " of " + bags.length));
@@ -311,21 +372,16 @@ function card(c, photoUrl, nBrews, ratings, bags) {
   if (c.open_date) b.appendChild(el("p", "", "Opened " + ago(c.open_date) + " (" + c.open_date + ")"));
   if (c.notes) b.appendChild(el("p", "", c.notes));
   const acts = el("div", "acts");
-  const bb = el("button", "btn", nBrews ? "Brews (" + nBrews + ")" : "Log a brew"); bb.type = "button";
-  bb.onclick = () => { location.hash = "c=" + c.id; };
-  acts.appendChild(bb);
+  acts.appendChild(abtn("btn", nBrews ? "Brews (" + nBrews + ")" : "Log a brew", "cup", () => { location.hash = "c=" + c.id; }));
   const bl = buyLink(c); if (bl) acts.appendChild(bl);
-  const nb = el("button", "btn", "New bag"); nb.type = "button"; nb.onclick = () => startNewBag(c); acts.appendChild(nb);
+  acts.appendChild(abtn("btn ghost", "New bag", "plus", () => startNewBag(c)));
   if (!c.open_date) {
-    const o = el("button", "lnk", "Opened today"); o.type = "button";
-    o.onclick = async () => {
+    acts.appendChild(abtn("btn ghost", "Opened today", "check", async () => {
       const { error } = await db.from("coffees").update({ open_date: todayIso() }).eq("id", c.id);
       if (error) say("Could not update: " + error.message); else load();
-    };
-    acts.appendChild(o);
+    }));
   }
-  const del = el("button", "lnk", "Delete"); del.type = "button";
-  del.onclick = async () => {
+  const del = ibtn("Delete", "trash", async () => {
     if (!confirm("Delete this bag of \"" + c.name + "\" and every brew logged for it? This cannot be undone.")) return;
     const { data: gone, error } = await db.from("coffees").delete().eq("id", c.id).select();
     if (error) { say("Could not delete: " + error.message); return; }
@@ -335,11 +391,10 @@ function card(c, photoUrl, nBrews, ratings, bags) {
       if (r.error) say("Coffee deleted, but the photo could not be removed: " + r.error.message);
     }
     load();
-  };
-  const ed = el("button", "lnk", "Edit"); ed.type = "button";
-  ed.onclick = () => startEdit(c);
-  acts.appendChild(ed);
-  acts.appendChild(del);
+  }, "del");
+  const ed = ibtn("Edit", "edit", () => startEdit(c));
+  const grp = el("div", "ibs"); grp.append(ed, del);
+  hd.appendChild(grp);
   b.appendChild(acts);
   if (bags && bags.length > 1) {
     const d = el("details", "older"); d.appendChild(el("summary", "", "Earlier bags (" + (bags.length - 1) + ")"));
@@ -554,7 +609,7 @@ window.addEventListener("hashchange", route);
 
 function setScore(a, v) {
   const s = sliders[a]; if (!s) return;
-  s.r.value = v; s.val.textContent = v; s.r.classList.add("on"); scores[a] = v;
+  s.r.value = v; s.val.textContent = v; s.row.classList.add("on"); s.r.classList.add("on"); s.r.style.setProperty("--p", v * 10 + "%"); scores[a] = v;
 }
 function buildScores(c, extra) {
   scores = {}; sliders = {};
@@ -563,15 +618,17 @@ function buildScores(c, extra) {
   (extra || []).forEach(a => { if (!attrs.includes(a)) attrs.push(a); });
   attrs.forEach(a => {
     const row = el("div", "sc"), val = el("span", "scv", "-");
+    row.style.setProperty("--ac", attrColor(a));
     const r = el("input"); r.type = "range"; r.min = 0; r.max = 10; r.step = 1; r.value = 5;
     r.setAttribute("aria-label", a + ", score from 0 to 10");
-    const set = () => { scores[a] = +r.value; val.textContent = r.value; r.classList.add("on"); };
+    const set = () => { scores[a] = +r.value; val.textContent = r.value; row.classList.add("on"); r.classList.add("on"); r.style.setProperty("--p", r.value * 10 + "%"); };
     r.addEventListener("input", set); r.addEventListener("pointerdown", set);
-    const x = el("button", "lnk", "x"); x.type = "button"; x.setAttribute("aria-label", "Clear " + a);
-    x.onclick = () => { delete scores[a]; val.textContent = "-"; r.value = 5; r.classList.remove("on"); };
-    row.append(el("span", "", a), r, val, x);
+    const x = el("button", "clr"); x.type = "button"; x.title = "Clear " + a; x.setAttribute("aria-label", "Clear " + a); x.appendChild(ico("close", 14));
+    x.onclick = () => { delete scores[a]; val.textContent = "-"; r.value = 5; row.classList.remove("on"); r.classList.remove("on"); r.style.setProperty("--p", "50%"); };
+    const ic = ico(attrIcon(a), 22); ic.classList.add("si");
+    row.append(ic, el("span", "slb", a), val, x, r);
     box.appendChild(row);
-    sliders[a] = { r, val };
+    sliders[a] = { r, val, row };
   });
 }
 
@@ -633,7 +690,7 @@ function dayN(iso, when) {
 
 function brewCard(b) {
   const a = el("article", "bc"), when = new Date(b.brewed_at);
-  a.appendChild(el("h3", "", when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })));
+  const hd = el("div", "hd"); hd.appendChild(el("h3", "", when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }))); a.appendChild(hd);
   const dr = cur.roast_date ? dayN(cur.roast_date, when) : null, dop = cur.open_date ? dayN(cur.open_date, when) : null;
   const age = [dr !== null ? "day " + dr + " after roast" : null, dop !== null ? "day " + dop + " after opening" : null].filter(Boolean).join(", ");
   if (age) a.appendChild(el("p", "age", age));
@@ -648,19 +705,16 @@ function brewCard(b) {
   const sc = (b.brew_scores || []).slice().sort((x, y) => {
     const i = k => CORE.includes(k) ? CORE.indexOf(k) : 99; return i(x.attribute) - i(y.attribute);
   });
-  if (sc.length) { const t = el("div", "tags"); sc.forEach(s => t.appendChild(el("span", "chip", s.attribute + " " + s.score))); a.appendChild(t); }
+  if (sc.length) { const t = el("div", "tags"); sc.forEach(s => { const ch = el("span", "chip"); ch.style.setProperty("--ac", attrColor(s.attribute)); ch.append(ico(attrIcon(s.attribute), 14), document.createTextNode(s.attribute + " " + s.score)); t.appendChild(ch); }); a.appendChild(t); }
   if (b.notes) a.appendChild(el("p", "", b.notes));
-  const acts = el("div", "acts");
-  const ed = el("button", "lnk", "Edit"); ed.type = "button";
-  ed.onclick = () => startBrewEdit(b);
-  const del = el("button", "lnk", "Delete"); del.type = "button";
-  del.onclick = async () => {
+  const ed = ibtn("Edit", "edit", () => startBrewEdit(b));
+  const del = ibtn("Delete", "trash", async () => {
     if (!confirm("Delete this brew? This cannot be undone.")) return;
     const { data: gone, error } = await db.from("brews").delete().eq("id", b.id).select();
     if (error) say("Could not delete: " + error.message); else if (!gone.length) say("Nothing was deleted."); else loadBrews();
-  };
-  acts.append(ed, del);
-  a.appendChild(acts);
+  }, "del");
+  const grp = el("div", "ibs"); grp.append(ed, del);
+  hd.appendChild(grp);
   return a;
 }
 
