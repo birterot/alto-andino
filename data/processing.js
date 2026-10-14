@@ -3,15 +3,15 @@
    GN = gauge names, R = process steps in order ([name, used-by flags, shared-phase flag, text, per-method text]). */
 (function(){
 var D=[
-{id:"washed",c:{f:["#E1F5EE","#04342C"],s:["#0F6E56","#5DCAA5"],t:["#085041","#9FE1CB"]},n:"Washed",tag:"Clean and complex, with fewer defects",fl:["clean","complex","higher acidity"],bad:[],st:["Acidity: higher","Clean, complex"],
+{id:"washed",c:{f:["#E4EAE0","#243026"],s:["#4F6B55","#9DB8A1"],t:["#34493A","#C5D6C7"]},n:"Washed",tag:"Clean and complex, with fewer defects",fl:["clean","complex","higher acidity"],bad:[],st:["Acidity: higher","Clean, complex"],
 f:[["cost","Expensive"],["risk","Wastewater can be toxic"],["temp","Hotter means faster fermentation"]]},
-{id:"pulped",c:{f:["#EAF3DE","#173404"],s:["#3B6D11","#97C459"],t:["#27500A","#C0DD97"]},n:"Pulped natural",tag:"Sweeter, with fewer defects",fl:["sweeter","sugar stays"],bad:[],st:["Sweeter","Sugar stays"],
+{id:"pulped",c:{f:["#E9EBD9","#2B2E1B"],s:["#6B7442","#B4BC83"],t:["#4B5230","#D3D8B0"]},n:"Pulped natural",tag:"Sweeter, with fewer defects",fl:["sweeter","sugar stays"],bad:[],st:["Sweeter","Sugar stays"],
 f:[["pin","Mainly Brazil"],["water","Aims to use less water"]]},
-{id:"honey",c:{f:["#FAEEDA","#412402"],s:["#854F0B","#EF9F27"],t:["#633806","#FAC775"]},n:"Honey",tag:"Cup notes still to add",fl:[],bad:[],st:["To fill in",""],
+{id:"honey",c:{f:["#F0E6D0","#3A2E17"],s:["#8F6A2B","#D6AE6A"],t:["#6B4F1F","#EBD3A3"]},n:"Honey",tag:"Cup notes still to add",fl:[],bad:[],st:["To fill in",""],
 f:[["pin","Mostly Central America"],["water","Even less water than pulped natural"],["risk","Higher fermentation and defect risk"]]},
-{id:"natural",c:{f:["#FAECE7","#4A1B0C"],s:["#993C1D","#F0997B"],t:["#712B13","#F5C4B3"]},n:"Natural",tag:"Fruity, or funky when it goes wrong",fl:["blueberry","strawberry","tropical fruit"],bad:["barnyard","wild","fermented","manure"],st:["Fruity or funky","Berry, tropical"],
+{id:"natural",c:{f:["#EFDDD2","#3C261D"],s:["#94512F","#D79A7A"],t:["#6E3A22","#EDC4AE"]},n:"Natural",tag:"Fruity, or funky when it goes wrong",fl:["blueberry","strawberry","tropical fruit"],bad:["barnyard","wild","fermented","manure"],st:["Fruity or funky","Berry, tropical"],
 f:[["pin","Ethiopia, parts of Brazil"],["water","Chosen where water is scarce"],["time","Oldest method"],["risk","Prone to defects"],["cost","Often used for cheap bulk coffee"]]},
-{id:"semi",c:{f:["#E6F1FB","#042C53"],s:["#185FA5","#85B7EB"],t:["#0C447C","#B5D4F4"]},n:"Semi-washed",tag:"Low acidity, full body",fl:["wood","earthy","musty","spice","tobacco","leather"],bad:[],st:["Acidity: lower","More body"],
+{id:"semi",c:{f:["#E0E5E8","#232B31"],s:["#4F6572","#9DB1BD"],t:["#364651","#C4D2DB"]},n:"Semi-washed",tag:"Low acidity, full body",fl:["wood","earthy","musty","spice","tobacco","leather"],bad:[],st:["Acidity: lower","More body"],
 f:[["pin","Mostly Indonesia (Giling Basah)"]]}
 ];
 var G={washed:{a:[4,"higher"]},semi:{a:[2,"lower"],b:[4,"fuller"]}};

@@ -15,7 +15,7 @@
     ".topnav{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:var(--bg,#fff);border-bottom:1px solid var(--line,#ccc)}" +
     ".topnav .bar{display:flex;align-items:center;gap:8px;max-width:900px;margin:0 auto;padding:6px 8px}" +
     ".topnav .burger{width:44px;height:44px;display:grid;place-items:center;background:none;border:0;color:inherit;cursor:pointer;border-radius:8px}" +
-    ".topnav .brand{font-family:'Iowan Old Style',Palatino,Georgia,serif;font-weight:600;font-size:18px;color:inherit;text-decoration:none}" +
+    ".topnav .brand{font-family:'Iowan Old Style',Palatino,Georgia,serif;font-weight:500;font-size:19px;letter-spacing:.01em;color:inherit;text-decoration:none}" +
     ".topnav nav{position:absolute;left:0;right:0;top:100%;background:var(--card,#fff);border-bottom:1px solid var(--line,#ccc)}" +
     ".topnav nav[hidden]{display:none}" +
     ".topnav nav a{display:block;max-width:900px;margin:0 auto;padding:14px 20px;min-height:48px;color:inherit;text-decoration:none;font-size:17px}" +

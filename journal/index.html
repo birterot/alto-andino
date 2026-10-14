@@ -13,26 +13,26 @@
 <link rel="stylesheet" href="../assets/css/base.css">
 <style>
 label{display:block;margin-top:12px;font-size:14px;color:var(--mut)}
-input,select,textarea{display:block;width:100%;max-width:420px;margin-top:4px;padding:10px;font:inherit;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+input,select,textarea{display:block;width:100%;max-width:420px;margin-top:4px;padding:10px;font:inherit;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 label.chk{display:flex;align-items:center;gap:8px;color:var(--ink)}
 label.chk input{width:auto;margin:0}
-.go,.lnk{font:inherit;cursor:pointer;border-radius:8px}
+.go,.lnk{font:inherit;cursor:pointer;border-radius:6px}
 .go{margin-top:16px;padding:10px 20px;border:1px solid var(--ink);background:var(--ink);color:var(--bg)}
 .lnk{padding:2px 10px;border:1px solid var(--line);background:none;color:var(--mut);font-size:13px}
 .hint,#msg{color:var(--mut);font-size:14px}
 #msg{min-height:1.5em}
-details.add{margin:12px 0 24px;padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+details.add{margin:12px 0 24px;padding:12px 16px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
 details.add summary{cursor:pointer;font-weight:600}
-.clist{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
-.cc{background:var(--f);border:1px solid var(--s);color:var(--t);border-radius:14px;overflow:hidden}
+.clist{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.cc{background:var(--f);border:1px solid var(--line);border-top:3px solid var(--s);color:var(--t);border-radius:10px;overflow:hidden}
 .cc img{display:block;width:100%;height:180px;object-fit:cover}
-.cc .in{padding:14px 16px}
+.cc .in{padding:18px 20px}
 .cc h3{margin:0;font-size:18px}
 .cc p{margin:4px 0 0;font-size:14px}
 .cc .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .cc .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.cc .lnk{border-color:var(--s);color:var(--t)}
-.cc .btn{font:inherit;cursor:pointer;border-radius:8px;padding:2px 10px;font-size:13px;border:1px solid var(--s);background:var(--s);color:var(--bg)}
+.cc .lnk{border-color:var(--line);color:var(--t)}
+.cc .btn{font:inherit;cursor:pointer;border-radius:6px;padding:2px 10px;font-size:13px;border:1px solid var(--s);background:var(--s);color:var(--bg)}
 #dhead{margin:8px 0 16px}
 #dhead h2{margin:0;font-size:24px}
 .nums{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;max-width:420px}
@@ -41,7 +41,7 @@ details.add summary{cursor:pointer;font-weight:600}
 .sc input:not(.on){opacity:.4}
 .sc .scv{text-align:right;font-weight:600}
 .sc .lnk{padding:0 6px}
-.bc{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:12px}
+.bc{padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--card);margin-bottom:12px}
 .bc h3{margin:0;font-size:16px}
 .bc p{margin:4px 0 0;font-size:14px}
 .bc .age,.bc .set{color:var(--mut)}
@@ -50,8 +50,14 @@ details.add summary{cursor:pointer;font-weight:600}
 .bc .acts{display:flex;gap:8px;margin-top:10px}
 .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0 0 16px}
 .filters input,.filters select{margin:0;max-width:none}
-.pick{display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:10px;border-radius:12px;border:1px solid var(--s);background:var(--f);color:var(--t);font:inherit;cursor:pointer}
+.pick{display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:12px;border-radius:10px;border:1px solid var(--line);border-top:3px solid var(--s);background:var(--f);color:var(--t);font:inherit;cursor:pointer}
 .pick small{display:block;margin-top:2px;opacity:.85}
+a.btn{display:inline-block;text-decoration:none}
+.cc .rate{font-size:13px;color:var(--t);opacity:.9}
+.stars{display:flex;gap:2px;margin-top:6px}
+.stars button{width:40px;height:40px;padding:0;border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--line)}
+.stars button.on{color:var(--accent)}
+.starsum{margin:4px 0 0;font-size:15px;letter-spacing:2px;color:var(--accent)}
 </style>
 </head>
 <body>
@@ -88,6 +94,7 @@ details.add summary{cursor:pointer;font-weight:600}
       <label>Roast date<input type="date" id="f-rd"></label>
       <label>Open date<input type="date" id="f-od"></label>
       <label>Notes<textarea id="f-notes" rows="3"></textarea></label>
+      <label>Where to buy (link, optional)<input id="f-url" type="url" inputmode="url" placeholder="https://..."></label>
       <label>Bag photo<input type="file" id="f-photo" accept="image/*"></label>
       <p class="hint" id="photohint" hidden>Leave empty to keep the current photo.</p>
       <button class="go" id="save">Save coffee</button>
@@ -106,7 +113,7 @@ details.add summary{cursor:pointer;font-weight:600}
 
   <div id="detail" hidden>
     <a class="back" href="#">All coffees</a>
-    <section id="dhead" class="cc"><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div class="tags" id="dtags"></div></div></section>
+    <section id="dhead" class="cc"><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><p class="rate" id="drate"></p><div class="tags" id="dtags"></div><div class="acts" id="dbuy"></div></div></section>
     <details class="add" id="brewbox" open>
       <summary id="brewsum">Log a brew</summary>
       <form id="bf">
@@ -125,6 +132,8 @@ details.add summary{cursor:pointer;font-weight:600}
         </div>
         <p class="hint">Total time includes the pre-infusion, as your scale shows it.</p>
         <label>Recipe name (optional)<input id="b-recipe" placeholder="Left empty it becomes: device, grind, pressure"></label>
+        <label>Overall</label>
+        <div class="stars" id="stars" role="group" aria-label="Overall rating"></div>
         <label>How did it taste?</label>
         <p class="hint">Move a slider to score it from 0 to 10. Sliders you leave alone are not saved. The x clears one.</p>
         <div id="scorebox"></div>
@@ -152,6 +161,7 @@ details.add summary{cursor:pointer;font-weight:600}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script src="../assets/js/config.js"></script>
 <script src="../assets/js/lists.js"></script>
+<script src="../assets/js/theme.js"></script>
 <script src="../assets/js/nav.js" defer></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
@@ -222,7 +232,25 @@ function applyPal(a, process) {
   });
 }
 
-function card(c, photoUrl, nBrews) {
+function safeUrl(u) {
+  try { const x = new URL(u); return x.protocol === "https:" || x.protocol === "http:" ? x.href : null; } catch (e) { return null; }
+}
+// ratings: oldest first. Best brew, plus the average of the last three, so early dial-in brews do not drag the coffee down.
+function rateText(r) {
+  const v = (r || []).filter(x => x != null);
+  if (!v.length) return "";
+  const best = Math.max(...v), last = v.slice(-3), avg = last.reduce((a, b) => a + b, 0) / last.length;
+  const n = v.length + (v.length === 1 ? " rated brew" : " rated brews");
+  return v.length === 1 ? "\u2605 " + best + " (" + n + ")" : "\u2605 " + best + " best, " + avg.toFixed(1) + " average of the last " + last.length + " (" + n + ")";
+}
+function buyLink(c) {
+  const u = c.buy_url ? safeUrl(c.buy_url) : null;
+  if (!u) return null;
+  const a = el("a", "btn", "Buy again"); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer";
+  return a;
+}
+
+function card(c, photoUrl, nBrews, ratings) {
   const a = el("article", "cc");
   applyPal(a, c.process);
   if (photoUrl) { const i = el("img"); i.src = photoUrl; i.alt = "Bag of " + c.name; i.loading = "lazy"; a.appendChild(i); }
@@ -233,6 +261,7 @@ function card(c, photoUrl, nBrews) {
   if (c.flavour_tags && c.flavour_tags.length) {
     const t = el("div", "tags"); c.flavour_tags.forEach(x => t.appendChild(el("span", "chip", x))); b.appendChild(t);
   }
+  const rt = rateText(ratings); if (rt) b.appendChild(el("p", "rate", rt));
   if (c.roast_date) b.appendChild(el("p", "", "Roasted " + ago(c.roast_date) + " (" + c.roast_date + ")"));
   if (c.open_date) b.appendChild(el("p", "", "Opened " + ago(c.open_date) + " (" + c.open_date + ")"));
   if (c.notes) b.appendChild(el("p", "", c.notes));
@@ -240,6 +269,7 @@ function card(c, photoUrl, nBrews) {
   const bb = el("button", "btn", nBrews ? "Brews (" + nBrews + ")" : "Log a brew"); bb.type = "button";
   bb.onclick = () => { location.hash = "c=" + c.id; };
   acts.appendChild(bb);
+  const bl = buyLink(c); if (bl) acts.appendChild(bl);
   if (!c.open_date) {
     const o = el("button", "lnk", "Opened today"); o.type = "button";
     o.onclick = async () => {
@@ -269,15 +299,15 @@ function card(c, photoUrl, nBrews) {
   return a;
 }
 
-let loadId = 0, coffeeData = [], coffeeUrls = {}, coffeeCounts = {};
+let loadId = 0, coffeeData = [], coffeeUrls = {}, coffeeCounts = {}, coffeeRates = {};
 async function load() {
   const my = ++loadId;   // only the newest load may draw, so parallel loads cannot add cards twice
   const [{ data, error }, { data: bs }] = await Promise.all([
     db.from("coffees").select("*").order("created_at", { ascending: false }),
-    db.from("brews").select("coffee_id")
+    db.from("brews").select("coffee_id,rating").order("brewed_at")
   ]);
-  const counts = {};
-  (bs || []).forEach(b => { counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; });
+  const counts = {}, rates = {};
+  (bs || []).forEach(b => { counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; (rates[b.coffee_id] = rates[b.coffee_id] || []).push(b.rating); });
   if (my !== loadId) return;
   if (error) { say("Could not load coffees: " + error.message); return; }
   const uniq = k => [...new Set(data.map(c => c[k]).filter(Boolean))];
@@ -288,7 +318,7 @@ async function load() {
     (s || []).forEach(x => { if (x.signedUrl) urls[x.path] = x.signedUrl; });
     if (my !== loadId) return;
   }
-  coffeeData = data; coffeeUrls = urls; coffeeCounts = counts;
+  coffeeData = data; coffeeUrls = urls; coffeeCounts = counts; coffeeRates = rates;
   fillFilter("flt-process", "All processes", uniq("process").sort());
   fillFilter("flt-roast", "All roast levels", uniq("roast_level").sort());
   renderCoffees();
@@ -319,7 +349,7 @@ function renderCoffees() {
   if (!coffeeData.length) { list.appendChild(el("p", "hint", "No coffees yet. Add your first one above.")); return; }
   const shown = coffeeData.filter(passCoffee);
   if (!shown.length) { list.appendChild(el("p", "hint", "No coffees match these filters.")); return; }
-  shown.forEach(c => list.appendChild(card(c, coffeeUrls[c.photo_path], coffeeCounts[c.id] || 0)));
+  shown.forEach(c => list.appendChild(card(c, coffeeUrls[c.photo_path], coffeeCounts[c.id] || 0, coffeeRates[c.id])));
 }
 ["flt-q", "flt-process", "flt-roast", "flt-open"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderCoffees)));
 
@@ -346,7 +376,7 @@ function startEdit(c) {
   $("f-blend").checked = !!c.is_blend;
   setSel("f-process", c.process); setSel("f-roast", c.roast_level);
   $("f-tags").value = (c.flavour_tags || []).join(", ");
-  $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || "";
+  $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || ""; $("f-url").value = c.buy_url || "";
   $("addsum").textContent = "Edit coffee";
   $("save").textContent = "Save changes";
   $("cancel").hidden = false;
@@ -372,11 +402,12 @@ $("cf").onsubmit = async e => {
       if (up.error) throw up.error;
     }
     const v = id => $(id).value.trim();
+    if (v("f-url") && !safeUrl(v("f-url"))) throw new Error("the link must start with https:// or http://");
     const row = {
       name: v("f-name"), roaster: v("f-roaster") || null, origin: v("f-origin") || null,
       is_blend: $("f-blend").checked, process: chosen("f-process") || null, roast_level: chosen("f-roast") || null,
       flavour_tags: v("f-tags").split(",").map(t => t.trim().toLowerCase()).filter(Boolean),
-      notes: v("f-notes") || null, roast_date: v("f-rd") || null, open_date: v("f-od") || null
+      notes: v("f-notes") || null, roast_date: v("f-rd") || null, open_date: v("f-od") || null, buy_url: v("f-url") ? safeUrl(v("f-url")) : null
     };
     if (path) row.photo_path = path; else if (!editing) row.photo_path = null;
     if (editing) {
@@ -396,7 +427,17 @@ $("cf").onsubmit = async e => {
 
 // ---------- Brews ----------
 const CORE = ["sour", "sweet", "bitter", "balance"];
-let cur = null, scores = {}, sliders = {}, savingB = false, brewLoadId = 0, editingBrew = null, brewData = [];
+let cur = null, scores = {}, sliders = {}, savingB = false, brewLoadId = 0, editingBrew = null, brewData = [], rating = null;
+function setRating(v) {
+  rating = v;
+  $("stars").querySelectorAll("button").forEach((b, i) => { b.classList.toggle("on", rating !== null && i < rating); b.setAttribute("aria-pressed", String(rating === i + 1)); });
+}
+for (let i = 1; i <= 5; i++) {
+  const b = el("button", "", "\u2605"); b.type = "button"; b.setAttribute("aria-label", i + (i === 1 ? " star" : " stars"));
+  b.onclick = () => setRating(rating === i ? null : i);
+  $("stars").appendChild(b);
+}
+setRating(null);
 
 function route() {
   if (!me) return;
@@ -456,7 +497,7 @@ function settingsLabel(o) {
 
 function endBrewEdit() {
   editingBrew = null;
-  $("bf").reset();
+  $("bf").reset(); setRating(null);
   $("b-device-new").hidden = true; $("b-device-new").required = false;
   $("brewsum").textContent = "Log a brew"; $("bsave").textContent = "Save brew"; $("bcancel").hidden = true;
 }
@@ -464,6 +505,7 @@ function startBrewEdit(b) {
   editingBrew = b;
   $("bf").reset();
   buildScores(cur, (b.brew_scores || []).map(s => s.attribute));
+  setRating(b.rating == null ? null : b.rating);
   setSel("b-device", b.device);
   const put = (id, v) => { $(id).value = v == null ? "" : v; };
   put("b-grind", b.grind); put("b-pressure", b.pressure_bar); put("b-pibar", b.preinfusion_bar); put("b-pis", b.preinfusion_s);
@@ -489,6 +531,7 @@ async function openCoffee(id) {
   $("dname").textContent = c.name;
   $("dmeta").textContent = [c.roaster, c.origin, c.process, c.roast_level].filter(Boolean).join(", ") +
     (c.roast_date ? ". Roasted " + c.roast_date : "") + (c.open_date ? ", opened " + c.open_date : "") + ".";
+  const bx = $("dbuy"); bx.textContent = ""; const bl = buyLink(c); if (bl) bx.appendChild(bl);
   const t = $("dtags"); t.textContent = "";
   (c.flavour_tags || []).forEach(x => t.appendChild(el("span", "chip", x)));
   fill("b-device", window.LISTS.device || [], [...new Set((dv || []).map(b => b.device).filter(Boolean))]);
@@ -508,6 +551,7 @@ function brewCard(b) {
   const dr = cur.roast_date ? dayN(cur.roast_date, when) : null, dop = cur.open_date ? dayN(cur.open_date, when) : null;
   const age = [dr !== null ? "day " + dr + " after roast" : null, dop !== null ? "day " + dop + " after opening" : null].filter(Boolean).join(", ");
   if (age) a.appendChild(el("p", "age", age));
+  if (b.rating) { const s = el("p", "starsum", "\u2605".repeat(b.rating) + "\u2606".repeat(5 - b.rating)); s.setAttribute("aria-label", "Rated " + b.rating + " of 5"); a.appendChild(s); }
   if (b.recipe) a.appendChild(el("p", "", b.recipe));
   const set = settingsLabel(b);
   if (set && set !== b.recipe) a.appendChild(el("p", "set", set));
@@ -539,6 +583,7 @@ async function loadBrews() {
   if (my !== brewLoadId) return;
   if (error) { say("Could not load brews: " + error.message); return; }
   brewData = data;
+  $("drate").textContent = rateText(data.slice().reverse().map(b => b.rating));
   const uniq = k => [...new Set(data.map(b => b[k]).filter(Boolean))].sort();
   fillFilter("bflt-device", "All devices", uniq("device"));
   fillFilter("bflt-recipe", "All recipes", uniq("recipe"));
@@ -567,7 +612,7 @@ $("bf").onsubmit = async e => {
     const row = {
       device: chosen("b-device") || null, grind: $("b-grind").value.trim() || null, pressure_bar: num("b-pressure"),
       preinfusion_bar: num("b-pibar"), preinfusion_s: num("b-pis"),
-      dose_g: num("b-dose"), yield_g: num("b-yield"), time_s: num("b-time"), notes: $("b-notes").value.trim() || null
+      dose_g: num("b-dose"), yield_g: num("b-yield"), time_s: num("b-time"), notes: $("b-notes").value.trim() || null, rating
     };
     row.recipe = $("b-recipe").value.trim() || settingsLabel(row) || null;
     let id;
