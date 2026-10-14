@@ -6,16 +6,38 @@
 <title>Coffee atlas</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☕</text></svg>">
 <link rel="stylesheet" href="assets/css/base.css">
+<style>
+.cups{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
+.mc{display:block;width:56px;text-align:center;font-size:11px;color:var(--mut)}
+.mc svg{display:block;width:100%;height:auto}
+</style>
 </head>
 <body>
 <main>
 <h1>Coffee atlas</h1>
-<p class="sub">Our notes from The World Atlas of Coffee, one chapter at a time. Each chapter ends in the same cup card: acidity, body, bitterness and sweetness.</p>
+<p class="sub">Our notes from The World Atlas of Coffee, one chapter at a time. Every chapter ends in the same cup card: acidity, body, bitterness and sweetness.</p>
 <div class="chapters">
-<a class="chcard" href="chapters/processing.html"><h3>Processing</h3><p>Washed, natural, honey and more: the path from cherry to green coffee.</p></a>
-<div class="chcard soon"><h3>Roasting</h3><p>Coming soon.</p></div>
+  <a class="chcard" href="chapters/processing.html">
+    <h3>Processing</h3>
+    <p>From cherry to green coffee: washed, pulped natural, honey, natural and semi-washed.</p>
+    <div class="cups" id="cups"></div>
+  </a>
+  <div class="chcard soon"><h3>Roasting</h3><p>Coming soon.</p></div>
 </div>
 </main>
+<script src="assets/js/shared.js"></script>
+<script src="data/processing.js"></script>
+<script>
+// One small cup per processing method, in the colours of the chapter.
+var row = document.getElementById("cups");
+window.CHAPTER.D.forEach(function (m) {
+  var s = document.createElement("span");
+  s.className = "mc";
+  ["f", "s", "t"].forEach(function (k) { s.style.setProperty("--" + k, "light-dark(" + m.c[k][0] + "," + m.c[k][1] + ")"); });
+  s.innerHTML = window.cupSvg().replace('class="steam"', "") + m.n;
+  row.appendChild(s);
+});
+</script>
 <script src="assets/js/nav.js" defer></script>
 </body>
 </html>

@@ -41,7 +41,9 @@ details.add summary{cursor:pointer;font-weight:600}
 .bc .age,.bc .set{color:var(--mut)}
 .bc .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .bc .chip{background:var(--bg);color:var(--ink);border-color:var(--line)}
-.bc .lnk{margin-top:10px}
+.bc .acts{display:flex;gap:8px;margin-top:10px}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0 0 16px}
+.filters input,.filters select{margin:0;max-width:none}
 .pick{display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:10px;border-radius:12px;border:1px solid var(--s);background:var(--f);color:var(--t);font:inherit;cursor:pointer}
 .pick small{display:block;margin-top:2px;opacity:.85}
 </style>
@@ -87,6 +89,12 @@ details.add summary{cursor:pointer;font-weight:600}
     </form>
   </details>
   <h2>Our coffees</h2>
+  <div class="filters" id="cfilters" hidden>
+    <input id="flt-q" type="search" placeholder="Search name, roaster, origin" aria-label="Search coffees">
+    <select id="flt-process" aria-label="Filter by process"></select>
+    <select id="flt-roast" aria-label="Filter by roast level"></select>
+    <select id="flt-open" aria-label="Filter by opened"><option value="">Opened or not</option><option value="open">Opened</option><option value="closed">Not opened yet</option></select>
+  </div>
   <div id="list" class="clist"></div>
   </div>
 
@@ -94,7 +102,7 @@ details.add summary{cursor:pointer;font-weight:600}
     <a class="back" href="#">All coffees</a>
     <section id="dhead" class="cc"><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div class="tags" id="dtags"></div></div></section>
     <details class="add" id="brewbox" open>
-      <summary>Log a brew</summary>
+      <summary id="brewsum">Log a brew</summary>
       <form id="bf">
         <label>Device
           <select id="b-device"></select>
@@ -103,19 +111,28 @@ details.add summary{cursor:pointer;font-weight:600}
         <div class="nums">
           <label>Grind<input id="b-grind" placeholder="25 clicks"></label>
           <label>Pressure (bar)<input id="b-pressure" type="number" step="any" inputmode="decimal"></label>
+          <label>Pre-infusion (bar)<input id="b-pibar" type="number" step="any" inputmode="decimal"></label>
+          <label>Pre-infusion (s)<input id="b-pis" type="number" step="any" inputmode="decimal"></label>
           <label>Dose (g)<input id="b-dose" type="number" step="any" inputmode="decimal"></label>
           <label>Yield (g)<input id="b-yield" type="number" step="any" inputmode="decimal"></label>
-          <label>Time (s)<input id="b-time" type="number" step="any" inputmode="decimal"></label>
+          <label>Total time (s)<input id="b-time" type="number" step="any" inputmode="decimal"></label>
         </div>
+        <p class="hint">Total time includes the pre-infusion, as your scale shows it.</p>
         <label>Recipe name (optional)<input id="b-recipe" placeholder="Left empty it becomes: device, grind, pressure"></label>
         <label>How did it taste?</label>
         <p class="hint">Move a slider to score it from 0 to 10. Sliders you leave alone are not saved. The x clears one.</p>
         <div id="scorebox"></div>
         <label>Notes<textarea id="b-notes" rows="3"></textarea></label>
         <button class="go" id="bsave">Save brew</button>
+        <button class="lnk" id="bcancel" type="button" hidden>Cancel</button>
       </form>
     </details>
     <h2>Brews</h2>
+    <div class="filters" id="bfilters" hidden>
+      <select id="bflt-device" aria-label="Filter by device"></select>
+      <select id="bflt-recipe" aria-label="Filter by recipe"></select>
+      <select id="bflt-sort" aria-label="Sort"><option value="">Newest first</option><option value="old">Oldest first</option></select>
+    </div>
     <div id="brews"></div>
   </div>
 
@@ -246,7 +263,7 @@ function card(c, photoUrl, nBrews) {
   return a;
 }
 
-let loadId = 0;
+let loadId = 0, coffeeData = [], coffeeUrls = {}, coffeeCounts = {};
 async function load() {
   const my = ++loadId;   // only the newest load may draw, so parallel loads cannot add cards twice
   const [{ data, error }, { data: bs }] = await Promise.all([
@@ -265,11 +282,40 @@ async function load() {
     (s || []).forEach(x => { if (x.signedUrl) urls[x.path] = x.signedUrl; });
     if (my !== loadId) return;
   }
-  const list = $("list");
-  list.textContent = "";
-  if (!data.length) { list.appendChild(el("p", "hint", "No coffees yet. Add your first one above.")); return; }
-  data.forEach(c => list.appendChild(card(c, urls[c.photo_path], counts[c.id] || 0)));
+  coffeeData = data; coffeeUrls = urls; coffeeCounts = counts;
+  fillFilter("flt-process", "All processes", uniq("process").sort());
+  fillFilter("flt-roast", "All roast levels", uniq("roast_level").sort());
+  renderCoffees();
 }
+
+function fillFilter(id, label, values) {
+  const s = $(id), keep = s.value;
+  s.textContent = "";
+  const o = el("option", "", label); o.value = ""; s.appendChild(o);
+  values.forEach(v => { const x = el("option", "", v); x.value = v; s.appendChild(x); });
+  s.value = values.includes(keep) ? keep : "";
+}
+
+function passCoffee(c) {
+  const q = $("flt-q").value.trim().toLowerCase();
+  if (q && ![c.name, c.roaster, c.origin, ...(c.flavour_tags || [])].filter(Boolean).join(" ").toLowerCase().includes(q)) return false;
+  const p = $("flt-process").value, r = $("flt-roast").value, o = $("flt-open").value;
+  if (p && c.process !== p) return false;
+  if (r && c.roast_level !== r) return false;
+  if (o === "open" && !c.open_date) return false;
+  if (o === "closed" && c.open_date) return false;
+  return true;
+}
+
+function renderCoffees() {
+  const list = $("list"); list.textContent = "";
+  $("cfilters").hidden = coffeeData.length < 2;
+  if (!coffeeData.length) { list.appendChild(el("p", "hint", "No coffees yet. Add your first one above.")); return; }
+  const shown = coffeeData.filter(passCoffee);
+  if (!shown.length) { list.appendChild(el("p", "hint", "No coffees match these filters.")); return; }
+  shown.forEach(c => list.appendChild(card(c, coffeeUrls[c.photo_path], coffeeCounts[c.id] || 0)));
+}
+["flt-q", "flt-process", "flt-roast", "flt-open"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderCoffees)));
 
 let editing = null;
 function setSel(id, v) {
@@ -344,7 +390,7 @@ $("cf").onsubmit = async e => {
 
 // ---------- Brews ----------
 const CORE = ["sour", "sweet", "bitter", "balance"];
-let cur = null, scores = {}, savingB = false, brewLoadId = 0;
+let cur = null, scores = {}, sliders = {}, savingB = false, brewLoadId = 0, editingBrew = null, brewData = [];
 
 function route() {
   if (!me) return;
@@ -373,10 +419,16 @@ async function pickList() {
 }
 window.addEventListener("hashchange", route);
 
-function buildScores(c) {
-  scores = {};
+function setScore(a, v) {
+  const s = sliders[a]; if (!s) return;
+  s.r.value = v; s.val.textContent = v; s.r.classList.add("on"); scores[a] = v;
+}
+function buildScores(c, extra) {
+  scores = {}; sliders = {};
   const box = $("scorebox"); box.textContent = "";
-  [...CORE, ...(c.flavour_tags || []).filter(t => !CORE.includes(t))].forEach(a => {
+  const attrs = [...CORE, ...(c.flavour_tags || []).filter(t => !CORE.includes(t))];
+  (extra || []).forEach(a => { if (!attrs.includes(a)) attrs.push(a); });
+  attrs.forEach(a => {
     const row = el("div", "sc"), val = el("span", "scv", "-");
     const r = el("input"); r.type = "range"; r.min = 0; r.max = 10; r.step = 1; r.value = 5;
     r.setAttribute("aria-label", a + ", score from 0 to 10");
@@ -386,8 +438,37 @@ function buildScores(c) {
     x.onclick = () => { delete scores[a]; val.textContent = "-"; r.value = 5; r.classList.remove("on"); };
     row.append(el("span", "", a), r, val, x);
     box.appendChild(row);
+    sliders[a] = { r, val };
   });
 }
+
+// One text for the settings of a brew. It is also the automatic recipe name.
+function settingsLabel(o) {
+  const pre = [o.preinfusion_bar != null ? o.preinfusion_bar + " bar" : null, o.preinfusion_s != null ? o.preinfusion_s + " s" : null].filter(Boolean).join(" ");
+  return [o.device, o.grind ? "grind " + o.grind : null, o.pressure_bar != null ? o.pressure_bar + " bar" : null, pre ? "pre-infusion " + pre : null].filter(Boolean).join(", ");
+}
+
+function endBrewEdit() {
+  editingBrew = null;
+  $("bf").reset();
+  $("b-device-new").hidden = true; $("b-device-new").required = false;
+  $("brewsum").textContent = "Log a brew"; $("bsave").textContent = "Save brew"; $("bcancel").hidden = true;
+}
+function startBrewEdit(b) {
+  editingBrew = b;
+  $("bf").reset();
+  buildScores(cur, (b.brew_scores || []).map(s => s.attribute));
+  setSel("b-device", b.device);
+  const put = (id, v) => { $(id).value = v == null ? "" : v; };
+  put("b-grind", b.grind); put("b-pressure", b.pressure_bar); put("b-pibar", b.preinfusion_bar); put("b-pis", b.preinfusion_s);
+  put("b-dose", b.dose_g); put("b-yield", b.yield_g); put("b-time", b.time_s); put("b-notes", b.notes);
+  $("b-recipe").value = b.recipe && b.recipe !== settingsLabel(b) ? b.recipe : "";   // an automatic name is rebuilt on save
+  (b.brew_scores || []).forEach(s => setScore(s.attribute, s.score));
+  $("brewsum").textContent = "Edit brew"; $("bsave").textContent = "Save changes"; $("bcancel").hidden = false;
+  $("brewbox").open = true;
+  $("brewbox").scrollIntoView({ behavior: "smooth" });
+}
+$("bcancel").onclick = () => { endBrewEdit(); buildScores(cur); };
 
 async function openCoffee(id) {
   const [{ data: c, error }, { data: dv }] = await Promise.all([
@@ -396,6 +477,8 @@ async function openCoffee(id) {
   ]);
   if (error || !c) { say("Could not open this coffee."); location.hash = ""; return; }
   cur = c;
+  endBrewEdit();
+  ["bflt-device", "bflt-recipe", "bflt-sort"].forEach(i => { $(i).value = ""; });
   applyPal($("dhead"), c.process);
   $("dname").textContent = c.name;
   $("dmeta").textContent = [c.roaster, c.origin, c.process, c.roast_level].filter(Boolean).join(", ") +
@@ -404,7 +487,6 @@ async function openCoffee(id) {
   (c.flavour_tags || []).forEach(x => t.appendChild(el("span", "chip", x)));
   fill("b-device", window.LISTS.device || [], [...new Set((dv || []).map(b => b.device).filter(Boolean))]);
   otherBox("b-device");
-  $("bf").reset(); $("b-device-new").hidden = true; $("b-device-new").required = false;
   buildScores(c);
   loadBrews();
 }
@@ -421,9 +503,9 @@ function brewCard(b) {
   const age = [dr !== null ? "day " + dr + " after roast" : null, dop !== null ? "day " + dop + " after opening" : null].filter(Boolean).join(", ");
   if (age) a.appendChild(el("p", "age", age));
   if (b.recipe) a.appendChild(el("p", "", b.recipe));
-  const set = [b.device, b.grind ? "grind " + b.grind : null, b.pressure_bar != null ? b.pressure_bar + " bar" : null].filter(Boolean).join(", ");
+  const set = settingsLabel(b);
   if (set && set !== b.recipe) a.appendChild(el("p", "set", set));
-  const nums = [b.dose_g != null ? b.dose_g + " g in" : null, b.yield_g != null ? b.yield_g + " g out" : null, b.time_s != null ? b.time_s + " s" : null,
+  const nums = [b.dose_g != null ? b.dose_g + " g in" : null, b.yield_g != null ? b.yield_g + " g out" : null, b.time_s != null ? b.time_s + " s total" : null,
     b.dose_g && b.yield_g ? "ratio 1:" + (b.yield_g / b.dose_g).toFixed(1) : null].filter(Boolean).join(", ");
   if (nums) a.appendChild(el("p", "", nums));
   const sc = (b.brew_scores || []).slice().sort((x, y) => {
@@ -431,13 +513,17 @@ function brewCard(b) {
   });
   if (sc.length) { const t = el("div", "tags"); sc.forEach(s => t.appendChild(el("span", "chip", s.attribute + " " + s.score))); a.appendChild(t); }
   if (b.notes) a.appendChild(el("p", "", b.notes));
+  const acts = el("div", "acts");
+  const ed = el("button", "lnk", "Edit"); ed.type = "button";
+  ed.onclick = () => startBrewEdit(b);
   const del = el("button", "lnk", "Delete"); del.type = "button";
   del.onclick = async () => {
     if (!confirm("Delete this brew? This cannot be undone.")) return;
     const { data: gone, error } = await db.from("brews").delete().eq("id", b.id).select();
     if (error) say("Could not delete: " + error.message); else if (!gone.length) say("Nothing was deleted."); else loadBrews();
   };
-  a.appendChild(del);
+  acts.append(ed, del);
+  a.appendChild(acts);
   return a;
 }
 
@@ -446,10 +532,24 @@ async function loadBrews() {
   const { data, error } = await db.from("brews").select("*, brew_scores(attribute,score)").eq("coffee_id", cur.id).order("brewed_at", { ascending: false });
   if (my !== brewLoadId) return;
   if (error) { say("Could not load brews: " + error.message); return; }
-  const box = $("brews"); box.textContent = "";
-  if (!data.length) { box.appendChild(el("p", "hint", "No brews yet. Log the first one above.")); return; }
-  data.forEach(b => box.appendChild(brewCard(b)));
+  brewData = data;
+  const uniq = k => [...new Set(data.map(b => b[k]).filter(Boolean))].sort();
+  fillFilter("bflt-device", "All devices", uniq("device"));
+  fillFilter("bflt-recipe", "All recipes", uniq("recipe"));
+  renderBrews();
 }
+function renderBrews() {
+  const dv = $("bflt-device").value, rc = $("bflt-recipe").value;
+  let list = brewData.filter(b => (!dv || b.device === dv) && (!rc || b.recipe === rc));
+  if ($("bflt-sort").value === "old") list = list.slice().reverse();   // data arrives newest first
+  $("bfilters").hidden = brewData.length < 2;
+  const box = $("brews"); box.textContent = "";
+  if (!brewData.length) { box.appendChild(el("p", "hint", "No brews yet. Log the first one above.")); return; }
+  if (!list.length) { box.appendChild(el("p", "hint", "No brews match these filters.")); return; }
+  if (list.length !== brewData.length) box.appendChild(el("p", "hint", "Showing " + list.length + " of " + brewData.length + " brews."));
+  list.forEach(b => box.appendChild(brewCard(b)));
+}
+["bflt-device", "bflt-recipe", "bflt-sort"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderBrews)));
 
 $("bf").onsubmit = async e => {
   e.preventDefault();
@@ -458,20 +558,31 @@ $("bf").onsubmit = async e => {
   say("Saving...");
   try {
     const num = id => { const v = $(id).value.trim(); return v === "" ? null : Number(v); };
-    const device = chosen("b-device") || null, grind = $("b-grind").value.trim() || null, pressure = num("b-pressure");
-    const auto = [device, grind ? "grind " + grind : null, pressure !== null ? pressure + " bar" : null].filter(Boolean).join(", ");
     const row = {
-      coffee_id: cur.id, device, grind, pressure_bar: pressure, dose_g: num("b-dose"), yield_g: num("b-yield"), time_s: num("b-time"),
-      recipe: $("b-recipe").value.trim() || auto || null, notes: $("b-notes").value.trim() || null
+      device: chosen("b-device") || null, grind: $("b-grind").value.trim() || null, pressure_bar: num("b-pressure"),
+      preinfusion_bar: num("b-pibar"), preinfusion_s: num("b-pis"),
+      dose_g: num("b-dose"), yield_g: num("b-yield"), time_s: num("b-time"), notes: $("b-notes").value.trim() || null
     };
-    const { data: b, error } = await db.from("brews").insert(row).select().single();
-    if (error) throw error;
-    const rows = Object.entries(scores).map(([attribute, score]) => ({ brew_id: b.id, attribute, score }));
+    row.recipe = $("b-recipe").value.trim() || settingsLabel(row) || null;
+    let id;
+    if (editingBrew) {
+      const { data: done, error } = await db.from("brews").update(row).eq("id", editingBrew.id).select();
+      if (error) throw error;
+      if (!done.length) throw new Error("nothing was changed");
+      id = editingBrew.id;
+      const d = await db.from("brew_scores").delete().eq("brew_id", id);
+      if (d.error) throw d.error;
+    } else {
+      const { data: b, error } = await db.from("brews").insert({ ...row, coffee_id: cur.id }).select().single();
+      if (error) throw error;
+      id = b.id;
+    }
+    const rows = Object.entries(scores).map(([attribute, score]) => ({ brew_id: id, attribute, score }));
     if (rows.length) {
       const r2 = await db.from("brew_scores").insert(rows);
-      if (r2.error) { await db.from("brews").delete().eq("id", b.id); throw r2.error; }
+      if (r2.error) { if (!editingBrew) await db.from("brews").delete().eq("id", id); throw r2.error; }
     }
-    const keep = cur; openCoffee(keep.id);   // resets the form and reloads the list
+    openCoffee(cur.id);   // resets the form and reloads the list
     say("Saved.");
   } catch (err) { say("Could not save: " + err.message); }
   finally { savingB = false; $("bsave").disabled = false; }
