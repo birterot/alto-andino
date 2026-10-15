@@ -12,6 +12,7 @@
 <title>Coffee journal</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect width=%2224%22 height=%2224%22 rx=%225%22 fill=%22%232F2118%22/><path d=%22M2.5 18L12 3l9.5 15 M7.6 12.8l2.4 1.8 2-1.8 2 1.8 2.4-1.8%22 fill=%22none%22 stroke=%22%23EFE6D8%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
 <link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/calc.css">
 <style>
 label{display:block;margin-top:12px;font-size:14px;color:var(--mut)}
 input,textarea{display:block;width:100%;max-width:420px;margin-top:4px;padding:10px 12px;font:inherit;border-radius:10px;border:1px solid var(--line);background-color:var(--card);color:var(--ink)}
@@ -59,17 +60,50 @@ details.add summary{cursor:pointer;font-weight:600}
 .sc .clr{grid-area:x;width:32px;height:32px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);background:none;color:var(--mut);cursor:pointer;padding:0}
 .sc .clr:hover{color:var(--ink);border-color:var(--ink)}
 .sc:not(.on) .clr{visibility:hidden}
+.sc input[type=range]{--a:50%;--b:50%}
 .sc input[type=range]{grid-area:r;-webkit-appearance:none;appearance:none;width:100%;max-width:none;height:32px;margin:2px 0 0;padding:0;border:0;background:none;cursor:pointer;--p:50%}
-.sc input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(to right,var(--ac) var(--p),var(--line) var(--p))}
-.sc input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--line)}
-.sc input[type=range]::-moz-range-progress{height:6px;border-radius:3px;background:var(--ac)}
+.sc input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(to right,var(--line) var(--a),var(--ac) var(--a),var(--ac) var(--b),var(--line) var(--b))}
+.sc input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:linear-gradient(to right,var(--line) var(--a),var(--ac) var(--a),var(--ac) var(--b),var(--line) var(--b))}
 .sc input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-10px;border-radius:50%;background:var(--card);border:2px solid var(--ac);box-shadow:0 1px 3px rgba(0,0,0,.18)}
 .sc input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--card);border:2px solid var(--ac);box-shadow:0 1px 3px rgba(0,0,0,.18)}
 .sc:not(.on) input[type=range]::-webkit-slider-runnable-track{background:var(--line)}
-.sc:not(.on) input[type=range]::-moz-range-progress{background:transparent}
+.sc:not(.on) input[type=range]::-moz-range-track{background:var(--line)}
 .sc:not(.on) input[type=range]::-webkit-slider-thumb{border-color:var(--mut);border-style:dashed}
 .sc:not(.on) input[type=range]::-moz-range-thumb{border-color:var(--mut);border-style:dashed}
 .sc:not(.on) .si{color:var(--mut)}
+.nt{--ac:var(--accent);display:grid;grid-template-columns:auto 1fr auto;gap:0 10px;align-items:center;margin-top:14px;max-width:420px}
+.nt .si{color:var(--mut)}.nt.on .si{color:var(--ac)}
+.nt .slb{font-weight:600;font-size:15px;text-transform:capitalize}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--card)}
+.seg button{font:inherit;font-size:13px;padding:6px 12px;min-height:36px;border:0;background:none;color:var(--mut);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--ac);color:var(--card)}
+.addnote{display:flex;gap:8px;max-width:420px;margin-top:14px}
+.addnote input{margin:0;flex:1;border-radius:999px;padding:10px 16px}
+.addnote .btn{min-height:44px}
+h3.sh{font-size:16px;margin:26px 0 2px}
+label.off{opacity:.45}
+[hidden]{display:none!important}
+.nums>label{min-width:0}.nums input,.nums select{max-width:none}
+input:disabled{background:var(--bg);cursor:not-allowed}
+.calc input{margin:0}.calc .fld input,.calc .ratio input{max-width:none}.calc .kgrid input{margin-top:4px}.calc label{margin-top:0}.calc .fl{margin-top:4px}
+details.calcbox{max-width:420px}
+details.calcbox .go{margin-top:12px}
+.dvrow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px}
+.dvrow button,.modes button{font:inherit;font-size:14px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.dvrow button.on,.modes button.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.modes{display:flex;gap:8px;margin:8px 0 4px}
+.sfor{border:0;padding:0;margin:12px 0 0}
+.sfor legend{padding:0;font-size:14px;color:var(--mut)}
+.sfor label.chk{display:inline-flex;margin:6px 16px 0 0}
+.curve{max-width:420px;margin-top:12px;color:var(--mut)}
+.curve svg{display:block;width:100%;height:auto;color:var(--mut)}
+.curve .ln{stroke:var(--accent)}
+.prow{display:grid;grid-template-columns:auto 1fr 74px auto;gap:8px;align-items:center;margin-top:10px;max-width:420px}
+.prow input[type=range]{margin:0}
+.prow input[type=number]{margin:0;padding:8px}
+.prow output{font-size:13px;color:var(--ink);min-width:50px}
+.bc .curve{margin-top:8px}
 .bc{padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--card);margin-bottom:12px}
 .bc h3{margin:0;font-size:16px}
 .bc p{margin:4px 0 0;font-size:14px}
@@ -111,7 +145,13 @@ details.add summary{cursor:pointer;font-weight:600}
 </form>
 
 <section id="app" hidden>
+  <div id="addview" hidden>
+    <a class="back" href="#log">Log a brew</a>
+    <h2>New coffee</h2>
+    <div id="addhost"></div>
+  </div>
   <div id="listview">
+  <div id="listhost">
   <details class="add" id="addbox">
     <summary id="addsum">Add a coffee</summary>
     <form id="cf">
@@ -134,6 +174,8 @@ details.add summary{cursor:pointer;font-weight:600}
         <select id="f-roast"></select>
         <input id="f-roast-new" placeholder="Name of the new roast level" hidden>
       </label>
+      <fieldset class="sfor" id="f-sfor"><legend>Suitable for</legend></fieldset>
+      <p class="hint">How you would brew it. The log a brew page suggests coffees by this.</p>
       <label>Flavour notes<input id="f-tags" placeholder="chocolaty, nutty, red fruit"></label>
       <p class="hint">Separate with commas. Sour, sweet, bitter and balance will always be available when logging a brew.</p>
       <label>Roast date<input type="date" id="f-rd"></label>
@@ -146,6 +188,7 @@ details.add summary{cursor:pointer;font-weight:600}
       <button class="lnk" id="cancel" type="button" hidden>Cancel</button>
     </form>
   </details>
+  </div>
   <h2>Our coffees</h2>
   <div class="filters" id="cfilters" hidden>
     <input id="flt-q" type="search" placeholder="Search name, roaster, origin" aria-label="Search coffees">
@@ -166,23 +209,54 @@ details.add summary{cursor:pointer;font-weight:600}
           <select id="b-device"></select>
           <input id="b-device-new" placeholder="Name of the new device" hidden>
         </label>
+        <details class="add calcbox" id="calcbox">
+          <summary>Plan with the calculator</summary>
+          <div class="calc"><div id="calc"></div></div>
+          <button type="button" class="go" id="usecalc">Use these numbers</button>
+        </details>
+        <h3 class="sh">Grind</h3>
         <div class="nums">
-          <label>Grind<input id="b-grind" placeholder="25 clicks"></label>
-          <label>Pressure (bar)<input id="b-pressure" type="number" step="any" inputmode="decimal"></label>
-          <label>Pre-infusion (bar)<input id="b-pibar" type="number" step="any" inputmode="decimal"></label>
-          <label>Pre-infusion (s)<input id="b-pis" type="number" step="any" inputmode="decimal"></label>
+          <label>Grinder<select id="b-grinder"></select></label>
+          <label>Setting<input id="b-grind" inputmode="decimal" placeholder="25" autocomplete="off"></label>
+        </div>
+        <label>Feel<input id="b-feel" list="feel-list" placeholder="fine, medium..." autocomplete="off"></label>
+        <datalist id="feel-list"></datalist>
+        <p class="hint" id="feelhint">The feel word is suggested from the setting. Change it if you like.</p>
+        <h3 class="sh">Recipe</h3>
+        <div class="nums">
           <label>Dose (g)<input id="b-dose" type="number" step="any" inputmode="decimal"></label>
+          <label id="wlab">Water (g)<input id="b-water" type="number" step="any" inputmode="decimal"></label>
           <label>Yield (g)<input id="b-yield" type="number" step="any" inputmode="decimal"></label>
+          <label>Water temperature (&deg;C)<input id="b-temp" type="number" step="any" inputmode="decimal"></label>
           <label>Total time (s)<input id="b-time" type="number" step="any" inputmode="decimal"></label>
         </div>
         <p class="hint">Total time includes the pre-infusion, as your scale shows it.</p>
+        <div id="espbox">
+        <h3 class="sh">Pressure</h3>
+        <div class="nums">
+          <label>Pre-infusion (bar)<input id="b-pibar" type="number" step="any" inputmode="decimal"></label>
+          <label>Pre-infusion (s)<input id="b-pis" type="number" step="any" inputmode="decimal"></label>
+          <label>Pressure (bar)<input id="b-pressure" type="number" step="any" inputmode="decimal"></label>
+        </div>
+        <div class="curve" id="curve" hidden></div>
+        <details class="add calcbox" id="profbox">
+          <summary>Pressure profile with several stages</summary>
+          <p class="hint">After the pre-infusion. Each stage has a pressure and how long it lasts. With stages, the single pressure above is not used.</p>
+          <div id="profrows"></div>
+          <button type="button" class="btn ghost" id="profadd"><span>Add stage</span></button>
+        </details>
+        </div>
         <label>Recipe name (optional)<input id="b-recipe" placeholder="Left empty it becomes: device, grind, pressure"></label>
         <label>Overall</label>
         <div class="stars" id="stars" role="group" aria-label="Overall rating"></div>
         <label class="chk"><input type="checkbox" id="b-dialin"> Dial-in brew (kept in the history, not counted in the coffee's rating)</label>
-        <label>How did it taste?</label>
-        <p class="hint">Move a slider to score it from 0 to 10. Sliders you leave alone are not saved. The x clears one.</p>
+        <h3 class="sh">Taste</h3>
+        <p class="hint">0 is just right, minus is too little, plus is too much. Sliders you leave alone are not saved. The x clears one.</p>
         <div id="scorebox"></div>
+        <h3 class="sh">Tasting notes</h3>
+        <p class="hint">Did you find it? None, a little, or clearly there. Notes you leave alone are not saved.</p>
+        <div id="notebox"></div>
+        <div class="addnote"><input id="b-newnote" placeholder="Another note, e.g. jasmine" autocomplete="off" aria-label="Add a tasting note"><button type="button" class="btn ghost" id="b-addnote"></button></div>
         <label>Notes<textarea id="b-notes" rows="3"></textarea></label>
         <button class="go" id="bsave">Save brew</button>
         <button class="lnk" id="bcancel" type="button" hidden>Cancel</button>
@@ -198,8 +272,11 @@ details.add summary{cursor:pointer;font-weight:600}
   </div>
 
   <div id="pickview" hidden>
-    <h2>Which coffee?</h2>
+    <h2>Log a brew</h2>
+    <div class="modes" id="logmodes"><button type="button" data-m="device">By device</button><button type="button" data-m="coffee">By coffee</button></div>
+    <div id="devpick"><p class="hint">Which device are you using?</p><div class="dvrow" id="devrow"></div></div>
     <div id="picklist"></div>
+    <button type="button" class="btn ghost" id="newcoffee"></button>
   </div>
   <p class="foot"><span id="who"></span> <button class="lnk" id="out" type="button">Sign out</button></p>
 </section>
@@ -208,9 +285,11 @@ details.add summary{cursor:pointer;font-weight:600}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script src="../assets/js/config.js"></script>
 <script src="../assets/js/lists.js"></script>
+<script src="../assets/js/scales.js"></script>
 <script src="../assets/js/theme.js"></script>
 <script src="../data/devices.js"></script>
 <script src="../data/defaults.js"></script>
+<script src="../assets/js/calcui.js"></script>
 <script src="../assets/js/nav.js" defer></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
@@ -228,7 +307,7 @@ function deviceList() {
   const out = [], add = x => { if (x && !out.includes(x)) out.push(x); };
   ((window.DEVICES && window.DEVICES.D) || []).forEach(d => (d.logAs || [d.name]).forEach(add));
   (window.LISTS.device || []).forEach(add);
-  return out;
+  return out.filter(n => !out.some(o => o !== n && o.indexOf(n + " ") === 0));   // "Flair" is hidden next to "Flair 58"
 }
 function fill(id, base, used) {
   const s = $(id), keep = s.value;
@@ -253,6 +332,12 @@ function chosen(id) {
 }
 fill("f-process", Object.keys(PAL), []); fill("f-roast", window.LISTS.roast, []);
 otherBox("f-process"); otherBox("f-roast");
+((window.DEFAULTS && window.DEFAULTS.BREW_TYPES) || []).forEach(t => {
+  const l = el("label", "chk"), i = el("input"); i.type = "checkbox"; i.value = t[0]; l.append(i, document.createTextNode(" " + t[1])); $("f-sfor").appendChild(l);
+});
+const sforVals = () => [...document.querySelectorAll("#f-sfor input:checked")].map(i => i.value);
+const setSfor = arr => document.querySelectorAll("#f-sfor input").forEach(i => { i.checked = (arr || []).includes(i.value); });
+let logAfter = null, restoredCoffee = false, coffeeTried = false;
 
 function shrink(file, max = 1200) {
   return new Promise((ok, no) => {
@@ -377,6 +462,7 @@ function card(c, photoUrl, nBrews, ratings, bags) {
   const hd = el("div", "hd"); hd.appendChild(el("h3", "", c.name)); b.appendChild(hd);
   const meta = [c.roaster, c.origin, c.variety, altText(c), c.is_blend ? "Blend" : null, c.process, c.roast_level].filter(Boolean).join(", ");
   if (meta) b.appendChild(el("p", "", meta));
+  if (c.suitable_for && c.suitable_for.length) b.appendChild(el("p", "age", "Suitable for " + c.suitable_for.join(", ")));
   if (bags && bags.length > 1) b.appendChild(el("p", "age", "Bag " + bags.length + " of " + bags.length));
   if (c.flavour_tags && c.flavour_tags.length) {
     const t = el("div", "tags"); c.flavour_tags.forEach(x => t.appendChild(el("span", "chip", x))); b.appendChild(t);
@@ -498,6 +584,7 @@ function endEdit() {
   $("cancel").hidden = true;
   $("photohint").hidden = true;
   $("addbox").open = false;
+  setSfor([]); store.del(COFFEE_DRAFT); restoredCoffee = false;
 }
 function altText(c) {
   if (c.altitude_min_m == null) return null;
@@ -510,7 +597,7 @@ function startEdit(c) {
   $("cf").reset();
   $("f-name").value = c.name; $("f-roaster").value = c.roaster || ""; $("f-origin").value = c.origin || "";
   $("f-variety").value = c.variety || ""; $("f-alt-min").value = c.altitude_min_m ?? ""; $("f-alt-max").value = (c.altitude_max_m != null && c.altitude_max_m !== c.altitude_min_m) ? c.altitude_max_m : "";
-  $("f-blend").checked = !!c.is_blend;
+  $("f-blend").checked = !!c.is_blend; setSfor(c.suitable_for);
   setSel("f-process", c.process); setSel("f-roast", c.roast_level);
   $("f-tags").value = (c.flavour_tags || []).join(", ");
   $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || ""; $("f-url").value = c.buy_url || "";
@@ -531,12 +618,38 @@ function startNewBag(c) {
 }
 $("cancel").onclick = endEdit;
 
+// A new coffee that was not saved yet is kept on this phone, so leaving the page does not lose it.
+const COFFEE_DRAFT = "alto.draft.coffee";
+const CF = ["f-name", "f-roaster", "f-origin", "f-variety", "f-alt-min", "f-alt-max", "f-process", "f-process-new", "f-roast", "f-roast-new", "f-tags", "f-rd", "f-od", "f-notes", "f-url"];
+function saveCoffeeDraft() {
+  if (editing || newBagOf || !me) return;
+  const f = {}; CF.forEach(i => { f[i] = $(i).value; });
+  const any = CF.some(i => f[i] && !["f-process", "f-roast"].includes(i)) || sforVals().length;
+  if (!any) { store.del(COFFEE_DRAFT); return; }
+  store.set(COFFEE_DRAFT, JSON.stringify({ f, blend: $("f-blend").checked, sfor: sforVals(), t: Date.now() }));
+}
+function tryRestoreCoffee() {
+  if (coffeeTried || editing || newBagOf) return;
+  coffeeTried = true;
+  const raw = store.get(COFFEE_DRAFT); if (!raw) return;
+  let d; try { d = JSON.parse(raw); } catch (e) { return; }
+  if (!d || !d.f || Date.now() - d.t > 7 * 864e5) return;
+  CF.forEach(i => { if (d.f[i] == null) return; if (i === "f-process" || i === "f-roast") setSel(i, d.f[i]); else $(i).value = d.f[i]; });
+  ["f-process", "f-roast"].forEach(i => { $(i + "-new").hidden = $(i).value !== "__other"; });
+  $("f-blend").checked = !!d.blend; setSfor(d.sfor); restoredCoffee = true;
+  $("addbox").open = true; $("addsum").textContent = "Add a coffee (unsaved draft)";
+  say("Your unsaved coffee was restored.");
+}
+$("cf").addEventListener("input", e => { if (e.isTrusted) saveCoffeeDraft(); });
+$("cf").addEventListener("change", e => { if (e.isTrusted) saveCoffeeDraft(); });
+
 let saving = false;
 $("cf").onsubmit = async e => {
   e.preventDefault();
   if (saving) return;
   saving = true; $("save").disabled = true;
   say("Saving...");
+  let newId = null;
   try {
     let path = null;
     const f = $("f-photo").files[0];
@@ -559,6 +672,7 @@ $("cf").onsubmit = async e => {
       name: v("f-name"), roaster: v("f-roaster") || null, origin: v("f-origin") || null,
       is_blend: $("f-blend").checked, process: chosen("f-process") || null, roast_level: chosen("f-roast") || null,
       flavour_tags: v("f-tags").split(",").map(t => t.trim().toLowerCase()).filter(Boolean),
+      suitable_for: sforVals(),
       notes: v("f-notes") || null, roast_date: v("f-rd") || null, open_date: v("f-od") || null, buy_url: v("f-url") ? safeUrl(v("f-url")) : null
     };
     if (path) row.photo_path = path; else if (newBagOf) row.photo_path = newBagOf.photo_path || null; else if (!editing) row.photo_path = null;
@@ -569,120 +683,378 @@ $("cf").onsubmit = async e => {
       if (!done.length) throw new Error("nothing was changed");
       if (path && editing.photo_path) await releasePhoto(editing.photo_path);
     } else {
-      const { error } = await db.from("coffees").insert(row);
+      const { data: made, error } = await db.from("coffees").insert(row).select().single();
       if (error) throw error;
+      newId = made && made.id;
     }
+    const after = logAfter;
     endEdit(); say("Saved."); load();
+    if (newId && after) { location.hash = "c=" + newId + (after.dev ? "&d=" + encodeURIComponent(after.dev) : ""); }
   } catch (err) { say("Could not save: " + err.message); }
   finally { saving = false; $("save").disabled = false; }
 };
 
 
 // ---------- Brews ----------
-const CORE = ["sour", "sweet", "bitter", "balance"];
-let cur = null, scores = {}, sliders = {}, savingB = false, brewLoadId = 0, editingBrew = null, brewData = [], rating = null;
+const D = window.DEFAULTS || {};
+const CORE = SCALE.CORE;
+let cur = null, scores = {}, ctl = {}, savingB = false, brewLoadId = 0, editingBrew = null, brewData = [], rating = null;
+let touched = new Set(), prof = [], calc = null, edited = false, noteNames = [];
+const BF = ["b-device", "b-device-new", "b-grinder", "b-grind", "b-feel", "b-pressure", "b-pibar", "b-pis", "b-dose", "b-water", "b-yield", "b-temp", "b-time", "b-recipe", "b-notes"];
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+const draftKey = () => "alto.draft.brew." + (cur && cur.id);
+const numOf = id => { const v = parseFloat(String($(id).value).replace(",", ".")); return isFinite(v) ? v : null; };
+
 function setRating(v) {
   rating = v;
   $("stars").querySelectorAll("button").forEach((b, i) => { b.classList.toggle("on", rating !== null && i < rating); b.setAttribute("aria-pressed", String(rating === i + 1)); });
 }
 for (let i = 1; i <= 5; i++) {
-  const b = el("button", "", "\u2605"); b.type = "button"; b.setAttribute("aria-label", i + (i === 1 ? " star" : " stars"));
-  b.onclick = () => setRating(rating === i ? null : i);
+  const b = el("button", "", "★"); b.type = "button"; b.setAttribute("aria-label", i + (i === 1 ? " star" : " stars"));
+  b.onclick = () => { setRating(rating === i ? null : i); userChanged(); };
   $("stars").appendChild(b);
 }
 setRating(null);
 
-function route() {
-  if (!me) return;
-  const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)$/);
-  $("listview").hidden = !!m || hash === "#log";
-  $("detail").hidden = !m;
-  $("pickview").hidden = hash !== "#log";
-  if (m) openCoffee(m[1]); else if (hash === "#log") pickList(); else load();
+// ----- which kind of brewing a device is (from data/devices.js). Unknown devices keep every field open.
+function typeOf(name) {
+  const n = (name || "").trim().toLowerCase();
+  if (!n) return "";
+  const list = (window.DEVICES && window.DEVICES.D) || [];
+  for (const d of list) if ([d.name, ...(d.logAs || [])].some(x => x.toLowerCase() === n)) return d.type || "";
+  if (n.indexOf("flair") === 0) return "espresso";
+  return "";
 }
+const isEsp = t => t === "espresso" || t === "";
 
-// "Log a brew" in the menu: choose the coffee first. Opened coffees come first.
-async function pickList() {
-  const { data, error } = await db.from("coffees").select("id,name,roaster,process,open_date,group_id").order("created_at", { ascending: false });
-  if (error) { say("Could not load coffees: " + error.message); return; }
-  const box = $("picklist"); box.textContent = "";
-  const seen = new Set();
-  if (!data.length) { box.appendChild(el("p", "hint", "No coffees yet. Add one in the Journal first.")); return; }
-  const newest = data.filter(c => { const k = gk(c); if (seen.has(k)) return false; seen.add(k); return true; });   // data is newest first
-  newest.sort((a, b) => (a.open_date ? 0 : 1) - (b.open_date ? 0 : 1));
-  newest.forEach(c => {
-    const b = el("button", "pick"); b.type = "button"; applyPal(b, c.process);
-    b.appendChild(el("strong", "", c.name));
-    const sub = [c.roaster, c.process].filter(Boolean).join(", ");
-    if (sub) b.appendChild(el("small", "", sub));
-    b.onclick = () => { location.hash = "c=" + c.id; };
-    box.appendChild(b);
+// ----- grinder and feel word
+const GR = D.GRINDERS || [];
+(function () {
+  const s = $("b-grinder");
+  GR.forEach(g => { const o = el("option", "", g.name); o.value = g.name; s.appendChild(o); });
+  const o = el("option", "", "Other grinder"); o.value = ""; s.appendChild(o);
+  const last = store.get("alto.grinder");
+  if (last !== null && [...s.options].some(x => x.value === last)) s.value = last;
+  const words = []; GR.forEach(g => (g.feel || []).forEach(f => { if (!words.includes(f[1])) words.push(f[1]); }));
+  words.forEach(w => { const x = el("option"); x.value = w; $("feel-list").appendChild(x); });
+})();
+function feelFor() {
+  const g = GR.find(x => x.name === $("b-grinder").value), v = numOf("b-grind");
+  if (!g || !g.feel || v === null) return "";
+  const f = g.feel.find(x => v <= x[0]);
+  return f ? f[1] : "";
+}
+function feelAuto() { if (!touched.has("b-feel")) $("b-feel").value = feelFor(); }
+
+// ----- pressure curve (small picture) and the optional stages
+function pressurePts(pib, pis, stages, bar, tot) {
+  const pts = []; let t = 0;
+  if (pis > 0 && pib !== null) { pts.push([0, pib], [pis, pib]); t = pis; }
+  const st = (stages || []).filter(s => s.s > 0);
+  if (st.length) st.forEach(s => { pts.push([t, s.bar], [t + s.s, s.bar]); t += s.s; });
+  else if (bar !== null && bar !== undefined) { const d = tot && tot > t ? tot - t : 20; pts.push([t, bar], [t + d, bar]); }
+  return pts;
+}
+function curveSvg(pts) {
+  const NS = "http://www.w3.org/2000/svg", W = 300, H = 100, L = 30, B = 18, T = 8, R = 8;
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H); svg.setAttribute("role", "img");
+  const tmax = Math.max(...pts.map(p => p[0])) || 1, bmax = Math.max(10, Math.ceil(Math.max(...pts.map(p => p[1]))));
+  const X = t => L + t / tmax * (W - L - R), Y = v => H - B - v / bmax * (H - B - T);
+  const mk = (n, a, txt) => { const e = document.createElementNS(NS, n); Object.keys(a).forEach(k => e.setAttribute(k, a[k])); if (txt) e.textContent = txt; svg.appendChild(e); return e; };
+  mk("path", { d: "M" + L + " " + T + "V" + (H - B) + "H" + (W - R), fill: "none", stroke: "currentColor", "stroke-opacity": ".35" });
+  mk("text", { x: L - 4, y: Y(0) + 3, "text-anchor": "end", "font-size": 9, fill: "currentColor" }, "0");
+  mk("text", { x: L - 4, y: Y(bmax) + 3, "text-anchor": "end", "font-size": 9, fill: "currentColor" }, bmax + " bar");
+  mk("text", { x: X(tmax), y: H - 4, "text-anchor": "end", "font-size": 9, fill: "currentColor" }, Math.round(tmax) + " s");
+  mk("path", { d: pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(""), fill: "none", "class": "ln", "stroke-width": 2.2, "stroke-linejoin": "round", "stroke-linecap": "round" });
+  const lab = pts.length ? "Pressure over time, up to " + Math.round(tmax) + " seconds" : "";
+  svg.setAttribute("aria-label", lab);
+  return svg;
+}
+function drawCurve() {
+  const box = $("curve"), esp = isEsp(typeOf(chosen("b-device")));
+  const pts = esp ? pressurePts(numOf("b-pibar"), numOf("b-pis"), prof, numOf("b-pressure"), numOf("b-time")) : [];
+  box.hidden = !pts.length; box.textContent = "";
+  if (pts.length) box.appendChild(curveSvg(pts));
+}
+function renderProf() {
+  const box = $("profrows"); box.textContent = "";
+  prof.forEach((st, i) => {
+    const row = el("div", "prow"), out = el("output", "", st.bar + " bar");
+    const r = el("input"); r.type = "range"; r.min = 0; r.max = 12; r.step = 0.5; r.value = st.bar; r.setAttribute("aria-label", "Stage " + (i + 1) + " pressure");
+    r.addEventListener("input", () => { st.bar = +r.value; out.textContent = st.bar + " bar"; });
+    const s = el("input"); s.type = "number"; s.step = "any"; s.inputMode = "decimal"; s.placeholder = "sec"; s.value = st.s || ""; s.setAttribute("aria-label", "Stage " + (i + 1) + " seconds");
+    s.addEventListener("input", () => { st.s = parseFloat(s.value) || 0; });
+    const x = ibtn("Remove stage " + (i + 1), "close", () => { prof.splice(i, 1); renderProf(); drawCurve(); userChanged(); });
+    row.append(out, r, s, x); box.appendChild(row);
   });
 }
-window.addEventListener("hashchange", route);
+$("profadd").onclick = () => { prof.push({ s: 0, bar: prof.length ? prof[prof.length - 1].bar : (numOf("b-pressure") || 6) }); renderProf(); userChanged(); };
+$("profadd").insertBefore(ico("plus", 16), $("profadd").firstChild);
+$("b-addnote").append(ico("plus", 16), el("span", "", "Add"));
 
-function setScore(a, v) {
-  const s = sliders[a]; if (!s) return;
-  s.r.value = v; s.val.textContent = v; s.row.classList.add("on"); s.r.classList.add("on"); s.r.style.setProperty("--p", v * 10 + "%"); scores[a] = v;
+// ----- taste sliders (-5..+5) and tasting notes (none / light / present)
+const progress = r => { const p = (+r.value + 5) * 10; r.style.setProperty("--a", Math.min(50, p) + "%"); r.style.setProperty("--b", Math.max(50, p) + "%"); };
+function userChanged() { edited = true; saveDraft(); }
+function addCore(a) {
+  const row = el("div", "sc"), val = el("span", "scv", "-");
+  row.style.setProperty("--ac", attrColor(a));
+  const r = el("input"); r.type = "range"; r.min = -5; r.max = 5; r.step = 1; r.value = 0; progress(r);
+  r.setAttribute("aria-label", a + ", from -5 to +5");
+  const set = stored => { const sh = SCALE.toShown(a, stored); r.value = sh; val.textContent = (sh > 0 ? "+" : "") + sh; row.classList.add("on"); r.classList.add("on"); progress(r); scores[a] = stored; };
+  const clear = () => { delete scores[a]; val.textContent = "-"; r.value = 0; row.classList.remove("on"); r.classList.remove("on"); progress(r); };
+  r.addEventListener("input", () => { set(SCALE.toStored(a, +r.value)); userChanged(); });
+  r.addEventListener("pointerdown", () => set(SCALE.toStored(a, +r.value)));
+  const x = el("button", "clr"); x.type = "button"; x.title = "Clear " + a; x.setAttribute("aria-label", "Clear " + a); x.appendChild(ico("close", 14));
+  x.onclick = () => { clear(); userChanged(); };
+  const ic = ico(attrIcon(a), 22); ic.classList.add("si");
+  row.append(ic, el("span", "slb", a), val, x, r);
+  $("scorebox").appendChild(row);
+  ctl[a] = { set, clear };
+}
+function addNote(a) {
+  a = String(a).trim().toLowerCase();
+  if (!a || ctl[a] || SCALE.isCore(a)) return;
+  const row = el("div", "nt"), seg = el("div", "seg"), btns = [];
+  row.style.setProperty("--ac", attrColor(a));
+  const set = stored => { const i = SCALE.levelOf(stored); scores[a] = SCALE.LEVELS[i][1]; btns.forEach((b, k) => { b.classList.toggle("on", k === i); b.setAttribute("aria-pressed", String(k === i)); }); row.classList.add("on"); };
+  const clear = () => { delete scores[a]; btns.forEach(b => { b.classList.remove("on"); b.setAttribute("aria-pressed", "false"); }); row.classList.remove("on"); };
+  SCALE.LEVELS.forEach(l => {
+    const b = el("button", "", l[0]); b.type = "button"; b.setAttribute("aria-pressed", "false");
+    b.onclick = () => { if (scores[a] === l[1]) clear(); else set(l[1]); userChanged(); };
+    btns.push(b); seg.appendChild(b);
+  });
+  const ic = ico(attrIcon(a), 22); ic.classList.add("si");
+  const lb = el("span", "slb", a); lb.title = a;
+  row.append(ic, lb, seg);
+  $("notebox").appendChild(row);
+  ctl[a] = { set, clear }; noteNames.push(a);
 }
 function buildScores(c, extra) {
-  scores = {}; sliders = {};
-  const box = $("scorebox"); box.textContent = "";
-  const attrs = [...CORE, ...(c.flavour_tags || []).filter(t => !CORE.includes(t))];
-  (extra || []).forEach(a => { if (!attrs.includes(a)) attrs.push(a); });
-  attrs.forEach(a => {
-    const row = el("div", "sc"), val = el("span", "scv", "-");
-    row.style.setProperty("--ac", attrColor(a));
-    const r = el("input"); r.type = "range"; r.min = 0; r.max = 10; r.step = 1; r.value = 5;
-    r.setAttribute("aria-label", a + ", score from 0 to 10");
-    const set = () => { scores[a] = +r.value; val.textContent = r.value; row.classList.add("on"); r.classList.add("on"); r.style.setProperty("--p", r.value * 10 + "%"); };
-    r.addEventListener("input", set); r.addEventListener("pointerdown", set);
-    const x = el("button", "clr"); x.type = "button"; x.title = "Clear " + a; x.setAttribute("aria-label", "Clear " + a); x.appendChild(ico("close", 14));
-    x.onclick = () => { delete scores[a]; val.textContent = "-"; r.value = 5; row.classList.remove("on"); r.classList.remove("on"); r.style.setProperty("--p", "50%"); };
-    const ic = ico(attrIcon(a), 22); ic.classList.add("si");
-    row.append(ic, el("span", "slb", a), val, x, r);
-    box.appendChild(row);
-    sliders[a] = { r, val, row };
-  });
+  scores = {}; ctl = {}; noteNames = [];
+  $("scorebox").textContent = ""; $("notebox").textContent = "";
+  CORE.forEach(addCore);
+  [...(c.flavour_tags || []), ...(extra || [])].forEach(addNote);
 }
+function setScore(a, v) { if (!ctl[a]) addNote(a); if (ctl[a]) ctl[a].set(v); }
+function newNote() {
+  const t = $("b-newnote").value.trim().toLowerCase();
+  if (!t) return;
+  if (SCALE.isCore(t)) { say(t + " is one of the sliders above."); return; }
+  addNote(t); if (ctl[t] && !(t in scores)) ctl[t].set(SCALE.LEVELS[2][1]);
+  $("b-newnote").value = ""; userChanged();
+}
+$("b-addnote").onclick = newNote;
+$("b-newnote").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); newNote(); } });
 
 // One text for the settings of a brew. It is also the automatic recipe name.
 function settingsLabel(o) {
   const pre = [o.preinfusion_bar != null ? o.preinfusion_bar + " bar" : null, o.preinfusion_s != null ? o.preinfusion_s + " s" : null].filter(Boolean).join(" ");
-  return [o.device, o.grind ? "grind " + o.grind : null, o.pressure_bar != null ? o.pressure_bar + " bar" : null, pre ? "pre-infusion " + pre : null].filter(Boolean).join(", ");
+  const grind = o.grind ? "grind " + o.grind + (o.grind_feel ? " (" + o.grind_feel + ")" : "") : null;
+  return [o.device, grind, o.pressure_bar != null ? o.pressure_bar + " bar" : null, pre ? "pre-infusion " + pre : null].filter(Boolean).join(", ");
 }
 
-function endBrewEdit() {
-  editingBrew = null;
+// ----- the form follows the device: espresso fields grey out for other devices, defaults and calculator follow
+function applyType() {
+  const esp = isEsp(typeOf(chosen("b-device")));
+  ["b-pressure", "b-pibar", "b-pis"].forEach(id => {
+    const i = $(id); i.disabled = !esp; i.closest("label").classList.toggle("off", !esp);
+    if (!esp) { i.value = ""; touched.delete(id); }
+  });
+  $("wlab").hidden = esp; if (esp) { $("b-water").value = ""; touched.delete("b-water"); }
+  $("espbox").hidden = !esp;
+  drawCurve();
+}
+function presetFor(dev) {
+  if (/^flair/i.test(dev || "")) return (D.FLAIR_BY_ROAST || {})[((cur && cur.roast_level) || "").toLowerCase()] || "flair-med";
+  const p = (D.PRESETS || []).find(x => x.device === dev);
+  return p ? p.id : null;
+}
+function put(id, v) { if (!touched.has(id)) $(id).value = v === null || v === undefined ? "" : v; }
+function fillFromCalc(n, force) {
+  if (!n) return;
+  const f = force ? (id, v) => { $(id).value = v === null || v === undefined ? "" : v; touched.add(id); } : put;
+  f("b-dose", n.dose_g);
+  if (!isEsp(typeOf(chosen("b-device")))) f("b-water", n.water_g);
+  f("b-yield", n.yield_g);
+  if (n.temp_c) f("b-temp", n.temp_c);
+}
+function autoFill() {
+  const dev = chosen("b-device"), esp = isEsp(typeOf(dev)), B = D.BREW || {};
+  const pid = presetFor(dev); if (pid && calc) calc.setPreset(pid);
+  if (esp) {
+    put("b-grind", B.grind); put("b-pibar", B.preinfusion_bar); put("b-pis", B.preinfusion_s); put("b-pressure", B.pressure_bar);
+    put("b-dose", B.dose_g); put("b-yield", B.yield_g);
+    const n = calc && calc.numbers(); put("b-temp", n && n.temp_c);
+  } else {
+    put("b-grind", ""); fillFromCalc(calc && calc.numbers(), false); if (!calc) put("b-temp", "");
+    if (!(calc && calc.numbers() && calc.numbers().temp_c)) put("b-temp", "");
+  }
+  feelAuto(); drawCurve();
+}
+function onCalc() {   // the calculator moved: non-espresso devices follow it until you type a number yourself
+  if (!calc || editingBrew) return;
+  if (!isEsp(typeOf(chosen("b-device")))) fillFromCalc(calc.numbers(), false);
+}
+calc = window.altoCalc && D.PRESETS ? altoCalc.mount($("calc"), { presets: D.PRESETS, start: D.START_PRESET, onChange: () => onCalc() }) : null;
+$("usecalc").onclick = () => { fillFromCalc(calc && calc.numbers(), true); drawCurve(); userChanged(); say("Numbers copied into the form."); };
+$("b-device").addEventListener("change", () => { applyType(); if (!editingBrew) autoFill(); });
+$("b-device-new").addEventListener("change", () => { applyType(); });
+
+// ----- drafts: whatever you type is kept on this phone until you save or cancel
+function saveDraft() {
+  if (!cur || editingBrew || !edited) return;
+  const f = {}; BF.forEach(i => { f[i] = $(i).value; });
+  store.set(draftKey(), JSON.stringify({ f, rating, dial: $("b-dialin").checked, scores: { ...scores }, notes: noteNames.slice(), prof, touched: [...touched], t: Date.now() }));
+}
+function restoreDraft() {
+  const raw = store.get(draftKey()); if (!raw) return false;
+  let d; try { d = JSON.parse(raw); } catch (e) { return false; }
+  if (!d || !d.f || Date.now() - d.t > 7 * 864e5) return false;
+  (d.notes || []).forEach(addNote);
+  BF.forEach(i => { if (d.f[i] == null) return; if (i === "b-device" || i === "b-grinder") setSel(i, d.f[i]); else $(i).value = d.f[i]; });
+  $("b-device-new").hidden = $("b-device").value !== "__other";
+  setRating(d.rating == null ? null : d.rating); $("b-dialin").checked = !!d.dial;
+  prof = Array.isArray(d.prof) ? d.prof : []; renderProf();
+  touched = new Set(d.touched || []); edited = true;
+  applyType();
+  Object.entries(d.scores || {}).forEach(([a, v]) => setScore(a, v));
+  say("Your unsaved brew was restored.");
+  return true;
+}
+$("bf").addEventListener("input", e => {
+  if (e.isTrusted && e.target.id && BF.includes(e.target.id)) {
+    if (e.target.id === "b-feel" && !e.target.value) touched.delete("b-feel"); else if (e.target.id !== "b-device") touched.add(e.target.id);
+    if (e.target.id === "b-grind") feelAuto();
+  }
+  if (e.target.id === "b-grind" || e.target.id === "b-pibar" || e.target.id === "b-pis" || e.target.id === "b-pressure" || e.target.id === "b-time" || e.target.closest(".prow")) drawCurve();
+  if (e.target.id === "b-newnote" || e.target.closest("#calc")) return;
+  if (e.isTrusted) userChanged();
+});
+$("bf").addEventListener("change", e => {
+  if (e.target.id === "b-grinder") feelAuto();
+  if (e.isTrusted && !e.target.closest("#calc")) userChanged();
+});
+document.addEventListener("visibilitychange", () => { if (document.hidden) { saveDraft(); saveCoffeeDraft(); } });
+window.addEventListener("pagehide", () => { saveDraft(); saveCoffeeDraft(); });
+
+// ----- start a fresh form / edit an old brew
+function readHandoff() {
+  let h = null;
+  try { h = JSON.parse(localStorage.getItem("alto.handoff")); localStorage.removeItem("alto.handoff"); } catch (e) {}
+  return h && h.t && Date.now() - h.t <= 3 * 3600e3 ? h : null;
+}
+function newBrewSetup(dev) {
+  editingBrew = null; touched = new Set(); prof = []; edited = false; renderProf();
   $("bf").reset(); setRating(null);
   $("b-device-new").hidden = true; $("b-device-new").required = false;
   $("brewsum").textContent = "Log a brew"; $("bsave").textContent = "Save brew"; $("bcancel").hidden = true;
+  buildScores(cur);
+  const h = readHandoff(), sel = $("b-device");
+  const want = (h && h.device) || dev || store.get("alto.device") || "Flair 58";
+  if ([...sel.options].some(o => o.value === want)) sel.value = want;
+  else { const alt = [...sel.options].find(o => o.value && typeOf(o.value) === typeOf(want) && want.indexOf(o.value) === 0); sel.value = alt ? alt.value : ""; }
+  const g = store.get("alto.grinder"); if (g !== null && [...$("b-grinder").options].some(o => o.value === g)) $("b-grinder").value = g;
+  applyType(); autoFill();
+  const restored = restoreDraft();
+  if (h) {
+    const hp = (id, v) => { if (v !== null && v !== undefined) { $(id).value = v; touched.add(id); } };
+    hp("b-dose", h.dose_g); if (!isEsp(typeOf(chosen("b-device")))) hp("b-water", h.water_g); hp("b-yield", h.yield_g); hp("b-temp", h.temp_c);
+    say("Numbers filled in from the calculator.");
+  }
+  $("calcbox").open = !restored && !h;
 }
 function startBrewEdit(b) {
-  editingBrew = b;
+  editingBrew = b; touched = new Set(BF); edited = false;
   $("bf").reset();
+  prof = Array.isArray(b.pressure_profile) ? b.pressure_profile.map(x => ({ s: x.s, bar: x.bar })) : []; renderProf();
   buildScores(cur, (b.brew_scores || []).map(s => s.attribute));
   setRating(b.rating == null ? null : b.rating); $("b-dialin").checked = !!b.is_dialin;
-  setSel("b-device", b.device);
-  const put = (id, v) => { $(id).value = v == null ? "" : v; };
-  put("b-grind", b.grind); put("b-pressure", b.pressure_bar); put("b-pibar", b.preinfusion_bar); put("b-pis", b.preinfusion_s);
-  put("b-dose", b.dose_g); put("b-yield", b.yield_g); put("b-time", b.time_s); put("b-notes", b.notes);
+  setSel("b-device", b.device); $("b-device-new").hidden = true;
+  if (b.grinder) setSel("b-grinder", b.grinder); else $("b-grinder").value = "";
+  applyType();
+  const pt = (id, v) => { $(id).value = v == null ? "" : v; };
+  pt("b-grind", b.grind); pt("b-feel", b.grind_feel); pt("b-pressure", b.pressure_bar); pt("b-pibar", b.preinfusion_bar); pt("b-pis", b.preinfusion_s);
+  pt("b-dose", b.dose_g); pt("b-water", b.water_g); pt("b-yield", b.yield_g); pt("b-temp", b.temp_c); pt("b-time", b.time_s); pt("b-notes", b.notes);
+  if (!isEsp(typeOf(b.device))) { ["b-pressure", "b-pibar", "b-pis"].forEach(i => { $(i).value = ""; }); }
   $("b-recipe").value = b.recipe && b.recipe !== settingsLabel(b) ? b.recipe : "";   // an automatic name is rebuilt on save
   (b.brew_scores || []).forEach(s => setScore(s.attribute, s.score));
+  drawCurve();
   $("brewsum").textContent = "Edit brew"; $("bsave").textContent = "Save changes"; $("bcancel").hidden = false;
-  $("brewbox").open = true;
+  $("brewbox").open = true; $("calcbox").open = false;
   $("brewbox").scrollIntoView({ behavior: "smooth" });
 }
-$("bcancel").onclick = () => { endBrewEdit(); buildScores(cur); };
+$("bcancel").onclick = () => { store.del(draftKey()); newBrewSetup(); };
 
-async function openCoffee(id) {
+function route() {
+  if (!me) return;
+  const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)(?:&d=(.*))?$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/);
+  $("listview").hidden = !!m || isLog || !!add;
+  $("detail").hidden = !m;
+  $("pickview").hidden = !isLog;
+  $("addview").hidden = !add;
+  const host = add ? $("addhost") : $("listhost");
+  if ($("addbox").parentNode !== host) host.appendChild($("addbox"));
+  logAfter = add ? { dev: add[1] ? decodeURIComponent(add[1]) : (logDev || null) } : null;
+  if (add) {
+    if (!editing && !newBagOf) { tryRestoreCoffee(); const t = typeOf(logAfter.dev); document.querySelectorAll("#f-sfor input").forEach(i => { if (!i.checked && t && i.value === t && !restoredCoffee) i.checked = true; }); }
+    $("addbox").open = true; $("addsum").textContent = "New coffee"; load();
+  } else if (m) openCoffee(m[1], m[2] ? decodeURIComponent(m[2]) : null);
+  else if (isLog) pickList();
+  else { tryRestoreCoffee(); load(); }
+}
+
+// "Log a brew": choose the device first (or the coffee first). Coffees suitable for the device come first.
+let logMode = store.get("alto.logmode") === "coffee" ? "coffee" : "device", logDev = null, logCoffees = [];
+async function pickList() {
+  const { data, error } = await db.from("coffees").select("id,name,roaster,process,roast_level,open_date,group_id,suitable_for").order("created_at", { ascending: false });
+  if (error) { say("Could not load coffees: " + error.message); return; }
+  const seen = new Set();
+  logCoffees = data.filter(c => { const k = gk(c); if (seen.has(k)) return false; seen.add(k); return true; });   // data is newest first
+  logCoffees.sort((a, b) => (a.open_date ? 0 : 1) - (b.open_date ? 0 : 1));
+  renderPick();
+}
+function renderPick() {
+  $("logmodes").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.m === logMode));
+  $("devpick").hidden = logMode !== "device";
+  const devs = deviceList();
+  if (!logDev || !devs.includes(logDev)) logDev = devs.includes(store.get("alto.device")) ? store.get("alto.device") : (devs.includes("Flair 58") ? "Flair 58" : devs[0]);
+  const row = $("devrow"); row.textContent = "";
+  devs.slice().sort((x, y) => (typeOf(y) === "espresso") - (typeOf(x) === "espresso")).forEach(d => { const b = el("button", d === logDev ? "on" : "", d); b.type = "button"; b.onclick = () => { logDev = d; renderPick(); }; row.appendChild(b); });
+  const box = $("picklist"); box.textContent = "";
+  const dev = logMode === "device" ? logDev : null, t = dev ? typeOf(dev) : "";
+  const go = c => { location.hash = "c=" + c.id + (dev ? "&d=" + encodeURIComponent(dev) : ""); };
+  const add = list => list.forEach(c => {
+    const b = el("button", "pick"); b.type = "button"; applyPal(b, c.process);
+    b.appendChild(el("strong", "", c.name));
+    const sub = [c.roaster, c.process, c.roast_level].filter(Boolean).join(", ");
+    if (sub) b.appendChild(el("small", "", sub));
+    b.onclick = () => go(c); box.appendChild(b);
+  });
+  if (!logCoffees.length) box.appendChild(el("p", "hint", "No coffees yet. Add your first one below."));
+  else if (dev && t) {
+    const fits = logCoffees.filter(c => (c.suitable_for || []).includes(t)), rest = logCoffees.filter(c => !fits.includes(c));
+    box.appendChild(el("h3", "sh", "Suggested for " + dev));
+    if (fits.length) add(fits); else box.appendChild(el("p", "hint", "No coffee is marked as suitable for " + t + " yet. You can mark them with \"Suitable for\" when you edit a coffee."));
+    if (rest.length) { box.appendChild(el("h3", "sh", "Other coffees")); add(rest); }
+  } else { box.appendChild(el("h3", "sh", "Which coffee?")); add(logCoffees); }
+  const nc = $("newcoffee"); nc.textContent = ""; nc.append(ico("plus", 16), el("span", "", "New coffee"));
+  nc.onclick = () => { location.hash = "addcoffee" + (dev ? "&d=" + encodeURIComponent(dev) : ""); };
+}
+$("logmodes").querySelectorAll("button").forEach(b => { b.onclick = () => { logMode = b.dataset.m; store.set("alto.logmode", logMode); renderPick(); }; });
+window.addEventListener("hashchange", route);
+
+async function openCoffee(id, dev) {
   const [{ data: c, error }, { data: dv }] = await Promise.all([
     db.from("coffees").select("*").eq("id", id).single(),
     db.from("brews").select("device")
   ]);
   if (error || !c) { say("Could not open this coffee."); location.hash = ""; return; }
   cur = c;
-  endBrewEdit();
   ["bflt-device", "bflt-recipe", "bflt-sort"].forEach(i => { $(i).value = ""; });
   applyPal($("dhead"), c.process);
   $("dname").textContent = c.name;
@@ -691,23 +1063,11 @@ async function openCoffee(id) {
   const bx = $("dbuy"); bx.textContent = ""; const bl = buyLink(c); if (bl) bx.appendChild(bl);
   const t = $("dtags"); t.textContent = "";
   (c.flavour_tags || []).forEach(x => t.appendChild(el("span", "chip", x)));
+  if (c.suitable_for && c.suitable_for.length) t.appendChild(el("span", "chip", "suitable for " + c.suitable_for.join(", ")));
   fill("b-device", deviceList(), [...new Set((dv || []).map(b => b.device).filter(Boolean))]);
   otherBox("b-device");
-  buildScores(c);
-  applyHandoff();
+  newBrewSetup(dev);
   loadBrews();
-}
-
-// Numbers from the calculator ("Log a brew" there) fill the brew form once.
-function applyHandoff() {
-  let h = null;
-  try { h = JSON.parse(localStorage.getItem("alto.handoff")); localStorage.removeItem("alto.handoff"); } catch (e) {}
-  if (!h || !h.t || Date.now() - h.t > 3 * 3600e3) return;
-  const sel = $("b-device");
-  if (h.device && [...sel.options].some(o => o.value === h.device)) sel.value = h.device;
-  if (h.dose_g != null) $("b-dose").value = h.dose_g;
-  if (h.yield_g != null) $("b-yield").value = h.yield_g;
-  say("Dose" + (h.yield_g != null ? " and yield" : "") + " filled in from the calculator.");
 }
 
 function dayN(iso, when) {
@@ -722,17 +1082,22 @@ function brewCard(b) {
   const age = [dr !== null ? (dr === 0 ? "roast day" : "day " + dr + " after roast") : null, dop !== null ? (dop === 0 ? "opening day" : "day " + dop + " after opening") : null].filter(Boolean).join(", ");
   if (age) a.appendChild(el("p", "age", age));
   if (b.is_dialin) a.appendChild(el("p", "age", "Dial-in brew, not counted in the rating"));
-  if (b.rating) { const s = el("p", "starsum", "\u2605".repeat(b.rating) + "\u2606".repeat(5 - b.rating)); s.setAttribute("aria-label", "Rated " + b.rating + " of 5"); a.appendChild(s); }
+  if (b.rating) { const s = el("p", "starsum", "★".repeat(b.rating) + "☆".repeat(5 - b.rating)); s.setAttribute("aria-label", "Rated " + b.rating + " of 5"); a.appendChild(s); }
   if (b.recipe) a.appendChild(el("p", "", b.recipe));
   const set = settingsLabel(b);
   if (set && set !== b.recipe) a.appendChild(el("p", "set", set));
-  const nums = [b.dose_g != null ? b.dose_g + " g in" : null, b.yield_g != null ? b.yield_g + " g out" : null, b.time_s != null ? b.time_s + " s total" : null,
+  const nums = [b.dose_g != null ? b.dose_g + " g in" : null, b.water_g != null ? b.water_g + " g water" : null, b.yield_g != null ? b.yield_g + " g out" : null,
+    b.temp_c != null ? b.temp_c + " °C" : null, b.time_s != null ? b.time_s + " s total" : null,
     b.dose_g && b.yield_g ? "ratio 1:" + (b.yield_g / b.dose_g).toFixed(1) : null].filter(Boolean).join(", ");
   if (nums) a.appendChild(el("p", "", nums));
+  if (Array.isArray(b.pressure_profile) && b.pressure_profile.length) {
+    const pts = pressurePts(b.preinfusion_bar, b.preinfusion_s, b.pressure_profile, null, null);
+    if (pts.length) { const w = el("div", "curve"); w.appendChild(curveSvg(pts)); a.appendChild(w); }
+  }
   const sc = (b.brew_scores || []).slice().sort((x, y) => {
     const i = k => CORE.includes(k) ? CORE.indexOf(k) : 99; return i(x.attribute) - i(y.attribute);
   });
-  if (sc.length) { const t = el("div", "tags"); sc.forEach(s => { const ch = el("span", "chip"); ch.style.setProperty("--ac", attrColor(s.attribute)); ch.append(ico(attrIcon(s.attribute), 14), document.createTextNode(s.attribute + " " + s.score)); t.appendChild(ch); }); a.appendChild(t); }
+  if (sc.length) { const t = el("div", "tags"); sc.forEach(s => { const ch = el("span", "chip"); ch.style.setProperty("--ac", attrColor(s.attribute)); ch.append(ico(attrIcon(s.attribute), 14), document.createTextNode(s.attribute + " " + SCALE.text(s.attribute, s.score))); t.appendChild(ch); }); a.appendChild(t); }
   if (b.notes) a.appendChild(el("p", "", b.notes));
   const ed = ibtn("Edit", "edit", () => startBrewEdit(b));
   const del = ibtn("Delete", "trash", async () => {
@@ -751,6 +1116,8 @@ async function loadBrews() {
   if (my !== brewLoadId) return;
   if (error) { say("Could not load brews: " + error.message); return; }
   brewData = data;
+  // tasting notes used on earlier brews of this coffee are offered again
+  if (!editingBrew) data.forEach(b => (b.brew_scores || []).forEach(s => { if (!SCALE.isCore(s.attribute)) addNote(s.attribute); }));
   const dr = $("drate"); dr.textContent = ""; const rb = rateBlock(data.slice().reverse().map(b => ({ r: b.rating, d: !!b.is_dialin }))); if (rb) dr.appendChild(rb);
   const uniq = k => [...new Set(data.map(b => b[k]).filter(Boolean))].sort();
   fillFilter("bflt-device", "All devices", uniq("device"));
@@ -776,12 +1143,18 @@ $("bf").onsubmit = async e => {
   savingB = true; $("bsave").disabled = true;
   say("Saving...");
   try {
-    const num = id => { const v = $(id).value.trim(); return v === "" ? null : Number(v); };
+    const num = id => { const v = $(id).value.trim(); return v === "" ? null : Number(v.replace(",", ".")); };
+    const device = chosen("b-device") || null, esp = isEsp(typeOf(device));
+    const stages = esp ? prof.filter(s => s.s > 0).map(s => ({ s: s.s, bar: s.bar })) : [];
     const row = {
-      device: chosen("b-device") || null, grind: $("b-grind").value.trim() || null, pressure_bar: num("b-pressure"),
-      preinfusion_bar: num("b-pibar"), preinfusion_s: num("b-pis"),
-      dose_g: num("b-dose"), yield_g: num("b-yield"), time_s: num("b-time"), notes: $("b-notes").value.trim() || null, rating, is_dialin: $("b-dialin").checked
+      device, grinder: $("b-grind").value.trim() ? ($("b-grinder").value || null) : null, grind: $("b-grind").value.trim() || null, grind_feel: $("b-feel").value.trim() || null,
+      pressure_bar: esp ? num("b-pressure") : null, preinfusion_bar: esp ? num("b-pibar") : null, preinfusion_s: esp ? num("b-pis") : null,
+      dose_g: num("b-dose"), water_g: esp ? null : num("b-water"), yield_g: num("b-yield"), temp_c: num("b-temp"), time_s: num("b-time"),
+      pressure_profile: stages.length ? stages : null,
+      notes: $("b-notes").value.trim() || null, rating, is_dialin: $("b-dialin").checked
     };
+    if (stages.length && row.pressure_bar === null) row.pressure_bar = Math.max(...stages.map(s => s.bar));
+    for (const k of ["pressure_bar", "preinfusion_bar", "preinfusion_s", "dose_g", "water_g", "yield_g", "temp_c", "time_s"]) if (row[k] !== null && !isFinite(row[k])) throw new Error("check the numbers");
     row.recipe = $("b-recipe").value.trim() || settingsLabel(row) || null;
     let id;
     if (editingBrew) {
@@ -801,7 +1174,10 @@ $("bf").onsubmit = async e => {
       const r2 = await db.from("brew_scores").insert(rows);
       if (r2.error) { if (!editingBrew) await db.from("brews").delete().eq("id", id); throw r2.error; }
     }
-    openCoffee(cur.id);   // resets the form and reloads the list
+    store.del(draftKey());
+    if (device) store.set("alto.device", device);
+    if (row.grinder) store.set("alto.grinder", row.grinder);
+    openCoffee(cur.id, device);   // resets the form and reloads the list
     say("Saved.");
   } catch (err) { say("Could not save: " + err.message); }
   finally { savingB = false; $("bsave").disabled = false; }

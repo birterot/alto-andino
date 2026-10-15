@@ -21,31 +21,10 @@
 </div>
 <p class="sub">Type into any box and the others follow. The last box you typed in is the one you set.</p>
 
-<label class="fl" for="preset">Recipe</label>
-<select id="preset"></select>
-<p class="temp" id="temp" hidden></p>
-
-<div class="fields" id="fields"></div>
-
-<div class="ratio">
-  <span class="rl">Ratio</span>
-  <label class="rr">1&nbsp;:<input id="r-x" type="number" inputmode="decimal" step="any" min="0.1" aria-label="Ratio, 1 to"></label>
-  <label class="rr" id="gpl-wrap"><input id="r-g" type="number" inputmode="decimal" step="any" min="1" aria-label="Grams of coffee per litre"> g/l</label>
-</div>
-
-<details class="kept" id="kept">
-  <summary>Water kept in the grounds and filter</summary>
-  <div class="kgrid">
-    <label>Grounds keep (g per g coffee)<input id="k-a" type="number" inputmode="decimal" step="any" min="0"></label>
-    <label>Filter keeps (g)<input id="k-f" type="number" inputmode="decimal" step="any" min="0"></label>
-  </div>
-  <p class="hint" id="kept-note"></p>
-</details>
-
-<p class="msg" id="msg" role="status" aria-live="polite"></p>
-<button class="reset" id="reset" type="button">Reset this recipe</button>
+<div id="calc"></div>
 </main>
 <script src="../data/defaults.js"></script>
+<script src="../assets/js/calcui.js"></script>
 <script src="../assets/js/calc.js"></script>
 <script src="../assets/js/nav.js" defer></script>
 </body>

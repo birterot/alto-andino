@@ -10,7 +10,7 @@ window.DEVICES = {
   sub: "Recommended methods for each device. Content from the Atlas is plain, content from other sources is marked. Your own dial-ins live in the journal.",
   D: [
     {
-      id: "press", name: "French press", kind: "Infusion (immersion)",
+      id: "press", type: "immersion", name: "French press", kind: "Infusion (immersion)",
       c: { f: ["#F0E6D0", "#3A2E17"], s: ["#8F6A2B", "#D6AE6A"], t: ["#6B4F1F", "#EBD3A3"] },
       tag: "Bigger, richer body and texture",
       body: "More oils and some tiny suspended pieces of coffee end up in the cup, which gives a bigger, richer body. The drink is uniformly extracted.",
@@ -26,7 +26,7 @@ window.DEVICES = {
       extra: []
     },
     {
-      id: "aero", name: "AeroPress", kind: "Infusion (immersion)",
+      id: "aero", type: "immersion", name: "AeroPress", kind: "Infusion (immersion)",
       c: { f: ["#E0E5E8", "#232B31"], s: ["#4F6572", "#9DB1BD"], t: ["#364651", "#C4D2DB"] },
       tag: "Short and strong, or close to a regular cup",
       body: "Decide first what kind of cup you want: short and strong, or close to a regular cup.",
@@ -48,7 +48,7 @@ window.DEVICES = {
       extra: []
     },
     {
-      id: "pour", name: "Pour-over / filter", kind: "Percolation",
+      id: "pour", type: "filter", name: "Pour-over / filter", kind: "Percolation",
       logAs: ["Hario V60", "Chemex", "Pour-over (other)"],   // names offered in the journal's device list
       c: { f: ["#E4EAE0", "#243026"], s: ["#4F6B55", "#9DB8A1"], t: ["#34493A", "#C5D6C7"] },
       tag: "Clean cup, many ways to adjust",
@@ -103,7 +103,7 @@ window.DEVICES = {
       ]
     },
     {
-      id: "moka", name: "Moka pot", kind: "Stove-top",
+      id: "moka", type: "moka", name: "Moka pot", kind: "Stove-top",
       c: { f: ["#EFDDD2", "#3C261D"], s: ["#94512F", "#D79A7A"], t: ["#6E3A22", "#EDC4AE"] },
       tag: "Strong, so go easy on the heat",
       body: "Stove-top brewer with a strong ratio. The aim is to avoid cooking the coffee for longer than necessary.",
@@ -117,7 +117,7 @@ window.DEVICES = {
       extra: []
     },
     {
-      id: "flair", name: "Flair 58", kind: "Manual lever espresso",
+      id: "flair", type: "espresso", name: "Flair 58", kind: "Manual lever espresso",
       c: { f: ["#F3DEDA", "#3B1D1A"], s: ["#A83A2E", "#E58D7F"], t: ["#7C291F", "#F2C4BB"] },
       tag: "Espresso by hand, with full control of temperature and pressure",
       body: "You set the temperature and you make the pressure with the lever, so the shot is yours to shape. That also means more to dial in. Change one thing at a time and write it down.",

@@ -58,6 +58,7 @@ button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px soli
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script src="../assets/js/config.js"></script>
 <script src="../assets/js/nav.js" defer></script>
+<script src="../assets/js/scales.js"></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
 const $ = id => document.getElementById(id);
@@ -96,11 +97,11 @@ function draw(pts, attrs, xk, joined) {
   let x0 = Math.min(...xs), x1 = Math.max(...xs);
   if (x1 - x0 < 4) { const m = (x0 + x1) / 2; x0 = m - 2; x1 = m + 2; }
   x0 = Math.floor(x0 - 1); x1 = Math.ceil(x1 + 1);
-  const sx = v => L + (v - x0) / (x1 - x0) * (W - L - R), sy = v => T + (10 - v) / 10 * (H - T - B);
+  const sx = v => L + (v - x0) / (x1 - x0) * (W - L - R), sy = v => T + (5 - v) / 10 * (H - T - B);
   const svg = s("svg", { class: "ch", viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "Flavour scores against days. The numbers are listed below the chart." });
-  for (let v = 0; v <= 10; v += 2) {
-    svg.appendChild(s("line", { class: "grid", x1: L, x2: W - R, y1: sy(v), y2: sy(v) }));
-    svg.appendChild(s("text", { x: L - 8, y: sy(v) + 4, "text-anchor": "end" }, v));
+  for (let v = -5; v <= 5; v += 1) {
+    svg.appendChild(s("line", { class: "grid", x1: L, x2: W - R, y1: sy(v), y2: sy(v), "stroke-width": v === 0 ? 1.6 : 1 }));
+    if (v % 5 === 0) svg.appendChild(s("text", { x: L - 8, y: sy(v) + 4, "text-anchor": "end" }, v > 0 ? "+" + v : v));
   }
   const step = Math.max(1, Math.ceil((x1 - x0) / 7));
   for (let v = Math.ceil(x0 / step) * step; v <= x1; v += step) {
@@ -109,14 +110,14 @@ function draw(pts, attrs, xk, joined) {
   }
   svg.appendChild(s("text", { x: (L + W - R) / 2, y: H - 6, "text-anchor": "middle" }, xk === "roast" ? "Days after roast" : "Days after opening"));
   const my = (T + H - B) / 2;
-  svg.appendChild(s("text", { x: 12, y: my, "text-anchor": "middle", transform: "rotate(-90 12 " + my + ")" }, "Score"));
+  svg.appendChild(s("text", { x: 12, y: my, "text-anchor": "middle", transform: "rotate(-90 12 " + my + ")" }, "Score (-5 to +5)"));
   attrs.filter(a => !state.hidden.has(a)).forEach(a => {
     const col = "var(--c" + colorIndex(attrs, a) + ")";
     const sp = pts.filter(p => p.scores[a] != null).sort((p, q) => p[xk] - q[xk]);
-    if (joined && sp.length > 1) svg.appendChild(s("polyline", { points: sp.map(p => sx(p[xk]) + "," + sy(p.scores[a])).join(" "), fill: "none", stroke: col, "stroke-width": 2.5, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+    if (joined && sp.length > 1) svg.appendChild(s("polyline", { points: sp.map(p => sx(p[xk]) + "," + sy(SCALE.chart(a, p.scores[a]))).join(" "), fill: "none", stroke: col, "stroke-width": 2.5, "stroke-linejoin": "round", "stroke-linecap": "round" }));
     sp.forEach(p => {
-      const c = s("circle", { cx: sx(p[xk]), cy: sy(p.scores[a]), r: 4.5, fill: col });
-      c.appendChild(s("title", {}, a + " " + p.scores[a] + ", day " + Math.round(p[xk])));
+      const c = s("circle", { cx: sx(p[xk]), cy: sy(SCALE.chart(a, p.scores[a])), r: 4.5, fill: col });
+      c.appendChild(s("title", {}, a + " " + SCALE.text(a, p.scores[a]) + ", day " + Math.round(p[xk])));
       svg.appendChild(c);
     });
   });
@@ -163,7 +164,7 @@ function render() {
     const r = el("tr");
     r.appendChild(el("td", "", String(Math.round(p[xk] * 10) / 10)));
     r.appendChild(el("td", "", p.recipe));
-    attrs.forEach(a => r.appendChild(el("td", "", p.scores[a] != null ? String(p.scores[a]) : "-")));
+    attrs.forEach(a => r.appendChild(el("td", "", p.scores[a] != null ? SCALE.text(a, p.scores[a]) : "-")));
     t.appendChild(r);
   });
   table.appendChild(t);
