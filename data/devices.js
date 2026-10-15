@@ -145,14 +145,20 @@ window.DEVICES = {
             ["Medium roast", "Medium setting, about 90 °C (194 °F). Yield about 2 times the dose."],
             ["Light roast", "High setting, about 95 °C (203 °F). Extremely light roasts: yield closer to 3 times the dose."]]],
           ["Pressure on the gauge", [
-            ["Below 6 bar", "Not enough pressure."],
-            ["6 to 9 bar", "The target range."],
-            ["10 to 12 bar", "High. Ease off a little."],
-            ["Above 12 bar", "Stop, ease off the lever and discard the puck."]]],
+            ["Below 6 bar", "Fine for the pre-infusion. If something goes wrong in a shot, going down to around 6 bar can still save it at the end."],
+            ["6 to 9 bar", "The classic espresso range."],
+            ["10 to 12 bar", "Higher than you need. Easing off a little is usually better."],
+            ["Above 12 bar", "Not recommended. Be careful."]]],
+          ["Shot time", [
+            ["25 to 35 seconds", "The classic range for an espresso shot."],
+            ["Under 25 seconds", "Fast. Risk of underextraction (sour)."],
+            ["Over 35 to 40 seconds", "Slow. Risk of overextraction (bitter)."],
+            ["The cup decides", "These are only guides. If it tastes good to you, the recipe is right, even at 40 or 50 seconds. Many specialty coffees today run longer than 35 seconds."],
+            ["Our experience", "80 to 90% of our coffees end up at around 45 seconds."]]],
           ["Taste says...", [
             ["Sour (underextracted)", "Raise the water temperature a few degrees, grind finer even if the shot goes past 30 seconds, or lower the dose slightly."],
             ["Bitter (overextracted)", "Lower the water temperature a few degrees, grind coarser even if the shot goes under 30 seconds, or raise the dose slightly."],
-            ["Too fast or too slow", "Under about 30 seconds is fast, so grind finer. Over about 35 seconds is slow, so grind coarser."]]]
+            ["Too fast or too slow", "Under about 25 seconds is fast, so grind finer. Over about 35 to 40 seconds is slow, so grind coarser. But if it tastes good, leave it."]]]
         ],
         links: [["Dialing in the Flair 58 Plus (Flair Espresso)", "https://flairespresso.com/blogs/news/dialing-in-flair-58-plus-manual-espresso-maker"],
                 ["Flair 58 Plus 2 product guide (Seattle Coffee Gear)", "https://www.seattlecoffeegear.com/pages/product-resources/flair-58-plus-2-manual-espresso-machine-product-guide"]] }],
