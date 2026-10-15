@@ -1,5 +1,5 @@
 /* The brew calculator, as a part that can be put on any page.
-     altoCalc.mount(container, { presets, start, storageKey, onChange })  ->  { numbers(), setPreset(id), preset() }
+     altoCalc.mount(container, { presets, start, storageKey, onChange, compact })   compact = short labels, three fields in a row  ->  { numbers(), setPreset(id), preset() }
    The presets come from data/defaults.js. The maths is in solve(), kept in one place so it is easy to check. */
 window.altoCalc = (function () {
   function el(t, c, x) { var e = document.createElement(t); if (c) e.className = c; if (x) e.textContent = x; return e; }
@@ -37,7 +37,7 @@ window.altoCalc = (function () {
     function load() { if (!o.storageKey) return null; try { var s = JSON.parse(localStorage.getItem(o.storageKey)); if (s && byId(s.id)) return s; } catch (e) {} return null; }
     function save() { if (o.storageKey) try { localStorage.setItem(o.storageKey, JSON.stringify(st)); } catch (e) {} }
 
-    root.textContent = "";
+    root.textContent = ""; if (o.compact) root.classList.add("compact");
     var lab = el("label", "fl", "Recipe"); lab.setAttribute("for", uid + "p");
     var sel = el("select"); sel.id = uid + "p";
     presets.forEach(function (p) { var op = el("option", "", p.name); op.value = p.id; sel.appendChild(op); });
@@ -62,14 +62,17 @@ window.altoCalc = (function () {
     });
     var note = el("p", "hint"); kept.append(kg, note);
     var msg = el("p", "msg"); msg.setAttribute("role", "status"); msg.setAttribute("aria-live", "polite");
-    var reset = el("button", "reset", "Reset this recipe"); reset.type = "button";
+    var reset = el("button", "reset", o.compact ? "Reset" : "Reset this recipe"); reset.type = "button";
     root.append(lab, sel, temp, fields, ratio, kept, msg, reset);
 
     function labels() {
       var y = st.basis === "yield";
       boxes.dose.lab.textContent = "Coffee (g)";
-      boxes.water.lab.textContent = y ? "Water in the chamber (ml)" : "Water (ml, 1 g = 1 ml)";
-      boxes.yield.lab.textContent = y ? "Cup yield (g)" : "Cup yield after absorption (g)";
+      if (o.compact) { boxes.water.lab.textContent = "Water (ml)"; boxes.yield.lab.textContent = "Yield (g)"; }
+      else {
+        boxes.water.lab.textContent = y ? "Water in the chamber (ml)" : "Water (ml, 1 g = 1 ml)";
+        boxes.yield.lab.textContent = y ? "Cup yield (g)" : "Cup yield after absorption (g)";
+      }
       rrg.hidden = y;
       note.textContent = "Cup yield = water - coffee x " + st.a + " - " + st.f + " g. " + (y ? "Espresso ratios are coffee to yield." : "The ratio is coffee to water.");
     }

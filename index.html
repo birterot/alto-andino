@@ -10,12 +10,14 @@
 <meta name="apple-mobile-web-app-title" content="Alto Andino">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Alto Andino</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect width=%2224%22 height=%2224%22 rx=%225%22 fill=%22%232F2118%22/><path d=%22M2.5 18L12 3l9.5 15 M7.6 12.8l2.4 1.8 2-1.8 2 1.8 2.4-1.8%22 fill=%22none%22 stroke=%22%23EFE6D8%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="stylesheet" href="assets/css/base.css">
 <style>
 .hero{display:flex;flex-direction:column;align-items:center;gap:14px;margin:28px 0 36px;text-align:center}
-.hero .mark{width:64px;height:64px;color:var(--accent)}
-.hero h1{font-size:30px}
+.hero{gap:18px}
+.hero .mark{width:168px;color:var(--brand)}.hero .mark svg{display:block;width:100%;height:auto}
+.hero h1.wm{width:220px;margin:0}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
 .tile{display:flex;flex-direction:column;gap:6px;padding:20px;min-height:132px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:inherit;text-decoration:none}
 .tile:hover{border-color:var(--ink)}
@@ -31,7 +33,7 @@
 <body>
 <main>
 <div class="hero">
-  <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 18L12 3l9.5 15 M7.6 12.8l2.4 1.8 2-1.8 2 1.8 2.4-1.8"/></svg>
+  <div class="mark" data-mark></div>
   <h1 data-wordmark>Alto Andino</h1>
 </div>
 <div class="tiles">

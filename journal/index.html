@@ -10,20 +10,32 @@
 <meta name="apple-mobile-web-app-title" content="Alto Andino">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Coffee journal</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect width=%2224%22 height=%2224%22 rx=%225%22 fill=%22%232F2118%22/><path d=%22M2.5 18L12 3l9.5 15 M7.6 12.8l2.4 1.8 2-1.8 2 1.8 2.4-1.8%22 fill=%22none%22 stroke=%22%23EFE6D8%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="stylesheet" href="../assets/css/base.css">
 <link rel="stylesheet" href="../assets/css/calc.css">
 <style>
-label{display:block;margin-top:12px;font-size:14px;color:var(--mut)}
-input,textarea{display:block;width:100%;max-width:420px;margin-top:4px;padding:10px 12px;font:inherit;border-radius:10px;border:1px solid var(--line);background-color:var(--card);color:var(--ink)}
-select{display:block;width:100%;max-width:420px;margin-top:4px;border-radius:10px}
+/* Form fields: one height, one radius, one font size (16px also stops the iPhone from zooming in). */
+label{display:block;margin-top:14px;font-size:13.5px;color:var(--mut)}
+input,textarea,select{display:block;width:100%;max-width:420px;margin-top:6px;font:inherit;font-size:16px;border-radius:12px;border:1px solid var(--line);background-color:var(--card);color:var(--ink)}
+input,select{height:48px;padding:0 14px}
+select{padding-right:38px}
+textarea{padding:12px 14px;min-height:96px}
+input[type=date]{-webkit-appearance:none;appearance:none;line-height:46px;text-align:left}
+input::-webkit-date-and-time-value{text-align:left}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+input::placeholder,textarea::placeholder{color:var(--mut);opacity:.7}
+input[type=checkbox]{width:20px;height:20px;padding:0;margin:0;accent-color:var(--ink)}
 .filters select,.filters input{border-radius:999px}
-.filters input{padding:10px 16px;min-height:44px}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;max-width:420px}
-label.chk{display:flex;align-items:center;gap:8px;color:var(--ink)}
-label.chk input{width:auto;margin:0}
+.filters input{padding:0 16px}
+.filters input,.filters select{height:44px;font-size:15px}
+.row2,.nums{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;max-width:420px}
+.row2>label,.nums>label{display:flex;flex-direction:column;justify-content:flex-end;min-width:0}
+.nums>label.wide{grid-column:1/-1}
+label.chk{display:flex;align-items:center;gap:10px;color:var(--ink);font-size:15px;margin-top:16px}
+label.chk input{width:20px;height:20px;margin:0;flex:none}
 .go,.lnk{font:inherit;cursor:pointer;border-radius:6px}
-.go{margin-top:16px;padding:10px 20px;border:1px solid var(--ink);background:var(--ink);color:var(--bg)}
+.go{margin-top:20px;height:48px;padding:0 24px;border-radius:12px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font-size:16px}
 .lnk{padding:2px 10px;border:1px solid var(--line);background:none;color:var(--mut);font-size:13px}
 .hint,#msg{color:var(--mut);font-size:14px}
 .foot{margin:72px 0 0;text-align:center;font-size:12px;color:var(--mut);opacity:.7}
@@ -51,7 +63,6 @@ details.add summary{cursor:pointer;font-weight:600}
 .ico{display:block;flex:none}
 #dhead{margin:8px 0 16px}
 #dhead h2{margin:0;font-size:24px}
-.nums{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;max-width:420px}
 .sc{--ac:var(--accent);display:grid;grid-template-columns:auto 1fr auto auto;grid-template-areas:"i l v x" "r r r r";gap:0 10px;align-items:center;margin-top:16px;max-width:420px}
 .sc .si{grid-area:i;color:var(--ac)}
 .sc .slb{grid-area:l;font-weight:600;font-size:15px;text-transform:capitalize}
@@ -80,22 +91,38 @@ details.add summary{cursor:pointer;font-weight:600}
 .seg button.on{background:var(--ac);color:var(--card)}
 .addnote{display:flex;gap:8px;max-width:420px;margin-top:14px}
 .addnote input{margin:0;flex:1;border-radius:999px;padding:10px 16px}
-.addnote .btn{min-height:44px}
+.addnote .btn{height:48px;border-radius:999px;padding:0 18px}
+.addnote input{height:48px}
 h3.sh{font-size:16px;margin:26px 0 2px}
 label.off{opacity:.45}
 [hidden]{display:none!important}
-.nums>label{min-width:0}.nums input,.nums select{max-width:none}
+.nums input,.nums select,.row2 input{max-width:none}
 input:disabled{background:var(--bg);cursor:not-allowed}
-.calc input{margin:0}.calc .fld input,.calc .ratio input{max-width:none}.calc .kgrid input{margin-top:4px}.calc label{margin-top:0}.calc .fl{margin-top:4px}
-details.calcbox{max-width:420px}
-details.calcbox .go{margin-top:12px}
+/* the calculator inside the brew form: flat, compact */
+.calc input{margin:0;height:auto;max-width:none}.calc label{margin-top:0}.calc .fl{margin-top:4px}
+.calc .kgrid input{margin-top:4px;height:44px}
+details.calcbox{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:var(--bg)}
+details.calcbox summary{font-size:15px}
+.compact .fields{grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.compact .fld{padding:10px 10px 8px;border-radius:12px;grid-template-columns:1fr;grid-template-areas:"l" "i"}
+.compact .fld .u{display:none}
+.compact .fld .l{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.compact .fld input{font-size:21px;padding:0}
+.compact .ratio{margin-top:14px}.compact .kept{margin-top:14px;background:var(--card)}
+.compact .temp{font-size:13px}
+.compact .msg{margin-top:8px;min-height:0}
+.calcacts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+.calcacts .reset{margin:0}
 .dvrow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px}
 .dvrow button,.modes button{font:inherit;font-size:14px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
 .dvrow button.on,.modes button.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .modes{display:flex;gap:8px;margin:8px 0 4px}
 .sfor{border:0;padding:0;margin:12px 0 0}
 .sfor legend{padding:0;font-size:14px;color:var(--mut)}
-.sfor label.chk{display:inline-flex;margin:6px 16px 0 0}
+.sfor label.chk{display:inline-flex;gap:8px;margin:8px 8px 0 0;padding:0 14px;min-height:40px;border:1px solid var(--line);border-radius:999px;background:var(--card);font-size:14px;cursor:pointer}
+.sfor label.chk:has(input:checked){border-color:var(--ink);background:var(--ink);color:var(--bg)}
+.sfor label.chk input{width:16px;height:16px;accent-color:var(--bg)}
+.sfor legend{margin-bottom:2px}
 .curve{max-width:420px;margin-top:12px;color:var(--mut)}
 .curve svg{display:block;width:100%;height:auto;color:var(--mut)}
 .curve .ln{stroke:var(--accent)}
@@ -212,25 +239,25 @@ details.calcbox .go{margin-top:12px}
         <details class="add calcbox" id="calcbox">
           <summary>Plan with the calculator</summary>
           <div class="calc"><div id="calc"></div></div>
-          <button type="button" class="go" id="usecalc">Use these numbers</button>
+          <button type="button" class="btn" id="usecalc">Use these numbers</button>
         </details>
         <h3 class="sh">Grind</h3>
         <div class="nums">
-          <label>Grinder<select id="b-grinder"></select></label>
+          <label class="wide">Grinder<select id="b-grinder"></select></label>
           <label>Setting<input id="b-grind" inputmode="decimal" placeholder="25" autocomplete="off"></label>
+          <label>Feel<input id="b-feel" list="feel-list" placeholder="fine" autocomplete="off"></label>
         </div>
-        <label>Feel<input id="b-feel" list="feel-list" placeholder="fine, medium..." autocomplete="off"></label>
         <datalist id="feel-list"></datalist>
-        <p class="hint" id="feelhint">The feel word is suggested from the setting. Change it if you like.</p>
+        <p class="hint" id="feelhint">The feel word follows the setting. Type your own if you like.</p>
         <h3 class="sh">Recipe</h3>
         <div class="nums">
           <label>Dose (g)<input id="b-dose" type="number" step="any" inputmode="decimal"></label>
           <label id="wlab">Water (g)<input id="b-water" type="number" step="any" inputmode="decimal"></label>
           <label>Yield (g)<input id="b-yield" type="number" step="any" inputmode="decimal"></label>
-          <label>Water temperature (&deg;C)<input id="b-temp" type="number" step="any" inputmode="decimal"></label>
-          <label>Total time (s)<input id="b-time" type="number" step="any" inputmode="decimal"></label>
+          <label>Temp (&deg;C)<input id="b-temp" type="number" step="any" inputmode="decimal"></label>
+          <label>Time (s)<input id="b-time" type="number" step="any" inputmode="decimal"></label>
         </div>
-        <p class="hint">Total time includes the pre-infusion, as your scale shows it.</p>
+        <p class="hint">Time is the total, pre-infusion included, as your scale shows it.</p>
         <div id="espbox">
         <h3 class="sh">Pressure</h3>
         <div class="nums">
@@ -900,7 +927,8 @@ function onCalc() {   // the calculator moved: non-espresso devices follow it un
   if (!calc || editingBrew) return;
   if (!isEsp(typeOf(chosen("b-device")))) fillFromCalc(calc.numbers(), false);
 }
-calc = window.altoCalc && D.PRESETS ? altoCalc.mount($("calc"), { presets: D.PRESETS, start: D.START_PRESET, onChange: () => onCalc() }) : null;
+calc = window.altoCalc && D.PRESETS ? altoCalc.mount($("calc"), { presets: D.PRESETS, start: D.START_PRESET, compact: true, onChange: () => onCalc() }) : null;
+if (calc) { const rs = $("calc").querySelector(".reset"), row = el("div", "calcacts"); rs.replaceWith(row); row.append($("usecalc"), rs); }
 $("usecalc").onclick = () => { fillFromCalc(calc && calc.numbers(), true); drawCurve(); userChanged(); say("Numbers copied into the form."); };
 $("b-device").addEventListener("change", () => { applyType(); if (!editingBrew) autoFill(); });
 $("b-device-new").addEventListener("change", () => { applyType(); });
