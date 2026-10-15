@@ -94,7 +94,7 @@ dialog.dlg p{margin:0 0 4px;font-size:14.5px;color:var(--mut)}
 .sc .si{grid-area:i;color:var(--ac)}
 .sc .slb{grid-area:l;font-weight:600;font-size:15px;text-transform:capitalize}
 .sc .scv{grid-area:v;min-width:34px;text-align:center;font-weight:600;font-size:14px;padding:1px 10px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
-.sc.on .scv{background:var(--ac);border-color:var(--ac);color:var(--card)}
+.sc.on .scv{background:color-mix(in srgb,var(--ac) 20%,var(--card));border-color:var(--ac);color:var(--ink)}
 .sc .clr{grid-area:x;width:32px;height:32px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);background:none;color:var(--mut);cursor:pointer;padding:0}
 .sc .clr:hover{color:var(--ink);border-color:var(--ink)}
 .sc:not(.on) .clr{visibility:hidden}
@@ -247,6 +247,8 @@ details.calcbox summary{font-size:15px}
       <label>Roast date<input type="date" id="f-rd"></label>
       <label>Open date<input type="date" id="f-od"></label>
       <label>Notes<textarea id="f-notes" rows="3"></textarea></label>
+      <label>Bag size (g, optional)<input id="f-bag" type="number" inputmode="numeric" min="1" max="5000" step="1" placeholder="250"></label>
+      <p class="hint">Used to show how much coffee is left.</p>
       <label>Where to buy (link, optional)<input id="f-url" type="url" inputmode="url" placeholder="https://..."></label>
       <label>Bag photo<input type="file" id="f-photo" accept="image/*"></label>
       <p class="hint" id="photohint" hidden>Leave empty to keep the current photo (a new bag uses the same photo).</p>
@@ -595,7 +597,8 @@ function ibtn(label, icon, onclick, cls) {
   b.appendChild(ico(icon, 20)); b.onclick = onclick; return b;
 }
 // Colour and icon for a flavour score (core flavours get their own, your own flavour notes get a leaf).
-const ATTR = { sour: ["#6B7442", "#B4BC83"], sweet: ["#8F6A2B", "#D6AE6A"], bitter: ["#6F4E37", "#B58B63"], balance: ["#4F6572", "#9DB1BD"], chocolaty: ["#5A3A24", "#C09670"] };
+// The same colours as the Trends charts (checked for colour blindness): sour, sweet, bitter, balance.
+const ATTR = { sour: ["#2a78d6", "#3987e5"], sweet: ["#eb6834", "#d95926"], bitter: ["#1baf7a", "#199e70"], balance: ["#eda100", "#c98500"], chocolaty: ["#5A3A24", "#C09670"] };
 const attrIcon = a => ICONS[a] && ATTR[a] ? a : "leaf";
 const attrColor = a => ATTR[a] ? "light-dark(" + ATTR[a][0] + "," + ATTR[a][1] + ")" : "var(--accent)";
 
@@ -631,6 +634,7 @@ function card(c, photoUrl, nBrews, ratings, bags) {
   const rt = rateBlock(ratings); if (rt) b.appendChild(rt);
   if (c.roast_date) b.appendChild(el("p", "", "Roasted " + ago(c.roast_date) + " (" + c.roast_date + ")"));
   if (c.open_date) b.appendChild(el("p", "", "Opened " + ago(c.open_date) + " (" + c.open_date + ")"));
+  if (c.bag_size_g && c.open_date) { const left = Math.max(0, c.bag_size_g - (coffeeUsed[c.id] || 0)); b.appendChild(el("p", "", "About " + Math.round(left) + " g of " + c.bag_size_g + " g left")); }
   if (c.notes) b.appendChild(el("p", "", c.notes));
   const acts = el("div", "acts");
   acts.appendChild(abtn("btn", nBrews ? "Brews (" + nBrews + ")" : "Log a brew", "cup", () => { location.hash = "c=" + c.id; }));
@@ -667,15 +671,15 @@ function card(c, photoUrl, nBrews, ratings, bags) {
   return a;
 }
 
-let loadId = 0, coffeeData = [], coffeeUrls = {}, coffeeCounts = {}, coffeeRates = {};
+let loadId = 0, coffeeData = [], coffeeUrls = {}, coffeeCounts = {}, coffeeRates = {}, coffeeUsed = {};
 async function load() {
   const my = ++loadId;   // only the newest load may draw, so parallel loads cannot add cards twice
   const [{ data, error }, { data: bs }] = await Promise.all([
     db.from("coffees").select("*").order("created_at", { ascending: false }),
-    db.from("brews").select("coffee_id,rating,is_dialin,brewed_at").order("brewed_at")
+    db.from("brews").select("coffee_id,rating,is_dialin,brewed_at,dose_g").order("brewed_at")
   ]);
-  const counts = {}, rates = {};
-  (bs || []).forEach(b => { counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; (rates[b.coffee_id] = rates[b.coffee_id] || []).push({ r: b.rating, d: !!b.is_dialin, t: b.brewed_at }); });
+  const counts = {}, rates = {}, used = {};
+  (bs || []).forEach(b => { used[b.coffee_id] = (used[b.coffee_id] || 0) + (Number(b.dose_g) || 0); counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; (rates[b.coffee_id] = rates[b.coffee_id] || []).push({ r: b.rating, d: !!b.is_dialin, t: b.brewed_at }); });
   if (my !== loadId) return;
   if (error) { say("Could not load coffees: " + error.message); return; }
   const uniq = k => [...new Set(data.map(c => c[k]).filter(Boolean))];
@@ -686,7 +690,7 @@ async function load() {
     (s || []).forEach(x => { if (x.signedUrl) urls[x.path] = x.signedUrl; });
     if (my !== loadId) return;
   }
-  coffeeData = data; coffeeUrls = urls; coffeeCounts = counts; coffeeRates = rates;
+  coffeeData = data; coffeeUrls = urls; coffeeCounts = counts; coffeeRates = rates; coffeeUsed = used;
   fillFilter("flt-process", "All processes", uniq("process").sort());
   fillFilter("flt-roast", "All roast levels", uniq("roast_level").sort());
   renderCoffees();
@@ -780,7 +784,7 @@ function startEdit(c) {
   $("f-blend").checked = !!c.is_blend; setSfor(c.suitable_for);
   setSel("f-process", c.process); setSel("f-roast", c.roast_level);
   $("f-tags").value = (c.flavour_tags || []).join(", ");
-  $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || ""; $("f-url").value = c.buy_url || "";
+  $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || ""; $("f-url").value = c.buy_url || ""; $("f-bag").value = c.bag_size_g || "";
   $("addsum").textContent = "Edit coffee";
   $("save").textContent = "Save changes";
   $("cancel").hidden = false;
@@ -800,7 +804,7 @@ $("cancel").onclick = endEdit;
 
 // A new coffee that was not saved yet is kept on this phone, so leaving the page does not lose it.
 const COFFEE_DRAFT = "alto.draft.coffee";
-const CF = ["f-name", "f-roaster", "f-origin", "f-variety", "f-alt-min", "f-alt-max", "f-process", "f-process-new", "f-roast", "f-roast-new", "f-tags", "f-rd", "f-od", "f-notes", "f-url"];
+const CF = ["f-name", "f-roaster", "f-origin", "f-variety", "f-alt-min", "f-alt-max", "f-process", "f-process-new", "f-roast", "f-roast-new", "f-tags", "f-rd", "f-od", "f-notes", "f-url", "f-bag"];
 function saveCoffeeDraft() {
   if (editing || newBagOf || !me) return;
   const f = {}; CF.forEach(i => { f[i] = $(i).value; });
@@ -855,6 +859,10 @@ $("cf").onsubmit = async e => {
       suitable_for: sforVals(),
       notes: v("f-notes") || null, roast_date: v("f-rd") || null, open_date: v("f-od") || null, buy_url: v("f-url") ? safeUrl(v("f-url")) : null
     };
+    // bag size: only sent when filled in (or cleared on a coffee that had one), so saving works before supabase/14_bag_size.sql
+    const bag = v("f-bag") === "" ? null : Math.round(Number(v("f-bag")));
+    if (bag !== null && !(bag >= 1 && bag <= 5000)) throw new Error("the bag size must be between 1 and 5000 g");
+    if (bag !== null || (editing && editing.bag_size_g) || (newBagOf && newBagOf.bag_size_g)) row.bag_size_g = bag;
     if (path) row.photo_path = path; else if (newBagOf) row.photo_path = newBagOf.photo_path || null; else if (!editing) row.photo_path = null;
     if (newBagOf) row.group_id = gk(newBagOf);
     if (editing) {

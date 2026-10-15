@@ -9,246 +9,561 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Alto Andino">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>Trends | Coffee atlas</title>
+<title>Trends | Alto Andino</title>
 <link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="stylesheet" href="../assets/css/base.css">
 <style>
-:root{--c0:light-dark(#A9772B,#D6AE6A);--c1:light-dark(#A65A68,#D99AA6);--c2:light-dark(#6A4B36,#C9A27A);--c3:light-dark(#4F7A62,#9DB8A1);--c4:light-dark(#4F6D8A,#9DB1BD);--c5:light-dark(#7A5A86,#BFA3C9);--c6:light-dark(#7B8450,#B4BC83);--c7:light-dark(#B0623E,#D79A7A)}
-.ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin:16px 0 14px}
-.ctl select,.ctl button{font:inherit;padding:10px 16px;border-radius:999px;border:1px solid var(--line);color:var(--ink);min-width:0;min-height:44px}
-.ctl button{background:var(--card)}
-.ctl select{padding-right:38px}
-.ctl button{cursor:pointer}
-.banner{margin:0 0 12px;padding:8px 12px;border-radius:8px;border:1px dashed var(--line);background:var(--card);font-size:14px}
-.chartbox{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
-svg.ch{display:block;width:100%;height:auto}
-svg.ch text{font-size:12px;fill:var(--mut)}
-svg.ch .grid{stroke:var(--line);stroke-width:1;opacity:.6}
-.msg{padding:28px 12px;text-align:center;color:var(--mut)}
-.legend{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
-.leg{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);font:inherit;font-size:13px;cursor:pointer;color:var(--ink)}
-.leg i{width:10px;height:10px;border-radius:50%;background:var(--col)}
+/* Chart colours. Flavours and people use a colour set that was checked for colour blindness and contrast
+   (flavours: sour, sweet, bitter, balance in this fixed order; people: first and second person).
+   Star ratings use one coffee-brown scale, light to dark (1 to 5 stars). */
+:root{
+  --f-sour:light-dark(#2a78d6,#3987e5);--f-sweet:light-dark(#eb6834,#d95926);--f-bitter:light-dark(#1baf7a,#199e70);--f-balance:light-dark(#eda100,#c98500);
+  --p1:light-dark(#2a78d6,#3987e5);--p2:light-dark(#eb6834,#d95926);
+  --r1:light-dark(#C29F72,#7D5A3B);--r2:light-dark(#AA8253,#9A7650);--r3:light-dark(#8C653A,#B8936A);--r4:light-dark(#6C4A28,#D3B08A);--r5:light-dark(#4C3118,#EBD2B0);
+  --one:light-dark(#8A6A4A,#C4A27C);--one-track:light-dark(#E9DFD2,#3A332C);
+  --grid:light-dark(#E6E0D6,#34302B);--axis:light-dark(#C9C0B2,#4A443D)
+}
+.tabs{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;margin:16px -20px 0;padding:0 20px 2px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs .tab{flex:none}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 18px}
+.ctl select,.ctl button{font:inherit;font-size:14.5px;min-height:42px;border-radius:999px;border:1px solid var(--line);color:var(--ink);background-color:var(--card);min-width:0;flex:1 1 150px;max-width:100%}
+#f-coffee{flex-basis:100%}
+.ctl button{flex:0 0 auto;padding:0 16px;cursor:pointer;color:var(--mut)}
+.banner{margin:0 0 14px;padding:8px 12px;border-radius:10px;border:1px dashed var(--line);background:var(--card);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 16px 12px;margin:0 0 18px}
+.card h2{margin:0;font-size:19px}
+.card .what{margin:4px 0 10px;color:var(--mut);font-size:14px}
+.card .take{margin:8px 0 2px;font-size:14.5px;color:var(--ink)}
+.box{position:relative;width:100%}
+.msg{padding:22px 8px;text-align:center;color:var(--mut);font-size:14px}
+svg.ch{display:block;overflow:visible;touch-action:pan-y}
+svg.ch text{font-size:12px;fill:var(--mut);font-variant-numeric:tabular-nums}
+svg.ch .lab{font-size:12px}
+svg.ch .grid{stroke:var(--grid);stroke-width:1}
+svg.ch .base{stroke:var(--axis);stroke-width:1}
+svg.ch .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+svg.ch .dot{stroke:var(--card);stroke-width:2}
+svg.ch .dot.hollow{fill:var(--card);stroke-width:2}
+svg.ch .cloud{fill:var(--mut);opacity:.28}
+svg.ch .hit{fill:transparent}
+svg.ch .pad{fill:transparent;outline:none}
+svg.ch .hair{stroke:var(--axis);stroke-width:1}
+svg.ch .trail{fill:none;stroke:var(--axis);stroke-width:1.5;stroke-linejoin:round}
+svg.ch .lastring{fill:none;stroke:var(--ink);stroke-width:1.5}
+svg.ch .zone{fill:var(--one);opacity:.08}
+svg.ch .zlab{font-size:11.5px;fill:var(--mut)}
+svg.ch .rl{fill:var(--ink);font-size:13px}
+svg.ch .val{fill:var(--ink);font-size:13px;font-weight:600}
+svg.ch .note{font-size:12px}
+svg.ch .endlab{fill:var(--ink);font-size:12.5px}
+svg.ch .stem{stroke:var(--axis);stroke-width:2}
+svg.ch .pt.faded{opacity:.4}
+svg.ch .pt.hot .dot,svg.ch .bar.hot path,svg.ch .bar.hot .dot{filter:brightness(1.12)}
+svg.ch g:focus{outline:none}
+svg.ch g:focus-visible .hit{stroke:var(--ink);stroke-width:1.5}
+.ctip{position:absolute;z-index:60;pointer-events:none;max-width:260px;padding:8px 10px;border-radius:10px;background:var(--card);border:1px solid var(--line);box-shadow:0 8px 24px rgba(20,14,10,.18);font-size:13px;color:var(--ink)}
+.ctip .ct{color:var(--mut);font-size:12px;margin-bottom:4px}
+.ctip .cr{display:flex;align-items:center;gap:7px;line-height:1.5}
+.ctip .cr b{font-weight:650}
+.ctip .cr span{color:var(--mut)}
+.ctip .kl{display:inline-block;width:12px;height:3px;border-radius:2px}
+.ctip .kd{display:inline-block;width:9px;height:9px;border-radius:50%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 8px;margin:10px 0 2px}
+.leg{display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border-radius:999px;border:1px solid var(--line);background:none;font:inherit;font-size:13px;color:var(--ink)}
+button.leg{cursor:pointer}
+.leg i{width:12px;height:3px;border-radius:2px;background:var(--col)}
+.leg i.d{width:10px;height:10px;border-radius:50%}
+.leg i.h{width:8px;height:8px;border-radius:50%;background:none;border:2px solid var(--mut)}
 .leg[aria-pressed=false]{opacity:.45}
-.hint{color:var(--mut);font-size:14px}
-table{border-collapse:collapse;width:100%;font-size:14px}
-th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+.ramp{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--mut)}
+.ramp i{display:inline-block;width:14px;height:10px;border-radius:3px}
+.subctl{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px}
+.subctl select{font:inherit;font-size:14px;min-height:38px;border-radius:999px;flex:1 1 160px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 18px}
+.grid2 h3{margin:12px 0 0;font-size:15px}
+.grid2 .small{margin:2px 0 0;color:var(--mut);font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:4px 0 6px}
+.tile{padding:12px 14px;border:1px solid var(--line);border-radius:12px}
+.tile .tl{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--mut)}
+.tile .tl i{width:10px;height:10px;border-radius:50%;background:var(--col)}
+.tile .tv{margin-top:2px;font-size:26px;font-weight:600;color:var(--ink)}
+.tile .ts{font-size:13px;color:var(--mut)}
+.meter{margin:12px 0 0}
+.meter .mt{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+.meter .mt b{font-weight:600}
+.meter .mt span{color:var(--mut);white-space:nowrap}
+.meter .tr{height:8px;border-radius:4px;background:var(--one-track);margin-top:6px;overflow:hidden}
+.meter .fl{height:100%;border-radius:4px;background:var(--one)}
+.meter .ms{margin-top:3px;font-size:12.5px;color:var(--mut)}
+details.num{margin:10px 0 0;font-size:14px}
+details.num summary{cursor:pointer;color:var(--mut)}
 .wrap{overflow-x:auto}
-button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;margin-top:8px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;font-variant-numeric:tabular-nums}
+th{color:var(--mut);font-weight:500}
+.hint{color:var(--mut);font-size:14px}
 </style>
 </head>
 <body>
 <main>
 <h1>Trends</h1>
-<p class="sub">How your coffees develop over time. Follow flavour scores for one coffee and one recipe, counted from the roast date or the day you opened the bag.</p>
+<p class="sub">What your brews tell you: how to dial in, when coffees taste best, what you like, and who brews what.</p>
 
-<div class="ctl">
-  <select id="t-coffee" aria-label="Coffee"></select>
-  <select id="t-recipe" aria-label="Recipe"></select>
-  <select id="t-x" aria-label="Days counted from"><option value="roast">Days after roast</option><option value="open">Days after opening</option></select>
-  <button id="t-demo" type="button">Show example data</button>
+<div class="tabs" role="tablist" aria-label="Trends sections">
+  <button class="tab" role="tab" data-v="time" data-t="Over time">Over time</button>
+  <button class="tab" role="tab" data-v="dial" data-t="Dial-in">Dial-in</button>
+  <button class="tab" role="tab" data-v="fresh" data-t="Freshness">Freshness</button>
+  <button class="tab" role="tab" data-v="taste" data-t="Taste">Taste</button>
+  <button class="tab" role="tab" data-v="us" data-t="Us">Us</button>
 </div>
-<p class="banner" id="banner" hidden>Example data to show how the chart will look. These are not your brews.</p>
 
-<div class="chartbox" id="chart"></div>
-<div class="legend" id="legend" role="group" aria-label="Flavours shown"></div>
-<p class="hint" id="note"></p>
-<details><summary>Show the numbers</summary><div class="wrap" id="table"></div></details>
+<div class="ctl" id="filters">
+  <select id="f-coffee" aria-label="Coffee"></select>
+  <select id="f-device" aria-label="Device"></select>
+  <select id="f-who" aria-label="Made by"></select>
+  <button id="f-demo" type="button">Example data</button>
+</div>
+<p class="banner" id="banner" hidden>Example data, to show how the charts look. These are not your brews.</p>
+
+<div id="views"></div>
 <p id="msg" class="hint" role="status"></p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script src="../assets/js/config.js"></script>
+<script src="../assets/js/theme.js"></script>
 <script src="../assets/js/nav.js" defer></script>
 <script src="../assets/js/scales.js"></script>
+<script src="../data/devices.js"></script>
+<script src="../data/defaults.js"></script>
+<script src="../assets/js/charts.js"></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
 const $ = id => document.getElementById(id);
-const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-const CORE = ["sour", "sweet", "bitter", "balance"];
-const state = { demo: false, signedIn: false, coffees: [], coffee: null, pts: [], recipe: "", hidden: new Set() };
-let pickId = 0;
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined && text !== null) e.textContent = text; return e; };
+const CORE = SCALE.CORE;   // sour, sweet, bitter, balance
+const FCOL = { sour: "var(--f-sour)", sweet: "var(--f-sweet)", bitter: "var(--f-bitter)", balance: "var(--f-balance)" };
+const RCOL = n => "var(--r" + n + ")";
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+const D = window.DEFAULTS || {};
 
-// Example data only, to show the design before there is real history.
-const DEMO_DAYS = [5, 7, 9, 12, 14, 17, 20, 24, 28];
-const DEMO = {
-  sour:      [8, 7, 7, 6, 5, 5, 4, 3, 3],
-  sweet:     [4, 5, 6, 7, 8, 7, 7, 6, 5],
-  bitter:    [2, 2, 3, 3, 3, 4, 5, 5, 6],
-  balance:   [4, 5, 6, 7, 8, 8, 7, 6, 5],
-  blueberry: [6, 7, 8, 7, 6, 5, 4, 3, 2]
-};
-function demoPoints() {
-  return DEMO_DAYS.map((d, i) => {
-    const scores = {}; Object.keys(DEMO).forEach(k => { scores[k] = DEMO[k][i]; });
-    return { recipe: "Flair, grind 25 clicks, 7 bar", roast: d, open: d - 4, scores };
-  });
+const state = { view: "dial", demo: false, signedIn: false, me: null, coffees: [], brews: [], names: {}, coffee: "", device: "", who: "", recipe: "", xk: "roast", hidden: new Set() };
+
+// ---------- helpers ----------
+const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+const r1 = n => Math.round(n * 10) / 10;
+const fmtDate = d => d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+const mmss = n => Math.floor(n / 60) + ":" + String(Math.round(n % 60)).padStart(2, "0");
+function typeOf(name) {
+  const n = (name || "").trim().toLowerCase(); if (!n) return "";
+  const list = (window.DEVICES && window.DEVICES.D) || [];
+  for (const d of list) if ([d.name, ...(d.logAs || [])].some(x => x.toLowerCase() === n || n.indexOf(x.toLowerCase() + " ") === 0)) return d.type || "";
+  return n.indexOf("flair") === 0 ? "espresso" : "";
+}
+const isEsp = dev => { const t = typeOf(dev); return t === "espresso" || t === ""; };
+const timeText = b => b.time == null ? null : (isEsp(b.device) && b.time < 90 ? b.time + " s" : mmss(b.time) + " min");
+const ratioOf = b => !b.dose ? null : isEsp(b.device) ? (b.yld ? b.yld / b.dose : null) : (b.water ? b.water / b.dose : b.yld ? b.yld / b.dose : null);
+const numGrind = g => { const m = String(g || "").replace(",", ".").match(/-?\d+(\.\d+)?/); return m ? Number(m[0]) : null; };
+const stars = n => "★".repeat(n) + "☆".repeat(5 - n);
+const coffeeOf = id => state.coffees.find(c => c.id === id) || null;
+const nameOf = id => (id && state.names[id]) || null;
+const people = () => Object.keys(state.names).sort((a, b) => state.names[a].localeCompare(state.names[b]));
+const personCol = id => { const i = people().indexOf(id); return i === 0 ? "var(--p1)" : i === 1 ? "var(--p2)" : "var(--mut)"; };
+const shown = (a, v) => SCALE.isCore(a) ? v - 5 : v;   // stored -> -5..+5 for the four core flavours
+
+// brews after the device / person filters (and the coffee filter where the view uses it)
+function filtered(useCoffee) {
+  return state.brews.filter(b => (!state.device || b.device === state.device) && (!state.who || b.who === state.who) && (!useCoffee || !state.coffee || b.coffeeId === state.coffee));
 }
 
-function s(tag, attrs, text) {
-  const e = document.createElementNS("http://www.w3.org/2000/svg", tag);
-  for (const k in attrs) e.setAttribute(k, attrs[k]);
-  if (text != null) e.textContent = text;
-  return e;
+// ---------- page frame ----------
+function card(title, what) {
+  const c = el("section", "card"); c.appendChild(el("h2", "", title));
+  if (what) c.appendChild(el("p", "what", what));
+  $("views").appendChild(c); return c;
 }
-const colorIndex = (attrs, a) => CORE.indexOf(a) >= 0 ? CORE.indexOf(a) : 4 + (attrs.filter(x => !CORE.includes(x)).indexOf(a) % 4);
+function chartBox(parent) { const b = el("div", "box"); parent.appendChild(b); return b; }
+function numbers(parent, headers, rows) {
+  const d = el("details", "num"); d.appendChild(el("summary", "", "Show the numbers"));
+  const w = el("div", "wrap"); w.appendChild(Charts.table(headers, rows)); d.appendChild(w); parent.appendChild(d);
+}
+function empty(parent, text) { parent.appendChild(el("p", "msg", text)); }
+function legendItem(parent, color, label, kind, onToggle, pressed) {
+  const b = el(onToggle ? "button" : "span", "leg"); if (onToggle) { b.type = "button"; b.setAttribute("aria-pressed", String(pressed)); b.onclick = onToggle; }
+  const i = el("i", kind === "dot" ? "d" : kind === "hollow" ? "h" : ""); i.style.setProperty("--col", color); b.append(i, document.createTextNode(label)); parent.appendChild(b); return b;
+}
+function starRamp(parent, withUnrated) {
+  const r = el("div", "legend"), w = el("span", "ramp");
+  w.appendChild(document.createTextNode("1★"));
+  for (let n = 1; n <= 5; n++) { const i = el("i"); i.style.background = RCOL(n); w.appendChild(i); }
+  w.appendChild(document.createTextNode("5★"));
+  r.appendChild(w);
+  if (withUnrated) legendItem(r, "var(--mut)", "not rated", "hollow");
+  parent.appendChild(r);
+}
+function brewTip(b, extra) {
+  const c = coffeeOf(b.coffeeId), rows = [];
+  (extra || []).forEach(x => rows.push(x));
+  if (b.rating) rows.push({ value: stars(b.rating), label: b.dialin ? "dial-in" : "" });
+  const parts = [b.grind ? "grind " + b.grind : null, timeText(b), ratioOf(b) ? "1:" + r1(ratioOf(b)) : null].filter(Boolean).join(", ");
+  if (parts) rows.push({ value: parts });
+  if (nameOf(b.who)) rows.push({ value: nameOf(b.who), label: "made it" });
+  return { title: fmtDate(b.t) + (c ? " · " + c.name : "") + (b.device ? " · " + b.device : ""), rows };
+}
 
-function draw(pts, attrs, xk, joined) {
-  const W = 680, H = 340, L = 40, R = 16, T = 14, B = 46;
-  const xs = pts.map(p => p[xk]);
-  let x0 = Math.min(...xs), x1 = Math.max(...xs);
-  if (x1 - x0 < 4) { const m = (x0 + x1) / 2; x0 = m - 2; x1 = m + 2; }
-  x0 = Math.floor(x0 - 1); x1 = Math.ceil(x1 + 1);
-  const sx = v => L + (v - x0) / (x1 - x0) * (W - L - R), sy = v => T + (5 - v) / 10 * (H - T - B);
-  const svg = s("svg", { class: "ch", viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "Flavour scores against days. The numbers are listed below the chart." });
-  for (let v = -5; v <= 5; v += 1) {
-    svg.appendChild(s("line", { class: "grid", x1: L, x2: W - R, y1: sy(v), y2: sy(v), "stroke-width": v === 0 ? 1.6 : 1 }));
-    if (v % 5 === 0) svg.appendChild(s("text", { x: L - 8, y: sy(v) + 4, "text-anchor": "end" }, v > 0 ? "+" + v : v));
+// ---------- 1 + 2: dial-in map and taste compass ----------
+function viewDial() {
+  let list = filtered(true);
+  const c = coffeeOf(state.coffee);
+  let devNote = "";
+  if (!state.device && list.length) {   // one device at a time, otherwise grind and time are not comparable
+    const counts = {}; list.forEach(b => { if (b.device) counts[b.device] = (counts[b.device] || 0) + 1; });
+    const top = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+    if (top && Object.keys(counts).length > 1) { list = list.filter(b => b.device === top); devNote = "Showing " + top + ", the device used most for this coffee. Pick another device above."; }
   }
-  const step = Math.max(1, Math.ceil((x1 - x0) / 7));
-  for (let v = Math.ceil(x0 / step) * step; v <= x1; v += step) {
-    svg.appendChild(s("line", { class: "grid", x1: sx(v), x2: sx(v), y1: T, y2: H - B }));
-    svg.appendChild(s("text", { x: sx(v), y: H - B + 18, "text-anchor": "middle" }, v));
-  }
-  svg.appendChild(s("text", { x: (L + W - R) / 2, y: H - 6, "text-anchor": "middle" }, xk === "roast" ? "Days after roast" : "Days after opening"));
-  const my = (T + H - B) / 2;
-  svg.appendChild(s("text", { x: 12, y: my, "text-anchor": "middle", transform: "rotate(-90 12 " + my + ")" }, "Score (-5 to +5)"));
-  attrs.filter(a => !state.hidden.has(a)).forEach(a => {
-    const col = "var(--c" + colorIndex(attrs, a) + ")";
-    const sp = pts.filter(p => p.scores[a] != null).sort((p, q) => p[xk] - q[xk]);
-    if (joined && sp.length > 1) svg.appendChild(s("polyline", { points: sp.map(p => sx(p[xk]) + "," + sy(SCALE.chart(a, p.scores[a]))).join(" "), fill: "none", stroke: col, "stroke-width": 2.5, "stroke-linejoin": "round", "stroke-linecap": "round" }));
-    sp.forEach(p => {
-      const c = s("circle", { cx: sx(p[xk]), cy: sy(SCALE.chart(a, p.scores[a])), r: 4.5, fill: col });
-      c.appendChild(s("title", {}, a + " " + SCALE.text(a, p.scores[a]) + ", day " + Math.round(p[xk])));
-      svg.appendChild(c);
+  const dev = state.device || (list[0] && list[0].device) || "";
+  const esp = isEsp(dev);
+
+  const m = card("Dial-in map", "Grind setting against brew time. Each dot is a brew, darker means more stars. Look for the cluster of dark dots.");
+  if (devNote) m.appendChild(el("p", "what", devNote));
+  const pts = list.filter(b => numGrind(b.grind) !== null && b.time != null);
+  if (pts.length < 2) empty(m, c ? "Log at least two brews of this coffee with a grind setting and a time to see the map." : "Pick a coffee above.");
+  else {
+    const box = chartBox(m);
+    Charts.scatter({
+      box, height: 300, xLabel: "Grind setting", yLabel: esp ? "Time (s)" : "Time (min)", yFmt: esp ? null : v => mmss(v),
+      points: pts.map(b => ({ x: numGrind(b.grind), y: b.time, color: b.rating ? RCOL(b.rating) : "var(--mut)", hollow: !b.rating, r: b.dialin ? 4.5 : 5.5, tip: () => brewTip(b) }))
     });
-  });
-  return svg;
+    starRamp(m, pts.some(b => !b.rating));
+    const best = pts.filter(b => b.rating).sort((a, b) => b.rating - a.rating || b.t - a.t)[0];
+    if (best) m.appendChild(el("p", "take", "Best so far: grind " + best.grind + ", " + timeText(best) + (ratioOf(best) ? ", ratio 1:" + r1(ratioOf(best)) : "") + " (" + stars(best.rating) + ", " + fmtDate(best.t) + ")."));
+    numbers(m, ["Date", "Grind", "Time", "Ratio", "Stars", "Made by"], pts.slice().sort((a, b) => a.t - b.t).map(b => [fmtDate(b.t), b.grind, timeText(b), ratioOf(b) ? "1:" + r1(ratioOf(b)) : null, b.rating ? stars(b.rating) : null, nameOf(b.who)]));
+  }
+
+  const k = card("Taste compass", "Left is sour (underextracted), right is bitter (overextracted). Up is stronger, down is weaker. The line follows your last eight brews in order, the ringed dot is the newest. Aim for the middle.");
+  const cp = list.map(b => {
+    const so = b.scores.sour, bi = b.scores.bitter;
+    if (so == null && bi == null) return null;
+    const x = ((bi != null ? shown("bitter", bi) : 0) - (so != null ? shown("sour", so) : 0)) / (so != null && bi != null ? 2 : 1);
+    const y = ratioOf(b);
+    return y ? { b, x, y } : null;
+  }).filter(Boolean).sort((a, b) => a.b.t - b.b.t);
+  if (cp.length < 1) empty(k, c ? "Score sour or bitter and log dose and yield (or water) to place brews on the compass." : "Pick a coffee above.");
+  else {
+    const box = chartBox(k), ys = cp.map(p => p.y);
+    const lo = Math.min(...ys), hi = Math.max(...ys), padY = Math.max(0.2, (hi - lo) * 0.15);
+    Charts.scatter({
+      box, height: 320, xDomain: [-5, 5], xTicks: [-5, 0, 5], xFmt: v => v === 0 ? "balanced" : v < 0 ? "sour" : "bitter", xGrid: true, xBase: 0,
+      yDomain: [Math.max(0, lo - padY), hi + padY], yInvert: true, yFmt: v => "1:" + r1(v), yLabel: "Ratio (stronger at the top)",
+      zones: [{ x0: -1, x1: 1 }], corner: ["strong, sour", "strong, bitter", "weak, sour", "weak, bitter"],
+      path: true, last: true, trailFrom: Math.max(0, cp.length - 8),
+      points: cp.map((p, i) => ({ faded: i < cp.length - 8, x: p.x, y: p.y, color: p.b.rating ? RCOL(p.b.rating) : "var(--mut)", hollow: !p.b.rating, tip: () => brewTip(p.b, [{ value: p.x === 0 ? "balanced" : (p.x < 0 ? "sour " : "bitter ") + r1(Math.abs(p.x)), label: "taste" }]) }))
+    });
+    starRamp(k, cp.some(p => !p.b.rating));
+    const lastP = cp[cp.length - 1];
+    k.appendChild(el("p", "take", Math.abs(lastP.x) <= 1 ? "Your newest brew is in the balanced zone." : lastP.x < 0 ? "Your newest brew leans sour: try finer, hotter or longer." : "Your newest brew leans bitter: try coarser, cooler or shorter."));
+    numbers(k, ["Date", "Taste (sour - / bitter +)", "Ratio", "Stars"], cp.map(p => [fmtDate(p.b.t), r1(p.x), "1:" + r1(p.y), p.b.rating ? stars(p.b.rating) : null]));
+  }
 }
 
+// ---------- 3: freshness curve ----------
+function viewFresh() {
+  const list = filtered(false).filter(b => b.rating && !b.dialin && b.dRoast != null && b.dRoast >= 0 && b.dRoast <= 75);
+  const m = card("Freshness curve", "Stars against days after roast, all coffees together. Grey dots are single brews, the line is the average.");
+  if (list.length < 3) { empty(m, "Rate at least three brews of coffees with a roast date to see when they taste best."); return; }
+  const bins = {};
+  list.forEach(b => { const k = Math.floor(b.dRoast / 3) * 3; (bins[k] = bins[k] || []).push(b.rating); });
+  const line = Object.keys(bins).map(Number).sort((a, b) => a - b).map(k => ({ x: k + 1, y: r1(avg(bins[k])), n: bins[k].length }));
+  const box = chartBox(m);
+  // a small, fixed vertical spread so brews with the same stars on the same day stay visible
+  const jit = b => ((b.id.charCodeAt(0) + b.id.charCodeAt(b.id.length - 1)) % 5 - 2) * 0.06;
+  Charts.lines({
+    box, height: 300, xLabel: "Days after roast", yDomain: [0.5, 5.5], yTicks: [1, 2, 3, 4, 5], yFmt: v => v + "★",
+    cloud: list.map(b => ({ x: b.dRoast, y: b.rating + jit(b) })),
+    series: [{ name: "Average", color: "var(--one)", points: line }],
+    tipTitle: x => "Days " + (x - 1) + " to " + (x + 1) + " after roast",
+    valueFmt: (sr, y, p) => y + "★ on average, " + p.n + (p.n === 1 ? " brew" : " brews")
+  });
+  const good = line.filter(p => p.n >= 2);
+  const top = (good.length ? good : line).slice().sort((a, b) => b.y - a.y || b.n - a.n)[0];
+  m.appendChild(el("p", "take", "So far your best brews come around day " + (top.x - 1) + " to " + (top.x + 1) + " after roast (" + top.y + "★ on average)." + (good.length < 3 ? " This gets more reliable with more rated brews." : "")));
+  numbers(m, ["Days after roast", "Average stars", "Brews"], line.map(p => [(p.x - 1) + " to " + (p.x + 1), p.y, p.n]));
+}
+
+// ---------- 4 + 5: what you like, flavour fingerprint ----------
+function viewTaste() {
+  const list = filtered(false).filter(b => b.rating && !b.dialin);
+  const m = card("What you like", "Average stars by kind of coffee, with the number of rated brews in brackets. Dial-in brews are left out.");
+  const groups = [
+    ["Process", c => c.process],
+    ["Roast level", c => c.roast_level],
+    ["Origin", c => c.origin ? c.origin.split(",")[0].trim() : null],
+    ["Altitude", c => { const a = c.altitude_max_m != null ? (c.altitude_min_m + c.altitude_max_m) / 2 : c.altitude_min_m; if (a == null) return null; return a < 1200 ? "Below 1,200 m" : a < 1500 ? "1,200 to 1,500 m" : a < 1800 ? "1,500 to 1,800 m" : a < 2100 ? "1,800 to 2,100 m" : "2,100 m and up"; }]
+  ];
+  if (!list.length) empty(m, "Rate a few brews (outside dial-ins) to see what you like.");
+  else {
+    const grid = el("div", "grid2"); m.appendChild(grid);
+    const tbl = [];
+    groups.forEach(([title, key]) => {
+      const by = {};
+      list.forEach(b => { const c = coffeeOf(b.coffeeId); const k = c && key(c); if (k) (by[k] = by[k] || []).push(b.rating); });
+      const rows = Object.keys(by).map(k => ({ label: k, value: avg(by[k]), n: by[k].length })).sort((a, b) => b.value - a.value);
+      const cell = el("div"); grid.appendChild(cell); cell.appendChild(el("h3", "", title));
+      if (!rows.length) { cell.appendChild(el("p", "small", "Not filled in on your coffees yet.")); return; }
+      const box = chartBox(cell);
+      Charts.hbars({ box, labelWidth: 112, domain: [0, 5], xTicks: [0, 1, 2, 3, 4, 5], color: "var(--one)", fmt: v => r1(v).toFixed(1) + "★",
+        rows: rows.map(r => ({ label: r.label, value: r.value, sub: "(" + r.n + ")", tip: () => ({ title: title, rows: [{ value: r1(r.value).toFixed(1) + "★", label: r.label }, { value: String(r.n), label: r.n === 1 ? "rated brew" : "rated brews" }] }) })) });
+      rows.forEach(r => tbl.push([title, r.label, r1(r.value).toFixed(1), r.n]));
+    });
+    numbers(m, ["Group", "Kind", "Average stars", "Brews"], tbl);
+  }
+
+  const f = card("Flavour fingerprint", "The average sour, sweet, bitter and balance of each coffee, from -5 to +5. 0 is just right.");
+  const scored = filtered(false).filter(b => CORE.some(a => b.scores[a] != null));
+  const byC = {}; scored.forEach(b => (byC[b.coffeeId] = byC[b.coffeeId] || []).push(b));
+  const ids = Object.keys(byC).sort((a, b) => byC[b].length - byC[a].length).slice(0, 6);
+  if (!ids.length) { empty(f, "Score sour, sweet, bitter or balance on a few brews to see each coffee's fingerprint."); return; }
+  const leg = el("div", "legend"); CORE.forEach(a => legendItem(leg, FCOL[a], a, "dot")); f.appendChild(leg);
+  const grid = el("div", "grid2"); f.appendChild(grid);
+  const tbl = [];
+  ids.forEach(id => {
+    const c = coffeeOf(id), bs = byC[id], cell = el("div"); grid.appendChild(cell);
+    cell.appendChild(el("h3", "", c ? c.name : "Coffee"));
+    cell.appendChild(el("p", "small", bs.length + (bs.length === 1 ? " scored brew" : " scored brews") + (c && c.roast_level ? ", " + c.roast_level.toLowerCase() + " roast" : "")));
+    const vals = CORE.map(a => { const v = bs.map(b => b.scores[a]).filter(v => v != null).map(v => shown(a, v)); return { a, v: v.length ? avg(v) : null, n: v.length }; });
+    const box = chartBox(cell);
+    Charts.divbars({ box, compact: true, domain: [-5, 5], xTicks: [-5, 0, 5], xFmt: v => v > 0 ? "+" + v : String(v),
+      rows: vals.map(x => ({ label: x.a, value: x.v, color: FCOL[x.a], tip: () => ({ title: c ? c.name : "", rows: [{ value: x.v === null ? "no score" : (x.v > 0 ? "+" : "") + r1(x.v), label: x.a + ", " + x.n + (x.n === 1 ? " brew" : " brews"), color: FCOL[x.a], kind: "dot" }] }) })) });
+    const notes = {}; bs.forEach(b => Object.keys(b.scores).forEach(a => { if (!SCALE.isCore(a) && SCALE.levelOf(b.scores[a]) === 2) notes[a] = (notes[a] || 0) + 1; }));
+    const top = Object.keys(notes).sort((a, b) => notes[b] - notes[a]).slice(0, 3);
+    if (top.length) cell.appendChild(el("p", "small", "Clearly there: " + top.map(a => a + (notes[a] > 1 ? " (" + notes[a] + "×)" : "")).join(", ")));
+    tbl.push([c ? c.name : "", ...vals.map(x => x.v === null ? null : r1(x.v)), bs.length]);
+  });
+  numbers(f, ["Coffee", ...CORE, "Brews"], tbl);
+}
+
+// ---------- 6 + 7 + 8: us ----------
+function viewUs() {
+  const list = filtered(false), ppl = people().filter(id => list.some(b => b.who === id));
+  const s = card("Who brews", "Brews and average stars per person. Dial-in brews count as brews, not for the stars.");
+  if (!ppl.length) empty(s, "Brews show up here once they have a \"Made by\".");
+  else {
+    const tiles = el("div", "tiles"); s.appendChild(tiles);
+    ppl.forEach(id => {
+      const mine = list.filter(b => b.who === id), rated = mine.filter(b => b.rating && !b.dialin), t = el("div", "tile");
+      const l = el("div", "tl"), i = el("i"); i.style.setProperty("--col", personCol(id)); l.append(i, document.createTextNode(nameOf(id)));
+      t.appendChild(l); t.appendChild(el("div", "tv", String(mine.length))); t.appendChild(el("div", "ts", (mine.length === 1 ? "brew" : "brews") + (rated.length ? ", " + r1(avg(rated.map(b => b.rating))).toFixed(1) + "★ on average" : "")));
+      tiles.appendChild(t);
+    });
+  }
+
+  const v = card("Birte vs Andres", "Average stars per coffee, for each of you. Only coffees you have both rated.");
+  if (ppl.length < 2) empty(v, "Needs rated brews from two people.");
+  else {
+    v.querySelector("h2").textContent = nameOf(ppl[0]) + " vs " + nameOf(ppl[1]);
+    const by = {};
+    list.filter(b => b.rating && !b.dialin && (b.who === ppl[0] || b.who === ppl[1])).forEach(b => { const k = b.coffeeId; by[k] = by[k] || { a: [], b: [] }; by[k][b.who === ppl[0] ? "a" : "b"].push(b.rating); });
+    const rows = Object.keys(by).filter(k => by[k].a.length && by[k].b.length).map(k => ({ c: coffeeOf(k), a: avg(by[k].a), b: avg(by[k].b), na: by[k].a.length, nb: by[k].b.length }));
+    const leg = el("div", "legend"); legendItem(leg, "var(--p1)", nameOf(ppl[0]), "dot"); legendItem(leg, "var(--p2)", nameOf(ppl[1]), "dot"); v.appendChild(leg);
+    if (!rows.length) empty(v, "No coffee rated by both of you yet.");
+    else {
+      const box = chartBox(v);
+      Charts.dumbbell({ box, domain: [1, 5], colors: ["var(--p1)", "var(--p2)"], fmt: x => x + "★",
+        rows: rows.map(r => ({ label: r.c ? r.c.name : "Coffee", a: r.a, b: r.b, tip: () => ({ title: r.c ? r.c.name : "", rows: [{ value: r1(r.a).toFixed(1) + "★", label: nameOf(ppl[0]) + ", " + r.na + " brews", color: "var(--p1)", kind: "dot" }, { value: r1(r.b).toFixed(1) + "★", label: nameOf(ppl[1]) + ", " + r.nb + " brews", color: "var(--p2)", kind: "dot" }] }) })) });
+      const diff = avg(rows.map(r => r.a - r.b));
+      v.appendChild(el("p", "take", Math.abs(diff) < 0.25 ? "You rate the same coffees about the same." : (diff > 0 ? nameOf(ppl[0]) : nameOf(ppl[1])) + " rates the same coffees " + r1(Math.abs(diff)).toFixed(1) + "★ higher on average."));
+      numbers(v, ["Coffee", nameOf(ppl[0]), nameOf(ppl[1])], rows.map(r => [r.c ? r.c.name : "", r1(r.a).toFixed(1), r1(r.b).toFixed(1)]));
+    }
+  }
+
+  const a = card("Activity", "Brews per week over the last 12 weeks, and which devices you use.");
+  if (!list.length) empty(a, "No brews yet.");
+  else {
+    const now = new Date(), monday = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+    const start = monday(now); start.setDate(start.getDate() - 7 * 11);
+    const weeks = []; for (let i = 0; i < 12; i++) { const w = new Date(start); w.setDate(start.getDate() + 7 * i); weeks.push(w); }
+    const who = [...ppl, ""], cols = weeks.map(w => {
+      const end = new Date(w); end.setDate(w.getDate() + 7);
+      const inW = list.filter(b => b.t >= w && b.t < end);
+      return { label: fmtDate(w), parts: who.map(id => ({ value: inW.filter(b => (b.who || "") === id && (id || !ppl.includes(b.who))).length, color: id ? personCol(id) : "var(--mut)", name: id ? nameOf(id) : "not set" })), n: inW.length, w };
+    });
+    const leg = el("div", "legend"); ppl.forEach(id => legendItem(leg, personCol(id), nameOf(id), "dot")); if (list.some(b => !ppl.includes(b.who))) legendItem(leg, "var(--mut)", "not set", "dot"); a.appendChild(leg);
+    const box = chartBox(a);
+    Charts.stacked({ box, height: 210, yLabel: "Brews", cols: cols.map(c => ({ label: c.label, parts: c.parts, tip: () => ({ title: "Week of " + c.label, rows: [{ value: String(c.n), label: c.n === 1 ? "brew" : "brews" }].concat(c.parts.filter(p => p.value).map(p => ({ value: String(p.value), label: p.name, color: p.color, kind: "dot" }))) }) })) });
+    const dc = {}; list.forEach(b => { const k = b.device || "Unknown"; dc[k] = (dc[k] || 0) + 1; });
+    const drows = Object.keys(dc).map(k => ({ label: k, value: dc[k] })).sort((x, y) => y.value - x.value);
+    a.appendChild(el("h3", "", "Devices"));
+    const box2 = chartBox(a);
+    Charts.hbars({ box: box2, color: "var(--one)", fmt: v => String(v), rows: drows.map(r => ({ label: r.label, value: r.value, tip: () => ({ title: r.label, rows: [{ value: String(r.value), label: r.value === 1 ? "brew" : "brews" }] }) })) });
+    numbers(a, ["Week of", ...ppl.map(nameOf), "Total"], cols.map(c => [c.label, ...ppl.map((id, i) => c.parts[i].value), c.n]));
+  }
+
+  const bl = card("Beans left", "Open bags with a bag size: grams used by the brews logged so far.");
+  const bags = state.coffees.filter(c => !c.archived && c.bag_g && c.open_date);
+  if (!bags.length) empty(bl, "Add the bag size (in grams) to an opened coffee in the Journal to see how much is left.");
+  else bags.forEach(c => {
+    const mine = state.brews.filter(b => b.coffeeId === c.id), used = mine.reduce((x, b) => x + (b.dose || 0), 0);
+    const left = Math.max(0, c.bag_g - used), doses = mine.map(b => b.dose).filter(Boolean).sort((x, y) => x - y);
+    const typical = doses.length ? doses[Math.floor(doses.length / 2)] : 18;
+    const m = el("div", "meter"), top = el("div", "mt");
+    top.append(el("b", "", c.name), el("span", "", Math.round(left) + " g left"));
+    const tr = el("div", "tr"), fl = el("div", "fl"); fl.style.width = Math.min(100, left / c.bag_g * 100) + "%"; tr.appendChild(fl);
+    tr.setAttribute("role", "img"); tr.setAttribute("aria-label", Math.round(left) + " of " + c.bag_g + " grams left");
+    m.append(top, tr, el("p", "ms", Math.round(used) + " of " + c.bag_g + " g used in " + mine.length + (mine.length === 1 ? " brew" : " brews") + (left > 0 ? ", about " + Math.floor(left / typical) + " more at " + typical + " g" : "")));
+    bl.appendChild(m);
+  });
+}
+
+// ---------- over time (the original chart, redrawn) ----------
+function viewTime() {
+  const c = coffeeOf(state.coffee);
+  const m = card("Flavour over time", "Sour, sweet, bitter and balance for one coffee, from -5 to +5. Lines only join brews of one recipe, so a recipe change is not mistaken for the coffee changing.");
+  if (!c) { empty(m, "Pick a coffee above."); return; }
+  const xk = state.xk, all = filtered(true).map(b => ({ b, x: xk === "roast" ? b.dRoast : b.dOpen })).filter(p => p.x != null && CORE.some(a => p.b.scores[a] != null));
+  const counts = {}; all.forEach(p => { const r = p.b.recipe || "(no recipe name)"; counts[r] = (counts[r] || 0) + 1; });
+  const recipes = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  if (state.recipe && !recipes.includes(state.recipe)) state.recipe = "";
+  if (!state.recipe && recipes.length) state.recipe = recipes[0];
+  const sub = el("div", "subctl"); m.appendChild(sub);
+  const rs = el("select"); rs.setAttribute("aria-label", "Recipe");
+  [["", "All recipes (dots only)"], ...recipes.map(r => [r, r + " (" + counts[r] + ")"])].forEach(([v, t]) => { const o = el("option", "", t); o.value = v; rs.appendChild(o); });
+  rs.value = state.recipe; rs.onchange = () => { state.recipe = rs.value; render(); }; sub.appendChild(rs);
+  const xs = el("select"); xs.setAttribute("aria-label", "Count days from");
+  [["roast", "Days after roast"], ["open", "Days after opening"]].forEach(([v, t]) => { const o = el("option", "", t); o.value = v; xs.appendChild(o); });
+  xs.value = xk; xs.onchange = () => { state.xk = xs.value; render(); }; sub.appendChild(xs);
+  if (!all.length) { empty(m, (xk === "roast" ? !c.roast_date : !c.open_date) ? "This coffee has no " + (xk === "roast" ? "roast" : "opening") + " date yet. Add it in the Journal, or count from the other date." : "No scored brews for this coffee yet."); return; }
+  const use = all.filter(p => !state.recipe || (p.b.recipe || "(no recipe name)") === state.recipe);
+  const leg = el("div", "legend"); m.appendChild(leg);
+  CORE.forEach(a => legendItem(leg, FCOL[a], a, "line", () => { if (state.hidden.has(a)) state.hidden.delete(a); else state.hidden.add(a); render(); }, !state.hidden.has(a)));
+  const series = CORE.filter(a => !state.hidden.has(a)).map(a => {
+    const by = {}; use.forEach(p => { if (p.b.scores[a] != null) (by[r1(p.x)] = by[r1(p.x)] || []).push(shown(a, p.b.scores[a])); });
+    return { name: a, color: FCOL[a], points: Object.keys(by).map(Number).map(x => ({ x, y: r1(avg(by[x])) })), dots: true };
+  });
+  const box = chartBox(m);
+  if (!state.recipe) series.forEach(s => { s.points.sort((p, q) => p.x - q.x); });
+  Charts.lines({ box, height: 300, xLabel: xk === "roast" ? "Days after roast" : "Days after opening", yDomain: [-5, 5], yTicks: [-5, 0, 5], yBase: 0, yFmt: v => v > 0 ? "+" + v : String(v),
+    series: state.recipe ? series : series.map(s => Object.assign({}, s, { points: s.points })), labelEnds: !!state.recipe && series.length <= 4,
+    tipTitle: x => "Day " + x, valueFmt: (s, y) => (y > 0 ? "+" : "") + y });
+  if (!state.recipe) box.querySelectorAll(".ln").forEach(l => l.remove());
+  m.appendChild(el("p", "take", use.length < 3 ? "Only " + use.length + " scored brew" + (use.length === 1 ? "" : "s") + " here. A trend needs at least three brews of the same recipe over a few weeks." : "Each point is the average of the brews on that day."));
+  numbers(m, ["Day", "Recipe", ...CORE], use.slice().sort((p, q) => p.x - q.x).map(p => [r1(p.x), p.b.recipe, ...CORE.map(a => p.b.scores[a] != null ? SCALE.text(a, p.b.scores[a]) : null)]));
+}
+
+// ---------- render ----------
+const VIEWS = { time: viewTime, dial: viewDial, fresh: viewFresh, taste: viewTaste, us: viewUs };
 function render() {
-  const xk = $("t-x").value;
-  const chart = $("chart"), legend = $("legend"), note = $("note"), table = $("table");
-  chart.textContent = ""; legend.textContent = ""; note.textContent = ""; table.textContent = "";
+  Charts.hideTip();
+  document.querySelectorAll(".tabs .tab").forEach(t => { const on = t.dataset.v === state.view; t.setAttribute("aria-selected", String(on)); t.tabIndex = on ? 0 : -1; });
+  $("f-coffee").hidden = !(state.view === "time" || state.view === "dial");
   $("banner").hidden = !state.demo;
-  const all = state.pts.filter(p => !state.recipe || p.recipe === state.recipe);
-  const rated = all.filter(p => Object.keys(p.scores).length);
-  const usable = rated.filter(p => p[xk] !== null && p[xk] !== undefined);
-  const say = t => chart.appendChild(el("p", "msg", t));
-  if (!state.demo && !state.signedIn) { say("Sign in in the Journal first, then come back here. Until then you can look at the example data."); return; }
-  if (!state.coffee && !state.demo) { say("No coffees yet. Add one in the Journal, log a few brews, and the trends appear here."); return; }
-  if (!all.length) { say("No brews logged for this coffee yet."); return; }
-  if (!rated.length) { say("None of these brews has scores yet. Move the flavour sliders when you log a brew."); return; }
-  if (!usable.length) { say("This coffee has no " + (xk === "roast" ? "roast" : "open") + " date yet, so the days cannot be counted. Add it in the Journal, or count from the other date."); return; }
-
-  const attrs = [...new Set(usable.flatMap(p => Object.keys(p.scores)))].sort((a, b) => {
-    const i = k => CORE.includes(k) ? CORE.indexOf(k) : 99; return i(a) - i(b) || a.localeCompare(b);
-  });
-  attrs.forEach(a => {
-    const b = el("button", "leg"); b.type = "button";
-    b.style.setProperty("--col", "var(--c" + colorIndex(attrs, a) + ")");
-    b.append(el("i"), document.createTextNode(a));
-    b.setAttribute("aria-pressed", String(!state.hidden.has(a)));
-    b.onclick = () => { if (state.hidden.has(a)) state.hidden.delete(a); else state.hidden.add(a); render(); };
-    legend.appendChild(b);
-  });
-  chart.appendChild(draw(usable, attrs, xk, !!state.recipe));
-  note.textContent = !state.recipe
-    ? "All recipes are mixed here, so only the single brews are shown. Pick one recipe to see lines."
-    : usable.length < 3
-      ? "Only " + usable.length + " rated brew" + (usable.length === 1 ? "" : "s") + " with this recipe so far. A trend needs at least three brews of the same recipe, spread over a few weeks."
-      : "Lines only join brews of one recipe, so a change in the recipe is not mistaken for a change in the coffee. Other things, like dose or water, can still move the scores.";
-
-  const t = el("table"), head = el("tr");
-  ["Day", "Recipe", ...attrs].forEach(h => head.appendChild(el("th", "", h)));
-  t.appendChild(head);
-  usable.slice().sort((p, q) => p[xk] - q[xk]).forEach(p => {
-    const r = el("tr");
-    r.appendChild(el("td", "", String(Math.round(p[xk] * 10) / 10)));
-    r.appendChild(el("td", "", p.recipe));
-    attrs.forEach(a => r.appendChild(el("td", "", p.scores[a] != null ? SCALE.text(a, p.scores[a]) : "-")));
-    t.appendChild(r);
-  });
-  table.appendChild(t);
+  $("views").textContent = "";
+  if (!state.demo && !state.signedIn) { const c = card("Sign in first", null); empty(c, "Sign in in the Journal, then come back here. Until then, tap \"Example data\" to see how the charts look."); return; }
+  if (!state.brews.length) { const c = card("No brews yet", null); empty(c, "Log a few brews in the Journal and the charts appear here. Tap \"Example data\" to see how they will look."); return; }
+  VIEWS[state.view]();
+}
+function fillFilters() {
+  const fill = (id, first, items, keep) => {
+    const s = $(id); s.textContent = "";
+    const o = el("option", "", first); o.value = ""; s.appendChild(o);
+    items.forEach(([v, t]) => { const x = el("option", "", t); x.value = v; s.appendChild(x); });
+    s.value = items.some(i => i[0] === keep) ? keep : "";
+    return s.value;
+  };
+  const counts = {}; state.brews.forEach(b => { counts[b.coffeeId] = (counts[b.coffeeId] || 0) + 1; });
+  const cs = state.coffees.filter(c => counts[c.id]).sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0));
+  if (!state.coffee || !counts[state.coffee]) state.coffee = cs.length ? cs[0].id : "";
+  const csel = $("f-coffee"); csel.textContent = "";
+  cs.forEach(c => { const o = el("option", "", c.name + (c.roast_date ? ", roasted " + c.roast_date : "") + (c.archived ? " (archived)" : "") + " · " + counts[c.id]); o.value = c.id; csel.appendChild(o); });
+  if (!cs.length) { const o = el("option", "", "No coffees with brews"); o.value = ""; csel.appendChild(o); }
+  csel.value = state.coffee;
+  const devs = [...new Set(state.brews.map(b => b.device).filter(Boolean))].sort();
+  state.device = fill("f-device", "All devices", devs.map(d => [d, d]), state.device);
+  const ppl = people().filter(id => state.brews.some(b => b.who === id));
+  state.who = fill("f-who", "Everyone", ppl.map(id => [id, state.names[id]]), state.who);
+  $("f-who").hidden = ppl.length < 2;
 }
 
-function fillRecipes(setDefault) {
-  const counts = {};
-  state.pts.forEach(p => { counts[p.recipe] = (counts[p.recipe] || 0) + 1; });
-  const names = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
-  if (setDefault) state.recipe = names.length ? names[0] : "";
-  const sel = $("t-recipe"); sel.textContent = "";
-  const add = (v, t) => { const o = el("option", "", t); o.value = v; sel.appendChild(o); };
-  add("", "All recipes (points only)");
-  names.forEach(n => add(n, n + " (" + counts[n] + ")"));
-  sel.value = state.recipe;
-}
-
-function fillCoffees(counts) {
-  const sel = $("t-coffee"); sel.textContent = "";
-  if (state.demo) { const o = el("option", "", "Example coffee (not your data)"); o.value = ""; sel.appendChild(o); sel.disabled = true; return; }
-  sel.disabled = false;
-  if (!state.coffees.length) { const o = el("option", "", "No coffees yet"); o.value = ""; sel.appendChild(o); return; }
-  state.coffees.forEach(c => { const o = el("option", "", c.name + (c.roast_date ? ", roasted " + c.roast_date : "") + " (" + (counts[c.id] || 0) + " brews)"); o.value = c.id; sel.appendChild(o); });
-}
-
-async function pickCoffee(id) {
-  const my = ++pickId;
-  state.coffee = state.coffees.find(c => c.id === id) || null;
-  state.hidden = new Set();
-  state.pts = []; state.recipe = "";
-  if (!state.coffee) { fillRecipes(true); render(); return; }
-  const { data, error } = await db.from("brews").select("brewed_at,recipe,brew_scores(attribute,score)").eq("coffee_id", id).order("brewed_at");
-  if (my !== pickId) return;
-  if (error) { $("msg").textContent = "Could not load brews: " + error.message; return; }
-  const c = state.coffee;
-  state.pts = data.map(b => {
-    const t = new Date(b.brewed_at), scores = {};
+// ---------- data ----------
+function shape(raw, coffees) {
+  return raw.map(b => {
+    const t = new Date(b.brewed_at), c = coffees.find(x => x.id === b.coffee_id), scores = {};
     (b.brew_scores || []).forEach(x => { scores[x.attribute] = x.score; });
-    return {
-      recipe: b.recipe || "(no recipe name)", scores,
-      roast: c.roast_date ? (t - new Date(c.roast_date + "T00:00:00")) / 864e5 : null,
-      open: c.open_date ? (t - new Date(c.open_date + "T00:00:00")) / 864e5 : null
-    };
+    const day = iso => iso ? Math.floor((t - new Date(iso + "T00:00:00")) / 864e5) : null;
+    return { id: b.id, coffeeId: b.coffee_id, t, device: b.device, grind: b.grind, dose: b.dose_g, yld: b.yield_g, water: b.water_g, time: b.time_s,
+      rating: b.rating, dialin: !!b.is_dialin, recipe: b.recipe, who: b.made_by || b.created_by || null, scores, dRoast: c ? day(c.roast_date) : null, dOpen: c ? day(c.open_date) : null };
   });
-  fillRecipes(true);
-  render();
 }
-
 async function loadMine() {
-  const [{ data: cs, error }, { data: bs }] = await Promise.all([
-    db.from("coffees").select("id,name,roast_date,open_date").order("created_at", { ascending: false }),
-    db.from("brews").select("coffee_id")
+  $("msg").textContent = "Loading...";
+  const [cs, bs, ps] = await Promise.all([
+    db.from("coffees").select("*").order("created_at", { ascending: false }),
+    db.from("brews").select("*, brew_scores(attribute,score)").order("brewed_at"),
+    db.from("profiles").select("id,display_name")
   ]);
-  if (error) { $("msg").textContent = "Could not load coffees: " + error.message; return; }
-  const counts = {}; (bs || []).forEach(b => { counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; });
-  state.coffees = cs.slice().sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0));   // the coffee with most brews first
-  fillCoffees(counts);
-  await pickCoffee(state.coffees.length ? state.coffees[0].id : null);
+  $("msg").textContent = "";
+  if (cs.error || bs.error) { $("msg").textContent = "Could not load: " + (cs.error || bs.error).message; return; }
+  state.coffees = cs.data.map(c => Object.assign({}, c, { bag_g: c.bag_size_g || null }));
+  state.names = {}; (ps.data || []).forEach(p => { state.names[p.id] = p.display_name; });
+  state.brews = shape(bs.data, state.coffees);
+  fillFilters(); render();
 }
 
+// Example data: made up, only to show how the charts look.
+function demo() {
+  let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  const day = n => { const d = new Date(); d.setHours(8, 0, 0, 0); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
+  const coffees = [
+    { id: "d1", name: "Colombia Huila", origin: "Colombia, Huila", process: "Washed", roast_level: "Light", altitude_min_m: 1700, altitude_max_m: 1900, roast_date: day(40), open_date: day(34), bag_size_g: 250 },
+    { id: "d2", name: "Ethiopia Guji", origin: "Ethiopia, Guji", process: "Natural", roast_level: "Medium-light", altitude_min_m: 2000, altitude_max_m: 2200, roast_date: day(30), open_date: day(22), bag_size_g: 250 },
+    { id: "d3", name: "Brazil Cerrado", origin: "Brazil, Cerrado", process: "Pulped natural", roast_level: "Medium-dark", altitude_min_m: 1100, roast_date: day(55), open_date: day(48), archived: false }
+  ];
+  const brews = []; let n = 0;
+  coffees.forEach((c, ci) => {
+    const roast = Math.round((Date.now() - new Date(c.roast_date + "T00:00:00")) / 864e5), opened = Math.round((Date.now() - new Date(c.open_date + "T00:00:00")) / 864e5);
+    for (let d = opened; d >= 0; d -= 1 + Math.floor(rnd() * 3)) {
+      const flair = rnd() < 0.72, age = roast - d, who = rnd() < 0.55 ? "pa" : "pb";
+      const grind = flair ? 18 + Math.floor(rnd() * 12) : 55 + Math.floor(rnd() * 25);
+      const time = flair ? Math.round(20 + (30 - grind) * 2.6 + rnd() * 10) : Math.round(150 + (80 - grind) * 2 + rnd() * 30);
+      const ext = flair ? (time - 42) / 6 : (time - 200) / 25;   // + is over, - is under
+      const fresh = -Math.abs(age - 14) / 9;
+      const rating = Math.max(1, Math.min(5, Math.round(4.2 - Math.abs(ext) * 0.7 + fresh + (who === "pa" ? 0.2 : -0.2) + (ci === 1 ? 0.3 : 0) + (rnd() - 0.5))));
+      const dose = flair ? 18 : 30, yld = flair ? Math.round(36 + rnd() * 12) : 440, water = flair ? null : 500;
+      const sc = (v) => Math.max(0, Math.min(10, Math.round(v)));
+      brews.push({ id: "b" + (++n) + "x", coffee_id: c.id, brewed_at: new Date(Date.now() - d * 864e5 - rnd() * 3e6).toISOString(), device: flair ? "Flair 58" : "Hario V60",
+        grind: String(grind), dose_g: dose, yield_g: yld, water_g: water, time_s: time, rating: rnd() < 0.9 ? rating : null, is_dialin: rnd() < 0.15, made_by: who, recipe: flair ? "Flair 58, 1:2.2" : "V60, 60 g/l",
+        brew_scores: [{ attribute: "sour", score: sc(5 - ext * 1.6 + (rnd() - 0.5) * 2) }, { attribute: "sweet", score: sc(5 + (ci === 1 ? 2 : 1) - Math.abs(ext) + rnd()) }, { attribute: "bitter", score: sc(5 + ext * 1.6 + (ci === 2 ? 1.5 : 0) + (rnd() - 0.5) * 2) }, { attribute: "balance", score: sc(5 + 1.5 - Math.abs(ext) * 1.2) }]
+          .concat(ci === 1 ? [{ attribute: "blueberry", score: rnd() < 0.6 ? 7 : 3 }] : ci === 0 ? [{ attribute: "panela", score: rnd() < 0.5 ? 7 : 3 }] : [{ attribute: "nutty", score: 7 }]) });
+    }
+  });
+  return { coffees, brews, names: { pa: "Birte (example)", pb: "Andres (example)" } };
+}
 function enterDemo() {
-  state.demo = true; state.coffee = { name: "Example" }; state.hidden = new Set();
-  state.pts = demoPoints();
-  fillCoffees({}); fillRecipes(true);
-  $("t-demo").textContent = "Back to my data";
-  render();
+  const d = demo(); state.demo = true;
+  state.coffees = d.coffees.map(c => Object.assign({}, c, { bag_g: c.bag_size_g || null })); state.names = d.names; state.brews = shape(d.brews, state.coffees);
+  state.coffee = ""; state.device = ""; state.who = "";
+  $("f-demo").textContent = "Back to my data"; fillFilters(); render();
 }
 function leaveDemo() {
-  state.demo = false;
-  $("t-demo").textContent = "Show example data";
-  if (state.signedIn) loadMine(); else { state.coffee = null; state.pts = []; fillCoffees({}); fillRecipes(true); render(); }
+  state.demo = false; state.coffees = []; state.brews = []; state.names = {}; state.coffee = ""; state.device = ""; state.who = "";
+  $("f-demo").textContent = "Example data";
+  if (state.signedIn) loadMine(); else { fillFilters(); render(); }
 }
 
-$("t-demo").onclick = () => state.demo ? leaveDemo() : enterDemo();
-$("t-coffee").onchange = () => pickCoffee($("t-coffee").value);
-$("t-recipe").onchange = () => { state.recipe = $("t-recipe").value; render(); };
-$("t-x").onchange = render;
+// ---------- events ----------
+const saved = store.get("alto.trends.view"); if (VIEWS[saved]) state.view = saved;
+document.querySelectorAll(".tabs .tab").forEach(t => { t.onclick = () => { state.view = t.dataset.v; store.set("alto.trends.view", state.view); render(); }; });
+$("f-coffee").onchange = () => { state.coffee = $("f-coffee").value; state.recipe = ""; render(); };
+$("f-device").onchange = () => { state.device = $("f-device").value; render(); };
+$("f-who").onchange = () => { state.who = $("f-who").value; render(); };
+$("f-demo").onclick = () => state.demo ? leaveDemo() : enterDemo();
+let rz = null; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (state.brews.length) render(); }, 200); });
 
+fillFilters(); render();
 db.auth.onAuthStateChange((_e, session) => setTimeout(() => {
-  const was = state.signedIn;
-  state.signedIn = !!session;
+  const was = state.signedIn; state.signedIn = !!session; state.me = session ? session.user : null;
   if (state.demo) return;
-  if (session && !was) loadMine(); else if (!session) { state.coffee = null; state.pts = []; fillCoffees({}); fillRecipes(true); render(); }
+  if (session && !was) loadMine(); else if (!session) { state.coffees = []; state.brews = []; fillFilters(); render(); }
 }, 0));
 </script>
 </body>
