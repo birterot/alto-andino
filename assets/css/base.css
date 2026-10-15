@@ -5,6 +5,8 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:border-box}
 [hidden]{display:none!important}
+/* keeps the space of the top bar while it loads, so the page does not jump */
+body::before{content:"";display:block;height:58px}body:has(> .topnav)::before{display:none}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
 main{max-width:900px;margin:0 auto;padding:40px 20px 72px}
 h1,h2,h3{font-family:"Iowan Old Style",Palatino,Georgia,serif;font-weight:500;letter-spacing:.01em;margin:0}

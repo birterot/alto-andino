@@ -42,9 +42,10 @@
   var css = document.createElement("style");
   css.textContent =
     ".topnav{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:var(--bg,#fff);border-bottom:1px solid var(--line,#ccc)}" +
-    ".topnav .bar{display:flex;align-items:center;gap:4px;max-width:900px;margin:0 auto;padding:6px 8px}" +
+    ".topnav .bar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;max-width:900px;margin:0 auto;padding:6px 8px;height:57px}" +
+    ".topnav .side{display:flex;align-items:center;gap:4px}.topnav .side.r{justify-content:flex-end}" +
     ".topnav .iconbtn{width:44px;height:44px;display:grid;place-items:center;background:none;border:0;color:inherit;cursor:pointer;border-radius:8px;text-decoration:none;flex:none}" +
-    ".topnav .where{flex:1;display:flex;align-items:center;justify-content:center;gap:9px;min-height:44px;font-size:15px;color:inherit;text-decoration:none}" +
+    ".topnav .where{display:flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:0 4px;color:inherit;text-decoration:none}" +
     ".wm{display:block;line-height:0;color:var(--brand,#6B4A2E)}.wm svg{display:block;width:100%;height:auto}" +
     ".topnav .wm{width:112px}.topnav .logo{display:block;height:22px;width:auto;color:var(--brand,#6B4A2E);flex:none}" +
     ".navback{position:fixed;inset:0;background:rgba(20,14,10,.38);z-index:40;opacity:0;transition:opacity .18s}" +
@@ -115,16 +116,18 @@
     where.appendChild(logo); where.setAttribute("aria-label", "Alto Andino, home");
     var nm = document.createElement("span"); where.appendChild(nm); wordmark(nm);
   } else where.setAttribute("aria-hidden", "true");
-  bar.appendChild(btn); bar.appendChild(where);
+  var left = document.createElement("div"); left.className = "side l"; left.appendChild(btn);
+  var right = document.createElement("div"); right.className = "side r";
+  bar.appendChild(left); bar.appendChild(where); bar.appendChild(right);
   if (!isCalc) {   // shortcut to the calculator, on every page
     var cb = document.createElement("a");
     cb.className = "iconbtn"; cb.href = root + "calc/index.html"; cb.setAttribute("aria-label", "Calculator"); cb.title = "Calculator";
-    cb.appendChild(icon("calc", 24)); bar.appendChild(cb);
+    cb.appendChild(icon("calc", 24)); right.appendChild(cb);
   }
   if (!isHome) {
     var home = document.createElement("a");
     home.className = "iconbtn"; home.href = root + "index.html"; home.setAttribute("aria-label", "Home");
-    home.appendChild(icon("home", 24)); bar.appendChild(home);
+    home.appendChild(icon("home", 24)); right.appendChild(home);
   }
 
   var menu = document.createElement("nav");
