@@ -89,6 +89,11 @@ details.add summary{cursor:pointer;font-weight:600}
 .seg button{font:inherit;font-size:13px;padding:6px 12px;min-height:36px;border:0;background:none;color:var(--mut);cursor:pointer}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button.on{background:var(--ac);color:var(--card)}
+.namebox{margin:0 0 20px;padding:16px 18px;border:1px solid var(--accent);border-radius:12px;background:var(--card);max-width:420px}
+.namebox p{margin:0;color:var(--ink)}
+.namebox .row{display:flex;gap:8px;margin-top:10px}.namebox input{margin:0;flex:1}.namebox .go{margin:0;flex:none}
+.foot .lnk{margin-left:4px}
+.bc .by{font-weight:600;color:var(--ink)}
 .addnote{display:flex;gap:8px;max-width:420px;margin-top:14px}
 .addnote input{margin:0;flex:1;border-radius:999px;padding:10px 16px}
 .addnote .btn{height:48px;border-radius:999px;padding:0 18px}
@@ -172,6 +177,10 @@ details.calcbox summary{font-size:15px}
 </form>
 
 <section id="app" hidden>
+  <div class="namebox" id="namebox" hidden>
+    <p><strong>What should we call you?</strong> Your name is shown on the brews you log.</p>
+    <div class="row"><input id="namein" maxlength="40" autocomplete="nickname" placeholder="e.g. Birte" aria-label="Your name"><button class="go" id="namego" type="button">Save</button></div>
+  </div>
   <div id="addview" hidden>
     <a class="back" href="#log">Log a brew</a>
     <h2>New coffee</h2>
@@ -293,6 +302,7 @@ details.calcbox summary{font-size:15px}
     <div class="filters" id="bfilters" hidden>
       <select id="bflt-device" aria-label="Filter by device"></select>
       <select id="bflt-recipe" aria-label="Filter by recipe"></select>
+      <select id="bflt-who" aria-label="Filter by who brewed" hidden></select>
       <select id="bflt-sort" aria-label="Sort"><option value="">Newest first</option><option value="old">Oldest first</option></select>
     </div>
     <div id="brews"></div>
@@ -305,7 +315,7 @@ details.calcbox summary{font-size:15px}
     <div id="picklist"></div>
     <button type="button" class="btn ghost" id="newcoffee"></button>
   </div>
-  <p class="foot"><span id="who"></span> <button class="lnk" id="out" type="button">Sign out</button></p>
+  <p class="foot"><span id="who"></span> <button class="lnk" id="rename" type="button" hidden>Change name</button> <button class="lnk" id="out" type="button">Sign out</button></p>
 </section>
 <p id="msg" role="status"></p>
 </main>
@@ -1083,7 +1093,7 @@ async function openCoffee(id, dev) {
   ]);
   if (error || !c) { say("Could not open this coffee."); location.hash = ""; return; }
   cur = c;
-  ["bflt-device", "bflt-recipe", "bflt-sort"].forEach(i => { $(i).value = ""; });
+  ["bflt-device", "bflt-recipe", "bflt-who", "bflt-sort"].forEach(i => { $(i).value = ""; });
   applyPal($("dhead"), c.process);
   $("dname").textContent = c.name;
   $("dmeta").textContent = [c.roaster, c.origin, c.variety, altText(c), c.process, c.roast_level].filter(Boolean).join(", ") +
@@ -1106,6 +1116,8 @@ function dayN(iso, when) {
 function brewCard(b) {
   const a = el("article", "bc"), when = new Date(b.brewed_at);
   const hd = el("div", "hd"); hd.appendChild(el("h3", "", when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }))); a.appendChild(hd);
+  const who = nameOf(b.created_by);
+  if (who) { const w = el("p", "age", "Brewed by "); w.appendChild(el("span", "by", who)); a.appendChild(w); }
   const dr = cur.roast_date ? dayN(cur.roast_date, when) : null, dop = cur.open_date ? dayN(cur.open_date, when) : null;
   const age = [dr !== null ? (dr === 0 ? "roast day" : "day " + dr + " after roast") : null, dop !== null ? (dop === 0 ? "opening day" : "day " + dop + " after opening") : null].filter(Boolean).join(", ");
   if (age) a.appendChild(el("p", "age", age));
@@ -1150,11 +1162,13 @@ async function loadBrews() {
   const uniq = k => [...new Set(data.map(b => b[k]).filter(Boolean))].sort();
   fillFilter("bflt-device", "All devices", uniq("device"));
   fillFilter("bflt-recipe", "All recipes", uniq("recipe"));
+  const ppl = [...new Set(data.map(b => b.created_by).filter(id => nameOf(id)))];
+  fillWho(ppl); $("bflt-who").hidden = ppl.length < 2;
   renderBrews();
 }
 function renderBrews() {
-  const dv = $("bflt-device").value, rc = $("bflt-recipe").value;
-  let list = brewData.filter(b => (!dv || b.device === dv) && (!rc || b.recipe === rc));
+  const dv = $("bflt-device").value, rc = $("bflt-recipe").value, wh = $("bflt-who").value;
+  let list = brewData.filter(b => (!dv || b.device === dv) && (!rc || b.recipe === rc) && (!wh || b.created_by === wh));
   if ($("bflt-sort").value === "old") list = list.slice().reverse();   // data arrives newest first
   $("bfilters").hidden = brewData.length < 2;
   const box = $("brews"); box.textContent = "";
@@ -1163,7 +1177,7 @@ function renderBrews() {
   if (list.length !== brewData.length) box.appendChild(el("p", "hint", "Showing " + list.length + " of " + brewData.length + " brews."));
   list.forEach(b => box.appendChild(brewCard(b)));
 }
-["bflt-device", "bflt-recipe", "bflt-sort"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderBrews)));
+["bflt-device", "bflt-recipe", "bflt-who", "bflt-sort"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderBrews)));
 
 $("bf").onsubmit = async e => {
   e.preventDefault();
@@ -1193,7 +1207,7 @@ $("bf").onsubmit = async e => {
       const d = await db.from("brew_scores").delete().eq("brew_id", id);
       if (d.error) throw d.error;
     } else {
-      const { data: b, error } = await db.from("brews").insert({ ...row, coffee_id: cur.id }).select().single();
+      const { data: b, error } = await db.from("brews").insert({ ...row, coffee_id: cur.id, created_by: me.id }).select().single();
       if (error) throw error;
       id = b.id;
     }
@@ -1211,12 +1225,46 @@ $("bf").onsubmit = async e => {
   finally { savingB = false; $("bsave").disabled = false; }
 };
 
+// ---------- Names: each login picks the name shown on its brews (table "profiles") ----------
+let names = {}, namesOk = false;
+const nameOf = id => (id && names[id]) || null;
+function fillWho(ids) {
+  const s = $("bflt-who"), keep = s.value; s.textContent = "";
+  const o = el("option", "", "Everyone"); o.value = ""; s.appendChild(o);
+  ids.slice().sort((x, y) => nameOf(x).localeCompare(nameOf(y))).forEach(id => { const x = el("option", "", nameOf(id)); x.value = id; s.appendChild(x); });
+  s.value = ids.includes(keep) ? keep : "";
+}
+async function loadNames() {
+  const { data, error } = await db.from("profiles").select("id,display_name");
+  namesOk = !error; names = {};
+  (data || []).forEach(p => { names[p.id] = p.display_name; });
+  showName();
+}
+function showName() {
+  const mine = me && names[me.id];
+  $("who").textContent = "Signed in as " + (mine ? mine + " (" + me.email + ")" : me.email);
+  $("rename").hidden = !namesOk;
+  $("namebox").hidden = !namesOk || !!mine;
+}
+async function saveName(v) {
+  v = (v || "").trim().slice(0, 40);
+  if (!v) return;
+  const { error } = await db.from("profiles").upsert({ id: me.id, display_name: v, updated_at: new Date().toISOString() });
+  if (error) { say("Could not save the name: " + error.message); return; }
+  names[me.id] = v; showName(); say("Saved. Your brews now show " + v + ".");
+  if (cur && !$("detail").hidden) renderBrews();
+}
+$("namego").onclick = () => saveName($("namein").value);
+$("namein").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveName($("namein").value); } });
+$("rename").onclick = () => { const v = prompt("Your name on brews", names[me.id] || ""); if (v !== null) saveName(v); };
+
 async function show(session) {
   $("login").hidden = !!session;
   $("app").hidden = !session;
   me = session ? session.user : null;
   if (!session) return;
   $("who").textContent = "Signed in as " + session.user.email;
+  loadNames().then(() => { if (cur && !$("detail").hidden) renderBrews(); });
   route();
 }
 $("login").onsubmit = async e => {
