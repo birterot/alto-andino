@@ -7,13 +7,18 @@
 <link rel="apple-touch-icon" href="../assets/icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Coffee">
+<meta name="apple-mobile-web-app-title" content="Alto Andino">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Coffee journal</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect width=%2224%22 height=%2224%22 rx=%225%22 fill=%22%232F2118%22/><path d=%22M2.5 18L12 3l9.5 15 M7.6 12.8l2.4 1.8 2-1.8 2 1.8 2.4-1.8%22 fill=%22none%22 stroke=%22%23EFE6D8%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
 <link rel="stylesheet" href="../assets/css/base.css">
 <style>
 label{display:block;margin-top:12px;font-size:14px;color:var(--mut)}
-input,select,textarea{display:block;width:100%;max-width:420px;margin-top:4px;padding:10px;font:inherit;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+input,textarea{display:block;width:100%;max-width:420px;margin-top:4px;padding:10px 12px;font:inherit;border-radius:10px;border:1px solid var(--line);background-color:var(--card);color:var(--ink)}
+select{display:block;width:100%;max-width:420px;margin-top:4px;border-radius:10px}
+.filters select,.filters input{border-radius:999px}
+.filters input{padding:10px 16px;min-height:44px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;max-width:420px}
 label.chk{display:flex;align-items:center;gap:8px;color:var(--ink)}
 label.chk input{width:auto;margin:0}
 .go,.lnk{font:inherit;cursor:pointer;border-radius:6px}
@@ -30,7 +35,7 @@ details.add summary{cursor:pointer;font-weight:600}
 .cc .in{padding:18px 20px}
 .cc h3{margin:0;font-size:18px}
 .cc p{margin:4px 0 0;font-size:14px}
-.cc .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cc .tags{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:10px}
 .cc .acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}
 .cc .lnk{border-color:var(--line);color:var(--t)}
 .btn{font:inherit;cursor:pointer;border-radius:8px;padding:8px 14px;min-height:40px;font-size:14px;border:1px solid var(--s,var(--ink));background:var(--s,var(--ink));color:var(--bg);display:inline-flex;align-items:center;gap:7px;text-decoration:none}
@@ -69,8 +74,7 @@ details.add summary{cursor:pointer;font-weight:600}
 .bc h3{margin:0;font-size:16px}
 .bc p{margin:4px 0 0;font-size:14px}
 .bc .age,.bc .set{color:var(--mut)}
-.bc .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.bc .chip{background:var(--bg);color:var(--ink);border-color:var(--line)}
+.bc .tags{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:10px}
 .bc .acts{display:flex;gap:8px;margin-top:6px}
 .bc .ib{color:var(--mut)}
 .bc .chip svg{color:var(--ac)}
@@ -117,8 +121,10 @@ details.add summary{cursor:pointer;font-weight:600}
       <label>Botanical variety<input id="f-variety" list="variety-list" placeholder="e.g. Gesha, Bourbon, Caturra" autocomplete="off"></label>
       <datalist id="variety-list"><option value="Arabica"><option value="Robusta"><option value="Bourbon"><option value="Typica"><option value="Caturra"><option value="Catuai"><option value="Gesha"><option value="SL28"><option value="SL34"><option value="Pacamara"><option value="Heirloom"><option value="Sidra"><option value="Castillo"></datalist>
       <p class="hint">Several varieties? Separate them with commas.</p>
-      <label>Altitude in metres (from)<input id="f-alt-min" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="e.g. 1700"></label>
-      <label>Altitude in metres (to, only if it is a range)<input id="f-alt-max" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="e.g. 1900"></label>
+      <div class="row2">
+        <label>Altitude from (m)<input id="f-alt-min" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="1700"></label>
+        <label>to (m, optional)<input id="f-alt-max" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="1900"></label>
+      </div>
       <label class="chk"><input type="checkbox" id="f-blend"> Blend</label>
       <label>Process
         <select id="f-process"></select>
@@ -135,7 +141,7 @@ details.add summary{cursor:pointer;font-weight:600}
       <label>Notes<textarea id="f-notes" rows="3"></textarea></label>
       <label>Where to buy (link, optional)<input id="f-url" type="url" inputmode="url" placeholder="https://..."></label>
       <label>Bag photo<input type="file" id="f-photo" accept="image/*"></label>
-      <p class="hint" id="photohint" hidden>Leave empty to keep the current photo.</p>
+      <p class="hint" id="photohint" hidden>Leave empty to keep the current photo (a new bag uses the same photo).</p>
       <button class="go" id="save">Save coffee</button>
       <button class="lnk" id="cancel" type="button" hidden>Cancel</button>
     </form>
@@ -316,7 +322,7 @@ const ICONS = {
   plus: "M12 5v14 M5 12h14",
   check: "M4.5 12.5l5 5L19.5 7",
   cup: "M5 9h11v5a5 5 0 01-5 5h-1a5 5 0 01-5-5V9z M16 10h2a2 2 0 010 4h-2 M8 3v3 M12 3v3",
-  bag: "M6 8h12l1 12H5L6 8z M9 8V6a3 3 0 016 0v2",
+  cart: "M3 4h2.5l2 11h10.5l2-8H6.8 M9.5 19.5h.01 M17 19.5h.01",
   close: "M7 7l10 10 M17 7L7 17",
   sour: "M4 12a8 8 0 1016 0 8 8 0 10-16 0 M12 4v16 M5.1 8l13.8 8 M5.1 16l13.8-8",
   sweet: "M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z M12 12l8-4.5 M12 12v9 M12 12L4 7.5",
@@ -346,10 +352,17 @@ const ATTR = { sour: ["#6B7442", "#B4BC83"], sweet: ["#8F6A2B", "#D6AE6A"], bitt
 const attrIcon = a => ICONS[a] && ATTR[a] ? a : "leaf";
 const attrColor = a => ATTR[a] ? "light-dark(" + ATTR[a][0] + "," + ATTR[a][1] + ")" : "var(--accent)";
 
+// Bags of one coffee can share a photo, so the file is only removed when no bag uses it any more.
+async function releasePhoto(path) {
+  const { data, error } = await db.from("coffees").select("id").eq("photo_path", path).limit(1);
+  if (error || (data && data.length)) return null;
+  return db.storage.from("bag-photos").remove([path]);
+}
+
 function buyLink(c) {
   const u = c.buy_url ? safeUrl(c.buy_url) : null;
   if (!u) return null;
-  const a = el("a", "btn ghost"); a.append(ico("bag", 17), el("span", "", "Buy again")); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer";
+  const a = el("a", "btn ghost"); a.append(ico("cart", 17), el("span", "", "Buy again")); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer";
   return a;
 }
 
@@ -387,8 +400,8 @@ function card(c, photoUrl, nBrews, ratings, bags) {
     if (error) { say("Could not delete: " + error.message); return; }
     if (!gone.length) { say("Nothing was deleted."); return; }
     if (c.photo_path) {
-      const r = await db.storage.from("bag-photos").remove([c.photo_path]);
-      if (r.error) say("Coffee deleted, but the photo could not be removed: " + r.error.message);
+      const r = await releasePhoto(c.photo_path);
+      if (r && r.error) say("Coffee deleted, but the photo could not be removed: " + r.error.message);
     }
     load();
   }, "del");
@@ -513,7 +526,7 @@ function startNewBag(c) {
   $("f-rd").value = ""; $("f-od").value = ""; $("f-notes").value = "";
   $("addsum").textContent = "New bag of " + c.name;
   $("save").textContent = "Save new bag";
-  $("photohint").hidden = true;
+  $("photohint").hidden = !c.photo_path;
 }
 $("cancel").onclick = endEdit;
 
@@ -547,13 +560,13 @@ $("cf").onsubmit = async e => {
       flavour_tags: v("f-tags").split(",").map(t => t.trim().toLowerCase()).filter(Boolean),
       notes: v("f-notes") || null, roast_date: v("f-rd") || null, open_date: v("f-od") || null, buy_url: v("f-url") ? safeUrl(v("f-url")) : null
     };
-    if (path) row.photo_path = path; else if (!editing) row.photo_path = null;
+    if (path) row.photo_path = path; else if (newBagOf) row.photo_path = newBagOf.photo_path || null; else if (!editing) row.photo_path = null;
     if (newBagOf) row.group_id = gk(newBagOf);
     if (editing) {
       const { data: done, error } = await db.from("coffees").update(row).eq("id", editing.id).select();
       if (error) throw error;
       if (!done.length) throw new Error("nothing was changed");
-      if (path && editing.photo_path) await db.storage.from("bag-photos").remove([editing.photo_path]);
+      if (path && editing.photo_path) await releasePhoto(editing.photo_path);
     } else {
       const { error } = await db.from("coffees").insert(row);
       if (error) throw error;
@@ -692,7 +705,7 @@ function brewCard(b) {
   const a = el("article", "bc"), when = new Date(b.brewed_at);
   const hd = el("div", "hd"); hd.appendChild(el("h3", "", when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }))); a.appendChild(hd);
   const dr = cur.roast_date ? dayN(cur.roast_date, when) : null, dop = cur.open_date ? dayN(cur.open_date, when) : null;
-  const age = [dr !== null ? "day " + dr + " after roast" : null, dop !== null ? "day " + dop + " after opening" : null].filter(Boolean).join(", ");
+  const age = [dr !== null ? (dr === 0 ? "roast day" : "day " + dr + " after roast") : null, dop !== null ? (dop === 0 ? "opening day" : "day " + dop + " after opening") : null].filter(Boolean).join(", ");
   if (age) a.appendChild(el("p", "age", age));
   if (b.is_dialin) a.appendChild(el("p", "age", "Dial-in brew, not counted in the rating"));
   if (b.rating) { const s = el("p", "starsum", "\u2605".repeat(b.rating) + "\u2606".repeat(5 - b.rating)); s.setAttribute("aria-label", "Rated " + b.rating + " of 5"); a.appendChild(s); }

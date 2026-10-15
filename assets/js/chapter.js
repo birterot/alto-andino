@@ -54,7 +54,7 @@ var ta=document.getElementById("tn");ta.value=s.n||"";
 ta.oninput=function(){var s2=load(id);s2.n=ta.value;save(id,s2)}}
 var tb=document.getElementById("tabs"),st=document.getElementById("strip");
 D.forEach(function(m,i){
-var t=el("button","tab "+m.id,m.n);t.type="button";t.setAttribute("role","tab");t.onclick=function(){cur=i;render()};tb.appendChild(t);
+var t=el("button","tab "+m.id,m.n);t.type="button";t.setAttribute("role","tab");t.setAttribute("data-t",m.n);t.onclick=function(){cur=i;render()};tb.appendChild(t);
 var c=el("button","mini "+m.id);c.type="button";
 c.innerHTML=cup().replace('class="steam"','')+'<strong>'+m.n+'</strong><span>'+m.st[0]+'</span><span>'+m.st[1]+'</span>';
 c.onclick=function(){cur=i;render();tb.scrollIntoView({behavior:"smooth",block:"start"})};st.appendChild(c)});

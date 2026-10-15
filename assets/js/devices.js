@@ -47,7 +47,7 @@
     if (ratios.length > 1) {
       var sg = el("div", "tabs"); sg.setAttribute("role", "group"); sg.setAttribute("aria-label", yieldMode ? "Roast" : "Cup type");
       ratios.forEach(function (x, i) {
-        var bt = el("button", "tab sm", yieldMode ? x[0] : x[0] + " (" + x[1] + " g/l)"); bt.type = "button"; bt.setAttribute("aria-pressed", String(i === ri));
+        var lbl = yieldMode ? x[0] : x[0] + " (" + x[1] + " g/l)"; var bt = el("button", "tab sm", lbl); bt.setAttribute("data-t", lbl); bt.type = "button"; bt.setAttribute("aria-pressed", String(i === ri));
         bt.onclick = function () { ri = i; render(); }; sg.appendChild(bt);
       });
       calc.appendChild(sg);
@@ -70,7 +70,7 @@
     if (m.variants.length > 1) {
       var vg = el("div", "tabs"); vg.setAttribute("role", "group"); vg.setAttribute("aria-label", "Method");
       m.variants.forEach(function (x, i) {
-        var bt = el("button", "tab sm", x.n); bt.type = "button"; bt.setAttribute("aria-pressed", String(i === vi));
+        var bt = el("button", "tab sm", x.n); bt.setAttribute("data-t", x.n); bt.type = "button"; bt.setAttribute("aria-pressed", String(i === vi));
         bt.onclick = function () { vi = i; ri = 0; render(); }; vg.appendChild(bt);
       });
       ms.appendChild(vg);
@@ -93,7 +93,7 @@
 
   var tb = $("tabs");
   D.forEach(function (m, i) {
-    var t = el("button", "tab " + m.id, m.name); t.type = "button"; t.setAttribute("role", "tab");
+    var t = el("button", "tab " + m.id, m.name); t.type = "button"; t.setAttribute("role", "tab"); t.setAttribute("data-t", m.name);
     t.onclick = function () { cur = i; vi = 0; ri = 0; render(); }; tb.appendChild(t);
   });
   render();

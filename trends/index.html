@@ -7,14 +7,17 @@
 <link rel="apple-touch-icon" href="../assets/icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Coffee">
+<meta name="apple-mobile-web-app-title" content="Alto Andino">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Trends | Coffee atlas</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect width=%2224%22 height=%2224%22 rx=%225%22 fill=%22%232F2118%22/><path d=%22M2.5 18L12 3l9.5 15 M7.6 12.8l2.4 1.8 2-1.8 2 1.8 2.4-1.8%22 fill=%22none%22 stroke=%22%23EFE6D8%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
 <link rel="stylesheet" href="../assets/css/base.css">
 <style>
 :root{--c0:light-dark(#A9772B,#D6AE6A);--c1:light-dark(#A65A68,#D99AA6);--c2:light-dark(#6A4B36,#C9A27A);--c3:light-dark(#4F7A62,#9DB8A1);--c4:light-dark(#4F6D8A,#9DB1BD);--c5:light-dark(#7A5A86,#BFA3C9);--c6:light-dark(#7B8450,#B4BC83);--c7:light-dark(#B0623E,#D79A7A)}
 .ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin:16px 0 14px}
-.ctl select,.ctl button{font:inherit;padding:10px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);min-width:0}
+.ctl select,.ctl button{font:inherit;padding:10px 16px;border-radius:999px;border:1px solid var(--line);color:var(--ink);min-width:0;min-height:44px}
+.ctl button{background:var(--card)}
+.ctl select{padding-right:38px}
 .ctl button{cursor:pointer}
 .banner{margin:0 0 12px;padding:8px 12px;border-radius:8px;border:1px dashed var(--line);background:var(--card);font-size:14px}
 .chartbox{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
@@ -36,7 +39,7 @@ button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px soli
 <body>
 <main>
 <h1>Trends</h1>
-<p class="sub">How a coffee changes after roasting and after opening: your 0-10 scores against the days that passed. Pick a coffee and one recipe to compare like with like.</p>
+<p class="sub">How your coffees develop over time. Follow flavour scores for one coffee and one recipe, counted from the roast date or the day you opened the bag.</p>
 
 <div class="ctl">
   <select id="t-coffee" aria-label="Coffee"></select>

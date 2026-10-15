@@ -118,7 +118,7 @@ window.DEVICES = {
     },
     {
       id: "flair", name: "Flair 58", kind: "Manual lever espresso",
-      c: { f: ["#E9E3EE", "#2A2431"], s: ["#675680", "#B2A3C9"], t: ["#4A3C5E", "#D5CAE4"] },
+      c: { f: ["#F3DEDA", "#3B1D1A"], s: ["#A83A2E", "#E58D7F"], t: ["#7C291F", "#F2C4BB"] },
       tag: "Espresso by hand, with full control of temperature and pressure",
       body: "You set the temperature and you make the pressure with the lever, so the shot is yours to shape. That also means more to dial in. Change one thing at a time and write it down.",
       ratios: [["Standard (1:2)", 2, "Fine, espresso range. Tune it by the shot time."],
