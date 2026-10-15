@@ -14,7 +14,9 @@
      K6 numbers are clicks counted from zero (manufacturer's table). Add a grinder by copying a block; leave feel out for no suggestion.
    PREHEAT: the Flair 58 preheat settings: id, label, about how hot in Celsius.
    FLAIR_BY_ROAST: which Flair recipe (and so which preheat setting) fits each roast level.
-   BREW_TYPES: the kinds of brewing a coffee can be suitable for. */
+   BREW_TYPES: the kinds of brewing a coffee can be suitable for.
+   ROAST_COLOURS: the colours of a coffee card, by roast level, light to dark (list order = the little roast scale).
+     [fill light, fill dark, line light, line dark, text light, text dark]. Unknown roast levels use the process colours. */
 window.DEFAULTS = {
   BREW: { preinfusion_bar: 2, preinfusion_s: 10, grind: 25, dose_g: 18, yield_g: 40, pressure_bar: 6, temp_c: 96 },
   PRESETS: [
@@ -35,5 +37,12 @@ window.DEFAULTS = {
   PREHEAT: [["low", "Low", 85], ["medium", "Medium", 90], ["high", "High", 95]],
   FLAIR_BY_ROAST: { "light": "flair-light", "medium-light": "flair-light", "medium": "flair-med", "medium-dark": "flair-dark", "dark": "flair-dark" },
   BREW_TYPES: [["espresso", "Espresso"], ["filter", "Filter"], ["immersion", "Immersion"], ["moka", "Moka"]],
+  ROAST_COLOURS: [
+    ["Light",        ["#F7EFDC", "#2E2618", "#C9A15A", "#D9B878", "#5E4720", "#EAD7AE"]],
+    ["Medium-light", ["#F2E5CD", "#2F2416", "#B5853F", "#D2A866", "#56401C", "#E6CDA0"]],
+    ["Medium",       ["#ECDDC9", "#2C2119", "#93653A", "#C79A6E", "#4A321E", "#E2C6A8"]],
+    ["Medium-dark",  ["#E6D6C7", "#281D17", "#74492D", "#B88562", "#3F271A", "#DDBFA6"]],
+    ["Dark",         ["#E0D0C6", "#241A16", "#4A2E22", "#A57A63", "#2F1C14", "#D8BBA9"]]
+  ],
   START_PRESET: "flair-med"
 };

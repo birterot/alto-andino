@@ -51,6 +51,33 @@ details.add summary{cursor:pointer;font-weight:600}
 .cc .tags{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:10px}
 .cc .acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}
 .cc .lnk{border-color:var(--line);color:var(--t)}
+.cc .meta{opacity:.9}
+.cfacts{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:6px 18px;margin-top:12px;font-size:14px}
+.cfacts .f{display:inline-flex;align-items:center;gap:7px}
+.cfacts svg{color:var(--s)}
+.rscale{display:inline-flex;gap:3px}
+.rscale i{display:block;width:12px;height:6px;border-radius:3px;background:currentColor;opacity:.18}
+.rscale i.on{background:var(--s);opacity:1}
+.cc .ptag{margin-top:6px;font-size:13.5px;font-style:italic;opacity:.85}
+.cc .ideal{display:flex;align-items:center;gap:7px;margin-top:6px;font-size:14px}
+.cc .ideal svg{color:var(--s)}
+.cc .ideal b{font-weight:600}
+.arch{margin-top:28px}
+.arch summary{font-size:15px;color:var(--mut)}
+.arow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.arow .an{flex:1 1 100%;min-width:0}
+.arow .an strong{display:block;font-size:15px}
+.arow .an small{color:var(--mut);font-size:13px}
+.arow .btn{min-height:36px;padding:6px 12px;font-size:13.5px}
+.darch{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0 0;padding:8px 12px;border-radius:10px;background:var(--bg);color:var(--ink);font-size:14px}
+dialog.dlg{border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);padding:22px 20px 16px;max-width:360px;width:calc(100% - 32px);box-shadow:0 18px 50px rgba(20,14,10,.3)}
+dialog.dlg::backdrop{background:rgba(20,14,10,.45)}
+dialog.dlg h3{margin:0 0 6px;font-size:18px}
+dialog.dlg p{margin:0 0 4px;font-size:14.5px;color:var(--mut)}
+.dlgacts{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.dlgacts .go,.dlgacts .btn{margin:0;width:100%;justify-content:center;height:48px}
+.dlgacts .lnk{border:0;min-height:44px;font-size:15px;color:var(--mut)}
+.btn.danger{border-color:light-dark(#9A4A32,#E0A08A);color:light-dark(#9A4A32,#E0A08A);background:none}
 .btn{font:inherit;cursor:pointer;border-radius:8px;padding:8px 14px;min-height:40px;font-size:14px;border:1px solid var(--s,var(--ink));background:var(--s,var(--ink));color:var(--bg);display:inline-flex;align-items:center;gap:7px;text-decoration:none}
 .btn.ghost{background:none;color:var(--t,var(--ink))}
 .btn:focus-visible,.ib:focus-visible{outline:2px solid currentColor;outline-offset:2px}
@@ -233,11 +260,12 @@ details.calcbox summary{font-size:15px}
     <select id="flt-open" aria-label="Filter by opened"><option value="">Opened or not</option><option value="open">Opened</option><option value="closed">Not opened yet</option></select>
   </div>
   <div id="list" class="clist"></div>
+  <div id="archived"></div>
   </div>
 
   <div id="detail" hidden>
     <a class="back" href="#">All coffees</a>
-    <section id="dhead" class="cc"><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="drate"></div><div class="tags" id="dtags"></div><div class="acts" id="dbuy"></div></div></section>
+    <section id="dhead" class="cc"><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><div class="acts" id="dbuy"></div><p class="darch" id="darch" hidden></p></div></section>
     <details class="add" id="brewbox" open>
       <summary id="brewsum">Log a brew</summary>
       <form id="bf">
@@ -321,6 +349,15 @@ details.calcbox summary{font-size:15px}
   <p class="foot"><span id="who"></span> <button class="lnk" id="rename" type="button" hidden>Change name</button> <button class="lnk" id="out" type="button">Sign out</button></p>
 </section>
 <p id="msg" role="status"></p>
+<dialog id="deldlg" class="dlg" aria-labelledby="dlgtitle">
+  <h3 id="dlgtitle">Remove this bag?</h3>
+  <p id="dlgtext"></p>
+  <div class="dlgacts">
+    <button class="go" id="dlg-archive" type="button">Archive bag, keep its brews</button>
+    <button class="btn danger" id="dlg-delete" type="button">Delete bag and its brews</button>
+    <button class="lnk" id="dlg-cancel" type="button">Cancel</button>
+  </div>
+</dialog>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script src="../assets/js/config.js"></script>
@@ -328,6 +365,7 @@ details.calcbox summary{font-size:15px}
 <script src="../assets/js/scales.js"></script>
 <script src="../assets/js/theme.js"></script>
 <script src="../data/devices.js"></script>
+<script src="../data/processing.js"></script>
 <script src="../data/defaults.js"></script>
 <script src="../assets/js/calcui.js"></script>
 <script src="../assets/js/nav.js" defer></script>
@@ -347,7 +385,8 @@ function deviceList() {
   const out = [], add = x => { if (x && !out.includes(x)) out.push(x); };
   ((window.DEVICES && window.DEVICES.D) || []).forEach(d => (d.logAs || [d.name]).forEach(add));
   (window.LISTS.device || []).forEach(add);
-  return out.filter(n => !out.some(o => o !== n && o.indexOf(n + " ") === 0));   // "Flair" is hidden next to "Flair 58"
+  const lo = x => x.toLowerCase();   // "Chemex" is hidden next to "Chemex (3-cup)", "Flair" next to "Flair 58"
+  return out.filter(n => !out.some(o => o !== n && lo(o).indexOf(lo(n) + " ") === 0));   // "Flair" is hidden next to "Flair 58"
 }
 function fill(id, base, used) {
   const s = $(id), keep = s.value;
@@ -413,6 +452,79 @@ function applyPal(a, process) {
   });
 }
 
+// Card colours follow the roast level (data/defaults.js ROAST_COLOURS); unknown roast levels use the process colours.
+const ROASTS = (window.DEFAULTS && window.DEFAULTS.ROAST_COLOURS) || [];
+const roastIdx = r => ROASTS.findIndex(x => x[0].toLowerCase() === String(r || "").trim().toLowerCase());
+function applyLook(a, c) {
+  const i = roastIdx(c.roast_level);
+  if (i < 0) { applyPal(a, c.process); return; }
+  const p = ROASTS[i][1];
+  [["--f", 0], ["--s", 2], ["--t", 4]].forEach(([k, j]) => a.style.setProperty(k, "light-dark(" + p[j] + "," + p[j + 1] + ")"));
+}
+// Process: an icon and the one-line cup profile from the processing chapter (data/processing.js).
+const PROC_ICON = { "washed": "washed", "natural": "natural", "honey": "honey", "pulped natural": "pulped", "semi-washed": "semi" };
+function procInfo(name) {
+  const n = String(name || "").trim().toLowerCase();
+  const d = ((window.CHAPTER && window.CHAPTER.D) || []).find(x => x.n.toLowerCase() === n);
+  const tag = d && d.tag && !/still to add/i.test(d.tag) ? d.tag : null;
+  return { icon: PROC_ICON[n] || "leaf", tag };
+}
+const typeLabel = t => { const x = ((window.DEFAULTS && window.DEFAULTS.BREW_TYPES) || []).find(y => y[0] === t); return x ? x[1] : t; };
+const andList = arr => arr.length < 2 ? arr.join("") : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1];
+// Roast scale, process and "ideal for" lines, used on the cards and the coffee page.
+function factsBlock(c, withTag) {
+  const box = el("div");
+  const facts = el("div", "cfacts");
+  const i = roastIdx(c.roast_level);
+  if (c.roast_level) {
+    const f = el("span", "f");
+    if (i >= 0) { const sc = el("span", "rscale"); sc.setAttribute("aria-hidden", "true"); ROASTS.forEach((_, k) => sc.appendChild(el("i", k <= i ? "on" : ""))); f.appendChild(sc); }
+    f.appendChild(el("span", "", c.roast_level + " roast")); facts.appendChild(f);
+  }
+  if (c.process) { const f = el("span", "f"); f.append(ico(procInfo(c.process).icon, 18), el("span", "", c.process)); facts.appendChild(f); }
+  if (facts.children.length) box.appendChild(facts);
+  const tag = withTag && c.process ? procInfo(c.process).tag : null;
+  if (tag) box.appendChild(el("p", "ptag", tag));
+  if (c.suitable_for && c.suitable_for.length) {
+    const p = el("p", "ideal"); p.appendChild(ico("cup", 18));
+    p.append(document.createTextNode("Ideal for "), el("b", "", andList(c.suitable_for.map(typeLabel)).toLowerCase()));
+    box.appendChild(p);
+  }
+  return box;
+}
+
+// Removing a bag: archive it (brews stay) or delete it with its brews.
+function askRemove(c, n) {
+  return new Promise(done => {
+    const d = $("deldlg");
+    $("dlgtitle").textContent = "Remove this bag of " + c.name + "?";
+    $("dlgtext").textContent = n ? "It has " + n + (n === 1 ? " brew" : " brews") + ". Archiving hides the bag but keeps the brews in the history and in Trends. You can restore it any time." : "Archiving hides the bag. You can restore it any time.";
+    const end = v => { d.close(); done(v); };
+    $("dlg-archive").onclick = () => end("archive");
+    $("dlg-delete").onclick = () => end("delete");
+    $("dlg-cancel").onclick = () => end(null);
+    d.oncancel = () => done(null);
+    if (d.showModal) d.showModal(); else done(confirm("Archive this bag? Its brews are kept.") ? "archive" : null);
+  });
+}
+async function setArchived(c, on) {
+  const { data, error } = await db.from("coffees").update({ archived: on }).eq("id", c.id).select();
+  if (error) { say("Could not " + (on ? "archive" : "restore") + ": " + error.message + (/archived/.test(error.message) ? " (run supabase/12_archive.sql first)" : "")); return false; }
+  if (!data || !data.length) { say("Nothing was changed."); return false; }
+  say(on ? "Archived. Find it at the bottom of the list under \"Archived bags\"." : "Restored.");
+  return true;
+}
+async function deleteBag(c) {
+  const { data: gone, error } = await db.from("coffees").delete().eq("id", c.id).select();
+  if (error) { say("Could not delete: " + error.message); return false; }
+  if (!gone.length) { say("Nothing was deleted."); return false; }
+  if (c.photo_path) {
+    const r = await releasePhoto(c.photo_path);
+    if (r && r.error) say("Coffee deleted, but the photo could not be removed: " + r.error.message);
+  }
+  return true;
+}
+
 function safeUrl(u) {
   try { const x = new URL(u); return x.protocol === "https:" || x.protocol === "http:" ? x.href : null; } catch (e) { return null; }
 }
@@ -455,7 +567,12 @@ const ICONS = {
   bitter: "M12 3c4 0 7 4 7 9s-3 9-7 9-7-4-7-9 3-9 7-9z M12 4c-3 4 3 12 0 16",
   balance: "M12 4v16 M7 20h10 M5 7h14 M5 7l-3 6h6L5 7z M19 7l-3 6h6l-3-6z",
   chocolaty: "M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z M5 9h14 M5 15h14 M12 3v18",
-  leaf: "M5 19C5 10 10 5 19 5c0 9-5 14-14 14z M5 19l8-8"
+  leaf: "M5 19C5 10 10 5 19 5c0 9-5 14-14 14z M5 19l8-8",
+  washed: "M12 3.5c3.5 4.3 6 7.6 6 10.5a6 6 0 01-12 0c0-2.9 2.5-6.2 6-10.5z M9 14.5a3 3 0 003 3",
+  natural: "M8 12a4 4 0 108 0 4 4 0 10-8 0 M12 2.5v2 M12 19.5v2 M2.5 12h2 M19.5 12h2 M5.3 5.3l1.4 1.4 M17.3 17.3l1.4 1.4 M5.3 18.7l1.4-1.4 M17.3 6.7l1.4-1.4",
+  honey: "M12 3l6.5 3.75v7.5L12 18l-6.5-3.75v-7.5z M12 18v3.5",
+  pulped: "M3.5 15.5a3.5 3.5 0 107 0 3.5 3.5 0 10-7 0 M12.5 16.5a3.5 3.5 0 107 0 3.5 3.5 0 10-7 0 M7 12c1-4 3.5-6.5 8-8 M16 13c-.6-3-1-6-1-9",
+  semi: "M12 3.5c3.5 4.3 6 7.6 6 10.5a6 6 0 01-12 0c0-2.9 2.5-6.2 6-10.5z M6 14h12"
 };
 function ico(name, size) {
   const NS = "http://www.w3.org/2000/svg", s = document.createElementNS(NS, "svg");
@@ -496,13 +613,13 @@ const gk = c => c.group_id || c.id;   // bags of one coffee share this key
 
 function card(c, photoUrl, nBrews, ratings, bags) {
   const a = el("article", "cc");
-  applyPal(a, c.process);
+  applyLook(a, c);
   if (photoUrl) { const i = el("img"); i.src = photoUrl; i.alt = "Bag of " + c.name; i.loading = "lazy"; a.appendChild(i); }
   const b = el("div", "in");
   const hd = el("div", "hd"); hd.appendChild(el("h3", "", c.name)); b.appendChild(hd);
-  const meta = [c.roaster, c.origin, c.variety, altText(c), c.is_blend ? "Blend" : null, c.process, c.roast_level].filter(Boolean).join(", ");
-  if (meta) b.appendChild(el("p", "", meta));
-  if (c.suitable_for && c.suitable_for.length) b.appendChild(el("p", "age", "Suitable for " + c.suitable_for.join(", ")));
+  const meta = [c.roaster, c.origin, c.variety, altText(c), c.is_blend ? "Blend" : null].filter(Boolean).join(", ");
+  if (meta) b.appendChild(el("p", "meta", meta));
+  b.appendChild(factsBlock(c, true));
   if (bags && bags.length > 1) b.appendChild(el("p", "age", "Bag " + bags.length + " of " + bags.length));
   if (c.flavour_tags && c.flavour_tags.length) {
     const t = el("div", "tags"); c.flavour_tags.forEach(x => t.appendChild(el("span", "chip", x))); b.appendChild(t);
@@ -521,16 +638,13 @@ function card(c, photoUrl, nBrews, ratings, bags) {
       if (error) say("Could not update: " + error.message); else load();
     }));
   }
-  const del = ibtn("Delete", "trash", async () => {
-    if (!confirm("Delete this bag of \"" + c.name + "\" and every brew logged for it? This cannot be undone.")) return;
-    const { data: gone, error } = await db.from("coffees").delete().eq("id", c.id).select();
-    if (error) { say("Could not delete: " + error.message); return; }
-    if (!gone.length) { say("Nothing was deleted."); return; }
-    if (c.photo_path) {
-      const r = await releasePhoto(c.photo_path);
-      if (r && r.error) say("Coffee deleted, but the photo could not be removed: " + r.error.message);
+  const del = ibtn("Archive or delete", "trash", async () => {
+    const what = await askRemove(c, coffeeCounts[c.id] || 0);
+    if (what === "archive") { if (await setArchived(c, true)) load(); }
+    else if (what === "delete") {
+      if (!confirm("Delete this bag of \"" + c.name + "\" and its " + (coffeeCounts[c.id] || 0) + " brews for good? This cannot be undone.")) return;
+      if (await deleteBag(c)) load();
     }
-    load();
   }, "del");
   const ed = ibtn("Edit", "edit", () => startEdit(c));
   const grp = el("div", "ibs"); grp.append(ed, del);
@@ -596,13 +710,35 @@ function passCoffee(c) {
 function mergedRates(bags) {
   return bags.flatMap(b => coffeeRates[b.id] || []).sort((x, y) => (x.t < y.t ? -1 : x.t > y.t ? 1 : 0));
 }
+function renderArchived(arch) {
+  const box = $("archived"); box.textContent = "";
+  if (!arch.length) return;
+  const d = el("details", "older arch"); d.appendChild(el("summary", "", "Archived bags (" + arch.length + ")"));
+  d.appendChild(el("p", "hint", "Hidden from the list. Their brews still count in the history and in Trends."));
+  arch.forEach(c => {
+    const row = el("div", "arow"), t = el("div", "an");
+    t.appendChild(el("strong", "", c.name));
+    t.appendChild(el("small", "", [c.roaster, c.roast_date ? "roasted " + c.roast_date : null, (coffeeCounts[c.id] || 0) + " brews"].filter(Boolean).join(", ")));
+    row.appendChild(t);
+    row.appendChild(abtn("btn ghost", "Brews", "cup", () => { location.hash = "c=" + c.id; }));
+    row.appendChild(abtn("btn ghost", "Restore", "check", async () => { if (await setArchived(c, false)) load(); }));
+    row.appendChild(ibtn("Delete for good", "trash", async () => {
+      if (!confirm("Delete this bag of \"" + c.name + "\" and its " + (coffeeCounts[c.id] || 0) + " brews for good? This cannot be undone.")) return;
+      if (await deleteBag(c)) load();
+    }, "del"));
+    d.appendChild(row);
+  });
+  box.appendChild(d);
+}
 function renderCoffees() {
   const list = $("list"); list.textContent = "";
-  $("cfilters").hidden = coffeeData.length < 2;
-  if (!coffeeData.length) { list.appendChild(el("p", "hint", "No coffees yet. Add your first one above.")); return; }
+  const active = coffeeData.filter(c => !c.archived);
+  renderArchived(coffeeData.filter(c => c.archived));
+  $("cfilters").hidden = active.length < 2;
+  if (!active.length) { list.appendChild(el("p", "hint", coffeeData.length ? "All bags are archived. Add a new coffee above." : "No coffees yet. Add your first one above.")); return; }
   // one card per coffee, showing its newest bag; the data arrives newest first
   const groups = new Map();
-  coffeeData.forEach(c => { const k = gk(c); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(c); });
+  active.forEach(c => { const k = gk(c); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(c); });
   const shown = [...groups.values()].filter(g => passCoffee(g[0]));
   if (!shown.length) { list.appendChild(el("p", "hint", "No coffees match these filters.")); return; }
   shown.forEach(g => list.appendChild(card(g[0], coffeeUrls[g[0].photo_path], coffeeCounts[g[0].id] || 0, mergedRates(g), g)));
@@ -766,6 +902,8 @@ function typeOf(name) {
   if (!n) return "";
   const list = (window.DEVICES && window.DEVICES.D) || [];
   for (const d of list) if ([d.name, ...(d.logAs || [])].some(x => x.toLowerCase() === n)) return d.type || "";
+  // your own names such as "Chemex (3-cup)" or "Moka Pot (6-cup)" count as the device they start with
+  for (const d of list) if ([d.name, ...(d.logAs || [])].some(x => n.indexOf(x.toLowerCase() + " ") === 0)) return d.type || "";
   if (n.indexOf("flair") === 0) return "espresso";
   return "";
 }
@@ -924,7 +1062,8 @@ function applyType() {
 }
 function presetFor(dev) {
   if (/^flair/i.test(dev || "")) return (D.FLAIR_BY_ROAST || {})[((cur && cur.roast_level) || "").toLowerCase()] || "flair-med";
-  const p = (D.PRESETS || []).find(x => x.device === dev);
+  const n = String(dev || "").toLowerCase();
+  const p = (D.PRESETS || []).find(x => x.device.toLowerCase() === n) || (D.PRESETS || []).find(x => n.indexOf(x.device.toLowerCase() + " ") === 0);
   return p ? p.id : null;
 }
 function put(id, v) { if (!touched.has(id)) $(id).value = v === null || v === undefined ? "" : v; }
@@ -1070,10 +1209,10 @@ function route() {
 // "Log a brew": choose the device first (or the coffee first). Coffees suitable for the device come first.
 let logMode = store.get("alto.logmode") === "coffee" ? "coffee" : "device", logDev = null, logCoffees = [];
 async function pickList() {
-  const { data, error } = await db.from("coffees").select("id,name,roaster,process,roast_level,open_date,group_id,suitable_for").order("created_at", { ascending: false });
+  const { data, error } = await db.from("coffees").select("*").order("created_at", { ascending: false });
   if (error) { say("Could not load coffees: " + error.message); return; }
   const seen = new Set();
-  logCoffees = data.filter(c => { const k = gk(c); if (seen.has(k)) return false; seen.add(k); return true; });   // data is newest first
+  logCoffees = data.filter(c => !c.archived).filter(c => { const k = gk(c); if (seen.has(k)) return false; seen.add(k); return true; });   // data is newest first
   logCoffees.sort((a, b) => (a.open_date ? 0 : 1) - (b.open_date ? 0 : 1));
   renderPick();
 }
@@ -1088,7 +1227,7 @@ function renderPick() {
   const dev = logMode === "device" ? logDev : null, t = dev ? typeOf(dev) : "";
   const go = c => { location.hash = "c=" + c.id + (dev ? "&d=" + encodeURIComponent(dev) : ""); };
   const add = list => list.forEach(c => {
-    const b = el("button", "pick"); b.type = "button"; applyPal(b, c.process);
+    const b = el("button", "pick"); b.type = "button"; applyLook(b, c);
     b.appendChild(el("strong", "", c.name));
     const sub = [c.roaster, c.process, c.roast_level].filter(Boolean).join(", ");
     if (sub) b.appendChild(el("small", "", sub));
@@ -1115,14 +1254,16 @@ async function openCoffee(id, dev) {
   if (error || !c) { say("Could not open this coffee."); location.hash = ""; return; }
   cur = c;
   ["bflt-device", "bflt-recipe", "bflt-who", "bflt-sort"].forEach(i => { $(i).value = ""; });
-  applyPal($("dhead"), c.process);
+  applyLook($("dhead"), c);
+  const fx = $("dfacts"); fx.textContent = ""; fx.appendChild(factsBlock(c, true));
+  const da = $("darch"); da.textContent = ""; da.hidden = !c.archived;
+  if (c.archived) { da.append(document.createTextNode("This bag is archived. Its brews still count in Trends.")); da.appendChild(abtn("btn ghost", "Restore", "check", async () => { if (await setArchived(c, false)) openCoffee(c.id); })); }
   $("dname").textContent = c.name;
-  $("dmeta").textContent = [c.roaster, c.origin, c.variety, altText(c), c.process, c.roast_level].filter(Boolean).join(", ") +
+  $("dmeta").textContent = [c.roaster, c.origin, c.variety, altText(c)].filter(Boolean).join(", ") +
     (c.roast_date ? ". Roasted " + c.roast_date : "") + (c.open_date ? ", opened " + c.open_date : "") + ".";
   const bx = $("dbuy"); bx.textContent = ""; const bl = buyLink(c); if (bl) bx.appendChild(bl);
   const t = $("dtags"); t.textContent = "";
   (c.flavour_tags || []).forEach(x => t.appendChild(el("span", "chip", x)));
-  if (c.suitable_for && c.suitable_for.length) t.appendChild(el("span", "chip", "suitable for " + c.suitable_for.join(", ")));
   fill("b-device", deviceList(), [...new Set((dv || []).map(b => b.device).filter(Boolean))]);
   otherBox("b-device");
   newBrewSetup(dev);
