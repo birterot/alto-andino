@@ -10,7 +10,7 @@
   }).join("");
   document.head.appendChild(st);
 
-  var cur = 0, vi = 0, ri = 0, water = {};
+  var cur = 0, vi = 0, ri = 0, di = 0, water = {};
   function fmt(n) { return (Math.round(n * 10) / 10).toString(); }
   function section(title) { var s = el("div", "dsec"); s.appendChild(el("h4", "", title)); return s; }
   function kvBlock(ex) {
@@ -24,7 +24,11 @@
     var m = D[cur]; if (vi >= m.variants.length) vi = 0;
     var v = m.variants[vi], ratios = pick(v, m, "ratios"), yieldMode = v.calc === "yield";
     if (ri >= ratios.length) ri = 0;
-    var wk = m.id + vi; if (water[wk] === undefined) water[wk] = pick(v, m, "water");
+    var wk = m.id + vi + "-" + ri + "-";
+    if (water[wk + 0] === undefined) {   // starting amounts: coffee in for direction 0, the matching other amount for direction 1
+      if (yieldMode) { water[wk + 0] = 18; water[wk + 1] = Math.round(18 * ratios[ri][1] * 10) / 10; }
+      else { var w0 = pick(v, m, "water"), c0 = Math.round(w0 * ratios[ri][1] / 1000 * 2) / 2; water[wk + 0] = c0; water[wk + 1] = w0; }
+    }
     Array.prototype.forEach.call(document.querySelectorAll("#tabs .tab"), function (t, i) { t.setAttribute("aria-selected", String(i === cur)); });
     var p = $("panel"); p.textContent = ""; p.className = "sb " + m.id;
 
@@ -43,7 +47,7 @@
     b.appendChild(tiles);
     if (v.src) b.appendChild(el("p", "srcnote", "Not from the Atlas: this recipe comes from other sources, listed at the bottom."));
 
-    var calc = section(yieldMode ? "How much yield?" : "How much coffee?");
+    var calc = section("Calculator");
     if (ratios.length > 1) {
       var sg = el("div", "tabs"); sg.setAttribute("role", "group"); sg.setAttribute("aria-label", yieldMode ? "Roast" : "Cup type");
       ratios.forEach(function (x, i) {
@@ -52,18 +56,31 @@
       });
       calc.appendChild(sg);
     }
+    // two directions: coffee in (the default) or the other way round
+    var dirs = yieldMode ? [["Coffee \u2192 yield", "Coffee (g)", "yield"], ["Yield \u2192 coffee", "Cup yield (g)", "coffee"]]
+                         : [["Coffee \u2192 water", "Coffee (g)", "water"], ["Water \u2192 coffee", "Water (ml)", "coffee"]];
+    var dg = el("div", "tabs"); dg.setAttribute("role", "group"); dg.setAttribute("aria-label", "Direction");
+    dirs.forEach(function (d, i) {
+      var bt = el("button", "tab sm", d[0]); bt.setAttribute("data-t", d[0]); bt.type = "button"; bt.setAttribute("aria-pressed", String(i === di));
+      bt.onclick = function () { di = i; render(); }; dg.appendChild(bt);
+    });
+    calc.appendChild(dg);
     var row = el("div", "crow");
-    var lab = el("label", "", yieldMode ? "Coffee (g)" : "Water (ml)"); lab.setAttribute("for", "wml");
-    var inp = el("input"); inp.id = "wml"; inp.type = "number"; inp.min = "1"; inp.max = "5000"; inp.step = yieldMode ? "0.5" : "10"; inp.inputMode = "decimal"; inp.value = water[wk];
+    var lab = el("label", "", dirs[di][1]); lab.setAttribute("for", "wml");
+    var inp = el("input"); inp.id = "wml"; inp.type = "number"; inp.min = "1"; inp.max = "5000"; inp.step = "any"; inp.inputMode = "decimal"; inp.value = water[wk + di];
     var out = el("output", "cout"); out.setAttribute("aria-live", "polite");
     function upd() {
       var w = Number(inp.value); out.textContent = ""; if (!(w > 0)) return;
-      water[wk] = w;
-      if (yieldMode) { out.appendChild(el("b", "", fmt(w * r[1]) + " g")); out.appendChild(document.createTextNode(" in the cup")); }
-      else { out.appendChild(el("b", "", fmt(w * r[1] / 1000) + " g")); out.appendChild(document.createTextNode(" coffee")); }
+      water[wk + di] = w;
+      var f = r[1], res, tail;
+      if (yieldMode) { if (di === 0) { res = w * f; tail = " g in the cup"; } else { res = w / f; tail = " g coffee"; } }
+      else if (di === 0) { res = w * 1000 / f; tail = " ml water"; }
+      else { res = w * f / 1000; tail = " g coffee"; }
+      out.appendChild(el("b", "", fmt(res))); out.appendChild(document.createTextNode(tail));
     }
     inp.addEventListener("input", upd); upd();
     row.appendChild(lab); row.appendChild(inp); row.appendChild(out); calc.appendChild(row);
+    if (r[3]) { var cl = el("p", "legend"); var ca = el("a", "", "Open this recipe in the calculator"); ca.href = "../calc/index.html#preset=" + r[3]; cl.appendChild(ca); calc.appendChild(cl); }
     b.appendChild(calc);
 
     var ms = section("Method");
@@ -71,7 +88,7 @@
       var vg = el("div", "tabs"); vg.setAttribute("role", "group"); vg.setAttribute("aria-label", "Method");
       m.variants.forEach(function (x, i) {
         var bt = el("button", "tab sm", x.n); bt.setAttribute("data-t", x.n); bt.type = "button"; bt.setAttribute("aria-pressed", String(i === vi));
-        bt.onclick = function () { vi = i; ri = 0; render(); }; vg.appendChild(bt);
+        bt.onclick = function () { vi = i; ri = 0; di = 0; render(); }; vg.appendChild(bt);
       });
       ms.appendChild(vg);
     }
@@ -94,7 +111,7 @@
   var tb = $("tabs");
   D.forEach(function (m, i) {
     var t = el("button", "tab " + m.id, m.name); t.type = "button"; t.setAttribute("role", "tab"); t.setAttribute("data-t", m.name);
-    t.onclick = function () { cur = i; vi = 0; ri = 0; render(); }; tb.appendChild(t);
+    t.onclick = function () { cur = i; vi = 0; ri = 0; di = 0; render(); }; tb.appendChild(t);
   });
   render();
 })();

@@ -13,11 +13,13 @@
     log: "M12 5v14M5 12h14",
     journal: "M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3V4zM5 17a3 3 0 013-3h11",
     trends: "M4 19V5M4 19h16M8 15l4-5 3 3 4-6",
+    calc: "M7 3h10a1 1 0 011 1v16a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zM8.5 7h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01",
     book: "book"
   };
   var ITEMS = [               // key, label, link
     ["home", "Home", "index.html"],
     ["log", "Log a brew", "journal/index.html#log"],
+    ["calc", "Calculator", "calc/index.html"],
     ["journal", "Journal", "journal/index.html"],
     ["trends", "Trends", "trends/index.html"],
     ["book", BOOK, "chapters/index.html"]
@@ -32,6 +34,7 @@
   var path = location.pathname, file = (path.split("/").pop() || "index.html").replace(/\.html$/, "");
   var inBook = /\/chapters\//.test(path), chapter = inBook && file !== "index" ? file : null;
   var isHome = !inBook && !/\/(journal|trends|calc)\//.test(path);
+  var isCalc = /\/calc\//.test(path);
   var NS = "http://www.w3.org/2000/svg";
 
   var css = document.createElement("style");
@@ -115,6 +118,11 @@
     var nm = document.createElement("span"); where.appendChild(nm); wordmark(nm, BRAND);
   } else where.setAttribute("aria-hidden", "true");
   bar.appendChild(btn); bar.appendChild(where);
+  if (!isCalc) {   // shortcut to the calculator, on every page
+    var cb = document.createElement("a");
+    cb.className = "iconbtn"; cb.href = root + "calc/index.html"; cb.setAttribute("aria-label", "Calculator"); cb.title = "Calculator";
+    cb.appendChild(icon("calc", 24)); bar.appendChild(cb);
+  }
   if (!isHome) {
     var home = document.createElement("a");
     home.className = "iconbtn"; home.href = root + "index.html"; home.setAttribute("aria-label", "Home");
@@ -151,6 +159,7 @@
     if (inBook) return chapter ? "ch-" + chapter : "book";
     if (/\/journal\//.test(path)) return location.hash === "#log" ? "log" : "journal";
     if (/\/trends\//.test(path)) return "trends";
+    if (isCalc) return "calc";
     return "home";
   }
   function markActive() {

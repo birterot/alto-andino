@@ -210,6 +210,7 @@ details.add summary{cursor:pointer;font-weight:600}
 <script src="../assets/js/lists.js"></script>
 <script src="../assets/js/theme.js"></script>
 <script src="../data/devices.js"></script>
+<script src="../data/defaults.js"></script>
 <script src="../assets/js/nav.js" defer></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
@@ -693,7 +694,20 @@ async function openCoffee(id) {
   fill("b-device", deviceList(), [...new Set((dv || []).map(b => b.device).filter(Boolean))]);
   otherBox("b-device");
   buildScores(c);
+  applyHandoff();
   loadBrews();
+}
+
+// Numbers from the calculator ("Log a brew" there) fill the brew form once.
+function applyHandoff() {
+  let h = null;
+  try { h = JSON.parse(localStorage.getItem("alto.handoff")); localStorage.removeItem("alto.handoff"); } catch (e) {}
+  if (!h || !h.t || Date.now() - h.t > 3 * 3600e3) return;
+  const sel = $("b-device");
+  if (h.device && [...sel.options].some(o => o.value === h.device)) sel.value = h.device;
+  if (h.dose_g != null) $("b-dose").value = h.dose_g;
+  if (h.yield_g != null) $("b-yield").value = h.yield_g;
+  say("Dose" + (h.yield_g != null ? " and yield" : "") + " filled in from the calculator.");
 }
 
 function dayN(iso, when) {

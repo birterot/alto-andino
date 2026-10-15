@@ -14,7 +14,7 @@ window.DEVICES = {
       c: { f: ["#F0E6D0", "#3A2E17"], s: ["#8F6A2B", "#D6AE6A"], t: ["#6B4F1F", "#EBD3A3"] },
       tag: "Bigger, richer body and texture",
       body: "More oils and some tiny suspended pieces of coffee end up in the cup, which gives a bigger, richer body. The drink is uniformly extracted.",
-      ratios: [["Standard", 75, "Medium, like caster (superfine) sugar"]], water: 500,
+      ratios: [["Standard", 75, "Medium, like caster (superfine) sugar", "press"]], water: 500,
       time: "4 min steep, 5 min rest",
       variants: [{ n: "", steps: [
         "Add the coffee and water, then steep for 4 minutes.",
@@ -30,7 +30,7 @@ window.DEVICES = {
       c: { f: ["#E0E5E8", "#232B31"], s: ["#4F6572", "#9DB1BD"], t: ["#364651", "#C4D2DB"] },
       tag: "Short and strong, or close to a regular cup",
       body: "Decide first what kind of cup you want: short and strong, or close to a regular cup.",
-      ratios: [["Short and strong", 100, "Fine"], ["Close to a regular cup", 75, ""]], water: 250,
+      ratios: [["Close to a regular cup", 75, "", "aero-regular"], ["Short and strong", 100, "Fine", "aero-short"]], water: 250,
       time: "1 min brew",
       variants: [
         { n: "Traditional method", steps: [
@@ -53,7 +53,7 @@ window.DEVICES = {
       c: { f: ["#E4EAE0", "#243026"], s: ["#4F6B55", "#9DB8A1"], t: ["#34493A", "#C5D6C7"] },
       tag: "Clean cup, many ways to adjust",
       body: "Filter brewers brew by percolation: water runs through the coffee bed and takes flavour with it. Pick the Atlas method, or a recipe for the V60 or the Chemex.",
-      ratios: [["Standard", 60, "Medium, like caster sugar, for 30 g coffee to 500 g water. Finer for a single cup, coarser for more."]], water: 500,
+      ratios: [["Standard", 60, "Medium, like caster sugar, for 30 g coffee to 500 g water. Finer for a single cup, coarser for more.", "pour"]], water: 500,
       time: "Bloom 30 s, then pour",
       variants: [
         { n: "Atlas method", steps: [
@@ -63,7 +63,7 @@ window.DEVICES = {
           "Slowly pour the rest of the water. Pour directly on the coffee, not on the walls.",
           "Give the coffee a gentle swirl so the grounds do not stick to the sides."] },
         { n: "Hario V60", src: true,
-          ratios: [["James Hoffmann (30 g to 500 g)", 60, "Medium-fine"]], water: 500, time: "About 3:30 in total",
+          ratios: [["James Hoffmann (30 g to 500 g)", 60, "Medium-fine", "v60"]], water: 500, time: "About 3:30 in total",
           steps: [
             "Rinse the paper filter with water just off the boil. Add the grounds to the V60 and make a well in the middle.",
             "Start the timer and pour 60 g of water (twice the coffee weight) for the bloom. Swirl until the slurry is evenly mixed. A swirl works better than a spoon.",
@@ -76,7 +76,7 @@ window.DEVICES = {
                  "This recipe is for 500 g of water. For other amounts, scale the pours in the same proportions."],
           links: [["James Hoffmann's Ultimate V60 Technique (Hario USA)", "https://www.hario-usa.com/blogs/recipes-and-more-from-friends/james-hoffmann-uitimate-v60-technique"]] },
         { n: "Chemex", src: true,
-          ratios: [["Craft Coffee (36 g to 600 g)", 60, "A little coarser than medium"]], water: 600, time: "About 3:30 in total",
+          ratios: [["Craft Coffee (36 g to 600 g)", 60, "A little coarser than medium", "chemex"]], water: 600, time: "About 3:30 in total",
           tiles: [["Water", "About 96 °C (205 °F)"]],
           steps: [
             "Heat the water to a boil, then let it sit for 30 seconds.",
@@ -107,7 +107,7 @@ window.DEVICES = {
       c: { f: ["#EFDDD2", "#3C261D"], s: ["#94512F", "#D79A7A"], t: ["#6E3A22", "#EDC4AE"] },
       tag: "Strong, so go easy on the heat",
       body: "Stove-top brewer with a strong ratio. The aim is to avoid cooking the coffee for longer than necessary.",
-      ratios: [["Standard", 200, "Quite fine, like salt"]], water: 300,
+      ratios: [["Standard", 200, "Quite fine, like salt", "moka"]], water: 300,
       time: "Until it gurgles",
       variants: [{ n: "", steps: [
         "Fill the pot with already hot water, so the coffee is not cooked unnecessarily long. This reduces bitterness. Fill just below the valve.",
@@ -121,9 +121,9 @@ window.DEVICES = {
       c: { f: ["#F3DEDA", "#3B1D1A"], s: ["#A83A2E", "#E58D7F"], t: ["#7C291F", "#F2C4BB"] },
       tag: "Espresso by hand, with full control of temperature and pressure",
       body: "You set the temperature and you make the pressure with the lever, so the shot is yours to shape. That also means more to dial in. Change one thing at a time and write it down.",
-      ratios: [["Standard (1:2)", 2, "Fine, espresso range. Tune it by the shot time."],
-               ["Very light roast (about 1:3)", 3, "Fine, espresso range. Tune it by the shot time."],
-               ["Dark roast (1:1 to 1:1.5)", 1.5, "Fine, espresso range. Tune it by the shot time."]],
+      ratios: [["Medium roast (about 1:2)", 2.2, "Fine, espresso range. Tune it by the shot time.", "flair-med"],
+               ["Dark roast (1:1 to 1:1.5)", 1.5, "Fine, espresso range. Tune it by the shot time.", "flair-dark"],
+               ["Light roast (up to 1:3)", 3, "Fine, espresso range. Tune it by the shot time.", "flair-light"]],
       water: 18, time: "25 to 35 seconds",
       variants: [{ n: "", src: true, calc: "yield", water: 18,
         tiles: [["Water temperature", "85 to 95 °C, by roast"], ["Pressure", "About 3 bar, then 6 to 9 bar"], ["Dose", "16 to 20 g, 18 g to start"]],
