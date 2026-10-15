@@ -241,6 +241,7 @@ details.calcbox summary{font-size:15px}
     <details class="add" id="brewbox" open>
       <summary id="brewsum">Log a brew</summary>
       <form id="bf">
+        <label id="mblab" hidden>Made by<select id="b-madeby"></select></label>
         <label>Device
           <select id="b-device"></select>
           <input id="b-device-new" placeholder="Name of the new device" hidden>
@@ -737,7 +738,7 @@ const D = window.DEFAULTS || {};
 const CORE = SCALE.CORE;
 let cur = null, scores = {}, ctl = {}, savingB = false, brewLoadId = 0, editingBrew = null, brewData = [], rating = null;
 let touched = new Set(), prof = [], calc = null, edited = false, noteNames = [];
-const BF = ["b-device", "b-device-new", "b-grinder", "b-grind", "b-feel", "b-pressure", "b-pibar", "b-pis", "b-dose", "b-water", "b-yield", "b-temp", "b-time", "b-recipe", "b-notes"];
+const BF = ["b-madeby", "b-device", "b-device-new", "b-grinder", "b-grind", "b-feel", "b-pressure", "b-pibar", "b-pis", "b-dose", "b-water", "b-yield", "b-temp", "b-time", "b-recipe", "b-notes"];
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
@@ -992,6 +993,7 @@ function newBrewSetup(dev) {
   $("b-device-new").hidden = true; $("b-device-new").required = false;
   $("brewsum").textContent = "Log a brew"; $("bsave").textContent = "Save brew"; $("bcancel").hidden = true;
   buildScores(cur);
+  fillMadeBy(me && me.id);
   const h = readHandoff(), sel = $("b-device");
   const want = (h && h.device) || dev || store.get("alto.device") || "Flair 58";
   if ([...sel.options].some(o => o.value === want)) sel.value = want;
@@ -1012,6 +1014,7 @@ function startBrewEdit(b) {
   prof = Array.isArray(b.pressure_profile) ? b.pressure_profile.map(x => ({ s: x.s, bar: x.bar })) : []; renderProf();
   buildScores(cur, (b.brew_scores || []).map(s => s.attribute));
   setRating(b.rating == null ? null : b.rating); $("b-dialin").checked = !!b.is_dialin;
+  fillMadeBy(b.made_by || b.created_by || "");
   setSel("b-device", b.device); $("b-device-new").hidden = true;
   if (b.grinder) setSel("b-grinder", b.grinder); else $("b-grinder").value = "";
   applyType();
@@ -1116,7 +1119,7 @@ function dayN(iso, when) {
 function brewCard(b) {
   const a = el("article", "bc"), when = new Date(b.brewed_at);
   const hd = el("div", "hd"); hd.appendChild(el("h3", "", when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }))); a.appendChild(hd);
-  const who = nameOf(b.created_by);
+  const who = nameOf(b.made_by || b.created_by);
   if (who) { const w = el("p", "age", "Brewed by "); w.appendChild(el("span", "by", who)); a.appendChild(w); }
   const dr = cur.roast_date ? dayN(cur.roast_date, when) : null, dop = cur.open_date ? dayN(cur.open_date, when) : null;
   const age = [dr !== null ? (dr === 0 ? "roast day" : "day " + dr + " after roast") : null, dop !== null ? (dop === 0 ? "opening day" : "day " + dop + " after opening") : null].filter(Boolean).join(", ");
@@ -1162,13 +1165,13 @@ async function loadBrews() {
   const uniq = k => [...new Set(data.map(b => b[k]).filter(Boolean))].sort();
   fillFilter("bflt-device", "All devices", uniq("device"));
   fillFilter("bflt-recipe", "All recipes", uniq("recipe"));
-  const ppl = [...new Set(data.map(b => b.created_by).filter(id => nameOf(id)))];
+  const ppl = [...new Set(data.map(b => b.made_by || b.created_by).filter(id => nameOf(id)))];
   fillWho(ppl); $("bflt-who").hidden = ppl.length < 2;
   renderBrews();
 }
 function renderBrews() {
   const dv = $("bflt-device").value, rc = $("bflt-recipe").value, wh = $("bflt-who").value;
-  let list = brewData.filter(b => (!dv || b.device === dv) && (!rc || b.recipe === rc) && (!wh || b.created_by === wh));
+  let list = brewData.filter(b => (!dv || b.device === dv) && (!rc || b.recipe === rc) && (!wh || (b.made_by || b.created_by) === wh));
   if ($("bflt-sort").value === "old") list = list.slice().reverse();   // data arrives newest first
   $("bfilters").hidden = brewData.length < 2;
   const box = $("brews"); box.textContent = "";
@@ -1195,6 +1198,7 @@ $("bf").onsubmit = async e => {
       pressure_profile: stages.length ? stages : null,
       notes: $("b-notes").value.trim() || null, rating, is_dialin: $("b-dialin").checked
     };
+    if (!$("mblab").hidden) { const mb = $("b-madeby").value || null; row.made_by = mb && mb !== (editingBrew ? editingBrew.created_by : me.id) ? mb : null; }
     if (stages.length && row.pressure_bar === null) row.pressure_bar = Math.max(...stages.map(s => s.bar));
     for (const k of ["pressure_bar", "preinfusion_bar", "preinfusion_s", "dose_g", "water_g", "yield_g", "temp_c", "time_s"]) if (row[k] !== null && !isFinite(row[k])) throw new Error("check the numbers");
     row.recipe = $("b-recipe").value.trim() || settingsLabel(row) || null;
@@ -1234,11 +1238,22 @@ function fillWho(ids) {
   ids.slice().sort((x, y) => nameOf(x).localeCompare(nameOf(y))).forEach(id => { const x = el("option", "", nameOf(id)); x.value = id; s.appendChild(x); });
   s.value = ids.includes(keep) ? keep : "";
 }
+// "Made by" in the brew form: everyone who has set a name. It starts on whoever is signed in.
+function fillMadeBy(want) {
+  const s = $("b-madeby"), keep = want === undefined ? s.value : want;
+  const ids = Object.keys(names).sort((x, y) => names[x].localeCompare(names[y]));
+  s.textContent = "";
+  const o = el("option", "", "Not set"); o.value = ""; s.appendChild(o);
+  ids.forEach(id => { const x = el("option", "", names[id] + (me && id === me.id ? " (you)" : "")); x.value = id; s.appendChild(x); });
+  s.value = ids.includes(keep) ? keep : "";
+  $("mblab").hidden = ids.length < 2;
+}
 async function loadNames() {
   const { data, error } = await db.from("profiles").select("id,display_name");
   namesOk = !error; names = {};
   (data || []).forEach(p => { names[p.id] = p.display_name; });
   showName();
+  fillMadeBy(editingBrew ? (editingBrew.made_by || editingBrew.created_by || "") : ($("b-madeby").value || (me && me.id)));
 }
 function showName() {
   const mine = me && names[me.id];
@@ -1251,7 +1266,7 @@ async function saveName(v) {
   if (!v) return;
   const { error } = await db.from("profiles").upsert({ id: me.id, display_name: v, updated_at: new Date().toISOString() });
   if (error) { say("Could not save the name: " + error.message); return; }
-  names[me.id] = v; showName(); say("Saved. Your brews now show " + v + ".");
+  names[me.id] = v; showName(); fillMadeBy(); say("Saved. Your brews now show " + v + ".");
   if (cur && !$("detail").hidden) renderBrews();
 }
 $("namego").onclick = () => saveName($("namein").value);
