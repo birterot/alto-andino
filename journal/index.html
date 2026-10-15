@@ -127,6 +127,9 @@ dialog.dlg p{margin:0 0 4px;font-size:14.5px;color:var(--mut)}
 .addnote input{height:48px}
 h3.sh{font-size:16px;margin:26px 0 2px}
 label.off{opacity:.45}
+.mmss{display:flex;align-items:center;gap:6px;margin-top:6px}
+.mmss input{margin:0;min-width:0;text-align:center}
+.mmss span{font-size:18px;color:var(--mut)}
 [hidden]{display:none!important}
 .nums input,.nums select,.row2 input{max-width:none}
 input:disabled{background:var(--bg);cursor:not-allowed}
@@ -293,11 +296,12 @@ details.calcbox summary{font-size:15px}
           <label>Dose (g)<input id="b-dose" type="number" step="any" inputmode="decimal"></label>
           <label id="wlab">Water (g)<input id="b-water" type="number" step="any" inputmode="decimal"></label>
           <label>Yield (g)<input id="b-yield" type="number" step="any" inputmode="decimal"></label>
-          <label>Water (&deg;C)<input id="b-temp" type="number" step="any" inputmode="decimal"></label>
+          <label>Water temp (&deg;C)<input id="b-temp" type="number" step="any" inputmode="decimal"></label>
           <label id="phlab" hidden>Preheat<select id="b-preheat"></select></label>
-          <label>Time (s)<input id="b-time" type="number" step="any" inputmode="decimal"></label>
+          <label id="tsl">Time (s)<input id="b-time" type="number" step="any" inputmode="decimal"></label>
+          <label id="tml" hidden>Time (min : s)<span class="mmss"><input id="b-tmin" type="number" inputmode="numeric" min="0" step="1" placeholder="min" aria-label="Minutes"><span aria-hidden="true">:</span><input id="b-tsec" type="number" inputmode="numeric" min="0" step="1" placeholder="ss" aria-label="Seconds"></span></label>
         </div>
-        <p class="hint">Water is the temperature from the kettle. Time is the total, pre-infusion included, as your scale shows it.</p>
+        <p class="hint">Water temp is the temperature from the kettle. Time is the total, pre-infusion included, as your scale shows it.</p>
         <div id="espbox">
         <h3 class="sh">Pressure</h3>
         <div class="nums">
@@ -1047,6 +1051,19 @@ function settingsLabel(o) {
   return [o.device, grind, o.pressure_bar != null ? o.pressure_bar + " bar" : null, pre ? "pre-infusion " + pre : null].filter(Boolean).join(", ");
 }
 
+// ----- time: seconds for espresso, minutes and seconds for everything else (always saved as seconds)
+const mmss = n => Math.floor(n / 60) + ":" + String(Math.round(n % 60)).padStart(2, "0");
+function timeToParts() {
+  const t = numOf("b-time");
+  $("b-tmin").value = t === null ? "" : Math.floor(t / 60);
+  $("b-tsec").value = t === null ? "" : Math.round(t % 60);
+}
+function partsToTime() {
+  const m = $("b-tmin").value.trim(), sec = $("b-tsec").value.trim();
+  $("b-time").value = m === "" && sec === "" ? "" : (Number(m) || 0) * 60 + (Number(sec) || 0);
+}
+["b-tmin", "b-tsec"].forEach(id => $(id).addEventListener("input", () => { partsToTime(); touched.add("b-time"); }));
+
 // ----- the form follows the device: espresso fields grey out for other devices, defaults and calculator follow
 function applyType() {
   const esp = isEsp(typeOf(chosen("b-device")));
@@ -1056,6 +1073,7 @@ function applyType() {
   });
   $("wlab").hidden = esp; if (esp) { $("b-water").value = ""; touched.delete("b-water"); }
   $("espbox").hidden = !esp;
+  $("tsl").hidden = !esp; $("tml").hidden = esp; timeToParts();
   const fl = isFlair(chosen("b-device"));
   $("phlab").hidden = !fl; if (!fl) { $("b-preheat").value = ""; touched.delete("b-preheat"); }
   drawCurve();
@@ -1177,7 +1195,7 @@ function startBrewEdit(b) {
   applyType();
   const pt = (id, v) => { $(id).value = v == null ? "" : v; };
   pt("b-grind", b.grind); pt("b-feel", b.grind_feel); pt("b-pressure", b.pressure_bar); pt("b-pibar", b.preinfusion_bar); pt("b-pis", b.preinfusion_s);
-  pt("b-dose", b.dose_g); pt("b-water", b.water_g); pt("b-yield", b.yield_g); pt("b-temp", b.temp_c); pt("b-preheat", b.preheat); pt("b-time", b.time_s); pt("b-notes", b.notes);
+  pt("b-dose", b.dose_g); pt("b-water", b.water_g); pt("b-yield", b.yield_g); pt("b-temp", b.temp_c); pt("b-preheat", b.preheat); pt("b-time", b.time_s); pt("b-notes", b.notes); timeToParts();
   if (!isEsp(typeOf(b.device))) { ["b-pressure", "b-pibar", "b-pis"].forEach(i => { $(i).value = ""; }); }
   $("b-recipe").value = b.recipe && b.recipe !== settingsLabel(b) ? b.recipe : "";   // an automatic name is rebuilt on save
   (b.brew_scores || []).forEach(s => setScore(s.attribute, s.score));
@@ -1289,7 +1307,7 @@ function brewCard(b) {
   const set = settingsLabel(b);
   if (set && set !== b.recipe) a.appendChild(el("p", "set", set));
   const nums = [b.dose_g != null ? b.dose_g + " g in" : null, b.water_g != null ? b.water_g + " g water" : null, b.yield_g != null ? b.yield_g + " g out" : null,
-    b.temp_c != null ? b.temp_c + " °C water" : null, b.preheat ? "preheat " + phText(b.preheat) : null, b.time_s != null ? b.time_s + " s total" : null,
+    b.temp_c != null ? b.temp_c + " °C water" : null, b.preheat ? "preheat " + phText(b.preheat) : null, b.time_s != null ? (isEsp(typeOf(b.device)) && b.time_s < 90 ? b.time_s + " s total" : mmss(b.time_s) + " min total") : null,
     b.dose_g && b.yield_g ? "ratio 1:" + (b.yield_g / b.dose_g).toFixed(1) : null].filter(Boolean).join(", ");
   if (nums) a.appendChild(el("p", "", nums));
   if (Array.isArray(b.pressure_profile) && b.pressure_profile.length) {
