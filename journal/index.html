@@ -1427,7 +1427,7 @@ function showName() {
   $("who").textContent = "Signed in as " + (mine ? mine + " (" + me.email + ")" : me.email);
   $("rename").hidden = !namesOk;
   $("namebox").hidden = !namesOk || (!!mine && !auto);
-  $("nameq").textContent = auto ? "Your brews show \u201C" + mine + "\u201D." : "";
+  $("nameq").textContent = auto ? "Right now your brews show \u201C" + mine + "\u201D." : "";
   if (auto && !$("namein").value) $("namein").placeholder = "e.g. " + mine.charAt(0).toUpperCase() + mine.slice(1).split(/[._\d]/)[0];
 }
 async function saveName(v) {
