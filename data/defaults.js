@@ -6,19 +6,21 @@
      yr       cup yield as a multiple of the coffee (espresso: 2.2 = 18 g in, 40 g out) -> ratio is coffee to yield
      absorb   grams of water the grounds keep, per gram of coffee
      filter   grams of water the paper filter keeps
-     temp     suggested water temperature in Celsius (only where we have a source)
+     temp     water temperature from the kettle in Celsius
+     preheat  Flair 58 preheat setting (low / medium / high, see PREHEAT)
      device   the name used in the journal's device list
    The absorb and filter numbers are rules of thumb. Weigh your own spent grounds and adjust them.
    GRINDERS: your grinders. "feel" lists [up to this setting, feel word]; the journal suggests the word from the number you type.
      K6 numbers are clicks counted from zero (manufacturer's table). Add a grinder by copying a block; leave feel out for no suggestion.
-   FLAIR_BY_ROAST: which Flair recipe (and so which water temperature) fits each roast level.
+   PREHEAT: the Flair 58 preheat settings: id, label, about how hot in Celsius.
+   FLAIR_BY_ROAST: which Flair recipe (and so which preheat setting) fits each roast level.
    BREW_TYPES: the kinds of brewing a coffee can be suitable for. */
 window.DEFAULTS = {
-  BREW: { preinfusion_bar: 2, preinfusion_s: 10, grind: 25, dose_g: 18, yield_g: 40, pressure_bar: 6 },
+  BREW: { preinfusion_bar: 2, preinfusion_s: 10, grind: 25, dose_g: 18, yield_g: 40, pressure_bar: 6, temp_c: 96 },
   PRESETS: [
-    { id: "flair-med",   name: "Flair 58, medium roast",  device: "Flair 58", yr: 2.2, absorb: 1.5, filter: 0, temp: 90, dose: 18 },
-    { id: "flair-dark",  name: "Flair 58, dark roast",    device: "Flair 58", yr: 1.5, absorb: 1.5, filter: 0, temp: 85, dose: 18 },
-    { id: "flair-light", name: "Flair 58, light roast",   device: "Flair 58", yr: 3,   absorb: 1.5, filter: 0, temp: 95, dose: 18 },
+    { id: "flair-med",   name: "Flair 58, medium roast",  device: "Flair 58", yr: 2.2, absorb: 1.5, filter: 0, temp: 96, preheat: "medium", dose: 18 },
+    { id: "flair-dark",  name: "Flair 58, dark roast",    device: "Flair 58", yr: 1.5, absorb: 1.5, filter: 0, temp: 96, preheat: "low", dose: 18 },
+    { id: "flair-light", name: "Flair 58, light roast",   device: "Flair 58", yr: 3,   absorb: 1.5, filter: 0, temp: 96, preheat: "high", dose: 18 },
     { id: "aero-regular", name: "AeroPress, regular cup", device: "AeroPress", gpl: 75,  absorb: 2, filter: 1, water: 250 },
     { id: "aero-short",  name: "AeroPress, short and strong", device: "AeroPress", gpl: 100, absorb: 2, filter: 1, water: 200 },
     { id: "v60",         name: "Hario V60",               device: "Hario V60", gpl: 60, absorb: 2, filter: 2, water: 500 },
@@ -28,8 +30,9 @@ window.DEFAULTS = {
     { id: "moka",        name: "Moka pot",                device: "Moka pot", gpl: 200, absorb: 2, filter: 0, water: 300 }
   ],
   GRINDERS: [
-    { id: "k6", name: "1Zpresso K6", unit: "clicks", feel: [[24, "extra fine"], [59, "fine"], [89, "medium-fine"], [129, "medium"], [9999, "coarse"]] }
+    { id: "k6", name: "Kingrinder K6", unit: "clicks", feel: [[24, "extra fine"], [59, "fine"], [89, "medium-fine"], [129, "medium"], [9999, "coarse"]] }
   ],
+  PREHEAT: [["low", "Low", 85], ["medium", "Medium", 90], ["high", "High", 95]],
   FLAIR_BY_ROAST: { "light": "flair-light", "medium-light": "flair-light", "medium": "flair-med", "medium-dark": "flair-dark", "dark": "flair-dark" },
   BREW_TYPES: [["espresso", "Espresso"], ["filter", "Filter"], ["immersion", "Immersion"], ["moka", "Moka"]],
   START_PRESET: "flair-med"

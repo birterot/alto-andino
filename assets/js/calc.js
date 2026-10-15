@@ -5,7 +5,7 @@
   if (!hm) { /* keep the last used recipe */ }
   document.getElementById("tolog").addEventListener("click", function () {
     var n = api.numbers(); if (!n) return;
-    try { localStorage.setItem("alto.handoff", JSON.stringify({ t: Date.now(), device: n.device, dose_g: n.dose_g, water_g: n.water_g, yield_g: n.basis === "yield" ? n.yield_g : null, temp_c: n.temp_c, ratio: n.ratio })); } catch (e) {}
+    try { localStorage.setItem("alto.handoff", JSON.stringify({ t: Date.now(), device: n.device, dose_g: n.dose_g, water_g: n.water_g, yield_g: n.basis === "yield" ? n.yield_g : null, temp_c: n.temp_c, preheat: n.preheat, ratio: n.ratio })); } catch (e) {}
     location.href = "../journal/index.html#log";
   });
 })();

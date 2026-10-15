@@ -242,6 +242,7 @@ details.calcbox summary{font-size:15px}
       <summary id="brewsum">Log a brew</summary>
       <form id="bf">
         <label id="mblab" hidden>Made by<select id="b-madeby"></select></label>
+        <p class="hint" id="mbhint" hidden></p>
         <label>Device
           <select id="b-device"></select>
           <input id="b-device-new" placeholder="Name of the new device" hidden>
@@ -264,10 +265,11 @@ details.calcbox summary{font-size:15px}
           <label>Dose (g)<input id="b-dose" type="number" step="any" inputmode="decimal"></label>
           <label id="wlab">Water (g)<input id="b-water" type="number" step="any" inputmode="decimal"></label>
           <label>Yield (g)<input id="b-yield" type="number" step="any" inputmode="decimal"></label>
-          <label>Temp (&deg;C)<input id="b-temp" type="number" step="any" inputmode="decimal"></label>
+          <label>Water (&deg;C)<input id="b-temp" type="number" step="any" inputmode="decimal"></label>
+          <label id="phlab" hidden>Preheat<select id="b-preheat"></select></label>
           <label>Time (s)<input id="b-time" type="number" step="any" inputmode="decimal"></label>
         </div>
-        <p class="hint">Time is the total, pre-infusion included, as your scale shows it.</p>
+        <p class="hint">Water is the temperature from the kettle. Time is the total, pre-infusion included, as your scale shows it.</p>
         <div id="espbox">
         <h3 class="sh">Pressure</h3>
         <div class="nums">
@@ -291,10 +293,10 @@ details.calcbox summary{font-size:15px}
         <p class="hint">0 is just right, minus is too little, plus is too much. Sliders you leave alone are not saved. The x clears one.</p>
         <div id="scorebox"></div>
         <h3 class="sh">Tasting notes</h3>
-        <p class="hint">Did you find it? None, a little, or clearly there. Notes you leave alone are not saved.</p>
+        <p class="hint">Did you find it? None, a little, or clearly there. Flavour or tasting notes you leave alone are not saved.</p>
         <div id="notebox"></div>
         <div class="addnote"><input id="b-newnote" placeholder="Another note, e.g. jasmine" autocomplete="off" aria-label="Add a tasting note"><button type="button" class="btn ghost" id="b-addnote"></button></div>
-        <label>Notes<textarea id="b-notes" rows="3"></textarea></label>
+        <label>Comments<textarea id="b-notes" rows="3" placeholder="Anything else about this brew"></textarea></label>
         <button class="go" id="bsave">Save brew</button>
         <button class="lnk" id="bcancel" type="button" hidden>Cancel</button>
       </form>
@@ -738,7 +740,7 @@ const D = window.DEFAULTS || {};
 const CORE = SCALE.CORE;
 let cur = null, scores = {}, ctl = {}, savingB = false, brewLoadId = 0, editingBrew = null, brewData = [], rating = null;
 let touched = new Set(), prof = [], calc = null, edited = false, noteNames = [];
-const BF = ["b-madeby", "b-device", "b-device-new", "b-grinder", "b-grind", "b-feel", "b-pressure", "b-pibar", "b-pis", "b-dose", "b-water", "b-yield", "b-temp", "b-time", "b-recipe", "b-notes"];
+const BF = ["b-madeby", "b-device", "b-preheat", "b-device-new", "b-grinder", "b-grind", "b-feel", "b-pressure", "b-pibar", "b-pis", "b-dose", "b-water", "b-yield", "b-temp", "b-time", "b-recipe", "b-notes"];
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
@@ -769,8 +771,19 @@ function typeOf(name) {
 }
 const isEsp = t => t === "espresso" || t === "";
 
+// ----- Flair preheat setting (only for the Flair)
+const PH = D.PREHEAT || [];
+(function () {
+  const s = $("b-preheat"), o = el("option", "", "Not set"); o.value = ""; s.appendChild(o);
+  PH.forEach(p => { const x = el("option", "", p[1] + " ~" + p[2] + " \u00B0C"); x.value = p[0]; s.appendChild(x); });
+})();
+const isFlair = dev => /^flair/i.test(dev || "");
+const phText = v => { const p = PH.find(x => x[0] === v); return p ? p[1].toLowerCase() : v; };
+
 // ----- grinder and feel word
 const GR = D.GRINDERS || [];
+const GR_OLD = { "1Zpresso K6": "Kingrinder K6" };   // names that were wrong in an earlier version
+if (GR_OLD[store.get("alto.grinder")]) store.set("alto.grinder", GR_OLD[store.get("alto.grinder")]);
 (function () {
   const s = $("b-grinder");
   GR.forEach(g => { const o = el("option", "", g.name); o.value = g.name; s.appendChild(o); });
@@ -905,6 +918,8 @@ function applyType() {
   });
   $("wlab").hidden = esp; if (esp) { $("b-water").value = ""; touched.delete("b-water"); }
   $("espbox").hidden = !esp;
+  const fl = isFlair(chosen("b-device"));
+  $("phlab").hidden = !fl; if (!fl) { $("b-preheat").value = ""; touched.delete("b-preheat"); }
   drawCurve();
 }
 function presetFor(dev) {
@@ -920,6 +935,7 @@ function fillFromCalc(n, force) {
   if (!isEsp(typeOf(chosen("b-device")))) f("b-water", n.water_g);
   f("b-yield", n.yield_g);
   if (n.temp_c) f("b-temp", n.temp_c);
+  if (n.preheat && isFlair(chosen("b-device"))) f("b-preheat", n.preheat);
 }
 function autoFill() {
   const dev = chosen("b-device"), esp = isEsp(typeOf(dev)), B = D.BREW || {};
@@ -927,7 +943,9 @@ function autoFill() {
   if (esp) {
     put("b-grind", B.grind); put("b-pibar", B.preinfusion_bar); put("b-pis", B.preinfusion_s); put("b-pressure", B.pressure_bar);
     put("b-dose", B.dose_g); put("b-yield", B.yield_g);
-    const n = calc && calc.numbers(); put("b-temp", n && n.temp_c);
+    const n = pid && calc ? calc.numbers() : null;
+    put("b-temp", (n && n.temp_c) || B.temp_c);
+    if (isFlair(dev)) put("b-preheat", n && n.preheat);
   } else {
     put("b-grind", ""); fillFromCalc(calc && calc.numbers(), false); if (!calc) put("b-temp", "");
     if (!(calc && calc.numbers() && calc.numbers().temp_c)) put("b-temp", "");
@@ -1003,7 +1021,7 @@ function newBrewSetup(dev) {
   const restored = restoreDraft();
   if (h) {
     const hp = (id, v) => { if (v !== null && v !== undefined) { $(id).value = v; touched.add(id); } };
-    hp("b-dose", h.dose_g); if (!isEsp(typeOf(chosen("b-device")))) hp("b-water", h.water_g); hp("b-yield", h.yield_g); hp("b-temp", h.temp_c);
+    hp("b-dose", h.dose_g); if (!isEsp(typeOf(chosen("b-device")))) hp("b-water", h.water_g); hp("b-yield", h.yield_g); hp("b-temp", h.temp_c); if (isFlair(chosen("b-device"))) hp("b-preheat", h.preheat);
     say("Numbers filled in from the calculator.");
   }
   $("calcbox").open = !restored && !h;
@@ -1016,11 +1034,11 @@ function startBrewEdit(b) {
   setRating(b.rating == null ? null : b.rating); $("b-dialin").checked = !!b.is_dialin;
   fillMadeBy(b.made_by || b.created_by || "");
   setSel("b-device", b.device); $("b-device-new").hidden = true;
-  if (b.grinder) setSel("b-grinder", b.grinder); else $("b-grinder").value = "";
+  if (b.grinder) setSel("b-grinder", GR_OLD[b.grinder] || b.grinder); else $("b-grinder").value = "";
   applyType();
   const pt = (id, v) => { $(id).value = v == null ? "" : v; };
   pt("b-grind", b.grind); pt("b-feel", b.grind_feel); pt("b-pressure", b.pressure_bar); pt("b-pibar", b.preinfusion_bar); pt("b-pis", b.preinfusion_s);
-  pt("b-dose", b.dose_g); pt("b-water", b.water_g); pt("b-yield", b.yield_g); pt("b-temp", b.temp_c); pt("b-time", b.time_s); pt("b-notes", b.notes);
+  pt("b-dose", b.dose_g); pt("b-water", b.water_g); pt("b-yield", b.yield_g); pt("b-temp", b.temp_c); pt("b-preheat", b.preheat); pt("b-time", b.time_s); pt("b-notes", b.notes);
   if (!isEsp(typeOf(b.device))) { ["b-pressure", "b-pibar", "b-pis"].forEach(i => { $(i).value = ""; }); }
   $("b-recipe").value = b.recipe && b.recipe !== settingsLabel(b) ? b.recipe : "";   // an automatic name is rebuilt on save
   (b.brew_scores || []).forEach(s => setScore(s.attribute, s.score));
@@ -1130,7 +1148,7 @@ function brewCard(b) {
   const set = settingsLabel(b);
   if (set && set !== b.recipe) a.appendChild(el("p", "set", set));
   const nums = [b.dose_g != null ? b.dose_g + " g in" : null, b.water_g != null ? b.water_g + " g water" : null, b.yield_g != null ? b.yield_g + " g out" : null,
-    b.temp_c != null ? b.temp_c + " °C" : null, b.time_s != null ? b.time_s + " s total" : null,
+    b.temp_c != null ? b.temp_c + " °C water" : null, b.preheat ? "preheat " + phText(b.preheat) : null, b.time_s != null ? b.time_s + " s total" : null,
     b.dose_g && b.yield_g ? "ratio 1:" + (b.yield_g / b.dose_g).toFixed(1) : null].filter(Boolean).join(", ");
   if (nums) a.appendChild(el("p", "", nums));
   if (Array.isArray(b.pressure_profile) && b.pressure_profile.length) {
@@ -1194,7 +1212,7 @@ $("bf").onsubmit = async e => {
     const row = {
       device, grinder: $("b-grind").value.trim() ? ($("b-grinder").value || null) : null, grind: $("b-grind").value.trim() || null, grind_feel: $("b-feel").value.trim() || null,
       pressure_bar: esp ? num("b-pressure") : null, preinfusion_bar: esp ? num("b-pibar") : null, preinfusion_s: esp ? num("b-pis") : null,
-      dose_g: num("b-dose"), water_g: esp ? null : num("b-water"), yield_g: num("b-yield"), temp_c: num("b-temp"), time_s: num("b-time"),
+      dose_g: num("b-dose"), water_g: esp ? null : num("b-water"), preheat: isFlair(device) ? ($("b-preheat").value || null) : null, yield_g: num("b-yield"), temp_c: num("b-temp"), time_s: num("b-time"),
       pressure_profile: stages.length ? stages : null,
       notes: $("b-notes").value.trim() || null, rating, is_dialin: $("b-dialin").checked
     };
@@ -1244,9 +1262,15 @@ function fillMadeBy(want) {
   const ids = Object.keys(names).sort((x, y) => names[x].localeCompare(names[y]));
   s.textContent = "";
   const o = el("option", "", "Not set"); o.value = ""; s.appendChild(o);
-  ids.forEach(id => { const x = el("option", "", names[id] + (me && id === me.id ? " (you)" : "")); x.value = id; s.appendChild(x); });
+  if (me && !names[me.id]) ids.unshift(me.id);
+  ids.forEach(id => { const x = el("option", "", me && id === me.id ? (names[id] ? names[id] + " (you)" : "You (no name set yet)") : names[id]); x.value = id; s.appendChild(x); });
   s.value = ids.includes(keep) ? keep : "";
-  $("mblab").hidden = ids.length < 2;
+  $("mblab").hidden = !namesOk;
+  const hint = $("mbhint"); hint.hidden = !namesOk; hint.textContent = "";
+  if (namesOk) {
+    hint.append(document.createTextNode(Object.keys(names).length < 2 ? "Someone missing? They appear here once they sign in and set their name. " : "Only people who have set a name are listed. "));
+    const b = el("button", "lnk", me && names[me.id] ? "Change my name" : "Set my name"); b.type = "button"; b.onclick = () => $("rename").onclick(); hint.appendChild(b);
+  }
 }
 async function loadNames() {
   const { data, error } = await db.from("profiles").select("id,display_name");
@@ -1271,7 +1295,7 @@ async function saveName(v) {
 }
 $("namego").onclick = () => saveName($("namein").value);
 $("namein").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveName($("namein").value); } });
-$("rename").onclick = () => { const v = prompt("Your name on brews", names[me.id] || ""); if (v !== null) saveName(v); };
+$("rename").onclick = () => { const v = prompt("Your name, shown on the brews you make", names[me.id] || ""); if (v !== null) saveName(v); };
 
 async function show(session) {
   $("login").hidden = !!session;

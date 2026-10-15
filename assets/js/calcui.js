@@ -79,7 +79,7 @@ window.altoCalc = (function () {
     function numbers() {
       var r = solve(st.basis, st.known, st.value, st.R, st.a, st.f), p = byId(st.id);
       if (!r || !(r.dose > 0)) return null;
-      return { preset: p, dose_g: r1(r.dose), water_g: r1(r.water), yield_g: r1(r.yield), ratio: r1(st.R), basis: st.basis, temp_c: p.temp || null, device: p.device };
+      return { preset: p, dose_g: r1(r.dose), water_g: r1(r.water), yield_g: r1(r.yield), ratio: r1(st.R), basis: st.basis, temp_c: p.temp || null, preheat: p.preheat || null, device: p.device };
     }
     function render(skip) {
       var r = solve(st.basis, st.known, st.value, st.R, st.a, st.f);
@@ -95,7 +95,11 @@ window.altoCalc = (function () {
     }
     function tempLine() {
       var p = byId(st.id);
-      if (p.temp) { temp.hidden = false; temp.textContent = "Suggested water temperature: about " + p.temp + " °C (from Flair's preheat settings)."; } else temp.hidden = true;
+      var ph = p.preheat && ((window.DEFAULTS && window.DEFAULTS.PREHEAT) || []).filter(function (x) { return x[0] === p.preheat; })[0];
+      var parts = [];
+      if (ph) parts.push("Preheat: " + ph[1].toLowerCase() + " (about " + ph[2] + " °C).");
+      if (p.temp) parts.push("Water from the kettle: " + p.temp + " °C.");
+      temp.hidden = !parts.length; temp.textContent = parts.join(" ");
     }
     function setPreset(id) { var p = byId(id) || presets[0]; st = fresh(p); sel.value = p.id; tempLine(); render(); }
     sel.addEventListener("change", function () { setPreset(sel.value); });
