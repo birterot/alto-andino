@@ -48,6 +48,8 @@
     ".topnav .where{display:flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:0 4px;color:inherit;text-decoration:none}" +
     ".wm{display:block;line-height:0;color:var(--brand,#6B4A2E)}.wm svg{display:block;width:100%;height:auto}" +
     ".topnav .wm{width:112px}.topnav .logo{display:block;height:22px;width:auto;color:var(--brand,#6B4A2E);flex:none}" +
+    // mountain and name sit on one base line: the bottom of the mountain meets the bottom of the letters
+    ".topnav .lockup{display:flex;align-items:flex-end;gap:9px}.topnav .lockup .wm{margin-bottom:-0.66px}" +
     ".navback{position:fixed;inset:0;background:rgba(20,14,10,.38);z-index:40;opacity:0;transition:opacity .18s}" +
     ".navback.on{opacity:1}" +
     ".topnav nav{position:absolute;left:8px;right:8px;top:calc(100% + 6px);max-width:380px;background:var(--card,#fff);border:1px solid var(--line,#ccc);border-radius:16px;box-shadow:0 14px 36px rgba(20,14,10,.22);padding:8px;max-height:calc(100vh - 80px);overflow:auto}" +
@@ -113,8 +115,9 @@
   where.className = "where"; where.href = root + "index.html";
   if (!isHome) {
     var logo = brandSvg(MARK); logo.setAttribute("class", "logo");
-    where.appendChild(logo); where.setAttribute("aria-label", "Alto Andino, home");
-    var nm = document.createElement("span"); where.appendChild(nm); wordmark(nm);
+    var lock = document.createElement("span"); lock.className = "lockup"; where.appendChild(lock);
+    lock.appendChild(logo); where.setAttribute("aria-label", "Alto Andino, home");
+    var nm = document.createElement("span"); lock.appendChild(nm); wordmark(nm);
   } else where.setAttribute("aria-hidden", "true");
   var left = document.createElement("div"); left.className = "side l"; left.appendChild(btn);
   var right = document.createElement("div"); right.className = "side r";
