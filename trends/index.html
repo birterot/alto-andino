@@ -154,7 +154,11 @@ const state = { view: "dial", demo: false, signedIn: false, me: null, coffees: [
 // ---------- helpers ----------
 const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
 const r1 = n => Math.round(n * 10) / 10;
-const fmtDate = d => d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+// dates the European way: dd-mm-yyyy (short dd-mm under the weekly columns)
+const p2 = n => String(n).padStart(2, "0");
+const fmtDate = d => p2(d.getDate()) + "-" + p2(d.getMonth() + 1) + "-" + d.getFullYear();
+const fmtShort = d => p2(d.getDate()) + "-" + p2(d.getMonth() + 1);
+const fmtIso = iso => { const [y, m, d] = String(iso).slice(0, 10).split("-"); return d + "-" + m + "-" + y; };
 const mmss = n => Math.floor(n / 60) + ":" + String(Math.round(n % 60)).padStart(2, "0");
 function typeOf(name) {
   const n = (name || "").trim().toLowerCase(); if (!n) return "";
@@ -387,21 +391,21 @@ function viewUs() {
     const who = [...ppl, ""], cols = weeks.map(w => {
       const end = new Date(w); end.setDate(w.getDate() + 7);
       const inW = list.filter(b => b.t >= w && b.t < end);
-      return { label: fmtDate(w), parts: who.map(id => ({ value: inW.filter(b => (b.who || "") === id && (id || !ppl.includes(b.who))).length, color: id ? personCol(id) : "var(--mut)", name: id ? nameOf(id) : "not set" })), n: inW.length, w };
+      return { label: fmtShort(w), full: fmtDate(w), parts: who.map(id => ({ value: inW.filter(b => (b.who || "") === id && (id || !ppl.includes(b.who))).length, color: id ? personCol(id) : "var(--mut)", name: id ? nameOf(id) : "not set" })), n: inW.length, w };
     });
     const leg = el("div", "legend"); ppl.forEach(id => legendItem(leg, personCol(id), nameOf(id), "dot")); if (list.some(b => !ppl.includes(b.who))) legendItem(leg, "var(--mut)", "not set", "dot"); a.appendChild(leg);
     const box = chartBox(a);
-    Charts.stacked({ box, height: 210, yLabel: "Brews", cols: cols.map(c => ({ label: c.label, parts: c.parts, tip: () => ({ title: "Week of " + c.label, rows: [{ value: String(c.n), label: c.n === 1 ? "brew" : "brews" }].concat(c.parts.filter(p => p.value).map(p => ({ value: String(p.value), label: p.name, color: p.color, kind: "dot" }))) }) })) });
+    Charts.stacked({ box, height: 210, yLabel: "Brews", cols: cols.map(c => ({ label: c.label, parts: c.parts, tip: () => ({ title: "Week of " + c.full, rows: [{ value: String(c.n), label: c.n === 1 ? "brew" : "brews" }].concat(c.parts.filter(p => p.value).map(p => ({ value: String(p.value), label: p.name, color: p.color, kind: "dot" }))) }) })) });
     const dc = {}; list.forEach(b => { const k = b.device || "Unknown"; dc[k] = (dc[k] || 0) + 1; });
     const drows = Object.keys(dc).map(k => ({ label: k, value: dc[k] })).sort((x, y) => y.value - x.value);
     a.appendChild(el("h3", "", "Devices"));
     const box2 = chartBox(a);
     Charts.hbars({ box: box2, color: "var(--one)", fmt: v => String(v), rows: drows.map(r => ({ label: r.label, value: r.value, tip: () => ({ title: r.label, rows: [{ value: String(r.value), label: r.value === 1 ? "brew" : "brews" }] }) })) });
-    numbers(a, ["Week of", ...ppl.map(nameOf), "Total"], cols.map(c => [c.label, ...ppl.map((id, i) => c.parts[i].value), c.n]));
+    numbers(a, ["Week of", ...ppl.map(nameOf), "Total"], cols.map(c => [c.full, ...ppl.map((id, i) => c.parts[i].value), c.n]));
   }
 
   const bl = card("Beans left", "Open bags with a bag size: grams used by the brews logged so far.");
-  const bags = state.coffees.filter(c => !c.archived && c.bag_g && c.open_date);
+  const bags = state.coffees.filter(c => !c.archived && !c.finished_at && c.bag_g && c.open_date);
   if (!bags.length) empty(bl, "Add the bag size (in grams) to an opened coffee in the Journal to see how much is left.");
   else bags.forEach(c => {
     const mine = state.brews.filter(b => b.coffeeId === c.id), used = mine.reduce((x, b) => x + (b.dose || 0), 0);
@@ -475,7 +479,7 @@ function fillFilters() {
   const cs = state.coffees.filter(c => counts[c.id]).sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0));
   if (!state.coffee || !counts[state.coffee]) state.coffee = cs.length ? cs[0].id : "";
   const csel = $("f-coffee"); csel.textContent = "";
-  cs.forEach(c => { const o = el("option", "", c.name + (c.roast_date ? ", roasted " + c.roast_date : "") + (c.archived ? " (archived)" : "") + " · " + counts[c.id]); o.value = c.id; csel.appendChild(o); });
+  cs.forEach(c => { const o = el("option", "", c.name + (c.roast_date ? ", roasted " + fmtIso(c.roast_date) : "") + (c.archived ? " (archived)" : "") + " · " + counts[c.id]); o.value = c.id; csel.appendChild(o); });
   if (!cs.length) { const o = el("option", "", "No coffees with brews"); o.value = ""; csel.appendChild(o); }
   csel.value = state.coffee;
   const devs = [...new Set(state.brews.map(b => b.device).filter(Boolean))].sort();

@@ -42,10 +42,10 @@ label.chk input{width:20px;height:20px;margin:0;flex:none}
 #msg{min-height:1.5em}
 details.add{margin:12px 0 24px;padding:12px 16px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
 details.add summary{cursor:pointer;font-weight:600}
-#brewbox:not([open]){padding:0;border:0;background:none}
-#brewbox:not([open]) summary{display:inline-flex;align-items:center;gap:8px;list-style:none;padding:0 20px;min-height:46px;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:500}
-#brewbox:not([open]) summary::-webkit-details-marker{display:none}
-#brewbox:not([open]) summary::before{content:"+";font-size:20px;line-height:1}
+#brewbox:not([open]){display:none}
+.brewhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}
+.brewhead h2{margin:0}
+#brewbox[open] ~ .brewhead #newbrew{display:none}
 .clist{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
 .cc{background:var(--f);border:1px solid var(--line);border-top:3px solid var(--s);color:var(--t);border-radius:10px;overflow:hidden}
 .cc img{display:block;width:100%;height:180px;object-fit:cover}
@@ -56,6 +56,7 @@ details.add summary{cursor:pointer;font-weight:600}
 .cc .acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}
 .cc .lnk{border-color:var(--line);color:var(--t)}
 .cc .meta{opacity:.9}
+.cc .fin{font-weight:600}
 .cfacts{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:6px 18px;margin-top:12px;font-size:14px}
 .cfacts .f{display:inline-flex;align-items:center;gap:7px}
 .cfacts svg{color:var(--s)}
@@ -259,7 +260,10 @@ details.calcbox summary{font-size:15px}
       <p class="hint adv">How you would brew it. The log a brew page suggests coffees by this.</p>
       <label>Flavour notes<input id="f-tags" placeholder="chocolaty, nutty, red fruit"></label>
       <p class="hint">Separate with commas. Sour, sweet, bitter and balance will always be available when logging a brew.</p>
-      <label>Roast date<input type="date" id="f-rd"></label>
+      <label id="rdlab">Roast date<input type="date" id="f-rd"></label>
+      <label class="chk"><input type="checkbox" id="f-rdx"> Roast date unknown</label>
+      <label id="pdlab" hidden>Purchase date<input type="date" id="f-pd"></label>
+      <p class="hint" id="pdhint" hidden>Gives you an idea how old the coffee is. Ages are then counted from the purchase.</p>
       <label>Open date<input type="date" id="f-od"></label>
       <label class="adv">Notes<textarea id="f-notes" rows="3"></textarea></label>
       <label class="adv">Bag size (g, optional)<input id="f-bag" type="number" inputmode="numeric" min="1" max="5000" step="1" placeholder="250"></label>
@@ -353,7 +357,7 @@ details.calcbox summary{font-size:15px}
         <button class="lnk" id="bcancel" type="button" hidden>Cancel</button>
       </form>
     </details>
-    <h2>Brews</h2>
+    <div class="brewhead"><h2>Brews</h2><button type="button" class="btn ghost" id="newbrew"></button></div>
     <div class="filters" id="bfilters" hidden>
       <select id="bflt-device" aria-label="Filter by device"></select>
       <select id="bflt-recipe" aria-label="Filter by recipe"></select>
@@ -472,6 +476,9 @@ function ago(iso) {
   const n = Math.round((t - new Date(iso + "T00:00:00")) / 864e5);
   return n <= 0 ? "today" : n === 1 ? "1 day ago" : n + " days ago";
 }
+// Dates are shown the European way: dd-mm-yyyy (saved as yyyy-mm-dd, as before).
+const fmtD = iso => { if (!iso) return ""; const [y, m, d] = String(iso).slice(0, 10).split("-"); return d + "-" + m + "-" + y; };
+const fmtDT = d => fmtD(d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0")) + ", " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 function todayIso() {
   const d = new Date();
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
@@ -658,9 +665,11 @@ function card(c, photoUrl, nBrews, ratings, bags) {
     const t = el("div", "tags"); c.flavour_tags.forEach(x => t.appendChild(el("span", "chip", x))); b.appendChild(t);
   }
   const rt = rateBlock(ratings); if (rt) b.appendChild(rt);
-  if (c.roast_date) b.appendChild(el("p", "", "Roasted " + ago(c.roast_date) + " (" + c.roast_date + ")"));
-  if (c.open_date) b.appendChild(el("p", "", "Opened " + ago(c.open_date) + " (" + c.open_date + ")"));
-  if (c.bag_size_g && c.open_date) { const left = Math.max(0, c.bag_size_g - (coffeeUsed[c.id] || 0)); b.appendChild(el("p", "", "About " + Math.round(left) + " g of " + c.bag_size_g + " g left")); }
+  if (c.roast_date) b.appendChild(el("p", "", "Roasted " + ago(c.roast_date) + " (" + fmtD(c.roast_date) + ")"));
+  else if (c.purchase_date) b.appendChild(el("p", "", "Bought " + ago(c.purchase_date) + " (" + fmtD(c.purchase_date) + "), roast date unknown"));
+  if (c.open_date) b.appendChild(el("p", "", "Opened " + ago(c.open_date) + " (" + fmtD(c.open_date) + ")"));
+  if (c.finished_at) b.appendChild(el("p", "fin", "Finished on " + fmtD(c.finished_at)));
+  if (c.bag_size_g && c.open_date && !c.finished_at) { const left = Math.max(0, c.bag_size_g - (coffeeUsed[c.id] || 0)); b.appendChild(el("p", "", "About " + Math.round(left) + " g of " + c.bag_size_g + " g left")); }
   if (c.notes) b.appendChild(el("p", "", c.notes));
   const acts = el("div", "acts");
   acts.appendChild(abtn("btn", nBrews ? "Brews (" + nBrews + ")" : "Log a brew", "cup", () => { location.hash = "c=" + c.id + (nBrews ? "" : "&new"); }));
@@ -672,6 +681,15 @@ function card(c, photoUrl, nBrews, ratings, bags) {
       if (error) say("Could not update: " + error.message); else load();
     }));
   }
+  if (c.open_date && !c.finished_at) acts.appendChild(abtn("btn ghost", "Finished", "check", async () => {
+    if (!confirm("Mark this bag of \"" + c.name + "\" as finished? The grams left are no longer shown. You can undo it.")) return;
+    const { error } = await db.from("coffees").update({ finished_at: todayIso() }).eq("id", c.id);
+    if (error) say("Could not update: " + error.message + (/finished_at/.test(error.message) ? " (run supabase/17_purchase_finished.sql first)" : "")); else { say("Marked as finished. Time for a new bag?"); load(); }
+  }));
+  if (c.finished_at) acts.appendChild(abtn("btn ghost", "Not finished", "close", async () => {
+    const { error } = await db.from("coffees").update({ finished_at: null }).eq("id", c.id);
+    if (error) say("Could not update: " + error.message); else load();
+  }));
   const del = ibtn("Archive or delete", "trash", async () => {
     const what = await askRemove(c, coffeeCounts[c.id] || 0);
     if (what === "archive") { if (await setArchived(c, true)) load(); }
@@ -687,7 +705,7 @@ function card(c, photoUrl, nBrews, ratings, bags) {
   if (bags && bags.length > 1) {
     const d = el("details", "older"); d.appendChild(el("summary", "", "Earlier bags (" + (bags.length - 1) + ")"));
     bags.slice(1).forEach((o, i) => {
-      const r = el("button", "lnk", "Bag " + (bags.length - 1 - i) + (o.roast_date ? ", roasted " + o.roast_date : "") + ", " + (coffeeCounts[o.id] || 0) + " brews");
+      const r = el("button", "lnk", "Bag " + (bags.length - 1 - i) + (o.roast_date ? ", roasted " + fmtD(o.roast_date) : "") + (o.finished_at ? ", finished" : "") + ", " + (coffeeCounts[o.id] || 0) + " brews");
       r.type = "button"; r.onclick = () => { location.hash = "c=" + o.id; };
       d.appendChild(r);
     });
@@ -752,7 +770,7 @@ function renderArchived(arch) {
   arch.forEach(c => {
     const row = el("div", "arow"), t = el("div", "an");
     t.appendChild(el("strong", "", c.name));
-    t.appendChild(el("small", "", [c.roaster, c.roast_date ? "roasted " + c.roast_date : null, (coffeeCounts[c.id] || 0) + " brews"].filter(Boolean).join(", ")));
+    t.appendChild(el("small", "", [c.roaster, c.roast_date ? "roasted " + fmtD(c.roast_date) : null, (coffeeCounts[c.id] || 0) + " brews"].filter(Boolean).join(", ")));
     row.appendChild(t);
     row.appendChild(abtn("btn ghost", "Brews", "cup", () => { location.hash = "c=" + c.id; }));
     row.appendChild(abtn("btn ghost", "Restore", "check", async () => { if (await setArchived(c, false)) load(); }));
@@ -794,7 +812,7 @@ function endEdit() {
   $("cancel").hidden = true;
   $("photohint").hidden = true;
   $("addbox").open = false;
-  setSfor([]); store.del(COFFEE_DRAFT); restoredCoffee = false;
+  setSfor([]); store.del(COFFEE_DRAFT); restoredCoffee = false; syncRoastUnknown();
 }
 function altText(c) {
   if (c.altitude_min_m == null) return null;
@@ -810,7 +828,7 @@ function startEdit(c) {
   $("f-blend").checked = !!c.is_blend; setSfor(c.suitable_for);
   setSel("f-process", c.process); setSel("f-roast", c.roast_level);
   $("f-tags").value = (c.flavour_tags || []).join(", ");
-  $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || ""; $("f-url").value = c.buy_url || ""; $("f-bag").value = c.bag_size_g || "";
+  $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || ""; $("f-url").value = c.buy_url || ""; $("f-pd").value = c.purchase_date || ""; $("f-rdx").checked = !c.roast_date && !!c.purchase_date; syncRoastUnknown(); $("f-bag").value = c.bag_size_g || "";
   $("addsum").textContent = "Edit coffee";
   $("save").textContent = "Save changes";
   $("cancel").hidden = false;
@@ -821,16 +839,22 @@ function startEdit(c) {
 function startNewBag(c) {
   startEdit(c);
   editing = null; newBagOf = c;   // saves as a new row, in the same group
-  $("f-rd").value = ""; $("f-od").value = ""; $("f-notes").value = "";
+  $("f-rd").value = ""; $("f-od").value = ""; $("f-notes").value = ""; $("f-pd").value = ""; $("f-rdx").checked = false; syncRoastUnknown();
   $("addsum").textContent = "New bag of " + c.name;
   $("save").textContent = "Save new bag";
   $("photohint").hidden = !c.photo_path;
 }
 $("cancel").onclick = endEdit;
+function syncRoastUnknown() {
+  const x = $("f-rdx").checked;
+  $("rdlab").hidden = x; $("pdlab").hidden = !x; $("pdhint").hidden = !x;
+  if (x) $("f-rd").value = ""; else $("f-pd").value = "";
+}
+$("f-rdx").addEventListener("change", syncRoastUnknown);
 
 // A new coffee that was not saved yet is kept on this phone, so leaving the page does not lose it.
 const COFFEE_DRAFT = "alto.draft.coffee";
-const CF = ["f-name", "f-roaster", "f-origin", "f-variety", "f-alt-min", "f-alt-max", "f-process", "f-process-new", "f-roast", "f-roast-new", "f-tags", "f-rd", "f-od", "f-notes", "f-url", "f-bag"];
+const CF = ["f-name", "f-roaster", "f-origin", "f-variety", "f-alt-min", "f-alt-max", "f-process", "f-process-new", "f-roast", "f-roast-new", "f-tags", "f-rd", "f-od", "f-notes", "f-url", "f-bag", "f-pd"];
 function saveCoffeeDraft() {
   if (editing || newBagOf || !me) return;
   const f = {}; CF.forEach(i => { f[i] = $(i).value; });
@@ -847,6 +871,7 @@ function tryRestoreCoffee() {
   CF.forEach(i => { if (d.f[i] == null) return; if (i === "f-process" || i === "f-roast") setSel(i, d.f[i]); else $(i).value = d.f[i]; });
   ["f-process", "f-roast"].forEach(i => { $(i + "-new").hidden = $(i).value !== "__other"; });
   $("f-blend").checked = !!d.blend; setSfor(d.sfor); restoredCoffee = true;
+  $("f-rdx").checked = !!d.f["f-pd"]; syncRoastUnknown(); if (d.f["f-pd"]) $("f-pd").value = d.f["f-pd"];
   $("addbox").open = true; $("addsum").textContent = "Add a coffee (unsaved draft)";
   say("Your unsaved coffee was restored.");
 }
@@ -895,7 +920,7 @@ $("cf").onsubmit = async e => {
     const v = id => $(id).value.trim();
     const ok = await confirmSave(editing ? "Save changes to this coffee?" : newBagOf ? "Save the new bag?" : "Save this coffee?", [
       ["Name", v("f-name")], ["Roaster", v("f-roaster")], ["Origin", v("f-origin")], ["Process", chosen("f-process")], ["Roast level", chosen("f-roast")],
-      ["Roasted", v("f-rd")], ["Opened", v("f-od")], ["Photo", $("f-photo").files[0] ? "new photo" : null]
+      ["Roasted", $("f-rdx").checked ? null : fmtD(v("f-rd"))], ["Bought", $("f-rdx").checked ? fmtD(v("f-pd")) : null], ["Opened", fmtD(v("f-od"))], ["Photo", $("f-photo").files[0] ? "new photo" : null]
     ], editing ? "Save changes" : "Save");
     if (!ok) return;
   }
@@ -925,12 +950,15 @@ $("cf").onsubmit = async e => {
       is_blend: $("f-blend").checked, process: chosen("f-process") || null, roast_level: chosen("f-roast") || null,
       flavour_tags: v("f-tags").split(",").map(t => t.trim().toLowerCase()).filter(Boolean),
       suitable_for: sforVals(),
-      notes: v("f-notes") || null, roast_date: v("f-rd") || null, open_date: v("f-od") || null, buy_url: v("f-url") ? safeUrl(v("f-url")) : null
+      notes: v("f-notes") || null, roast_date: $("f-rdx").checked ? null : (v("f-rd") || null), open_date: v("f-od") || null, buy_url: v("f-url") ? safeUrl(v("f-url")) : null
     };
     // bag size: only sent when filled in (or cleared on a coffee that had one), so saving works before supabase/14_bag_size.sql
     const bag = v("f-bag") === "" ? null : Math.round(Number(v("f-bag")));
     if (bag !== null && !(bag >= 1 && bag <= 5000)) throw new Error("the bag size must be between 1 and 5000 g");
     if (bag !== null || (editing && editing.bag_size_g) || (newBagOf && newBagOf.bag_size_g)) row.bag_size_g = bag;
+    // purchase date: only sent when used (or cleared), so saving works before supabase/17_purchase_finished.sql
+    const pd = $("f-rdx").checked ? (v("f-pd") || null) : null;
+    if (pd !== null || (editing && editing.purchase_date)) row.purchase_date = pd;
     if (path) row.photo_path = path; else if (newBagOf) row.photo_path = newBagOf.photo_path || null; else if (!editing) row.photo_path = null;
     if (newBagOf) row.group_id = gk(newBagOf);
     if (editing) {
@@ -1319,7 +1347,8 @@ async function pickList() {
   if (error) { say("Could not load coffees: " + error.message); return; }
   const seen = new Set();
   logCoffees = data.filter(c => !c.archived).filter(c => { const k = gk(c); if (seen.has(k)) return false; seen.add(k); return true; });   // data is newest first
-  logCoffees.sort((a, b) => (a.open_date ? 0 : 1) - (b.open_date ? 0 : 1));
+  const rank = c => c.finished_at ? 2 : c.open_date ? 0 : 1;   // open bags first, finished ones last
+  logCoffees.sort((a, b) => rank(a) - rank(b));
   renderPick();
 }
 function renderPick() {
@@ -1356,7 +1385,7 @@ async function openCoffee(id, dev, wantForm) {
   const [{ data: c, error }, { data: dv }, { data: all }] = await Promise.all([
     db.from("coffees").select("*").eq("id", id).single(),
     db.from("brews").select("device"),
-    db.from("coffees").select("id,name,roaster,group_id,archived,open_date,roast_date").order("created_at", { ascending: false })
+    db.from("coffees").select("*").order("created_at", { ascending: false })
   ]);
   if (error || !c) { say("Could not open this coffee."); location.hash = ""; return; }
   cur = c;
@@ -1368,7 +1397,7 @@ async function openCoffee(id, dev, wantForm) {
   if (c.archived) { da.append(document.createTextNode("This bag is archived. Its brews still count in Trends.")); da.appendChild(abtn("btn ghost", "Restore", "check", async () => { if (await setArchived(c, false)) openCoffee(c.id); })); }
   $("dname").textContent = c.name;
   $("dmeta").textContent = [c.roaster, c.origin, c.variety, altText(c)].filter(Boolean).join(", ") +
-    (c.roast_date ? ". Roasted " + c.roast_date : "") + (c.open_date ? ", opened " + c.open_date : "") + ".";
+    (c.roast_date ? ". Roasted " + fmtD(c.roast_date) : c.purchase_date ? ". Bought " + fmtD(c.purchase_date) + " (roast date unknown)" : "") + (c.open_date ? ", opened " + fmtD(c.open_date) : "") + (c.finished_at ? ", finished " + fmtD(c.finished_at) : "") + ".";
   const bx = $("dbuy"); bx.textContent = ""; const bl = buyLink(c); if (bl) bx.appendChild(bl);
   const t = $("dtags"); t.textContent = "";
   (c.flavour_tags || []).forEach(x => t.appendChild(el("span", "chip", x)));
@@ -1380,7 +1409,6 @@ async function openCoffee(id, dev, wantForm) {
   $("brewbox").open = !!wantForm || draftWasRestored;
   window.scrollTo(0, 0);
   await loadBrews();
-  if (!$("brewbox").open) scrollToBrews();
 }
 
 // "Coffee" at the top of the brew form: switch to another coffee without leaving the form.
@@ -1388,7 +1416,7 @@ async function openCoffee(id, dev, wantForm) {
 function fillCoffeeSwitch(c, all) {
   const s = $("b-coffee"), seen = new Set(), list = [];
   all.forEach(x => { const k = x.group_id || x.id; if (x.archived || seen.has(k)) return; seen.add(k); list.push(x); });
-  list.sort((a, b) => (a.open_date ? 0 : 1) - (b.open_date ? 0 : 1));
+  list.sort((a, b) => (a.finished_at ? 2 : a.open_date ? 0 : 1) - (b.finished_at ? 2 : b.open_date ? 0 : 1));
   if (!list.some(x => x.id === c.id)) list.unshift(c);   // an older or archived bag that is open right now
   s.textContent = "";
   list.forEach(x => { const o = el("option", "", x.name + (x.roaster ? " \u00B7 " + x.roaster : "")); o.value = x.id; s.appendChild(o); });
@@ -1401,7 +1429,13 @@ $("b-coffee").addEventListener("change", () => {
   location.hash = "c=" + id + (dev ? "&d=" + encodeURIComponent(dev) : "") + "&new";
 });
 
-// Puts the "+ Log a brew" button and the list of brews at the top of the screen, just under the menu bar.
+// "Log a brew" next to the Brews heading opens the form above the list.
+$("newbrew").append(ico("plus", 16), el("span", "", "Log a brew"));
+$("newbrew").onclick = () => { $("brewbox").open = true; scrollToForm(); };
+function scrollToForm() {
+  const bar = document.querySelector(".topnav"), y = $("brewbox").getBoundingClientRect().top + window.scrollY - (bar ? bar.offsetHeight : 0) - 12;
+  window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+}
 function scrollToBrews() {
   const bar = document.querySelector(".topnav"), y = $("brewbox").getBoundingClientRect().top + window.scrollY - (bar ? bar.offsetHeight : 0) - 12;
   window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
@@ -1414,11 +1448,12 @@ function dayN(iso, when) {
 
 function brewCard(b) {
   const a = el("article", "bc"), when = new Date(b.brewed_at);
-  const hd = el("div", "hd"); hd.appendChild(el("h3", "", when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }))); a.appendChild(hd);
+  const hd = el("div", "hd"); hd.appendChild(el("h3", "", fmtDT(when))); a.appendChild(hd);
   const who = nameOf(b.made_by || b.created_by);
   if (who) { const w = el("p", "age", "Brewed by "); w.appendChild(el("span", "by", who)); a.appendChild(w); }
   const dr = cur.roast_date ? dayN(cur.roast_date, when) : null, dop = cur.open_date ? dayN(cur.open_date, when) : null;
-  const age = [dr !== null ? (dr === 0 ? "roast day" : "day " + dr + " after roast") : null, dop !== null ? (dop === 0 ? "opening day" : "day " + dop + " after opening") : null].filter(Boolean).join(", ");
+  const dp = !cur.roast_date && cur.purchase_date ? dayN(cur.purchase_date, when) : null;
+  const age = [dr !== null ? (dr === 0 ? "roast day" : "day " + dr + " after roast") : dp !== null ? (dp === 0 ? "purchase day" : "day " + dp + " after purchase") : null, dop !== null ? (dop === 0 ? "opening day" : "day " + dop + " after opening") : null].filter(Boolean).join(", ");
   if (age) a.appendChild(el("p", "age", age));
   if (b.is_dialin) a.appendChild(el("p", "age", "Dial-in brew, not counted in the rating"));
   if (b.rating) { const s = el("p", "starsum"); s.appendChild(Stars.row(b.rating, "Rated " + Stars.text(b.rating) + " of 5")); a.appendChild(s); }
