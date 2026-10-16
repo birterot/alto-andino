@@ -120,6 +120,19 @@ dialog.dlg p{margin:0 0 4px;font-size:14.5px;color:var(--mut)}
 .namebox p{margin:0;color:var(--ink)}
 .namebox .row{display:flex;gap:8px;margin-top:10px}.namebox input{margin:0;flex:1}.namebox .go{margin:0;flex:none}
 .foot .lnk{margin-left:4px}
+.invited{margin:0 0 10px;padding:10px 14px;border-radius:12px;border:1px solid var(--accent);background:var(--card);font-size:14.5px}
+.hhcard{margin:16px 0;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--card);max-width:460px}
+.hhcard h3{margin:0;font-size:17px}
+.hhbox summary{font-weight:600}
+.hhbox .sec{margin-top:16px}
+.hhbox .sec h3{margin:0 0 4px;font-size:15px}
+.mem{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+.mem small{color:var(--mut)}
+.invlink{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.invlink input{margin:0;flex:1 1 220px;font-size:14px}
+.invlink .btn{min-height:44px}
+.row{display:flex;gap:8px;max-width:460px}.row input{margin:0;flex:1}.row .go{margin:0;flex:none}
+.lnk.danger{color:light-dark(#9A4A32,#E0A08A);border-color:light-dark(#9A4A32,#E0A08A)}
 .bc .by{font-weight:600;color:var(--ink)}
 .addnote{display:flex;gap:8px;max-width:420px;margin-top:14px}
 .addnote input{margin:0;flex:1;border-radius:999px;padding:10px 16px}
@@ -200,13 +213,38 @@ details.calcbox summary{font-size:15px}
 <h1>Coffee journal</h1>
 
 <form id="login" hidden>
-  <p class="sub">Sign in with the account we created for you.</p>
+  <div class="modes" id="authmodes"><button type="button" data-m="in">Sign in</button><button type="button" data-m="up">Create account</button></div>
+  <p class="sub" id="authsub"></p>
+  <p class="invited" id="invited" hidden>You have been invited to a household. Sign in or create an account, and you join it right away.</p>
+  <label id="nmlab" hidden>Your name<input id="nm" maxlength="40" autocomplete="nickname" placeholder="Shown on the brews you make"></label>
   <label>Email<input id="em" type="email" autocomplete="username" required></label>
-  <label>Password<input id="pw" type="password" autocomplete="current-password" required></label>
-  <button class="go">Sign in</button>
+  <label id="pwlab">Password<input id="pw" type="password" autocomplete="current-password" minlength="8" required></label>
+  <p class="hint" id="pwhint" hidden>At least 8 characters.</p>
+  <button class="go" id="authgo">Sign in</button>
+  <p><button class="lnk" type="button" id="forgot">Forgot your password?</button></p>
+</form>
+<form id="newpw" hidden>
+  <p class="sub">Choose a new password.</p>
+  <label>New password<input id="pw2" type="password" autocomplete="new-password" minlength="8" required></label>
+  <button class="go">Save password</button>
 </form>
 
 <section id="app" hidden>
+  <div id="hhview" hidden>
+    <h2>Welcome</h2>
+    <p class="sub">Coffees and brews live in a household: everyone in it sees and logs the same coffees. Nobody else can see them.</p>
+    <div class="hhcard">
+      <h3>Start your household</h3>
+      <label>Name<input id="hh-new" maxlength="60" placeholder="e.g. Alto Andino"></label>
+      <button class="go" type="button" id="hh-create">Start household</button>
+    </div>
+    <div class="hhcard">
+      <h3>Join a household</h3>
+      <p class="hint">Got an invite link? Open it, or paste the code from it here.</p>
+      <label>Invite code<input id="hh-code" maxlength="20" autocomplete="off" autocapitalize="characters" placeholder="e.g. 3F9A1C7B2D"></label>
+      <button class="go" type="button" id="hh-join">Join</button>
+    </div>
+  </div>
   <div class="namebox" id="namebox" hidden>
     <p><strong>What should we call you?</strong> <span id="nameq"></span> Your name is shown on the brews you make.</p>
     <div class="row"><input id="namein" maxlength="40" autocomplete="nickname" placeholder="e.g. Birte" aria-label="Your name"><button class="go" id="namego" type="button">Save</button></div>
@@ -257,6 +295,10 @@ details.calcbox summary{font-size:15px}
     </form>
   </details>
   </div>
+  <details class="add hhbox" id="hhbox" hidden>
+    <summary id="hhsum">Household</summary>
+    <div id="hhbody"></div>
+  </details>
   <h2>Our coffees</h2>
   <div class="filters" id="cfilters" hidden>
     <input id="flt-q" type="search" placeholder="Search name, roaster, origin" aria-label="Search coffees">
@@ -676,7 +718,7 @@ let loadId = 0, coffeeData = [], coffeeUrls = {}, coffeeCounts = {}, coffeeRates
 async function load() {
   const my = ++loadId;   // only the newest load may draw, so parallel loads cannot add cards twice
   const [{ data, error }, { data: bs }] = await Promise.all([
-    db.from("coffees").select("*").order("created_at", { ascending: false }),
+    inHH(db.from("coffees").select("*")).order("created_at", { ascending: false }),
     db.from("brews").select("coffee_id,rating,is_dialin,brewed_at,dose_g").order("brewed_at")
   ]);
   const counts = {}, rates = {}, used = {};
@@ -858,6 +900,7 @@ $("cf").onsubmit = async e => {
       is_blend: $("f-blend").checked, process: chosen("f-process") || null, roast_level: chosen("f-roast") || null,
       flavour_tags: v("f-tags").split(",").map(t => t.trim().toLowerCase()).filter(Boolean),
       suitable_for: sforVals(),
+      ...(hhOk && hh && !editing ? { household_id: newBagOf ? newBagOf.household_id || hh : hh } : {}),
       notes: v("f-notes") || null, roast_date: v("f-rd") || null, open_date: v("f-od") || null, buy_url: v("f-url") ? safeUrl(v("f-url")) : null
     };
     // bag size: only sent when filled in (or cleared on a coffee that had one), so saving works before supabase/14_bag_size.sql
@@ -1220,6 +1263,9 @@ $("bcancel").onclick = () => { store.del(draftKey()); newBrewSetup(); };
 
 function route() {
   if (!me) return;
+  const noHH = hhOk && !hhs.length;   // signed in, but not in a household yet: start or join one first
+  $("hhview").hidden = !noHH;
+  if (noHH) { ["listview", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); return; }
   const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)(?:&d=(.*))?$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/);
   $("listview").hidden = !!m || isLog || !!add;
   $("detail").hidden = !m;
@@ -1239,7 +1285,7 @@ function route() {
 // "Log a brew": choose the device first (or the coffee first). Coffees suitable for the device come first.
 let logMode = store.get("alto.logmode") === "coffee" ? "coffee" : "device", logDev = null, logCoffees = [];
 async function pickList() {
-  const { data, error } = await db.from("coffees").select("*").order("created_at", { ascending: false });
+  const { data, error } = await inHH(db.from("coffees").select("*")).order("created_at", { ascending: false });
   if (error) { say("Could not load coffees: " + error.message); return; }
   const seen = new Set();
   logCoffees = data.filter(c => !c.archived).filter(c => { const k = gk(c); if (seen.has(k)) return false; seen.add(k); return true; });   // data is newest first
@@ -1280,7 +1326,7 @@ async function openCoffee(id, dev) {
   const [{ data: c, error }, { data: dv }, { data: all }] = await Promise.all([
     db.from("coffees").select("*").eq("id", id).single(),
     db.from("brews").select("device"),
-    db.from("coffees").select("id,name,roaster,group_id,archived,open_date,roast_date").order("created_at", { ascending: false })
+    inHH(db.from("coffees").select("id,name,roaster,group_id,archived,open_date,roast_date")).order("created_at", { ascending: false })
   ]);
   if (error || !c) { say("Could not open this coffee."); location.hash = ""; return; }
   cur = c;
@@ -1438,6 +1484,96 @@ $("bf").onsubmit = async e => {
   finally { savingB = false; $("bsave").disabled = false; }
 };
 
+// ---------- Households: who shares which coffees (supabase/15_households.sql) ----------
+// Before that script has run, hhOk stays false and the journal works like before (one shared journal).
+let hhOk = false, hhs = [], hh = null, hhMembers = {};
+const inHH = q => (hhOk && hh ? q.eq("household_id", hh) : q);
+const joinUrl = code => location.origin + location.pathname + "#join=" + encodeURIComponent(code);
+(function () {   // an invite link (#join=CODE) is remembered until you are signed in
+  const m = location.hash.match(/^#join=([A-Za-z0-9]+)/);
+  if (m) { try { localStorage.setItem("alto.join", m[1].toUpperCase()); } catch (e) {} history.replaceState(null, "", location.pathname); }
+})();
+const pendingJoin = () => { try { return localStorage.getItem("alto.join"); } catch (e) { return null; } };
+async function loadHouseholds() {
+  const { data, error } = await db.from("household_members").select("household_id,role,households(id,name)").eq("user_id", me.id);
+  if (error) { hhOk = false; hhs = []; hh = null; $("hhbox").hidden = true; return; }
+  hhOk = true;
+  const seen = new Set();
+  hhs = data.filter(r => r.households && !seen.has(r.household_id) && seen.add(r.household_id)).map(r => ({ id: r.household_id, name: r.households.name, role: r.role }));
+  const saved = store.get("alto.household");
+  hh = (hhs.find(x => x.id === saved) || hhs[0] || {}).id || null;
+  if (hh) store.set("alto.household", hh);
+  hhMembers = {};
+  if (hhs.length) {
+    const { data: mem } = await db.from("household_members").select("household_id,user_id,role,joined_at").in("household_id", hhs.map(x => x.id)).order("joined_at");
+    (mem || []).forEach(m => (hhMembers[m.household_id] = hhMembers[m.household_id] || []).push(m));
+  }
+}
+async function tryPendingJoin() {
+  const code = pendingJoin(); if (!code) return;
+  try { localStorage.removeItem("alto.join"); } catch (e) {}
+  const { data, error } = await db.rpc("join_household", { p_code: code });
+  if (error) { say("Could not join: " + error.message); return; }
+  store.set("alto.household", data);
+  await loadHouseholds();
+  say("You joined " + ((hhs.find(x => x.id === data) || {}).name || "the household") + ".");
+}
+async function hhAction(fn, args, done) {
+  const { data, error } = await db.rpc(fn, args);
+  if (error) { say(error.message); return null; }
+  await loadHouseholds(); await loadNames(); if (done) done(data);
+  renderHousehold(); route();
+  return data;
+}
+function renderHousehold() {
+  const box = $("hhbox"), body = $("hhbody"), cur = hhs.find(x => x.id === hh);
+  box.hidden = !hhOk || !cur; body.textContent = "";
+  if (!cur) return;
+  $("hhsum").textContent = "Household: " + cur.name;
+  const sec = t => { const d = el("div", "sec"); d.appendChild(el("h3", "", t)); body.appendChild(d); return d; };
+  if (hhs.length > 1) {
+    const d = sec("Switch household"), sel = el("select");
+    hhs.forEach(x => { const o = el("option", "", x.name); o.value = x.id; sel.appendChild(o); });
+    sel.value = hh; sel.onchange = () => { hh = sel.value; store.set("alto.household", hh); renderHousehold(); fillMadeBy(); route(); };
+    d.appendChild(sel);
+  }
+  const nm = sec("Name"), row = el("div", "row"), ni = el("input"); ni.value = cur.name; ni.maxLength = 60; ni.setAttribute("aria-label", "Household name");
+  const nb = el("button", "go", "Save"); nb.type = "button"; nb.onclick = () => hhAction("rename_household", { p_household: hh, p_name: ni.value }, () => say("Saved."));
+  row.append(ni, nb); nm.appendChild(row);
+  const ms = sec("Members"), mine = (hhMembers[hh] || []).find(m => m.user_id === me.id);
+  (hhMembers[hh] || []).forEach(m => {
+    const r = el("div", "mem"), t = el("span", "", (names[m.user_id] || "Someone") + (m.user_id === me.id ? " (you)" : ""));
+    t.appendChild(el("small", "", m.role === "owner" ? "  owner" : ""));
+    r.appendChild(t);
+    if (mine && mine.role === "owner" && m.user_id !== me.id) {
+      const x = el("button", "lnk", "Remove"); x.type = "button";
+      x.onclick = () => { if (confirm("Remove " + (names[m.user_id] || "this person") + " from " + cur.name + "? They will no longer see its coffees.")) hhAction("remove_member", { p_household: hh, p_user: m.user_id }); };
+      r.appendChild(x);
+    }
+    ms.appendChild(r);
+  });
+  const inv = sec("Invite someone");
+  inv.appendChild(el("p", "hint", "Creates a link for one person, valid for 14 days. They create an account (or sign in) and join " + cur.name + "."));
+  const ib = abtn("btn", "Create invite link", "plus", async () => {
+    const { data, error } = await db.rpc("create_invite", { p_household: hh });
+    if (error) { say(error.message); return; }
+    const wrap = el("div", "invlink"), li = el("input"); li.readOnly = true; li.value = joinUrl(data); li.setAttribute("aria-label", "Invite link");
+    const sh = abtn("btn ghost", navigator.share ? "Share" : "Copy", "check", async () => {
+      try { if (navigator.share) await navigator.share({ title: "Join " + cur.name, text: "Join our coffee journal \u201C" + cur.name + "\u201D:", url: li.value }); else { await navigator.clipboard.writeText(li.value); say("Link copied."); } }
+      catch (e) { li.select(); }
+    });
+    wrap.append(li, sh); ib.replaceWith(wrap); li.select();
+  });
+  inv.appendChild(ib);
+  const more = sec("More");
+  const add = (label, fn, cls) => { const b = el("button", "lnk" + (cls ? " " + cls : ""), label); b.type = "button"; b.onclick = fn; more.appendChild(b); more.appendChild(document.createTextNode(" ")); };
+  add("Start another household", () => { const n = prompt("Name of the new household"); if (n) hhAction("create_household", { p_name: n }, id => { store.set("alto.household", id); }); });
+  add("Join with a code", () => { const c = prompt("Invite code"); if (c) hhAction("join_household", { p_code: c }, id => { store.set("alto.household", id); say("Joined."); }); });
+  add("Leave this household", () => { if (confirm("Leave " + cur.name + "? You will no longer see its coffees and brews.")) hhAction("leave_household", { p_household: hh }, () => { store.set("alto.household", ""); }); }, "danger");
+}
+$("hh-create").onclick = () => hhAction("create_household", { p_name: $("hh-new").value || "My household" }, id => { store.set("alto.household", id); say("Your household is ready. Add your first coffee."); });
+$("hh-join").onclick = () => { const c = $("hh-code").value.trim(); if (!c) { say("Paste the invite code first."); return; } hhAction("join_household", { p_code: c }, id => { store.set("alto.household", id); say("You joined the household."); }); };
+
 // ---------- Names: each login picks the name shown on its brews (table "profiles") ----------
 let names = {}, namesOk = false;
 const nameOf = id => (id && names[id]) || null;
@@ -1450,7 +1586,8 @@ function fillWho(ids) {
 // "Made by" in the brew form: everyone who has set a name. It starts on whoever is signed in.
 function fillMadeBy(want) {
   const s = $("b-madeby"), keep = want === undefined ? s.value : want;
-  const ids = Object.keys(names).sort((x, y) => names[x].localeCompare(names[y]));
+  const inThis = hhOk && hh ? new Set((hhMembers[hh] || []).map(m => m.user_id)) : null;
+  const ids = Object.keys(names).filter(id => !inThis || inThis.has(id)).sort((x, y) => names[x].localeCompare(names[y]));
   s.textContent = "";
   const o = el("option", "", "Not set"); o.value = ""; s.appendChild(o);
   if (me && !names[me.id]) ids.unshift(me.id);
@@ -1459,7 +1596,7 @@ function fillMadeBy(want) {
   $("mblab").hidden = !namesOk;
   const hint = $("mbhint"); hint.hidden = !namesOk; hint.textContent = "";
   if (namesOk) {
-    hint.append(document.createTextNode(Object.keys(names).length < 2 ? "Someone missing? They appear here once they sign in and set their name. " : "Only people who have set a name are listed. "));
+    hint.append(document.createTextNode(hhOk ? "Someone missing? Invite them under \u201CHousehold\u201D in the Journal. " : Object.keys(names).length < 2 ? "Someone missing? They appear here once they sign in and set their name. " : "Only people who have set a name are listed. "));
     const b = el("button", "lnk", me && names[me.id] ? "Change my name" : "Set my name"); b.type = "button"; b.onclick = () => $("rename").onclick(); hint.appendChild(b);
   }
 }
@@ -1492,24 +1629,75 @@ $("namego").onclick = () => saveName($("namein").value);
 $("namein").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveName($("namein").value); } });
 $("rename").onclick = () => { const v = prompt("Your name, shown on the brews you make", names[me.id] || ""); if (v !== null) saveName(v); };
 
+let recovering = false, shownFor = null;
 async function show(session) {
-  $("login").hidden = !!session;
-  $("app").hidden = !session;
+  $("newpw").hidden = !recovering;
+  $("login").hidden = !!session || recovering;
+  $("app").hidden = !session || recovering;
+  $("invited").hidden = !pendingJoin();
   me = session ? session.user : null;
-  if (!session) return;
+  if (!session || recovering) return;
+  if (shownFor === session.user.id) return;   // token refreshes do not reload everything
+  shownFor = session.user.id;
   $("who").textContent = "Signed in as " + session.user.email;
-  loadNames().then(() => { if (cur && !$("detail").hidden) renderBrews(); });
+  await loadHouseholds();
+  await tryPendingJoin();
+  await loadNames();
+  renderHousehold();
+  $("hhview").hidden = !(hhOk && !hhs.length);
   route();
 }
+// Sign in / create account / forgot password
+let authMode = "in";
+function setAuthMode(m) {
+  authMode = m;
+  $("authmodes").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.m === m));
+  $("authmodes").hidden = m === "reset";
+  $("authsub").textContent = m === "up" ? "Create your account. You can start your own household or join one afterwards." : m === "reset" ? "We send you an email with a link to choose a new password." : "Sign in to your coffee journal.";
+  $("nmlab").hidden = m !== "up"; $("nm").required = m === "up";
+  $("pwlab").hidden = m === "reset"; $("pw").required = m !== "reset";
+  $("pw").autocomplete = m === "up" ? "new-password" : "current-password";
+  $("pwhint").hidden = m !== "up";
+  $("authgo").textContent = m === "up" ? "Create account" : m === "reset" ? "Send reset link" : "Sign in";
+  $("forgot").textContent = m === "reset" ? "Back to sign in" : "Forgot your password?";
+}
+$("authmodes").querySelectorAll("button").forEach(b => { b.onclick = () => setAuthMode(b.dataset.m); });
+$("forgot").onclick = () => setAuthMode(authMode === "reset" ? "in" : "reset");
+setAuthMode(pendingJoin() ? "up" : "in");
+const backHere = () => location.origin + location.pathname;
 $("login").onsubmit = async e => {
   e.preventDefault();
-  say("Signing in...");
-  const { error } = await db.auth.signInWithPassword({ email: $("em").value.trim(), password: $("pw").value });
-  say(error ? error.message : "");
+  const email = $("em").value.trim();
+  if (authMode === "in") {
+    say("Signing in...");
+    const { error } = await db.auth.signInWithPassword({ email, password: $("pw").value });
+    say(error ? (/confirm/i.test(error.message) ? "Please confirm your email first: open the link we sent you." : error.message) : "");
+  } else if (authMode === "up") {
+    say("Creating your account...");
+    const { data, error } = await db.auth.signUp({ email, password: $("pw").value, options: { data: { display_name: $("nm").value.trim() }, emailRedirectTo: backHere() } });
+    if (error) { say(error.message); return; }
+    if (!data.session) { say("Almost done: we sent an email to " + email + ". Open the link in it to confirm your account."); setAuthMode("in"); }
+    else say("");
+  } else {
+    say("Sending...");
+    const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: backHere() });
+    say(error ? error.message : "If there is an account for " + email + ", an email with a reset link is on its way.");
+  }
 };
-$("out").onclick = () => db.auth.signOut();
+$("newpw").onsubmit = async e => {
+  e.preventDefault();
+  const { error } = await db.auth.updateUser({ password: $("pw2").value });
+  if (error) { say(error.message); return; }
+  recovering = false; say("Your new password is saved.");
+  const { data } = await db.auth.getSession(); show(data.session);
+};
+$("out").onclick = () => { shownFor = null; db.auth.signOut(); };
 // Run queries outside the callback so the auth client is not blocked.
-db.auth.onAuthStateChange((_event, session) => setTimeout(() => show(session), 0));
+db.auth.onAuthStateChange((event, session) => setTimeout(() => {
+  if (event === "PASSWORD_RECOVERY") recovering = true;
+  if (event === "SIGNED_OUT") shownFor = null;
+  show(session);
+}, 0));
 </script>
 </body>
 </html>

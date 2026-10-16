@@ -496,8 +496,13 @@ function shape(raw, coffees) {
 }
 async function loadMine() {
   $("msg").textContent = "Loading...";
+  // the household chosen in the Journal (after supabase/15_households.sql); before that, everything you can see
+  let hh = null;
+  const hm = await db.from("household_members").select("household_id").eq("user_id", state.me.id);
+  if (!hm.error && hm.data.length) { const saved = store.get("alto.household"); hh = (hm.data.find(x => x.household_id === saved) || hm.data[0]).household_id; }
+  const cq = db.from("coffees").select("*");
   const [cs, bs, ps] = await Promise.all([
-    db.from("coffees").select("*").order("created_at", { ascending: false }),
+    (hh ? cq.eq("household_id", hh) : cq).order("created_at", { ascending: false }),
     db.from("brews").select("*, brew_scores(attribute,score)").order("brewed_at"),
     db.from("profiles").select("id,display_name")
   ]);
@@ -505,7 +510,8 @@ async function loadMine() {
   if (cs.error || bs.error) { $("msg").textContent = "Could not load: " + (cs.error || bs.error).message; return; }
   state.coffees = cs.data.map(c => Object.assign({}, c, { bag_g: c.bag_size_g || null }));
   state.names = {}; (ps.data || []).forEach(p => { state.names[p.id] = p.display_name; });
-  state.brews = shape(bs.data, state.coffees);
+  const ids = new Set(state.coffees.map(c => c.id));
+  state.brews = shape(bs.data.filter(b => ids.has(b.coffee_id)), state.coffees);
   fillFilters(); render();
 }
 
