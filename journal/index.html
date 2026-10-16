@@ -57,10 +57,23 @@ details.add summary{cursor:pointer;font-weight:600}
 .cc .lnk{border-color:var(--line);color:var(--t)}
 .cc .meta{opacity:.9}
 .cc .fin{font-weight:600}
-.vchips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0;max-width:460px}
-.vchips button{font:inherit;font-size:13.5px;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
-.vchips button.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
-.vchips button.newv{border-style:dashed;color:var(--accent)}
+.vfield{display:block;margin-top:14px;max-width:420px}
+.vfield>.vl{display:block;font-size:14px;color:var(--mut)}
+.vcombo{position:relative;margin-top:6px}
+.vbox{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:48px;padding:6px 44px 6px 8px;border:1px solid var(--line);border-radius:12px;background:var(--card);cursor:text}
+.vbox:focus-within{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.vbox input{flex:1 1 120px;min-width:120px;height:34px;margin:0;padding:0 6px;border:0;background:none;outline:none;max-width:none}
+.vbox input:focus-visible{outline:none}
+.vtok{display:inline-flex;align-items:center;gap:2px;height:32px;padding:0 4px 0 12px;border-radius:999px;background:var(--ink);color:var(--bg);font-size:14px}
+.vtok button{width:28px;height:28px;display:grid;place-items:center;border:0;background:none;color:inherit;font:inherit;font-size:17px;line-height:1;cursor:pointer;border-radius:999px;opacity:.8}
+.vtog{position:absolute;right:4px;top:4px;width:40px;height:40px;display:grid;place-items:center;border:0;background:none;color:var(--mut);cursor:pointer;border-radius:10px;-webkit-tap-highlight-color:transparent}
+.vtog svg{transition:transform .15s}.vcombo.open .vtog svg{transform:rotate(180deg)}
+.vlist{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;margin:0;padding:6px;list-style:none;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(20,14,10,.18);max-height:260px;overflow:auto;-webkit-overflow-scrolling:touch}
+.vlist li{display:flex;align-items:center;min-height:44px;padding:0 12px;border-radius:8px;cursor:pointer;font-size:16px}
+.vlist li.act,.vlist li:hover{background:var(--bg)}
+.vlist li.add{color:var(--accent);font-weight:600}
+.vlist li.grp{min-height:28px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);cursor:default;background:none}
+.vlist li.none{color:var(--mut);cursor:default;background:none}
 .cfacts{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:6px 18px;margin-top:12px;font-size:14px}
 .cfacts .f{display:inline-flex;align-items:center;gap:7px}
 .cfacts svg{color:var(--s)}
@@ -86,7 +99,11 @@ dialog.dlg p{margin:0 0 4px;font-size:14.5px;color:var(--mut)}
 .sum{margin:10px 0 0;padding:0;list-style:none;font-size:14.5px}
 .sum li{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line)}
 .sum li span{color:var(--mut)}
-.sum li b{font-weight:600;text-align:right}
+.sum li b{font-weight:600;text-align:right;overflow-wrap:anywhere}
+.sum li.chg{flex-direction:column;gap:2px}
+.sum li.chg b{text-align:left}
+.sum li.chg .was{color:var(--mut);font-size:13.5px}
+.sum li.chg .was s{text-decoration-thickness:1px}
 .dlgacts{display:flex;flex-direction:column;gap:8px;margin-top:16px}
 .dlgacts .go,.dlgacts .btn{margin:0;width:100%;justify-content:center;height:48px}
 .dlgacts .lnk{border:0;min-height:44px;font-size:15px;color:var(--mut)}
@@ -284,9 +301,16 @@ details.calcbox summary{font-size:15px}
       <label>Name<input id="f-name" required></label>
       <label>Roaster<input id="f-roaster"></label>
       <label>Origin<input id="f-origin" placeholder="Country, region"></label>
-      <label class="adv">Botanical variety<input id="f-variety" placeholder="e.g. Gesha, Bourbon, Caturra" autocomplete="off"></label>
-      <div class="vchips adv" id="vchips" role="group" aria-label="Common varieties"></div>
-      <p class="hint adv">Tap to add or remove. Not in the list? Tap "+ New" and type it; once saved it shows up here as a chip too.</p>
+      <div class="vfield adv">
+        <span class="vl" id="vlab">Botanical variety</span>
+        <div class="vcombo" id="vcombo">
+          <div class="vbox" id="vbox"><input id="f-vq" role="combobox" aria-labelledby="vlab" aria-autocomplete="list" aria-expanded="false" aria-controls="vlist" placeholder="Choose or type a variety" autocomplete="off" autocapitalize="words" enterkeyhint="done"></div>
+          <button class="vtog" id="vtog" type="button" tabindex="-1" aria-label="Show all varieties"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <ul class="vlist" id="vlist" role="listbox" aria-labelledby="vlab" hidden></ul>
+        </div>
+        <input id="f-variety" hidden>
+        <p class="hint">Pick from the list, or type a new one and tap "Add". You can choose several.</p>
+      </div>
       <div class="row2 adv">
         <label>Altitude from (m)<input id="f-alt-min" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="1700"></label>
         <label>to (m, optional)<input id="f-alt-max" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="1900"></label>
@@ -428,6 +452,7 @@ details.calcbox summary{font-size:15px}
 <p id="msg" role="status"></p>
 <dialog id="savedlg" class="dlg" aria-labelledby="sdtitle">
   <h3 id="sdtitle">Save this brew?</h3>
+  <p id="sdnote" hidden></p>
   <ul class="sum" id="sdlist"></ul>
   <div class="dlgacts">
     <button class="go" id="sd-ok" type="button">Save</button>
@@ -895,43 +920,79 @@ function startNewBag(c) {
   $("photohint").hidden = !c.photo_path;
 }
 $("cancel").onclick = endEdit;
-// Variety chips: tap to add or remove; several varieties are kept comma-separated in the text field.
+// Variety: a dropdown that works on the phone too (the browser's own list did not). Chosen varieties show as
+// dark tokens with an x; the list offers the common varieties plus every variety already used on one of our coffees,
+// and "Add ..." for a new one. Several varieties are stored comma-separated in the hidden field f-variety.
 const VARIETIES = ["Arabica", "Robusta", "Bourbon", "Typica", "Caturra", "Catuai", "Gesha", "SL28", "SL34", "Pacamara", "Heirloom", "Sidra", "Castillo"];
 const varParts = () => $("f-variety").value.split(",").map(x => x.trim()).filter(Boolean);
-function syncVarieties() {
-  const have = varParts().map(x => x.toLowerCase());
-  $("vchips").querySelectorAll("button").forEach(b => { const on = have.includes(b.textContent.toLowerCase()); b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
+const setVarParts = parts => { $("f-variety").value = parts.join(", "); renderVarieties(); saveCoffeeDraft(); };
+let vAct = -1;
+function knownVarieties() {
+  const seen = new Set(), ours = [], common = [];
+  const add = (v, to) => { const k = v.toLowerCase(); if (v && !seen.has(k)) { seen.add(k); to.push(v); } };
+  (coffeeData || []).forEach(c => String(c.variety || "").split(",").map(x => x.trim()).forEach(v => { if (!VARIETIES.some(x => x.toLowerCase() === v.toLowerCase())) add(v, ours); }));
+  VARIETIES.forEach(v => add(v, common));
+  return { ours: ours.sort((x, y) => x.localeCompare(y)), common };
 }
-// The chips: the common varieties, plus every variety already used on one of our coffees (so "Cenicafe" shows up
-// once it is saved), plus whatever is in the field right now. "+ New" jumps into the field to type one.
-function renderVarieties() {
-  const seen = new Set(), list = [];
-  const add = v => { const k = v.toLowerCase(); if (v && !seen.has(k)) { seen.add(k); list.push(v); } };
-  VARIETIES.forEach(add);
-  (coffeeData || []).forEach(c => String(c.variety || "").split(",").map(x => x.trim()).forEach(add));
-  varParts().forEach(add);
-  const box = $("vchips"); box.textContent = "";
-  list.forEach(v => {
-    const b = el("button", "", v); b.type = "button";
-    b.onclick = () => {
-      const parts = varParts(), i = parts.findIndex(x => x.toLowerCase() === v.toLowerCase());
-      if (i >= 0) parts.splice(i, 1); else parts.push(v);
-      $("f-variety").value = parts.join(", "); syncVarieties(); saveCoffeeDraft();
-    };
-    box.appendChild(b);
+function addVariety(v) {
+  v = String(v || "").replace(/,/g, " ").trim(); if (!v) return;
+  const k = knownVarieties(), all = k.ours.concat(k.common);
+  v = all.find(x => x.toLowerCase() === v.toLowerCase()) || v.charAt(0).toUpperCase() + v.slice(1);   // same spelling as before ("gesha" -> "Gesha"), a new one starts with a capital
+  const parts = varParts(); if (!parts.some(x => x.toLowerCase() === v.toLowerCase())) parts.push(v);
+  $("f-vq").value = ""; setVarParts(parts);
+}
+function renderVarieties() {   // the tokens for what is chosen
+  const box = $("vbox"), q = $("f-vq");
+  box.querySelectorAll(".vtok").forEach(t => t.remove());
+  varParts().forEach((v, i) => {
+    const t = el("span", "vtok"); t.appendChild(document.createTextNode(v));
+    const x = el("button", "", "\u00D7"); x.type = "button"; x.setAttribute("aria-label", "Remove " + v);
+    x.onclick = e => { e.stopPropagation(); const p = varParts(); p.splice(i, 1); setVarParts(p); };
+    t.appendChild(x); box.insertBefore(t, q);
   });
-  const nb = el("button", "newv", "+ New"); nb.type = "button";
-  nb.onclick = () => {
-    const f = $("f-variety"), t = f.value.trim();
-    if (t && !/,$/.test(t)) f.value = t + ", ";
-    f.focus(); try { f.setSelectionRange(f.value.length, f.value.length); } catch (e) {}
-  };
-  box.appendChild(nb);
-  syncVarieties();
+  q.placeholder = varParts().length ? "Add another" : "Choose or type a variety";
+  if (!$("vlist").hidden) drawVList();
 }
+function drawVList() {
+  const list = $("vlist"), q = $("f-vq").value.trim(), ql = q.toLowerCase(), have = varParts().map(x => x.toLowerCase());
+  const k = knownVarieties(), fit = v => !have.includes(v.toLowerCase()) && (!ql || v.toLowerCase().includes(ql));
+  const items = [];
+  if (q && !k.ours.concat(k.common).some(v => v.toLowerCase() === ql) && !have.includes(ql)) items.push({ v: q, add: true });
+  const ours = k.ours.filter(fit), common = k.common.filter(fit);
+  list.textContent = "";
+  const opt = (it) => {
+    const li = el("li", it.add ? "add" : "", it.add ? "Add \u201C" + it.v + "\u201D" : it.v);
+    li.setAttribute("role", "option"); li.id = "vopt" + list.children.length;
+    li.onclick = () => { addVariety(it.v); closeVList(); };
+    list.appendChild(li); items.push(it);
+  };
+  items.splice(0).forEach(opt);
+  if (ours.length) { if (!q) list.appendChild(el("li", "grp", "Ours")); ours.forEach(v => opt({ v })); }
+  if (common.length) { if (!q && ours.length) list.appendChild(el("li", "grp", "Common")); common.forEach(v => opt({ v })); }
+  if (!list.querySelector("[role=option]")) list.appendChild(el("li", "none", have.length ? "All listed varieties are chosen. Type a new one." : "Type a variety."));
+  const opts = list.querySelectorAll("[role=option]");
+  vAct = Math.min(vAct, opts.length - 1);
+  opts.forEach((o, i) => { o.classList.toggle("act", i === vAct); o.setAttribute("aria-selected", String(i === vAct)); });
+  $("f-vq").setAttribute("aria-activedescendant", vAct >= 0 && opts[vAct] ? opts[vAct].id : "");
+}
+function openVList() { $("vlist").hidden = false; $("vcombo").classList.add("open"); $("f-vq").setAttribute("aria-expanded", "true"); vAct = -1; drawVList(); }
+function closeVList() { $("vlist").hidden = true; $("vcombo").classList.remove("open"); $("f-vq").setAttribute("aria-expanded", "false"); vAct = -1; }
+// tapping the list must not take the focus away from the field (the phone keyboard would jump)
+["pointerdown", "mousedown"].forEach(ev => { $("vlist").addEventListener(ev, e => e.preventDefault()); $("vtog").addEventListener(ev, e => e.preventDefault()); });
+$("vbox").addEventListener("click", e => { if (e.target === $("vbox")) $("f-vq").focus(); });
+$("vtog").onclick = () => { if ($("vlist").hidden) { $("f-vq").focus(); openVList(); } else closeVList(); };
+$("f-vq").addEventListener("focus", openVList);
+$("f-vq").addEventListener("input", () => { const q = $("f-vq"); if (q.value.includes(",")) { q.value.split(",").slice(0, -1).forEach(addVariety); q.value = q.value.split(",").pop(); } vAct = -1; if ($("vlist").hidden) openVList(); else drawVList(); });
+$("f-vq").addEventListener("keydown", e => {
+  const opts = $("vlist").querySelectorAll("[role=option]");
+  if (e.key === "ArrowDown") { e.preventDefault(); if ($("vlist").hidden) openVList(); vAct = Math.min(vAct + 1, opts.length - 1); drawVList(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); vAct = Math.max(vAct - 1, 0); drawVList(); }
+  else if (e.key === "Enter") { e.preventDefault(); if (vAct >= 0 && opts[vAct]) opts[vAct].click(); else if ($("f-vq").value.trim()) { addVariety($("f-vq").value); drawVList(); } }
+  else if (e.key === "Escape") { if (!$("vlist").hidden) { e.preventDefault(); e.stopPropagation(); closeVList(); } }
+  else if (e.key === "Backspace" && !$("f-vq").value && varParts().length) { const p = varParts(); p.pop(); setVarParts(p); }
+});
+$("f-vq").addEventListener("blur", () => { if ($("f-vq").value.trim()) addVariety($("f-vq").value); closeVList(); });   // typed but not added yet: keep it
 renderVarieties();
-$("f-variety").addEventListener("input", syncVarieties);
-$("f-variety").addEventListener("change", renderVarieties);   // a typed variety becomes a chip when you leave the field
 function syncRoastUnknown() {
   const x = $("f-rdx").checked;
   $("rdlab").hidden = x; $("pdlab").hidden = !x; $("pdhint").hidden = !x;
@@ -967,15 +1028,88 @@ $("cf").addEventListener("change", e => { if (e.isTrusted) saveCoffeeDraft(); })
 
 let saving = false;
 // Before saving: a short summary to check. Saving by accident is no longer one tap away.
-function confirmSave(title, rows, okText) {
+// rows are [label, value] for a summary, or [label, new, old] for a change (shown as the new value with the old one struck through).
+function confirmSave(title, rows, okText, note) {
   return new Promise(done => {
     const d = $("savedlg"), list = $("sdlist");
     $("sdtitle").textContent = title; $("sd-ok").textContent = okText || "Save"; list.textContent = "";
-    rows.filter(r => r[1] !== null && r[1] !== undefined && r[1] !== "").forEach(([k, v]) => { const li = el("li"); li.append(el("span", "", k), el("b", "", String(v))); list.appendChild(li); });
+    $("sdnote").hidden = !note; $("sdnote").textContent = note || "";
+    rows.forEach(r => {
+      const [k, v] = r, chg = r.length > 2;
+      if (!chg && (v === null || v === undefined || v === "")) return;
+      const li = el("li", chg ? "chg" : "");
+      if (!chg) { li.append(el("span", "", k), el("b", "", String(v))); list.appendChild(li); return; }
+      li.append(el("span", "", k), el("b", "", v === "" || v == null ? "(removed)" : String(v)));
+      const w = el("span", "was"); w.append(document.createTextNode("was: "));
+      if (r[2] === "" || r[2] == null) w.append(document.createTextNode("empty")); else w.append(el("s", "", String(r[2])));
+      li.appendChild(w); list.appendChild(li);
+    });
     const end = v => { if (d.open) d.close(); done(v); };
     $("sd-ok").onclick = () => end(true); $("sd-back").onclick = () => end(false); d.oncancel = () => done(false);
     if (d.showModal) d.showModal(); else done(confirm(title));
   });
+}
+// Compares the old record with the row that would be saved: [label, new, old] for every field that really changes.
+// fields: [key, label, format]; a format turns a stored value into readable text ("" for empty).
+function changes(old, row, fields) {
+  const out = [];
+  const plain = v => v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length) ? "" : Array.isArray(v) ? v.join(", ") : typeof v === "boolean" ? (v ? "yes" : "no") : String(v);
+  const same = (a, b) => {
+    if (typeof a === "boolean" || typeof b === "boolean") return !!a === !!b;
+    if (Array.isArray(a) || Array.isArray(b)) return JSON.stringify((a || []).slice().sort()) === JSON.stringify((b || []).slice().sort());
+    if (a !== null && b !== null && a !== undefined && b !== undefined && a !== "" && b !== "" && isFinite(a) && isFinite(b)) return Number(a) === Number(b);
+    if (a && b && typeof a === "object") return JSON.stringify(a) === JSON.stringify(b);
+    return plain(a) === plain(b);
+  };
+  fields.forEach(([key, label, fmt]) => {
+    if (typeof key === "string" && !(key in row)) return;   // not sent, so it stays as it is
+    const nv = typeof key === "function" ? key(row) : row[key], ov = typeof key === "function" ? key(old) : old[key];
+    if (same(ov, nv)) return;
+    const f = fmt || plain;
+    if (f(nv) === f(ov)) return;   // reads the same, e.g. 18 and 18.0
+    out.push([label, f(nv), f(ov)]);
+  });
+  return out;
+}
+const COFFEE_FIELDS = [
+  ["name", "Name"], ["roaster", "Roaster"], ["origin", "Origin"], ["variety", "Variety"],
+  [r => r.altitude_min_m == null ? "" : r.altitude_max_m != null ? r.altitude_min_m + "\u2013" + r.altitude_max_m + " m" : r.altitude_min_m + " m", "Altitude"],
+  ["process", "Process"], ["roast_level", "Roast level"], ["is_blend", "Blend"], ["is_decaf", "Decaf"],
+  ["roast_date", "Roasted", fmtD], ["purchase_date", "Bought", fmtD], ["open_date", "Opened", fmtD],
+  ["bag_size_g", "Bag size", v => v == null ? "" : v + " g"],
+  ["flavour_tags", "Flavour tags"], ["suitable_for", "Ideal for", v => (v || []).map(typeLabel).join(", ")],
+  ["notes", "Notes"], ["buy_url", "Link"]
+];
+const coffeeChanges = (old, row) => changes(old, row, COFFEE_FIELDS);
+const fmtTime = v => v == null ? "" : v < 90 ? v + " s" : mmss(v) + " min";
+const unit = u => v => v == null || v === "" ? "" : v + u;
+const BREW_FIELDS = [
+  ["device", "Device"], ["grinder", "Grinder"], ["grind", "Grind setting"], ["grind_feel", "Grind feel"],
+  ["dose_g", "Dose", unit(" g")], ["water_g", "Water", unit(" g")], ["yield_g", "Yield", unit(" g")],
+  ["temp_c", "Water temperature", unit(" \u00B0C")], ["preheat", "Preheat"], ["time_s", "Time", fmtTime],
+  ["pressure_bar", "Pressure", unit(" bar")], ["preinfusion_bar", "Pre-infusion", unit(" bar")], ["preinfusion_s", "Pre-infusion time", unit(" s")],
+  ["pressure_profile", "Pressure profile", v => Array.isArray(v) && v.length ? v.map(x => x.s + " s at " + x.bar + " bar").join(", ") : ""],
+  ["rating", "Overall", v => v == null ? "not rated" : Stars.text(v)], ["is_dialin", "Dial-in shot"], ["notes", "Comments"]
+];
+function brewChanges(old, row) {
+  const out = [];
+  if ("made_by" in row) {   // who made it: empty means the person who logged it
+    const ow = old.made_by || old.created_by, nw = row.made_by || old.created_by;
+    if (ow !== nw) out.push(["Made by", nameOf(nw) || "not set", nameOf(ow) || "not set"]);
+  }
+  out.push(...changes(old, row, BREW_FIELDS));
+  // a recipe name typed by hand (the automatic one follows the settings and is not worth a line)
+  const auto = b => !b.recipe || b.recipe === settingsLabel(b);
+  if (!(auto(old) && auto(row)) && (old.recipe || "") !== (row.recipe || "")) out.push(["Recipe name", auto(row) ? "" : row.recipe, auto(old) ? "" : old.recipe]);
+  const was = {}; (old.brew_scores || []).forEach(x => { was[x.attribute] = x.score; });
+  const keys = [...new Set(Object.keys(was).concat(Object.keys(scores)))];
+  keys.forEach(k => {
+    const a = was[k], b = scores[k];
+    const nt = b == null ? "" : SCALE.text(k, b), ot = a == null ? "" : SCALE.text(k, a);
+    if (nt === ot) return;   // reads the same (an old in-between value of a tasting note, say)
+    out.push([SCALE.isCore(k) ? k.charAt(0).toUpperCase() + k.slice(1) : "Tasting note: " + k, nt, ot]);
+  });
+  return out;
 }
 // "Simple" shows what you need to log and rate a brew; "All fields" shows everything. Each phone remembers its choice.
 // Phones that already used the app start on "All fields", new ones on "Simple".
@@ -1000,15 +1134,54 @@ setFormMode(formMode);
   if (e.key === "Enter" && e.target.tagName === "INPUT" && e.target.type !== "submit") e.preventDefault();
 }));
 
+// The row that saving would send (without the photo). Throws a readable error when a value is off.
+function coffeeRow() {
+  const v = id => $(id).value.trim();
+  if (v("f-url") && !safeUrl(v("f-url"))) throw new Error("the link must start with https:// or http://");
+  let amin = v("f-alt-min") === "" ? null : Math.round(Number(v("f-alt-min")));
+  let amax = v("f-alt-max") === "" ? null : Math.round(Number(v("f-alt-max")));
+  if (amin === null && amax !== null) { amin = amax; amax = null; }
+  if ((amin !== null && !(amin >= 0 && amin <= 5000)) || (amax !== null && !(amax >= 0 && amax <= 5000))) throw new Error("altitude must be between 0 and 5000 metres");
+  if (amax !== null && amax < amin) { const t = amin; amin = amax; amax = t; }
+  if (amax === amin) amax = null;
+  const row = {
+    altitude_min_m: amin, altitude_max_m: amax, variety: v("f-variety") || null,
+    name: v("f-name"), roaster: v("f-roaster") || null, origin: v("f-origin") || null,
+    is_blend: $("f-blend").checked, ...($("f-decaf").checked || (editing && editing.is_decaf) || (newBagOf && newBagOf.is_decaf) ? { is_decaf: $("f-decaf").checked } : {}), process: chosen("f-process") || null, roast_level: chosen("f-roast") || null,
+    flavour_tags: v("f-tags").split(",").map(t => t.trim().toLowerCase()).filter(Boolean),
+    suitable_for: sforVals(),
+    ...(hhOk && hh && !editing ? { household_id: newBagOf ? newBagOf.household_id || hh : hh } : {}),
+    notes: v("f-notes") || null, roast_date: $("f-rdx").checked ? null : (v("f-rd") || null), open_date: v("f-od") || null, buy_url: v("f-url") ? safeUrl(v("f-url")) : null
+  };
+  // bag size: only sent when filled in (or cleared on a coffee that had one), so saving works before supabase/14_bag_size.sql
+  const bag = v("f-bag") === "" ? null : Math.round(Number(v("f-bag")));
+  if (bag !== null && !(bag >= 1 && bag <= 5000)) throw new Error("the bag size must be between 1 and 5000 g");
+  if (bag !== null || (editing && editing.bag_size_g) || (newBagOf && newBagOf.bag_size_g)) row.bag_size_g = bag;
+  // purchase date: only sent when used (or cleared), so saving works before supabase/17_purchase_finished.sql
+  const pd = $("f-rdx").checked ? (v("f-pd") || null) : null;
+  if (pd !== null || (editing && editing.purchase_date)) row.purchase_date = pd;
+  return row;
+}
+
 $("cf").onsubmit = async e => {
   e.preventDefault();
   if (saving) return;
+  let row;
+  try { row = coffeeRow(); } catch (err) { say("Could not save: " + err.message); return; }
   {
-    const v = id => $(id).value.trim();
-    const ok = await confirmSave(editing ? "Save changes to this coffee?" : newBagOf ? "Save the new bag?" : "Save this coffee?", [
-      ["Name", v("f-name")], ["Roaster", v("f-roaster")], ["Origin", v("f-origin")], ["Process", chosen("f-process")], ["Roast level", chosen("f-roast")],
-      ["Roasted", $("f-rdx").checked ? null : fmtD(v("f-rd"))], ["Bought", $("f-rdx").checked ? fmtD(v("f-pd")) : null], ["Opened", fmtD(v("f-od"))], ["Photo", $("f-photo").files[0] ? "new photo" : null]
-    ], editing ? "Save changes" : "Save");
+    const v = id => $(id).value.trim(), photo = $("f-photo").files[0];
+    let ok;
+    if (editing) {   // editing: show exactly what changed, old next to new
+      const ch = coffeeChanges(editing, row);
+      if (photo) ch.push(["Photo", "new photo", editing.photo_path ? "old photo" : ""]);
+      if (!ch.length) { say("Nothing has changed, so there is nothing to save."); return; }
+      ok = await confirmSave("Save these changes?", ch, "Save changes", ch.length === 1 ? "You changed one thing:" : "You changed " + ch.length + " things:");
+    } else {
+      ok = await confirmSave(newBagOf ? "Save the new bag?" : "Save this coffee?", [
+        ["Name", v("f-name")], ["Roaster", v("f-roaster")], ["Origin", v("f-origin")], ["Variety", v("f-variety")], ["Process", chosen("f-process")], ["Roast level", chosen("f-roast")],
+        ["Roasted", $("f-rdx").checked ? null : fmtD(v("f-rd"))], ["Bought", $("f-rdx").checked ? fmtD(v("f-pd")) : null], ["Opened", fmtD(v("f-od"))], ["Photo", photo ? "new photo" : null]
+      ], "Save");
+    }
     if (!ok) return;
   }
   saving = true; $("save").disabled = true;
@@ -1023,30 +1196,6 @@ $("cf").onsubmit = async e => {
       const up = await db.storage.from("bag-photos").upload(path, blob, { contentType: "image/jpeg" });
       if (up.error) throw up.error;
     }
-    const v = id => $(id).value.trim();
-    if (v("f-url") && !safeUrl(v("f-url"))) throw new Error("the link must start with https:// or http://");
-    let amin = v("f-alt-min") === "" ? null : Math.round(Number(v("f-alt-min")));
-    let amax = v("f-alt-max") === "" ? null : Math.round(Number(v("f-alt-max")));
-    if (amin === null && amax !== null) { amin = amax; amax = null; }
-    if ((amin !== null && !(amin >= 0 && amin <= 5000)) || (amax !== null && !(amax >= 0 && amax <= 5000))) throw new Error("altitude must be between 0 and 5000 metres");
-    if (amax !== null && amax < amin) { const t = amin; amin = amax; amax = t; }
-    if (amax === amin) amax = null;
-    const row = {
-      altitude_min_m: amin, altitude_max_m: amax, variety: v("f-variety") || null,
-      name: v("f-name"), roaster: v("f-roaster") || null, origin: v("f-origin") || null,
-      is_blend: $("f-blend").checked, ...($("f-decaf").checked || (editing && editing.is_decaf) || (newBagOf && newBagOf.is_decaf) ? { is_decaf: $("f-decaf").checked } : {}), process: chosen("f-process") || null, roast_level: chosen("f-roast") || null,
-      flavour_tags: v("f-tags").split(",").map(t => t.trim().toLowerCase()).filter(Boolean),
-      suitable_for: sforVals(),
-      ...(hhOk && hh && !editing ? { household_id: newBagOf ? newBagOf.household_id || hh : hh } : {}),
-      notes: v("f-notes") || null, roast_date: $("f-rdx").checked ? null : (v("f-rd") || null), open_date: v("f-od") || null, buy_url: v("f-url") ? safeUrl(v("f-url")) : null
-    };
-    // bag size: only sent when filled in (or cleared on a coffee that had one), so saving works before supabase/14_bag_size.sql
-    const bag = v("f-bag") === "" ? null : Math.round(Number(v("f-bag")));
-    if (bag !== null && !(bag >= 1 && bag <= 5000)) throw new Error("the bag size must be between 1 and 5000 g");
-    if (bag !== null || (editing && editing.bag_size_g) || (newBagOf && newBagOf.bag_size_g)) row.bag_size_g = bag;
-    // purchase date: only sent when used (or cleared), so saving works before supabase/17_purchase_finished.sql
-    const pd = $("f-rdx").checked ? (v("f-pd") || null) : null;
-    if (pd !== null || (editing && editing.purchase_date)) row.purchase_date = pd;
     if (path) row.photo_path = path; else if (newBagOf) row.photo_path = newBagOf.photo_path || null; else if (!editing) row.photo_path = null;
     if (newBagOf) row.group_id = gk(newBagOf);
     if (editing) {
@@ -1604,39 +1753,52 @@ function renderBrews() {
 }
 ["bflt-device", "bflt-recipe", "bflt-who", "bflt-sort"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderBrews)));
 
+// The row that saving would send. Throws a readable error when a number is off.
+function brewRow() {
+  const num = id => { const v = $(id).value.trim(); return v === "" ? null : Number(v.replace(",", ".")); };
+  const device = chosen("b-device") || null, esp = isEsp(typeOf(device));
+  const keep = id => !isSimple() || touched.has(id);   // in "Simple", hidden fields only count when you filled them in yourself
+  const stages = esp ? prof.filter(s => s.s > 0).map(s => ({ s: s.s, bar: s.bar })) : [];
+  const row = {
+    device, grinder: $("b-grind").value.trim() ? ($("b-grinder").value || null) : null, grind: $("b-grind").value.trim() || null, grind_feel: $("b-feel").value.trim() || null,
+    pressure_bar: esp && keep("b-pressure") ? num("b-pressure") : null, preinfusion_bar: esp && keep("b-pibar") ? num("b-pibar") : null, preinfusion_s: esp && keep("b-pis") ? num("b-pis") : null,
+    dose_g: num("b-dose"), water_g: esp ? null : num("b-water"), preheat: isFlair(device) && keep("b-preheat") ? ($("b-preheat").value || null) : null, yield_g: num("b-yield"), temp_c: keep("b-temp") ? num("b-temp") : null, time_s: num("b-time"),
+    pressure_profile: stages.length ? stages : null,
+    notes: $("b-notes").value.trim() || null, rating, is_dialin: $("b-dialin").checked
+  };
+  if (!$("mblab").hidden) { const mb = $("b-madeby").value || null; row.made_by = mb && mb !== (editingBrew ? editingBrew.created_by : me.id) ? mb : null; }
+  if (stages.length && row.pressure_bar === null) row.pressure_bar = Math.max(...stages.map(s => s.bar));
+  for (const k of ["pressure_bar", "preinfusion_bar", "preinfusion_s", "dose_g", "water_g", "yield_g", "temp_c", "time_s"]) if (row[k] !== null && !isFinite(row[k])) throw new Error("check the numbers");
+  row.recipe = $("b-recipe").value.trim() || settingsLabel(row) || null;
+  return row;
+}
+
 $("bf").onsubmit = async e => {
   e.preventDefault();
   if (savingB) return;
+  let row;
+  try { row = brewRow(); } catch (err) { say("Could not save: " + err.message); return; }
   {
     const dev = chosen("b-device"), esp = isEsp(typeOf(dev)), v = id => $(id).value.trim();
     const t = numOf("b-time"), tasted = Object.keys(scores).length;
-    const ok = await confirmSave(editingBrew ? "Save changes to this brew?" : "Save this brew?", [
+    let ok;
+    if (editingBrew) {   // editing: show exactly what changed, old next to new
+      const ch = brewChanges(editingBrew, row);
+      if (!ch.length) { say("Nothing has changed, so there is nothing to save."); return; }
+      ok = await confirmSave("Save these changes?", ch, "Save changes", ch.length === 1 ? "You changed one thing:" : "You changed " + ch.length + " things:");
+    } else ok = await confirmSave("Save this brew?", [
       ["Coffee", cur && cur.name], ["Device", dev], ["Made by", !$("mblab").hidden && $("b-madeby").value ? names[$("b-madeby").value] : null],
       ["Grind", v("b-grind") ? v("b-grind") + (v("b-feel") ? " (" + v("b-feel") + ")" : "") : null],
       ["Dose", v("b-dose") ? v("b-dose") + " g" : null], [esp ? "Yield" : "Water", esp ? (v("b-yield") ? v("b-yield") + " g" : null) : (v("b-water") ? v("b-water") + " g" : null)],
       ["Time", t === null ? null : esp && t < 90 ? t + " s" : mmss(t) + " min"],
       ["Overall", rating === null ? "not rated" : Stars.text(rating)], ["Taste", tasted ? tasted + (tasted === 1 ? " score" : " scores") : "no scores"]
-    ], editingBrew ? "Save changes" : "Save brew");
+    ], "Save brew");
     if (!ok) return;
   }
   savingB = true; $("bsave").disabled = true;
   say("Saving...");
   try {
-    const num = id => { const v = $(id).value.trim(); return v === "" ? null : Number(v.replace(",", ".")); };
-    const device = chosen("b-device") || null, esp = isEsp(typeOf(device));
-    const keep = id => !isSimple() || touched.has(id);   // in "Simple", hidden fields only count when you filled them in yourself
-    const stages = esp ? prof.filter(s => s.s > 0).map(s => ({ s: s.s, bar: s.bar })) : [];
-    const row = {
-      device, grinder: $("b-grind").value.trim() ? ($("b-grinder").value || null) : null, grind: $("b-grind").value.trim() || null, grind_feel: $("b-feel").value.trim() || null,
-      pressure_bar: esp && keep("b-pressure") ? num("b-pressure") : null, preinfusion_bar: esp && keep("b-pibar") ? num("b-pibar") : null, preinfusion_s: esp && keep("b-pis") ? num("b-pis") : null,
-      dose_g: num("b-dose"), water_g: esp ? null : num("b-water"), preheat: isFlair(device) && keep("b-preheat") ? ($("b-preheat").value || null) : null, yield_g: num("b-yield"), temp_c: keep("b-temp") ? num("b-temp") : null, time_s: num("b-time"),
-      pressure_profile: stages.length ? stages : null,
-      notes: $("b-notes").value.trim() || null, rating, is_dialin: $("b-dialin").checked
-    };
-    if (!$("mblab").hidden) { const mb = $("b-madeby").value || null; row.made_by = mb && mb !== (editingBrew ? editingBrew.created_by : me.id) ? mb : null; }
-    if (stages.length && row.pressure_bar === null) row.pressure_bar = Math.max(...stages.map(s => s.bar));
-    for (const k of ["pressure_bar", "preinfusion_bar", "preinfusion_s", "dose_g", "water_g", "yield_g", "temp_c", "time_s"]) if (row[k] !== null && !isFinite(row[k])) throw new Error("check the numbers");
-    row.recipe = $("b-recipe").value.trim() || settingsLabel(row) || null;
+    const device = row.device;
     let id;
     if (editingBrew) {
       const { data: done, error } = await db.from("brews").update(row).eq("id", editingBrew.id).select();
