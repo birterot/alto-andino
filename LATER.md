@@ -2,12 +2,10 @@
 
 Ideas for after the basics have settled. Nothing here is promised; it is the list we pick from.
 
-## Next big step: households, sign-up, friends
-Built and tested, parked on the `households` branch (not live). Before it goes live:
-1. Run `supabase/15_households.sql` (moves everything into the household "Alto Andino").
-2. Email: either turn off "Confirm email" (quick, for a few friends) or get our own domain and set up an email service (Brevo or similar).
-3. Allow sign-ups in Supabase and set the site and redirect URLs.
-4. Merge the branch with everything built since (half stars, finished bags, ...).
+## Own domain and email
+Bundled with the Apple Developer account, so the external costs come together.
+- Own domain for the app (instead of birterot.github.io/alto-andino).
+- Email service (Brevo or similar) as custom SMTP in Supabase. Then "Confirm email" can go back on and "Forgot password" sends real emails.
 
 ## Friends and households
 - **Friends:** share selected coffees and recipes with friends (read-only), across households.
@@ -38,4 +36,4 @@ Built and tested, parked on the `households` branch (not live). Before it goes l
 - Chapters still to write: tasting and extraction, how to dial in a coffee.
 
 ## Done (from earlier versions of this list)
-Graph per recipe over days since roast or open, charts of grind against time and taste, editing and deleting old entries, the roasting chapter.
+Households with invites, open sign-up with captcha, graph per recipe over days since roast or open, charts of grind against time and taste, editing and deleting old entries, the roasting chapter.
