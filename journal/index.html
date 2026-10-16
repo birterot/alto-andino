@@ -60,6 +60,7 @@ details.add summary{cursor:pointer;font-weight:600}
 .vchips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0;max-width:460px}
 .vchips button{font:inherit;font-size:13.5px;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
 .vchips button.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.vchips button.newv{border-style:dashed;color:var(--accent)}
 .cfacts{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:6px 18px;margin-top:12px;font-size:14px}
 .cfacts .f{display:inline-flex;align-items:center;gap:7px}
 .cfacts svg{color:var(--s)}
@@ -285,7 +286,7 @@ details.calcbox summary{font-size:15px}
       <label>Origin<input id="f-origin" placeholder="Country, region"></label>
       <label class="adv">Botanical variety<input id="f-variety" placeholder="e.g. Gesha, Bourbon, Caturra" autocomplete="off"></label>
       <div class="vchips adv" id="vchips" role="group" aria-label="Common varieties"></div>
-      <p class="hint adv">Tap to add or remove, or type your own. Several varieties are separated with commas.</p>
+      <p class="hint adv">Tap to add or remove. Not in the list? Tap "+ New" and type it; once saved it shows up here as a chip too.</p>
       <div class="row2 adv">
         <label>Altitude from (m)<input id="f-alt-min" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="1700"></label>
         <label>to (m, optional)<input id="f-alt-max" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="1900"></label>
@@ -783,6 +784,7 @@ async function load() {
     if (my !== loadId) return;
   }
   coffeeData = data; coffeeUrls = urls; coffeeCounts = counts; coffeeRates = rates; coffeeUsed = used;
+  renderVarieties();
   fillFilter("flt-process", "All processes", uniq("process").sort());
   fillFilter("flt-roast", "All roast levels", uniq("roast_level").sort());
   renderCoffees();
@@ -860,7 +862,7 @@ function endEdit() {
   $("cancel").hidden = true;
   $("photohint").hidden = true;
   $("addbox").open = false;
-  setSfor([]); store.del(COFFEE_DRAFT); restoredCoffee = false; syncRoastUnknown(); syncVarieties();
+  setSfor([]); store.del(COFFEE_DRAFT); restoredCoffee = false; syncRoastUnknown(); renderVarieties();
 }
 function altText(c) {
   if (c.altitude_min_m == null) return null;
@@ -873,7 +875,7 @@ function startEdit(c) {
   $("cf").reset();
   $("f-name").value = c.name; $("f-roaster").value = c.roaster || ""; $("f-origin").value = c.origin || "";
   $("f-variety").value = c.variety || ""; $("f-alt-min").value = c.altitude_min_m ?? ""; $("f-alt-max").value = (c.altitude_max_m != null && c.altitude_max_m !== c.altitude_min_m) ? c.altitude_max_m : "";
-  $("f-blend").checked = !!c.is_blend; $("f-decaf").checked = !!c.is_decaf; setSfor(c.suitable_for); syncVarieties();
+  $("f-blend").checked = !!c.is_blend; $("f-decaf").checked = !!c.is_decaf; setSfor(c.suitable_for); renderVarieties();
   setSel("f-process", c.process); setSel("f-roast", c.roast_level);
   $("f-tags").value = (c.flavour_tags || []).join(", ");
   $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || ""; $("f-url").value = c.buy_url || ""; $("f-pd").value = c.purchase_date || ""; $("f-rdx").checked = !c.roast_date && !!c.purchase_date; syncRoastUnknown(); $("f-bag").value = c.bag_size_g || "";
@@ -900,16 +902,36 @@ function syncVarieties() {
   const have = varParts().map(x => x.toLowerCase());
   $("vchips").querySelectorAll("button").forEach(b => { const on = have.includes(b.textContent.toLowerCase()); b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
 }
-VARIETIES.forEach(v => {
-  const b = el("button", "", v); b.type = "button";
-  b.onclick = () => {
-    const parts = varParts(), i = parts.findIndex(x => x.toLowerCase() === v.toLowerCase());
-    if (i >= 0) parts.splice(i, 1); else parts.push(v);
-    $("f-variety").value = parts.join(", "); syncVarieties(); saveCoffeeDraft();
+// The chips: the common varieties, plus every variety already used on one of our coffees (so "Cenicafe" shows up
+// once it is saved), plus whatever is in the field right now. "+ New" jumps into the field to type one.
+function renderVarieties() {
+  const seen = new Set(), list = [];
+  const add = v => { const k = v.toLowerCase(); if (v && !seen.has(k)) { seen.add(k); list.push(v); } };
+  VARIETIES.forEach(add);
+  (coffeeData || []).forEach(c => String(c.variety || "").split(",").map(x => x.trim()).forEach(add));
+  varParts().forEach(add);
+  const box = $("vchips"); box.textContent = "";
+  list.forEach(v => {
+    const b = el("button", "", v); b.type = "button";
+    b.onclick = () => {
+      const parts = varParts(), i = parts.findIndex(x => x.toLowerCase() === v.toLowerCase());
+      if (i >= 0) parts.splice(i, 1); else parts.push(v);
+      $("f-variety").value = parts.join(", "); syncVarieties(); saveCoffeeDraft();
+    };
+    box.appendChild(b);
+  });
+  const nb = el("button", "newv", "+ New"); nb.type = "button";
+  nb.onclick = () => {
+    const f = $("f-variety"), t = f.value.trim();
+    if (t && !/,$/.test(t)) f.value = t + ", ";
+    f.focus(); try { f.setSelectionRange(f.value.length, f.value.length); } catch (e) {}
   };
-  $("vchips").appendChild(b);
-});
+  box.appendChild(nb);
+  syncVarieties();
+}
+renderVarieties();
 $("f-variety").addEventListener("input", syncVarieties);
+$("f-variety").addEventListener("change", renderVarieties);   // a typed variety becomes a chip when you leave the field
 function syncRoastUnknown() {
   const x = $("f-rdx").checked;
   $("rdlab").hidden = x; $("pdlab").hidden = !x; $("pdhint").hidden = !x;
@@ -935,7 +957,7 @@ function tryRestoreCoffee() {
   if (!d || !d.f || Date.now() - d.t > 7 * 864e5) return;
   CF.forEach(i => { if (d.f[i] == null) return; if (i === "f-process" || i === "f-roast") setSel(i, d.f[i]); else $(i).value = d.f[i]; });
   ["f-process", "f-roast"].forEach(i => { $(i + "-new").hidden = $(i).value !== "__other"; });
-  $("f-blend").checked = !!d.blend; setSfor(d.sfor); restoredCoffee = true; syncVarieties();
+  $("f-blend").checked = !!d.blend; setSfor(d.sfor); restoredCoffee = true; renderVarieties();
   $("f-rdx").checked = !!d.f["f-pd"]; syncRoastUnknown(); if (d.f["f-pd"]) $("f-pd").value = d.f["f-pd"];
   $("addbox").open = true; $("addsum").textContent = "Add a coffee (unsaved draft)";
   say("Your unsaved coffee was restored.");
