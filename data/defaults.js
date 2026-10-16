@@ -46,6 +46,6 @@ window.DEFAULTS = {
   ],
   // Captcha on sign-in and sign-up (Cloudflare Turnstile). Put the site key here (it is public, not secret).
   // Empty = no captcha. Only switch the captcha on in Supabase after this key is published.
-  TURNSTILE_SITE_KEY: "",
+  TURNSTILE_SITE_KEY: "0x4AAAAAAFYgW7mYfXFgAt5K",
   START_PRESET: "flair-med"
 };
