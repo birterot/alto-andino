@@ -1,11 +1,41 @@
 # Later
 
-Not before version 1 has been used for two weeks. The data for these is already captured in version 1.
+Ideas for after the basics have settled. Nothing here is promised; it is the list we pick from.
 
-- Graph per recipe: flavour scores against days since roast and days since open
-- Matching similar recipes automatically (with a tolerance for grind and pressure)
-- Charts (grind setting against time or taste)
-- Cup card with our latest tastings per processing method
-- Edit and delete old entries
-- Roasting chapter in the atlas
-- Offline use
+## Next big step: households, sign-up, friends
+Built and tested, parked on the `households` branch (not live). Before it goes live:
+1. Run `supabase/15_households.sql` (moves everything into the household "Alto Andino").
+2. Email: either turn off "Confirm email" (quick, for a few friends) or get our own domain and set up an email service (Brevo or similar).
+3. Allow sign-ups in Supabase and set the site and redirect URLs.
+4. Merge the branch with everything built since (half stars, finished bags, ...).
+
+## Friends and households
+- **Friends:** share selected coffees and recipes with friends (read-only), across households.
+- **Coffee trending among your friends:** which coffees friends rate highest right now. Needs friends first.
+- **Temporary household membership:** e.g. a guest or a flatmate for a few weeks. An invite with an end date, after which the person leaves the household automatically.
+- **Barista ratings, as a game:** each person's average stars as a barista, compared within the household and between friends.
+- **Personal profile page:** name, photo, favourite coffees and devices, own stats, account settings (also where "delete my account" would live, which is needed before going public).
+
+## Notifications
+- "Andrés brewed a coffee for you, do you want to rate it?"
+- Possible for home-screen web apps on the iPhone (since iOS 16.4), after allowing notifications. Needs a small server part that sends them (for example a Supabase function). A brew would also need a "brewed for" field.
+
+## Caffeine
+- **Decaf** tick box on coffees: done, so the data is there from now on.
+- **Caffeine counter:** an estimate per brew from the dose (about 1 to 1.5% of the coffee weight is caffeine; decaf close to zero), per day and per week in Trends.
+- **Apple Health:** a home-screen web app cannot write to Apple Health directly. Options: a native iPhone app later, or an Apple Shortcut that the app opens after a brew and that logs the caffeine to Health.
+
+## App
+- **Language setting** (English / German / Spanish). Means moving all texts into one file per language.
+- **Offline use:** open the app and log brews without a connection, saved once back online.
+- **Dark home-screen icon:** not possible for web apps on the iPhone; only one icon. A darker icon that suits both modes is an option.
+- **Real app in the App Store:** wrap the existing pages (e.g. with Capacitor). Needs an Apple Developer account and a Mac.
+- **Before going public:** Impressum, privacy policy (Datenschutzerklärung), account deletion.
+
+## Brewing and the book
+- Matching similar recipes automatically (with a tolerance for grind and pressure).
+- Cup card with our latest tastings per processing method.
+- Chapters still to write: tasting and extraction, how to dial in a coffee.
+
+## Done (from earlier versions of this list)
+Graph per recipe over days since roast or open, charts of grind against time and taste, editing and deleting old entries, the roasting chapter.
