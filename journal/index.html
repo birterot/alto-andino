@@ -132,6 +132,7 @@ dialog.dlg p{margin:0 0 4px;font-size:14.5px;color:var(--mut)}
 .namebox p{margin:0;color:var(--ink)}
 .namebox .row{display:flex;gap:8px;margin-top:10px}.namebox input{margin:0;flex:1}.namebox .go{margin:0;flex:none}
 .foot .lnk{margin-left:4px}
+.captcha{margin-top:16px;min-height:65px}
 .invited{margin:0 0 10px;padding:10px 14px;border-radius:12px;border:1px solid var(--accent);background:var(--card);font-size:14.5px}
 .hhcard{margin:16px 0;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--card);max-width:460px}
 .hhcard h3{margin:0;font-size:17px}
@@ -239,6 +240,7 @@ details.calcbox summary{font-size:15px}
   <label>Email<input id="em" type="email" autocomplete="username" required></label>
   <label id="pwlab">Password<input id="pw" type="password" autocomplete="current-password" minlength="8" required></label>
   <p class="hint" id="pwhint" hidden>At least 8 characters.</p>
+  <div id="captcha" class="captcha" hidden></div>
   <button class="go" id="authgo">Sign in</button>
   <p><button class="lnk" type="button" id="forgot">Forgot your password?</button></p>
 </form>
@@ -1821,22 +1823,38 @@ $("authmodes").querySelectorAll("button").forEach(b => { b.onclick = () => setAu
 $("forgot").onclick = () => setAuthMode(authMode === "reset" ? "in" : "reset");
 setAuthMode(pendingJoin() ? "up" : "in");
 const backHere = () => location.origin + location.pathname;
+// Captcha (Cloudflare Turnstile): only when a site key is set in data/defaults.js. Each token works once.
+const CAPTCHA_KEY = (window.DEFAULTS && window.DEFAULTS.TURNSTILE_SITE_KEY) || "";
+let captchaToken = null, captchaId = null;
+function captchaReady() {
+  if (!CAPTCHA_KEY || !window.turnstile || captchaId !== null) return;
+  $("captcha").hidden = false;
+  captchaId = turnstile.render("#captcha", { sitekey: CAPTCHA_KEY, theme: "auto", callback: t => { captchaToken = t; }, "expired-callback": () => { captchaToken = null; }, "error-callback": () => { captchaToken = null; } });
+}
+if (CAPTCHA_KEY) {
+  window.onTurnstileLoad = captchaReady;
+  const sc = document.createElement("script"); sc.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad"; sc.async = true; document.head.appendChild(sc);
+}
+const withCaptcha = o => (CAPTCHA_KEY ? Object.assign(o || {}, { captchaToken }) : o);
+function captchaReset() { captchaToken = null; if (captchaId !== null && window.turnstile) turnstile.reset(captchaId); }
 $("login").onsubmit = async e => {
   e.preventDefault();
   const email = $("em").value.trim();
+  if (CAPTCHA_KEY && !captchaToken) { say("Please wait a moment for the check above the button, then try again."); return; }
   if (authMode === "in") {
     say("Signing in...");
-    const { error } = await db.auth.signInWithPassword({ email, password: $("pw").value });
+    const { error } = await db.auth.signInWithPassword({ email, password: $("pw").value, options: withCaptcha({}) }); captchaReset();
     say(error ? (/confirm/i.test(error.message) ? "Please confirm your email first: open the link we sent you." : error.message) : "");
   } else if (authMode === "up") {
     say("Creating your account...");
-    const { data, error } = await db.auth.signUp({ email, password: $("pw").value, options: { data: { display_name: $("nm").value.trim() }, emailRedirectTo: backHere() } });
+    const { data, error } = await db.auth.signUp({ email, password: $("pw").value, options: { captchaToken: CAPTCHA_KEY ? captchaToken : undefined, data: { display_name: $("nm").value.trim() }, emailRedirectTo: backHere() } });
+    captchaReset();
     if (error) { say(error.message); return; }
     if (!data.session) { say("Almost done: we sent an email to " + email + ". Open the link in it to confirm your account."); setAuthMode("in"); }
     else say("");
   } else {
     say("Sending...");
-    const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: backHere() });
+    const { error } = await db.auth.resetPasswordForEmail(email, withCaptcha({ redirectTo: backHere() })); captchaReset();
     if (error && /not authori[sz]ed|rate limit|smtp|sending/i.test(error.message)) say("Password reset by email is not set up yet. Ask the person who invited you to the app for help.");
     else say(error ? error.message : "If there is an account for " + email + ", an email with a reset link is on its way.");
   }

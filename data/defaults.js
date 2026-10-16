@@ -44,5 +44,8 @@ window.DEFAULTS = {
     ["Medium-dark",  ["#E6D6C7", "#281D17", "#74492D", "#B88562", "#3F271A", "#DDBFA6"]],
     ["Dark",         ["#E0D0C6", "#241A16", "#4A2E22", "#A57A63", "#2F1C14", "#D8BBA9"]]
   ],
+  // Captcha on sign-in and sign-up (Cloudflare Turnstile). Put the site key here (it is public, not secret).
+  // Empty = no captcha. Only switch the captcha on in Supabase after this key is published.
+  TURNSTILE_SITE_KEY: "",
   START_PRESET: "flair-med"
 };
