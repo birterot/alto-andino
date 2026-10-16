@@ -1646,7 +1646,8 @@ $("bf").onsubmit = async e => {
 // Before that script has run, hhOk stays false and the journal works like before (one shared journal).
 let hhOk = false, hhs = [], hh = null, hhMembers = {};
 const inHH = q => (hhOk && hh ? q.eq("household_id", hh) : q);
-const joinUrl = code => location.origin + location.pathname + "#join=" + encodeURIComponent(code);
+const cleanPath = () => location.pathname.replace(/index\.html$/, "");   // ".../journal/" instead of ".../journal/index.html"
+const joinUrl = code => location.origin + cleanPath() + "#join=" + encodeURIComponent(code);
 (function () {   // an invite link (#join=CODE) is remembered until you are signed in
   const m = location.hash.match(/^#join=([A-Za-z0-9]+)/);
   if (m) { try { localStorage.setItem("alto.join", m[1].toUpperCase()); } catch (e) {} history.replaceState(null, "", location.pathname); }
@@ -1822,7 +1823,7 @@ function setAuthMode(m) {
 $("authmodes").querySelectorAll("button").forEach(b => { b.onclick = () => setAuthMode(b.dataset.m); });
 $("forgot").onclick = () => setAuthMode(authMode === "reset" ? "in" : "reset");
 setAuthMode(pendingJoin() ? "up" : "in");
-const backHere = () => location.origin + location.pathname;
+const backHere = () => location.origin + cleanPath();
 // Captcha (Cloudflare Turnstile): only when a site key is set in data/defaults.js. Each token works once.
 const CAPTCHA_KEY = (window.DEFAULTS && window.DEFAULTS.TURNSTILE_SITE_KEY) || "";
 let captchaToken = null, captchaId = null;
