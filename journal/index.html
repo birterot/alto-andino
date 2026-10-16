@@ -274,6 +274,7 @@ details.calcbox summary{font-size:15px}
     <details class="add" id="brewbox" open>
       <summary id="brewsum">Log a brew</summary>
       <form id="bf">
+        <label id="cofflab">Coffee<select id="b-coffee"></select></label>
         <label id="mblab" hidden>Made by<select id="b-madeby"></select></label>
         <p class="hint" id="mbhint" hidden></p>
         <label>Device
@@ -1149,6 +1150,7 @@ function restoreDraft() {
   return true;
 }
 $("bf").addEventListener("input", e => {
+  if (e.target.id === "b-coffee") return;
   if (e.isTrusted && e.target.id && BF.includes(e.target.id)) {
     if (e.target.id === "b-feel" && !e.target.value) touched.delete("b-feel"); else if (e.target.id !== "b-device") touched.add(e.target.id);
     if (e.target.id === "b-grind") feelAuto();
@@ -1158,6 +1160,7 @@ $("bf").addEventListener("input", e => {
   if (e.isTrusted) userChanged();
 });
 $("bf").addEventListener("change", e => {
+  if (e.target.id === "b-coffee") return;
   if (e.target.id === "b-grinder") feelAuto();
   if (e.isTrusted && !e.target.closest("#calc")) userChanged();
 });
@@ -1175,6 +1178,7 @@ function newBrewSetup(dev) {
   $("bf").reset(); setRating(null);
   $("b-device-new").hidden = true; $("b-device-new").required = false;
   $("brewsum").textContent = "Log a brew"; $("bsave").textContent = "Save brew"; $("bcancel").hidden = true;
+  $("cofflab").hidden = false; if (cur) $("b-coffee").value = cur.id;
   buildScores(cur);
   fillMadeBy(me && me.id);
   const h = readHandoff(), sel = $("b-device");
@@ -1193,7 +1197,7 @@ function newBrewSetup(dev) {
 }
 function startBrewEdit(b) {
   editingBrew = b; touched = new Set(BF); edited = false;
-  $("bf").reset();
+  $("bf").reset(); $("cofflab").hidden = true;
   prof = Array.isArray(b.pressure_profile) ? b.pressure_profile.map(x => ({ s: x.s, bar: x.bar })) : []; renderProf();
   buildScores(cur, (b.brew_scores || []).map(s => s.attribute));
   setRating(b.rating == null ? null : b.rating); $("b-dialin").checked = !!b.is_dialin;
@@ -1273,12 +1277,14 @@ $("logmodes").querySelectorAll("button").forEach(b => { b.onclick = () => { logM
 window.addEventListener("hashchange", route);
 
 async function openCoffee(id, dev) {
-  const [{ data: c, error }, { data: dv }] = await Promise.all([
+  const [{ data: c, error }, { data: dv }, { data: all }] = await Promise.all([
     db.from("coffees").select("*").eq("id", id).single(),
-    db.from("brews").select("device")
+    db.from("brews").select("device"),
+    db.from("coffees").select("id,name,roaster,group_id,archived,open_date,roast_date").order("created_at", { ascending: false })
   ]);
   if (error || !c) { say("Could not open this coffee."); location.hash = ""; return; }
   cur = c;
+  fillCoffeeSwitch(c, all || []);
   ["bflt-device", "bflt-recipe", "bflt-who", "bflt-sort"].forEach(i => { $(i).value = ""; });
   applyLook($("dhead"), c);
   const fx = $("dfacts"); fx.textContent = ""; fx.appendChild(factsBlock(c, true));
@@ -1295,6 +1301,24 @@ async function openCoffee(id, dev) {
   newBrewSetup(dev);
   loadBrews();
 }
+
+// "Coffee" at the top of the brew form: switch to another coffee without leaving the form.
+// The newest bag of each coffee is listed (opened ones first); what you typed stays as a draft for this coffee.
+function fillCoffeeSwitch(c, all) {
+  const s = $("b-coffee"), seen = new Set(), list = [];
+  all.forEach(x => { const k = x.group_id || x.id; if (x.archived || seen.has(k)) return; seen.add(k); list.push(x); });
+  list.sort((a, b) => (a.open_date ? 0 : 1) - (b.open_date ? 0 : 1));
+  if (!list.some(x => x.id === c.id)) list.unshift(c);   // an older or archived bag that is open right now
+  s.textContent = "";
+  list.forEach(x => { const o = el("option", "", x.name + (x.roaster ? " \u00B7 " + x.roaster : "")); o.value = x.id; s.appendChild(o); });
+  s.value = c.id;
+}
+$("b-coffee").addEventListener("change", () => {
+  const id = $("b-coffee").value; if (!id || !cur || id === cur.id) return;
+  saveDraft();
+  const dev = chosen("b-device");
+  location.hash = "c=" + id + (dev ? "&d=" + encodeURIComponent(dev) : "");
+});
 
 function dayN(iso, when) {
   const n = Math.floor((when - new Date(iso + "T00:00:00")) / 864e5);
