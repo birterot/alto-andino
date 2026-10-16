@@ -135,6 +135,7 @@ th{color:var(--mut);font-weight:500}
 <script src="../assets/js/theme.js"></script>
 <script src="../assets/js/nav.js" defer></script>
 <script src="../assets/js/scales.js"></script>
+<script src="../assets/js/stars.js"></script>
 <script src="../data/devices.js"></script>
 <script src="../data/defaults.js"></script>
 <script src="../assets/js/charts.js"></script>
@@ -144,7 +145,7 @@ const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined && text !== null) e.textContent = text; return e; };
 const CORE = SCALE.CORE;   // sour, sweet, bitter, balance
 const FCOL = { sour: "var(--f-sour)", sweet: "var(--f-sweet)", bitter: "var(--f-bitter)", balance: "var(--f-balance)" };
-const RCOL = n => "var(--r" + n + ")";
+const RCOL = n => "var(--r" + Math.min(5, Math.max(1, Math.round(n))) + ")";   // half stars round to the nearer colour
 const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
 const D = window.DEFAULTS || {};
 
@@ -165,7 +166,7 @@ const isEsp = dev => { const t = typeOf(dev); return t === "espresso" || t === "
 const timeText = b => b.time == null ? null : (isEsp(b.device) && b.time < 90 ? b.time + " s" : mmss(b.time) + " min");
 const ratioOf = b => !b.dose ? null : isEsp(b.device) ? (b.yld ? b.yld / b.dose : null) : (b.water ? b.water / b.dose : b.yld ? b.yld / b.dose : null);
 const numGrind = g => { const m = String(g || "").replace(",", ".").match(/-?\d+(\.\d+)?/); return m ? Number(m[0]) : null; };
-const stars = n => "★".repeat(n) + "☆".repeat(5 - n);
+const stars = n => Stars.text(n);
 const coffeeOf = id => state.coffees.find(c => c.id === id) || null;
 const nameOf = id => (id && state.names[id]) || null;
 const people = () => Object.keys(state.names).sort((a, b) => state.names[a].localeCompare(state.names[b]));
@@ -491,7 +492,7 @@ function shape(raw, coffees) {
     (b.brew_scores || []).forEach(x => { scores[x.attribute] = x.score; });
     const day = iso => iso ? Math.floor((t - new Date(iso + "T00:00:00")) / 864e5) : null;
     return { id: b.id, coffeeId: b.coffee_id, t, device: b.device, grind: b.grind, dose: b.dose_g, yld: b.yield_g, water: b.water_g, time: b.time_s,
-      rating: b.rating, dialin: !!b.is_dialin, recipe: b.recipe, who: b.made_by || b.created_by || null, scores, dRoast: c ? day(c.roast_date) : null, dOpen: c ? day(c.open_date) : null };
+      rating: b.rating == null ? null : Number(b.rating), dialin: !!b.is_dialin, recipe: b.recipe, who: b.made_by || b.created_by || null, scores, dRoast: c ? day(c.roast_date) : null, dOpen: c ? day(c.open_date) : null };
   });
 }
 async function loadMine() {

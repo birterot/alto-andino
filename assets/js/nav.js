@@ -124,11 +124,7 @@
     cb.className = "iconbtn"; cb.href = root + "calc/index.html"; cb.setAttribute("aria-label", "Calculator"); cb.title = "Calculator";
     cb.appendChild(icon("calc", 24)); right.appendChild(cb);
   }
-  if (!isHome) {
-    var home = document.createElement("a");
-    home.className = "iconbtn"; home.href = root + "index.html"; home.setAttribute("aria-label", "Home");
-    home.appendChild(icon("home", 24)); right.appendChild(home);
-  }
+  // no separate home button: the logo in the middle takes you home
 
   var menu = document.createElement("nav");
   menu.id = "navmenu"; menu.hidden = true; menu.setAttribute("aria-label", "Main");

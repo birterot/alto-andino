@@ -78,6 +78,10 @@ dialog.dlg{border:1px solid var(--line);border-radius:16px;background:var(--card
 dialog.dlg::backdrop{background:rgba(20,14,10,.45)}
 dialog.dlg h3{margin:0 0 6px;font-size:18px}
 dialog.dlg p{margin:0 0 4px;font-size:14.5px;color:var(--mut)}
+.sum{margin:10px 0 0;padding:0;list-style:none;font-size:14.5px}
+.sum li{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line)}
+.sum li span{color:var(--mut)}
+.sum li b{font-weight:600;text-align:right}
 .dlgacts{display:flex;flex-direction:column;gap:8px;margin-top:16px}
 .dlgacts .go,.dlgacts .btn{margin:0;width:100%;justify-content:center;height:48px}
 .dlgacts .lnk{border:0;min-height:44px;font-size:15px;color:var(--mut)}
@@ -131,6 +135,11 @@ dialog.dlg p{margin:0 0 4px;font-size:14.5px;color:var(--mut)}
 .addnote input{height:48px}
 h3.sh{font-size:16px;margin:26px 0 2px}
 label.off{opacity:.45}
+body.simple .adv{display:none!important}
+.fmode{display:flex;gap:6px;margin:6px 0 4px}
+.fmode button{font:inherit;font-size:13.5px;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--mut);cursor:pointer}
+.fmode button.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.fmode-hint{margin:0 0 4px;font-size:13px;color:var(--mut)}
 .mmss{display:flex;align-items:center;gap:6px;margin-top:6px}
 .mmss input{margin:0;min-width:0;text-align:center}
 .mmss span{font-size:18px;color:var(--mut)}
@@ -188,15 +197,17 @@ details.calcbox summary{font-size:15px}
 .rate{margin-top:10px}
 .rate .avg{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .rate .num{font-family:"Iowan Old Style",Palatino,Georgia,serif;font-size:28px;line-height:1;color:var(--accent)}
-.rate .st{font-size:18px;letter-spacing:2px;color:var(--accent)}
+
 .rate .lbl{font-size:13px;color:var(--mut)}
 .rate .best{margin-top:4px;font-size:14px;color:var(--ink)}
 .rate .best span{color:var(--accent);letter-spacing:2px}
 .rate .cnt{margin-top:2px;font-size:12px;color:var(--mut)}
 .stars{display:flex;gap:2px;margin-top:6px}
-.stars button{width:40px;height:40px;padding:0;border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--line)}
-.stars button.on{color:var(--accent)}
-.starsum{margin:4px 0 0;font-size:15px;letter-spacing:2px;color:var(--accent)}
+.stars{align-items:center}
+.stars button{width:42px;height:42px;padding:0;border:0;background:none;font-size:30px;line-height:1;cursor:pointer;color:var(--accent);display:grid;place-items:center}
+.stars .starval{margin-left:10px;font-size:14px;color:var(--mut)}
+.starsum{margin:4px 0 0;font-size:17px;color:var(--accent)}
+.rate .st{font-size:20px}.rate .best .stars-row{font-size:15px}
 </style>
 </head>
 <body>
@@ -228,14 +239,14 @@ details.calcbox summary{font-size:15px}
       <label>Name<input id="f-name" required></label>
       <label>Roaster<input id="f-roaster"></label>
       <label>Origin<input id="f-origin" placeholder="Country, region"></label>
-      <label>Botanical variety<input id="f-variety" list="variety-list" placeholder="e.g. Gesha, Bourbon, Caturra" autocomplete="off"></label>
+      <label class="adv">Botanical variety<input id="f-variety" list="variety-list" placeholder="e.g. Gesha, Bourbon, Caturra" autocomplete="off"></label>
       <datalist id="variety-list"><option value="Arabica"><option value="Robusta"><option value="Bourbon"><option value="Typica"><option value="Caturra"><option value="Catuai"><option value="Gesha"><option value="SL28"><option value="SL34"><option value="Pacamara"><option value="Heirloom"><option value="Sidra"><option value="Castillo"></datalist>
-      <p class="hint">Several varieties? Separate them with commas.</p>
-      <div class="row2">
+      <p class="hint adv">Several varieties? Separate them with commas.</p>
+      <div class="row2 adv">
         <label>Altitude from (m)<input id="f-alt-min" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="1700"></label>
         <label>to (m, optional)<input id="f-alt-max" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="1900"></label>
       </div>
-      <label class="chk"><input type="checkbox" id="f-blend"> Blend</label>
+      <label class="chk adv"><input type="checkbox" id="f-blend"> Blend</label>
       <label>Process
         <select id="f-process"></select>
         <input id="f-process-new" placeholder="Name of the new process" hidden>
@@ -244,16 +255,16 @@ details.calcbox summary{font-size:15px}
         <select id="f-roast"></select>
         <input id="f-roast-new" placeholder="Name of the new roast level" hidden>
       </label>
-      <fieldset class="sfor" id="f-sfor"><legend>Suitable for</legend></fieldset>
-      <p class="hint">How you would brew it. The log a brew page suggests coffees by this.</p>
+      <fieldset class="sfor adv" id="f-sfor"><legend>Suitable for</legend></fieldset>
+      <p class="hint adv">How you would brew it. The log a brew page suggests coffees by this.</p>
       <label>Flavour notes<input id="f-tags" placeholder="chocolaty, nutty, red fruit"></label>
       <p class="hint">Separate with commas. Sour, sweet, bitter and balance will always be available when logging a brew.</p>
       <label>Roast date<input type="date" id="f-rd"></label>
       <label>Open date<input type="date" id="f-od"></label>
-      <label>Notes<textarea id="f-notes" rows="3"></textarea></label>
-      <label>Bag size (g, optional)<input id="f-bag" type="number" inputmode="numeric" min="1" max="5000" step="1" placeholder="250"></label>
-      <p class="hint">Used to show how much coffee is left.</p>
-      <label>Where to buy (link, optional)<input id="f-url" type="url" inputmode="url" placeholder="https://..."></label>
+      <label class="adv">Notes<textarea id="f-notes" rows="3"></textarea></label>
+      <label class="adv">Bag size (g, optional)<input id="f-bag" type="number" inputmode="numeric" min="1" max="5000" step="1" placeholder="250"></label>
+      <p class="hint adv">Used to show how much coffee is left.</p>
+      <label class="adv">Where to buy (link, optional)<input id="f-url" type="url" inputmode="url" placeholder="https://..."></label>
       <label>Bag photo<input type="file" id="f-photo" accept="image/*"></label>
       <p class="hint" id="photohint" hidden>Leave empty to keep the current photo (a new bag uses the same photo).</p>
       <button class="go" id="save">Save coffee</button>
@@ -279,37 +290,37 @@ details.calcbox summary{font-size:15px}
       <summary id="brewsum">Log a brew</summary>
       <form id="bf">
         <label id="cofflab">Coffee<select id="b-coffee"></select></label>
-        <label id="mblab" hidden>Made by<select id="b-madeby"></select></label>
-        <p class="hint" id="mbhint" hidden></p>
+        <label id="mblab" class="adv" hidden>Made by<select id="b-madeby"></select></label>
+        <p class="hint adv" id="mbhint" hidden></p>
         <label>Device
           <select id="b-device"></select>
           <input id="b-device-new" placeholder="Name of the new device" hidden>
         </label>
-        <details class="add calcbox" id="calcbox">
+        <details class="add calcbox adv" id="calcbox">
           <summary>Plan with the calculator</summary>
           <div class="calc"><div id="calc"></div></div>
           <button type="button" class="btn" id="usecalc">Use these numbers</button>
         </details>
         <h3 class="sh">Grind</h3>
         <div class="nums">
-          <label class="wide">Grinder<select id="b-grinder"></select></label>
+          <label class="wide adv">Grinder<select id="b-grinder"></select></label>
           <label>Setting<input id="b-grind" inputmode="decimal" placeholder="25" autocomplete="off"></label>
-          <label>Feel<input id="b-feel" list="feel-list" placeholder="fine" autocomplete="off"></label>
+          <label class="adv">Feel<input id="b-feel" list="feel-list" placeholder="fine" autocomplete="off"></label>
         </div>
         <datalist id="feel-list"></datalist>
-        <p class="hint" id="feelhint">The feel word follows the setting. Type your own if you like.</p>
+        <p class="hint adv" id="feelhint">The feel word follows the setting. Type your own if you like.</p>
         <h3 class="sh">Recipe</h3>
         <div class="nums">
           <label>Dose (g)<input id="b-dose" type="number" step="any" inputmode="decimal"></label>
           <label id="wlab">Water (g)<input id="b-water" type="number" step="any" inputmode="decimal"></label>
           <label>Yield (g)<input id="b-yield" type="number" step="any" inputmode="decimal"></label>
-          <label>Water temp (&deg;C)<input id="b-temp" type="number" step="any" inputmode="decimal"></label>
-          <label id="phlab" hidden>Preheat<select id="b-preheat"></select></label>
+          <label class="adv">Water temp (&deg;C)<input id="b-temp" type="number" step="any" inputmode="decimal"></label>
+          <label id="phlab" class="adv" hidden>Preheat<select id="b-preheat"></select></label>
           <label id="tsl">Time (s)<input id="b-time" type="number" step="any" inputmode="decimal"></label>
           <label id="tml" hidden>Time (min : s)<span class="mmss"><input id="b-tmin" type="number" inputmode="numeric" min="0" step="1" placeholder="min" aria-label="Minutes"><span aria-hidden="true">:</span><input id="b-tsec" type="number" inputmode="numeric" min="0" step="1" placeholder="ss" aria-label="Seconds"></span></label>
         </div>
-        <p class="hint">Water temp is the temperature from the kettle. Time is the total, pre-infusion included, as your scale shows it.</p>
-        <div id="espbox">
+        <p class="hint"><span class="adv">Water temp is the temperature from the kettle. </span>Time is the total, pre-infusion included, as your scale shows it.</p>
+        <div id="espbox" class="adv">
         <h3 class="sh">Pressure</h3>
         <div class="nums">
           <label>Pre-infusion (bar)<input id="b-pibar" type="number" step="any" inputmode="decimal"></label>
@@ -324,17 +335,19 @@ details.calcbox summary{font-size:15px}
           <button type="button" class="btn ghost" id="profadd"><span>Add stage</span></button>
         </details>
         </div>
-        <label>Recipe name (optional)<input id="b-recipe" placeholder="Left empty it becomes: device, grind, pressure"></label>
+        <label class="adv">Recipe name (optional)<input id="b-recipe" placeholder="Left empty it becomes: device, grind, pressure"></label>
         <label>Overall</label>
         <div class="stars" id="stars" role="group" aria-label="Overall rating"></div>
-        <label class="chk"><input type="checkbox" id="b-dialin"> Dial-in brew (kept in the history, not counted in the coffee's rating)</label>
+        <label class="chk adv"><input type="checkbox" id="b-dialin"> Dial-in brew (kept in the history, not counted in the coffee's rating)</label>
         <h3 class="sh">Taste</h3>
         <p class="hint">0 is just right, minus is too little, plus is too much. Sliders you leave alone are not saved. The x clears one.</p>
         <div id="scorebox"></div>
+        <div class="adv">
         <h3 class="sh">Tasting notes</h3>
         <p class="hint">Did you find it? None, a little, or clearly there. Flavour or tasting notes you leave alone are not saved.</p>
         <div id="notebox"></div>
         <div class="addnote"><input id="b-newnote" placeholder="Another note, e.g. jasmine" autocomplete="off" aria-label="Add a tasting note"><button type="button" class="btn ghost" id="b-addnote"></button></div>
+        </div>
         <label>Comments<textarea id="b-notes" rows="3" placeholder="Anything else about this brew"></textarea></label>
         <button class="go" id="bsave">Save brew</button>
         <button class="lnk" id="bcancel" type="button" hidden>Cancel</button>
@@ -360,6 +373,14 @@ details.calcbox summary{font-size:15px}
   <p class="foot"><span id="who"></span> <button class="lnk" id="rename" type="button" hidden>Change name</button> <button class="lnk" id="out" type="button">Sign out</button></p>
 </section>
 <p id="msg" role="status"></p>
+<dialog id="savedlg" class="dlg" aria-labelledby="sdtitle">
+  <h3 id="sdtitle">Save this brew?</h3>
+  <ul class="sum" id="sdlist"></ul>
+  <div class="dlgacts">
+    <button class="go" id="sd-ok" type="button">Save</button>
+    <button class="lnk" id="sd-back" type="button">Keep editing</button>
+  </div>
+</dialog>
 <dialog id="deldlg" class="dlg" aria-labelledby="dlgtitle">
   <h3 id="dlgtitle">Remove this bag?</h3>
   <p id="dlgtext"></p>
@@ -374,6 +395,7 @@ details.calcbox summary{font-size:15px}
 <script src="../assets/js/config.js"></script>
 <script src="../assets/js/lists.js"></script>
 <script src="../assets/js/scales.js"></script>
+<script src="../assets/js/stars.js"></script>
 <script src="../assets/js/theme.js"></script>
 <script src="../data/devices.js"></script>
 <script src="../data/processing.js"></script>
@@ -541,7 +563,6 @@ function safeUrl(u) {
 }
 // list: [{r: stars or null, d: dial-in?}], oldest first.
 // Dial-in brews are not counted. Headline = average of the last three counted brews, below it the best counted brew.
-const starsOf = n => "\u2605".repeat(n) + "\u2606".repeat(5 - n);
 function rateBlock(list) {
   const rated = (list || []).filter(x => x.r != null);
   if (!rated.length) return null;
@@ -554,12 +575,12 @@ function rateBlock(list) {
   const last = counted.slice(-3), avg = last.reduce((a, b) => a + b.r, 0) / last.length;
   const top = el("div", "avg");
   top.appendChild(el("span", "num", avg.toFixed(1)));
-  const st = el("span", "st", starsOf(Math.round(avg))); st.setAttribute("aria-label", avg.toFixed(1) + " of 5 stars"); top.appendChild(st);
+  const st = Stars.row(avg, avg.toFixed(1) + " of 5 stars"); st.classList.add("st"); top.appendChild(st);
   top.appendChild(el("span", "lbl", last.length === 1 ? "from 1 counted brew" : "average of the last " + last.length + " counted brews"));
   box.appendChild(top);
   if (counted.length > 1) {
     const best = Math.max(...counted.map(x => x.r));
-    const b = el("p", "best", "Best brew "); const s = el("span", "", starsOf(best)); s.setAttribute("aria-label", best + " of 5 stars"); b.appendChild(s); box.appendChild(b);
+    const b = el("p", "best", "Best brew "); b.appendChild(Stars.row(best, best + " of 5 stars")); box.appendChild(b);
   }
   if (dial) box.appendChild(el("p", "cnt", counted.length + " counted, " + dial + " dial-in"));
   return box;
@@ -684,7 +705,7 @@ async function load() {
     db.from("brews").select("coffee_id,rating,is_dialin,brewed_at,dose_g").order("brewed_at")
   ]);
   const counts = {}, rates = {}, used = {};
-  (bs || []).forEach(b => { used[b.coffee_id] = (used[b.coffee_id] || 0) + (Number(b.dose_g) || 0); counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; (rates[b.coffee_id] = rates[b.coffee_id] || []).push({ r: b.rating, d: !!b.is_dialin, t: b.brewed_at }); });
+  (bs || []).forEach(b => { used[b.coffee_id] = (used[b.coffee_id] || 0) + (Number(b.dose_g) || 0); counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; (rates[b.coffee_id] = rates[b.coffee_id] || []).push({ r: b.rating == null ? null : Number(b.rating), d: !!b.is_dialin, t: b.brewed_at }); });
   if (my !== loadId) return;
   if (error) { say("Could not load coffees: " + error.message); return; }
   const uniq = k => [...new Set(data.map(c => c[k]).filter(Boolean))];
@@ -833,9 +854,51 @@ $("cf").addEventListener("input", e => { if (e.isTrusted) saveCoffeeDraft(); });
 $("cf").addEventListener("change", e => { if (e.isTrusted) saveCoffeeDraft(); });
 
 let saving = false;
+// Before saving: a short summary to check. Saving by accident is no longer one tap away.
+function confirmSave(title, rows, okText) {
+  return new Promise(done => {
+    const d = $("savedlg"), list = $("sdlist");
+    $("sdtitle").textContent = title; $("sd-ok").textContent = okText || "Save"; list.textContent = "";
+    rows.filter(r => r[1] !== null && r[1] !== undefined && r[1] !== "").forEach(([k, v]) => { const li = el("li"); li.append(el("span", "", k), el("b", "", String(v))); list.appendChild(li); });
+    const end = v => { if (d.open) d.close(); done(v); };
+    $("sd-ok").onclick = () => end(true); $("sd-back").onclick = () => end(false); d.oncancel = () => done(false);
+    if (d.showModal) d.showModal(); else done(confirm(title));
+  });
+}
+// "Simple" shows what you need to log and rate a brew; "All fields" shows everything. Each phone remembers its choice.
+// Phones that already used the app start on "All fields", new ones on "Simple".
+const MODE_KEY = "alto.formmode";
+let formMode = (() => { try { const m = localStorage.getItem(MODE_KEY); if (m) return m; return localStorage.getItem("alto.device") ? "all" : "simple"; } catch (e) { return "all"; } })();
+const isSimple = () => formMode === "simple";
+function setFormMode(m) {
+  formMode = m; try { localStorage.setItem(MODE_KEY, m); } catch (e) {}
+  document.body.classList.toggle("simple", m === "simple");
+  document.querySelectorAll(".fmode button").forEach(b => { const on = b.dataset.m === m; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
+  document.querySelectorAll(".fmode-hint").forEach(h => { h.textContent = m === "simple" ? "More fields (grinder, temperature, pressure, tasting notes...) are under \u201CAll fields\u201D." : ""; });
+}
+["cf", "bf"].forEach(id => {
+  const box = el("div", "fmode"); box.setAttribute("role", "group"); box.setAttribute("aria-label", "How many fields to show");
+  [["simple", "Simple"], ["all", "All fields"]].forEach(([m, t]) => { const b = el("button", "", t); b.type = "button"; b.dataset.m = m; b.onclick = () => setFormMode(m); box.appendChild(b); });
+  const f = $(id); f.insertBefore(el("p", "fmode-hint"), f.firstChild); f.insertBefore(box, f.firstChild);
+});
+setFormMode(formMode);
+
+// The Enter / Go key in a field does not save the form (only the Save button does).
+["cf", "bf"].forEach(id => $(id).addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.tagName === "INPUT" && e.target.type !== "submit") e.preventDefault();
+}));
+
 $("cf").onsubmit = async e => {
   e.preventDefault();
   if (saving) return;
+  {
+    const v = id => $(id).value.trim();
+    const ok = await confirmSave(editing ? "Save changes to this coffee?" : newBagOf ? "Save the new bag?" : "Save this coffee?", [
+      ["Name", v("f-name")], ["Roaster", v("f-roaster")], ["Origin", v("f-origin")], ["Process", chosen("f-process")], ["Roast level", chosen("f-roast")],
+      ["Roasted", v("f-rd")], ["Opened", v("f-od")], ["Photo", $("f-photo").files[0] ? "new photo" : null]
+    ], editing ? "Save changes" : "Save");
+    if (!ok) return;
+  }
   saving = true; $("save").disabled = true;
   say("Saving...");
   let newId = null;
@@ -902,15 +965,21 @@ const store = {
 const draftKey = () => "alto.draft.brew." + (cur && cur.id);
 const numOf = id => { const v = parseFloat(String($(id).value).replace(",", ".")); return isFinite(v) ? v : null; };
 
+// Tap a star for a full star, tap it again for a half star, a third time to clear.
 function setRating(v) {
-  rating = v;
-  $("stars").querySelectorAll("button").forEach((b, i) => { b.classList.toggle("on", rating !== null && i < rating); b.setAttribute("aria-pressed", String(rating === i + 1)); });
+  rating = v === null || v === undefined ? null : Number(v);
+  $("stars").querySelectorAll("button").forEach((b, k) => {
+    const i = k + 1; Stars.fill(b, rating === null ? 0 : rating >= i ? 1 : rating >= i - 0.5 ? 0.5 : 0);
+    b.setAttribute("aria-pressed", String(rating === i || rating === i - 0.5));
+  });
+  $("starval").textContent = rating === null ? "Not rated" : Stars.text(rating);
 }
 for (let i = 1; i <= 5; i++) {
-  const b = el("button", "", "★"); b.type = "button"; b.setAttribute("aria-label", i + (i === 1 ? " star" : " stars"));
-  b.onclick = () => { setRating(rating === i ? null : i); userChanged(); };
+  const b = el("button"); b.type = "button"; b.setAttribute("aria-label", i + (i === 1 ? " star" : " stars") + ", tap again for " + (i - 0.5));
+  b.onclick = () => { setRating(rating === i ? i - 0.5 : rating === i - 0.5 ? null : i); userChanged(); };
   $("stars").appendChild(b);
 }
+$("stars").appendChild(el("span", "starval")).id = "starval";
 setRating(null);
 
 // ----- which kind of brewing a device is (from data/devices.js). Unknown devices keep every field open.
@@ -1352,7 +1421,7 @@ function brewCard(b) {
   const age = [dr !== null ? (dr === 0 ? "roast day" : "day " + dr + " after roast") : null, dop !== null ? (dop === 0 ? "opening day" : "day " + dop + " after opening") : null].filter(Boolean).join(", ");
   if (age) a.appendChild(el("p", "age", age));
   if (b.is_dialin) a.appendChild(el("p", "age", "Dial-in brew, not counted in the rating"));
-  if (b.rating) { const s = el("p", "starsum", "★".repeat(b.rating) + "☆".repeat(5 - b.rating)); s.setAttribute("aria-label", "Rated " + b.rating + " of 5"); a.appendChild(s); }
+  if (b.rating) { const s = el("p", "starsum"); s.appendChild(Stars.row(b.rating, "Rated " + Stars.text(b.rating) + " of 5")); a.appendChild(s); }
   if (b.recipe) a.appendChild(el("p", "", b.recipe));
   const set = settingsLabel(b);
   if (set && set !== b.recipe) a.appendChild(el("p", "set", set));
@@ -1412,16 +1481,29 @@ function renderBrews() {
 $("bf").onsubmit = async e => {
   e.preventDefault();
   if (savingB) return;
+  {
+    const dev = chosen("b-device"), esp = isEsp(typeOf(dev)), v = id => $(id).value.trim();
+    const t = numOf("b-time"), tasted = Object.keys(scores).length;
+    const ok = await confirmSave(editingBrew ? "Save changes to this brew?" : "Save this brew?", [
+      ["Coffee", cur && cur.name], ["Device", dev], ["Made by", !$("mblab").hidden && $("b-madeby").value ? names[$("b-madeby").value] : null],
+      ["Grind", v("b-grind") ? v("b-grind") + (v("b-feel") ? " (" + v("b-feel") + ")" : "") : null],
+      ["Dose", v("b-dose") ? v("b-dose") + " g" : null], [esp ? "Yield" : "Water", esp ? (v("b-yield") ? v("b-yield") + " g" : null) : (v("b-water") ? v("b-water") + " g" : null)],
+      ["Time", t === null ? null : esp && t < 90 ? t + " s" : mmss(t) + " min"],
+      ["Overall", rating === null ? "not rated" : Stars.text(rating)], ["Taste", tasted ? tasted + (tasted === 1 ? " score" : " scores") : "no scores"]
+    ], editingBrew ? "Save changes" : "Save brew");
+    if (!ok) return;
+  }
   savingB = true; $("bsave").disabled = true;
   say("Saving...");
   try {
     const num = id => { const v = $(id).value.trim(); return v === "" ? null : Number(v.replace(",", ".")); };
     const device = chosen("b-device") || null, esp = isEsp(typeOf(device));
+    const keep = id => !isSimple() || touched.has(id);   // in "Simple", hidden fields only count when you filled them in yourself
     const stages = esp ? prof.filter(s => s.s > 0).map(s => ({ s: s.s, bar: s.bar })) : [];
     const row = {
       device, grinder: $("b-grind").value.trim() ? ($("b-grinder").value || null) : null, grind: $("b-grind").value.trim() || null, grind_feel: $("b-feel").value.trim() || null,
-      pressure_bar: esp ? num("b-pressure") : null, preinfusion_bar: esp ? num("b-pibar") : null, preinfusion_s: esp ? num("b-pis") : null,
-      dose_g: num("b-dose"), water_g: esp ? null : num("b-water"), preheat: isFlair(device) ? ($("b-preheat").value || null) : null, yield_g: num("b-yield"), temp_c: num("b-temp"), time_s: num("b-time"),
+      pressure_bar: esp && keep("b-pressure") ? num("b-pressure") : null, preinfusion_bar: esp && keep("b-pibar") ? num("b-pibar") : null, preinfusion_s: esp && keep("b-pis") ? num("b-pis") : null,
+      dose_g: num("b-dose"), water_g: esp ? null : num("b-water"), preheat: isFlair(device) && keep("b-preheat") ? ($("b-preheat").value || null) : null, yield_g: num("b-yield"), temp_c: keep("b-temp") ? num("b-temp") : null, time_s: num("b-time"),
       pressure_profile: stages.length ? stages : null,
       notes: $("b-notes").value.trim() || null, rating, is_dialin: $("b-dialin").checked
     };
