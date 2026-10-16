@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="../manifest.webmanifest">
-<link rel="apple-touch-icon" href="../assets/icons/icon-180.png">
+<link rel="apple-touch-icon" href="../assets/icons/icon-180.png?v=2">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Alto Andino">
@@ -45,8 +45,9 @@ details.add summary{cursor:pointer;font-weight:600}
 #brewbox:not([open]){display:none}
 .brewhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}
 .brewhead h2{margin:0}
-/* "Log a brew" sits at the bottom of the coffee card and stays put; the form opens right below the card */
-.btn.logbtn{display:flex;width:100%;justify-content:center;min-height:48px;margin-top:16px;font-size:15.5px;border-radius:12px;background:var(--t,var(--ink));border-color:var(--t,var(--ink));color:var(--f,var(--bg))}
+/* "Log a brew" sits next to "Buy again" in the coffee card and stays put; the form opens right below the card */
+#dbuy{display:contents}
+.btn.logbtn{background:var(--t,var(--ink));border-color:var(--t,var(--ink));color:var(--f,var(--bg))}
 .btn.logbtn[aria-expanded=true]{background:none;color:var(--t,var(--ink));border-color:var(--t,var(--ink))}
 #brewbox{margin-top:0}
 .clist{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
@@ -231,7 +232,6 @@ details.calcbox summary{font-size:15px}
 #bfilters{display:flex;flex-wrap:nowrap;gap:6px}
 #bfilters select{width:auto;flex:1 1 0;min-width:0;height:38px;min-height:38px;padding:0 30px 0 13px;font-size:14.5px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;background-position:calc(100% - 16px) 52%,calc(100% - 11px) 52%;background-size:5px 5px,5px 5px}
 #bfilters select[hidden]{display:none}
-#bfilters #bflt-sort{flex:0 0 auto}
 .pick{display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:12px;border-radius:10px;border:1px solid var(--line);border-top:3px solid var(--s);background:var(--f);color:var(--t);font:inherit;cursor:pointer}
 .pick small{display:block;margin-top:2px;opacity:.85}
 .older{margin-top:12px;font-size:13px}
@@ -369,7 +369,7 @@ details.calcbox summary{font-size:15px}
 
   <div id="detail" hidden>
     <a class="back" href="#">All coffees</a>
-    <section id="dhead" class="cc"><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><div class="acts" id="dbuy"></div><p class="darch" id="darch" hidden></p><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button></div></section>
+    <section id="dhead" class="cc"><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><div class="acts" id="dacts"><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button><span id="dbuy"></span></div><p class="darch" id="darch" hidden></p></div></section>
     <details class="add" id="brewbox" open>
       <summary id="brewsum">Log a brew</summary>
       <form id="bf">
@@ -1676,7 +1676,7 @@ $("b-coffee").addEventListener("change", () => {
   location.hash = "c=" + id + (dev ? "&d=" + encodeURIComponent(dev) : "") + "&new";
 });
 
-// "Log a brew" at the bottom of the coffee card opens the form right below the card; tapped again it folds it away.
+// "Log a brew" in the coffee card (next to "Buy again") opens the form right below the card; tapped again it folds it away.
 // The button itself never moves, so nothing jumps.
 function syncNewBrew() {
   const open = $("brewbox").open, b = $("newbrew"); b.textContent = "";
