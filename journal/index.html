@@ -42,6 +42,10 @@ label.chk input{width:20px;height:20px;margin:0;flex:none}
 #msg{min-height:1.5em}
 details.add{margin:12px 0 24px;padding:12px 16px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
 details.add summary{cursor:pointer;font-weight:600}
+#brewbox:not([open]){padding:0;border:0;background:none}
+#brewbox:not([open]) summary{display:inline-flex;align-items:center;gap:8px;list-style:none;padding:0 20px;min-height:46px;border-radius:12px;background:var(--ink);color:var(--bg);font-weight:500}
+#brewbox:not([open]) summary::-webkit-details-marker{display:none}
+#brewbox:not([open]) summary::before{content:"+";font-size:20px;line-height:1}
 .clist{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
 .cc{background:var(--f);border:1px solid var(--line);border-top:3px solid var(--s);color:var(--t);border-radius:10px;overflow:hidden}
 .cc img{display:block;width:100%;height:180px;object-fit:cover}
@@ -638,7 +642,7 @@ function card(c, photoUrl, nBrews, ratings, bags) {
   if (c.bag_size_g && c.open_date) { const left = Math.max(0, c.bag_size_g - (coffeeUsed[c.id] || 0)); b.appendChild(el("p", "", "About " + Math.round(left) + " g of " + c.bag_size_g + " g left")); }
   if (c.notes) b.appendChild(el("p", "", c.notes));
   const acts = el("div", "acts");
-  acts.appendChild(abtn("btn", nBrews ? "Brews (" + nBrews + ")" : "Log a brew", "cup", () => { location.hash = "c=" + c.id; }));
+  acts.appendChild(abtn("btn", nBrews ? "Brews (" + nBrews + ")" : "Log a brew", "cup", () => { location.hash = "c=" + c.id + (nBrews ? "" : "&new"); }));
   const bl = buyLink(c); if (bl) acts.appendChild(bl);
   acts.appendChild(abtn("btn ghost", "New bag", "plus", () => startNewBag(c)));
   if (!c.open_date) {
@@ -878,7 +882,7 @@ $("cf").onsubmit = async e => {
     }
     const after = logAfter;
     endEdit(); say("Saved."); load();
-    if (newId && after) { location.hash = "c=" + newId + (after.dev ? "&d=" + encodeURIComponent(after.dev) : ""); }
+    if (newId && after) { location.hash = "c=" + newId + (after.dev ? "&d=" + encodeURIComponent(after.dev) : "") + "&new"; }
   } catch (err) { say("Could not save: " + err.message); }
   finally { saving = false; $("save").disabled = false; }
 };
@@ -888,7 +892,7 @@ $("cf").onsubmit = async e => {
 const D = window.DEFAULTS || {};
 const CORE = SCALE.CORE;
 let cur = null, scores = {}, ctl = {}, savingB = false, brewLoadId = 0, editingBrew = null, brewData = [], rating = null;
-let touched = new Set(), prof = [], calc = null, edited = false, noteNames = [];
+let draftWasRestored = false, touched = new Set(), prof = [], calc = null, edited = false, noteNames = [];
 const BF = ["b-madeby", "b-device", "b-preheat", "b-device-new", "b-grinder", "b-grind", "b-feel", "b-pressure", "b-pibar", "b-pis", "b-dose", "b-water", "b-yield", "b-temp", "b-time", "b-recipe", "b-notes"];
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
@@ -1187,7 +1191,7 @@ function newBrewSetup(dev) {
   else { const alt = [...sel.options].find(o => o.value && typeOf(o.value) === typeOf(want) && want.indexOf(o.value) === 0); sel.value = alt ? alt.value : ""; }
   const g = store.get("alto.grinder"); if (g !== null && [...$("b-grinder").options].some(o => o.value === g)) $("b-grinder").value = g;
   applyType(); autoFill();
-  const restored = restoreDraft();
+  const restored = restoreDraft(); draftWasRestored = restored;
   if (h) {
     const hp = (id, v) => { if (v !== null && v !== undefined) { $(id).value = v; touched.add(id); } };
     hp("b-dose", h.dose_g); if (!isEsp(typeOf(chosen("b-device")))) hp("b-water", h.water_g); hp("b-yield", h.yield_g); hp("b-temp", h.temp_c); if (isFlair(chosen("b-device"))) hp("b-preheat", h.preheat);
@@ -1220,7 +1224,7 @@ $("bcancel").onclick = () => { store.del(draftKey()); newBrewSetup(); };
 
 function route() {
   if (!me) return;
-  const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)(?:&d=(.*))?$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/);
+  const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)((?:&[^&]*)*)$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/);
   $("listview").hidden = !!m || isLog || !!add;
   $("detail").hidden = !m;
   $("pickview").hidden = !isLog;
@@ -1231,7 +1235,10 @@ function route() {
   if (add) {
     if (!editing && !newBagOf) { tryRestoreCoffee(); const t = typeOf(logAfter.dev); document.querySelectorAll("#f-sfor input").forEach(i => { if (!i.checked && t && i.value === t && !restoredCoffee) i.checked = true; }); }
     $("addbox").open = true; $("addsum").textContent = "New coffee"; load();
-  } else if (m) openCoffee(m[1], m[2] ? decodeURIComponent(m[2]) : null);
+  } else if (m) {
+    const ps = new URLSearchParams(m[2].slice(1));
+    openCoffee(m[1], ps.get("d"), ps.has("new") || ps.has("d"));   // coming to log a brew opens the form, coming to look shows the brews
+  }
   else if (isLog) pickList();
   else { tryRestoreCoffee(); load(); }
 }
@@ -1255,7 +1262,7 @@ function renderPick() {
   devs.slice().sort((x, y) => (typeOf(y) === "espresso") - (typeOf(x) === "espresso")).forEach(d => { const b = el("button", d === logDev ? "on" : "", d); b.type = "button"; b.onclick = () => { logDev = d; renderPick(); }; row.appendChild(b); });
   const box = $("picklist"); box.textContent = "";
   const dev = logMode === "device" ? logDev : null, t = dev ? typeOf(dev) : "";
-  const go = c => { location.hash = "c=" + c.id + (dev ? "&d=" + encodeURIComponent(dev) : ""); };
+  const go = c => { location.hash = "c=" + c.id + (dev ? "&d=" + encodeURIComponent(dev) : "") + "&new"; };
   const add = list => list.forEach(c => {
     const b = el("button", "pick"); b.type = "button"; applyLook(b, c);
     b.appendChild(el("strong", "", c.name));
@@ -1276,7 +1283,7 @@ function renderPick() {
 $("logmodes").querySelectorAll("button").forEach(b => { b.onclick = () => { logMode = b.dataset.m; store.set("alto.logmode", logMode); renderPick(); }; });
 window.addEventListener("hashchange", route);
 
-async function openCoffee(id, dev) {
+async function openCoffee(id, dev, wantForm) {
   const [{ data: c, error }, { data: dv }, { data: all }] = await Promise.all([
     db.from("coffees").select("*").eq("id", id).single(),
     db.from("brews").select("device"),
@@ -1299,7 +1306,12 @@ async function openCoffee(id, dev) {
   fill("b-device", deviceList(), [...new Set((dv || []).map(b => b.device).filter(Boolean))]);
   otherBox("b-device");
   newBrewSetup(dev);
-  loadBrews();
+  // From "Brews" on a card: the form stays folded into one line, so the brews are right below the coffee.
+  // From "Log a brew" (or with an unsaved draft): the form is open.
+  $("brewbox").open = !!wantForm || draftWasRestored;
+  window.scrollTo(0, 0);
+  await loadBrews();
+  if (!$("brewbox").open) scrollToBrews();
 }
 
 // "Coffee" at the top of the brew form: switch to another coffee without leaving the form.
@@ -1317,8 +1329,14 @@ $("b-coffee").addEventListener("change", () => {
   const id = $("b-coffee").value; if (!id || !cur || id === cur.id) return;
   saveDraft();
   const dev = chosen("b-device");
-  location.hash = "c=" + id + (dev ? "&d=" + encodeURIComponent(dev) : "");
+  location.hash = "c=" + id + (dev ? "&d=" + encodeURIComponent(dev) : "") + "&new";
 });
+
+// Puts the "+ Log a brew" button and the list of brews at the top of the screen, just under the menu bar.
+function scrollToBrews() {
+  const bar = document.querySelector(".topnav"), y = $("brewbox").getBoundingClientRect().top + window.scrollY - (bar ? bar.offsetHeight : 0) - 12;
+  window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+}
 
 function dayN(iso, when) {
   const n = Math.floor((when - new Date(iso + "T00:00:00")) / 864e5);
