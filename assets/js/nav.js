@@ -47,7 +47,7 @@
     ".topnav .iconbtn{width:44px;height:44px;display:grid;place-items:center;background:none;border:0;color:inherit;cursor:pointer;border-radius:8px;text-decoration:none;flex:none}" +
     ".topnav .where{display:flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:0 4px;color:inherit;text-decoration:none}" +
     ".wm{display:block;line-height:0;color:var(--brand,#6B4A2E)}.wm svg{display:block;width:100%;height:auto}" +
-    ".topnav .wm{width:112px}.topnav .logo{display:block;height:17px;width:auto;color:var(--brand,#6B4A2E);flex:none}" +
+    ".topnav .wm{width:112px}.topnav .logo{display:block;height:18px;width:auto;color:var(--brand,#6B4A2E);flex:none}" +
     // mountain and name sit on one base line: the bottom of the mountain meets the bottom of the letters
     ".topnav .lockup{display:flex;align-items:flex-end;gap:9px}.topnav .lockup .wm{margin-bottom:-0.66px}" +
     ".navback{position:fixed;inset:0;background:rgba(20,14,10,.38);z-index:40;opacity:0;transition:opacity .18s}" +
