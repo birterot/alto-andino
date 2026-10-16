@@ -1837,7 +1837,8 @@ $("login").onsubmit = async e => {
   } else {
     say("Sending...");
     const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: backHere() });
-    say(error ? error.message : "If there is an account for " + email + ", an email with a reset link is on its way.");
+    if (error && /not authori[sz]ed|rate limit|smtp|sending/i.test(error.message)) say("Password reset by email is not set up yet. Ask the person who invited you to the app for help.");
+    else say(error ? error.message : "If there is an account for " + email + ", an email with a reset link is on its way.");
   }
 };
 $("newpw").onsubmit = async e => {
