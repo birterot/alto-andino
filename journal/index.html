@@ -184,6 +184,7 @@ h3.sh{font-size:16px;margin:26px 0 2px}
 .tasters select.tadd{width:auto;height:40px;min-height:40px;margin:0;padding:0 30px 0 14px;font-size:14.5px;color:var(--accent);border-style:dashed}
 .tpanel{margin-top:10px;padding:2px 14px 16px;border:1px solid var(--line);border-radius:14px;max-width:460px}
 .tpanel>label:first-child,.tpanel>label#ovlab{margin-top:12px}
+.dmrow{margin-top:12px}.dmrow label{margin-top:0}
 .bc .rts{margin-top:10px;display:grid;gap:10px}
 .bc .rt .rh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .bc .rt .rn{font-size:14px;color:var(--mut)}
@@ -441,6 +442,7 @@ details.calcbox summary{font-size:15px}
         <div class="tasters" id="tasters" role="tablist" aria-label="Who rates this brew"></div>
         <div class="tpanel" id="tpanel" role="tabpanel">
         <label id="guestlab" hidden>Guest's name (optional)<input id="b-guest" placeholder="e.g. Lena" autocomplete="off" maxlength="60"></label>
+        <div class="row2 dmrow"><label>Drink<select id="b-drink"></select></label><label id="milklab">Milk<select id="b-milk"></select></label></div>
         <label id="ovlab">Overall</label>
         <div class="stars" id="stars" role="group" aria-label="Overall rating"></div>
         <h3 class="sh">Taste</h3>
@@ -506,6 +508,7 @@ details.calcbox summary{font-size:15px}
 <script src="../data/devices.js"></script>
 <script src="../data/processing.js"></script>
 <script src="../data/defaults.js"></script>
+<script src="../data/drinks.js"></script>
 <script src="../assets/js/calcui.js"></script>
 <script src="../assets/js/nav.js" defer></script>
 <script>
@@ -1131,7 +1134,7 @@ function brewChanges(old, row) {
   if (!(auto(old) && auto(row)) && (old.recipe || "") !== (row.recipe || "")) out.push(["Recipe name", auto(row) ? "" : row.recipe, auto(old) ? "" : old.recipe]);
   // ratings: per taster, their stars and each taste score; tasters added or removed get one line
   const tkey = t => t.guest ? "g:" + (t.guest_name || "").toLowerCase() : "u:" + t.rater_id;
-  const before = tastersOf(old), after = tasterRows().map(x => ({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name, rating: x.rating, scores: x.scores }));
+  const before = tastersOf(old), after = tasterRows().map(x => ({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name, rating: x.rating, drink: x.drink, milk: x.milk, scores: x.scores }));
   const several = before.length > 1 || after.length > 1;
   const brief = t => [t.rating == null ? null : Stars.text(t.rating), Object.keys(t.scores || {}).length ? Object.keys(t.scores).length + (Object.keys(t.scores).length === 1 ? " score" : " scores") : null].filter(Boolean).join(", ") || "no rating";
   const label = (t, what) => several ? tName(t) + ": " + what : what;
@@ -1144,6 +1147,8 @@ function brewChanges(old, row) {
     if (tkey(o) !== tkey(t)) out.push(["Rated by", tName(t), tName(o)]);
     const ns = t.rating == null ? "not rated" : Stars.text(t.rating), os = o.rating == null ? "not rated" : Stars.text(o.rating);
     if (ns !== os) out.push([label(t, "Overall"), ns, os]);
+    if ((t.drink || "") !== (o.drink || "")) out.push([label(t, "Drink"), drinkName(t.drink), drinkName(o.drink)]);
+    if ((t.milk || "") !== (o.milk || "")) out.push([label(t, "Milk"), milkName(t.milk), milkName(o.milk)]);
     [...new Set(Object.keys(o.scores || {}).concat(Object.keys(t.scores || {})))].forEach(k => {
       const a = (o.scores || {})[k], b = (t.scores || {})[k];
       const nt = b == null ? "" : SCALE.text(k, b), ot = a == null ? "" : SCALE.text(k, a);
@@ -1438,7 +1443,33 @@ $("b-newnote").addEventListener("keydown", e => { if (e.key === "Enter") { e.pre
 // stars, taste sliders and tasting notes; the form shows the active taster's. A taster is a household member
 // (later also a friend) or a guest with an optional name. The brew's own rating is the average, for older pages.
 let tasters = [], tAct = 0;
-const meTaster = () => ({ rater_id: me ? me.id : null, guest: false, guest_name: null, rating: null, scores: {} });
+// drinks (data/drinks.js): what each taster drank, and with which milk. A new taster starts on their usual drink
+// from Settings (one for espresso, one for filter coffee), or on plain espresso / filter coffee.
+const DR = (window.DRINKS && window.DRINKS.D) || [], MILKS = (window.DRINKS && window.DRINKS.MILKS) || [];
+const drinkOf = id => DR.find(d => d.id === id) || null;
+const drinkName = id => { const d = drinkOf(id); return d ? d.name : id || ""; };
+const milkName = id => { const m = MILKS.find(x => x[0] === id); return m ? m[1].replace(/ \(.*\)$/, "") : id || ""; };
+const drinkText = (dk, mk) => !dk ? "" : drinkName(dk) + (mk && drinkOf(dk) && drinkOf(dk).milk ? ", " + milkName(mk).toLowerCase() : "");
+let prefsOf = {};   // everyone's settings (profiles.prefs), by person
+function defDrink(personId) {
+  const ty = typeOf(chosen("b-device")), pf = (personId && prefsOf[personId]) || {}, esp = isEsp(ty) || ty === "moka";   // moka coffee is drunk like espresso
+  const dk = (esp ? pf.drink_esp : pf.drink_filter) || (esp ? "espresso" : "filter");
+  return { drink: drinkOf(dk) ? dk : (esp ? "espresso" : "filter"), milk: drinkOf(dk) && drinkOf(dk).milk ? (pf.milk || "") : "" };
+}
+const meTaster = () => ({ rater_id: me ? me.id : null, guest: false, guest_name: null, rating: null, scores: {}, ...defDrink(me && me.id), auto: true });
+(function () {   // the drink and milk lists
+  const s = $("b-drink"); s.appendChild(Object.assign(el("option", "", "Not set"), { value: "" }));
+  ((window.DRINKS && window.DRINKS.groups) || []).forEach(g => {
+    const og = document.createElement("optgroup"); og.label = g[1];
+    DR.filter(d => d.group === g[0]).forEach(d => { const o = el("option", "", d.name); o.value = d.id; og.appendChild(o); });
+    s.appendChild(og);
+  });
+  const m = $("b-milk"); m.appendChild(Object.assign(el("option", "", "Not set"), { value: "" }));
+  MILKS.forEach(x => { const o = el("option", "", x[1]); o.value = x[0]; m.appendChild(o); });
+})();
+function syncMilk() { const d = drinkOf($("b-drink").value); $("milklab").hidden = !(d && d.milk); }
+$("b-drink").addEventListener("change", () => { const t = tasters[tAct]; if (t) t.auto = false; syncMilk(); if (!$("milklab").hidden && !$("b-milk").value) { const pf = (t && !t.guest && prefsOf[t.rater_id]) || {}; $("b-milk").value = pf.milk || ""; } });
+$("b-milk").addEventListener("change", () => { const t = tasters[tAct]; if (t) t.auto = false; });
 function tName(t) {
   if (!t) return "";
   if (t.guest) return t.guest_name ? t.guest_name + " (guest)" : "Guest";
@@ -1453,6 +1484,7 @@ function hhPeople() {
 function stashTaster() {
   const t = tasters[tAct]; if (!t) return;
   t.rating = rating; t.scores = { ...scores };
+  t.drink = $("b-drink").value || null; t.milk = $("milklab").hidden ? null : ($("b-milk").value || null);
   if (t.guest) t.guest_name = $("b-guest").value.trim() || null;
 }
 function showTaster(i) {
@@ -1462,6 +1494,7 @@ function showTaster(i) {
   setRating(t.rating == null ? null : t.rating);
   Object.entries(t.scores || {}).forEach(([a, v]) => setScore(a, v));
   $("guestlab").hidden = !t.guest; $("b-guest").value = t.guest ? (t.guest_name || "") : "";
+  $("b-drink").value = t.drink || ""; $("b-milk").value = t.milk || ""; syncMilk();
   $("ovlab").textContent = tasters.length > 1 ? "Overall, for " + tName(t) : "Overall";
   renderTasters();
 }
@@ -1490,7 +1523,7 @@ function renderTasters() {
   s.onchange = () => {
     const v = s.value; if (!v) return;
     stashTaster();
-    tasters.push(v === "g" ? { rater_id: null, guest: true, guest_name: null, rating: null, scores: {} } : { rater_id: v.slice(2), guest: false, guest_name: null, rating: null, scores: {} });
+    tasters.push(v === "g" ? { rater_id: null, guest: true, guest_name: null, rating: null, scores: {}, ...defDrink(null), auto: true } : { rater_id: v.slice(2), guest: false, guest_name: null, rating: null, scores: {}, ...defDrink(v.slice(2)), auto: true });
     showTaster(tasters.length - 1); userChanged();
     if (v === "g") $("b-guest").focus();
   };
@@ -1501,8 +1534,8 @@ $("b-guest").addEventListener("input", () => { renderTasters(); $("ovlab").textC
 function tastersOf(b) {
   const sc = b.brew_scores || [], rs = (b.brew_ratings || []).slice().sort((x, y) => String(x.created_at || "").localeCompare(String(y.created_at || "")) || String(x.id).localeCompare(String(y.id)));
   const sco = list => { const o = {}; list.forEach(x => { o[x.attribute] = x.score; }); return o; };
-  if (rs.length) return rs.map(r => ({ id: r.id, rater_id: r.is_guest ? null : r.rater_id, guest: !!r.is_guest, guest_name: r.guest_name || null, rating: r.rating == null ? null : Number(r.rating), scores: sco(sc.filter(x => x.rating_id === r.id)) }));
-  if (b.rating != null || sc.length) return [{ rater_id: b.made_by || b.created_by || null, guest: false, guest_name: null, rating: b.rating == null ? null : Number(b.rating), scores: sco(sc) }];
+  if (rs.length) return rs.map(r => ({ id: r.id, rater_id: r.is_guest ? null : r.rater_id, guest: !!r.is_guest, guest_name: r.guest_name || null, rating: r.rating == null ? null : Number(r.rating), drink: r.drink || null, milk: r.milk || null, scores: sco(sc.filter(x => x.rating_id === r.id)) }));
+  if (b.rating != null || sc.length) return [{ rater_id: b.made_by || b.created_by || null, guest: false, guest_name: null, rating: b.rating == null ? null : Number(b.rating), drink: null, milk: null, scores: sco(sc) }];
   return [];
 }
 // average stars of a brew over everyone who rated it
@@ -1515,7 +1548,7 @@ function brewAvg(b) {
 function tasterRows() {
   stashTaster();
   return tasters.filter(t => t.rating != null || Object.keys(t.scores || {}).length)
-    .map(t => ({ rater_id: t.guest ? null : t.rater_id, is_guest: !!t.guest, guest_name: t.guest ? (t.guest_name || null) : null, rating: t.rating, scores: { ...t.scores } }));
+    .map(t => ({ rater_id: t.guest ? null : t.rater_id, is_guest: !!t.guest, guest_name: t.guest ? (t.guest_name || null) : null, rating: t.rating, drink: t.drink || null, milk: t.drink && drinkOf(t.drink) && drinkOf(t.drink).milk ? (t.milk || null) : null, scores: { ...t.scores } }));
 }
 
 // One text for the settings of a brew. It is also the automatic recipe name.
@@ -1590,7 +1623,9 @@ function onCalc() {   // the calculator moved: non-espresso devices follow it un
 calc = window.altoCalc && D.PRESETS ? altoCalc.mount($("calc"), { presets: D.PRESETS, start: D.START_PRESET, compact: true, onChange: () => onCalc() }) : null;
 if (calc) { const rs = $("calc").querySelector(".reset"), row = el("div", "calcacts"); rs.replaceWith(row); row.append($("usecalc"), rs); }
 $("usecalc").onclick = () => { fillFromCalc(calc && calc.numbers(), true); drawCurve(); userChanged(); say("Numbers copied into the form."); };
-$("b-device").addEventListener("change", () => { applyType(); if (!editingBrew) autoFill(); });
+// tasters still on their automatic drink follow the device (espresso or filter drink)
+function refreshAutoDrinks() { if (!tasters.length) return; stashTaster(); tasters.forEach(t => { if (t.auto) Object.assign(t, defDrink(t.guest ? null : t.rater_id)); }); showTaster(tAct); }
+$("b-device").addEventListener("change", () => { applyType(); if (!editingBrew) autoFill(); refreshAutoDrinks(); });
 $("b-device-new").addEventListener("change", () => { applyType(); });
 
 // ----- drafts: whatever you type is kept on this phone until you save or cancel
@@ -1651,11 +1686,11 @@ function newBrewSetup(dev) {
   setTasters([meTaster()]);
   fillMadeBy(me && me.id);
   const h = readHandoff(), sel = $("b-device");
-  const want = (h && h.device) || dev || store.get("alto.device") || "Flair 58";
+  const want = (h && h.device) || dev || myPrefs().device || store.get("alto.device") || "Flair 58";   // Settings first, else the last one used
   if ([...sel.options].some(o => o.value === want)) sel.value = want;
   else { const alt = [...sel.options].find(o => o.value && typeOf(o.value) === typeOf(want) && want.indexOf(o.value) === 0); sel.value = alt ? alt.value : ""; }
-  const g = store.get("alto.grinder"); if (g !== null && [...$("b-grinder").options].some(o => o.value === g)) $("b-grinder").value = g;
-  applyType(); autoFill();
+  const g = myPrefs().grinder || store.get("alto.grinder"); if (g !== null && [...$("b-grinder").options].some(o => o.value === g)) $("b-grinder").value = g;
+  applyType(); autoFill(); refreshAutoDrinks();
   const restored = restoreDraft(); draftWasRestored = restored;
   if (h) {
     const hp = (id, v) => { if (v !== null && v !== undefined) { $(id).value = v; touched.add(id); } };
@@ -1843,7 +1878,8 @@ function brewCard(b) {
   if (avg != null) {
     const s = el("p", "starsum"); s.appendChild(Stars.row(avg, "Rated " + Stars.text(avg) + " of 5"));
     if (ts.length > 1) s.appendChild(el("span", "rby", "average of " + ts.length + " tasters"));
-    else if (ts.length === 1 && (ts[0].guest || (ts[0].rater_id && ts[0].rater_id !== maker && nameOf(ts[0].rater_id)))) s.appendChild(el("span", "rby", "rated by " + tName(ts[0])));
+    else if (ts.length === 1 && (ts[0].guest || (ts[0].rater_id && ts[0].rater_id !== maker && nameOf(ts[0].rater_id)))) s.appendChild(el("span", "rby", "rated by " + tName(ts[0]) + (ts[0].drink ? ", " + drinkText(ts[0].drink, ts[0].milk).toLowerCase() : "")));
+    else if (ts.length === 1 && ts[0].drink) s.appendChild(el("span", "rby", drinkText(ts[0].drink, ts[0].milk)));
     a.appendChild(s);
   }
   if (b.recipe) a.appendChild(el("p", "", b.recipe));
@@ -1870,7 +1906,7 @@ function brewCard(b) {
     ts.forEach(t => {
       const r = el("div", "rt"), h = el("div", "rh");
       if (t.rating != null) h.appendChild(Stars.row(t.rating, tName(t) + ": " + Stars.text(t.rating) + " of 5"));
-      h.appendChild(el("span", "rn", tName(t) + (t.rating == null ? ", taste only" : "")));
+      h.appendChild(el("span", "rn", tName(t) + (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.rating == null ? ", taste only" : "")));
       r.appendChild(h); const c = chips(t.scores); if (c) r.appendChild(c); box.appendChild(r);
     });
     a.appendChild(box);
@@ -1889,7 +1925,7 @@ function brewCard(b) {
 
 async function loadBrews() {
   const my = ++brewLoadId;
-  const { data, error } = await db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,created_at), brew_scores(attribute,score,rating_id)").eq("coffee_id", cur.id).order("brewed_at", { ascending: false });
+  const { data, error } = await db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,drink,milk,created_at), brew_scores(attribute,score,rating_id)").eq("coffee_id", cur.id).order("brewed_at", { ascending: false });
   if (my !== brewLoadId) return;
   if (error) { say("Could not load brews: " + error.message); return; }
   brewData = data;
@@ -1947,7 +1983,7 @@ $("bf").onsubmit = async e => {
   {
     const dev = chosen("b-device"), esp = isEsp(typeOf(dev)), v = id => $(id).value.trim();
     const t = numOf("b-time"), tr = tasterRows();
-    const rated = tr.map(x => tName({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name }) + " " + (x.rating == null ? "(taste only)" : Stars.text(x.rating))).join(", ");
+    const rated = tr.map(x => tName({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name }) + " " + (x.rating == null ? "(taste only)" : Stars.text(x.rating)) + (x.drink ? " (" + drinkText(x.drink, x.milk).toLowerCase() + ")" : "")).join(", ");
     const tasted = tr.reduce((a, x) => a + Object.keys(x.scores).length, 0);
     let ok;
     if (editingBrew) {   // editing: show exactly what changed, old next to new
@@ -1985,7 +2021,7 @@ $("bf").onsubmit = async e => {
     }
     try {
       for (const t of tasterRows()) {   // one rating per taster, then that taster's scores
-        const { data: r, error } = await db.from("brew_ratings").insert({ brew_id: id, rater_id: t.rater_id, is_guest: t.is_guest, guest_name: t.guest_name, rating: t.rating }).select("id").single();
+        const { data: r, error } = await db.from("brew_ratings").insert({ brew_id: id, rater_id: t.rater_id, is_guest: t.is_guest, guest_name: t.guest_name, rating: t.rating, ...(t.drink ? { drink: t.drink } : {}), ...(t.milk ? { milk: t.milk } : {}) }).select("id").single();
         if (error) throw error;
         const rows = Object.entries(t.scores).map(([attribute, score]) => ({ brew_id: id, rating_id: r.id, attribute, score }));
         if (rows.length) { const r2 = await db.from("brew_scores").insert(rows); if (r2.error) throw r2.error; }
@@ -2117,13 +2153,18 @@ function fillMadeBy(want) {
     const b = el("button", "lnk", me && names[me.id] ? "Change my name" : "Set my name"); b.type = "button"; b.onclick = () => $("rename").onclick(); hint.appendChild(b);
   }
 }
+let prefsApplied = false;
+const myPrefs = () => (me && prefsOf[me.id]) || {};
 async function loadNames() {
-  const { data, error } = await db.from("profiles").select("id,display_name");
-  namesOk = !error; names = {};
-  (data || []).forEach(p => { names[p.id] = p.display_name; });
+  let { data, error } = await db.from("profiles").select("id,display_name,prefs");
+  if (error) ({ data, error } = await db.from("profiles").select("id,display_name"));   // before supabase/20_drinks_settings.sql
+  namesOk = !error; names = {}; prefsOf = {};
+  (data || []).forEach(p => { names[p.id] = p.display_name; prefsOf[p.id] = p.prefs || {}; });
+  // Settings: the form mode once per visit (the toggle in the form still works for now)
+  if (!prefsApplied) { prefsApplied = true; const fm = myPrefs().formmode; if (fm === "simple" || fm === "all") setFormMode(fm); }
   showName();
   fillMadeBy(editingBrew ? (editingBrew.made_by || editingBrew.created_by || "") : ($("b-madeby").value || (me && me.id)));
-  if (tasters.length) renderTasters();   // names arrived: label the tasters
+  if (tasters.length && !editingBrew && !edited) refreshAutoDrinks(); else if (tasters.length) renderTasters();   // names (and usual drinks) arrived
 }
 // A name equal to the start of the email was filled in automatically (supabase/13_household_names.sql), so we still ask once.
 const autoName = () => me && me.email ? me.email.split("@")[0].slice(0, 40) : null;

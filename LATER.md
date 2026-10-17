@@ -13,7 +13,7 @@ Bundled with the Apple Developer account, so the external costs come together.
 - **Coffee trending among your friends:** which coffees friends rate highest right now. Needs friends first.
 - **Temporary household membership:** e.g. a guest or a flatmate for a few weeks. An invite with an end date, after which the person leaves the household automatically.
 - **Barista ratings, as a game:** each person's average stars as a barista, compared within the household and between friends.
-- **Personal profile page:** name, photo, favourite coffees and devices, own stats, account settings (also where "delete my account" would live, which is needed before going public).
+- **Personal profile page:** (Settings has name and defaults now) photo, favourite coffees and devices, own stats, account settings (also where "delete my account" would live, which is needed before going public).
 
 ## Notifications
 - "Andrés brewed a coffee for you, do you want to rate it?"
@@ -32,9 +32,10 @@ Bundled with the Apple Developer account, so the external costs come together.
 - **Before going public:** Impressum, privacy policy (Datenschutzerklärung), account deletion.
 
 ## Brewing and the book
+- Trends by drink and milk: e.g. which coffee you like best as a flat white, and which black.
 - Matching similar recipes automatically (with a tolerance for grind and pressure).
 - Cup card with our latest tastings per processing method.
 - Chapters still to write: tasting and extraction, how to dial in a coffee.
 
 ## Done (from earlier versions of this list)
-Households with invites, open sign-up with captcha, several tasters per brew (members and guests), graph per recipe over days since roast or open, charts of grind against time and taste, editing and deleting old entries, the roasting chapter.
+Households with invites, open sign-up with captcha, several tasters per brew (members and guests), drink and milk per taster, settings page, the coffee drinks chapter, graph per recipe over days since roast or open, charts of grind against time and taste, editing and deleting old entries, the roasting chapter.

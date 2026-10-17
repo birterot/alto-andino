@@ -16,7 +16,8 @@
     journal: "M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3V4zM5 17a3 3 0 013-3h11",
     trends: "M4 19V5M4 19h16M8 15l4-5 3 3 4-6",
     calc: "M7 3h10a1 1 0 011 1v16a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zM8.5 7h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01",
-    book: "book"
+    book: "book",
+    settings: "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"
   };
   var ITEMS = [               // key, label, link
     ["home", "Home", "index.html"],
@@ -24,18 +25,20 @@
     ["calc", "Calculator", "calc/index.html"],
     ["journal", "Journal", "journal/index.html"],
     ["trends", "Trends", "trends/index.html"],
-    ["book", BOOK, "chapters/index.html"]
+    ["book", BOOK, "chapters/index.html"],
+    ["settings", "Settings", "settings/index.html"]
   ];
   var CHAPTERS = [            // file name, label (order = menu order and the previous/next order)
     ["processing", "Processing"],
     ["roasting", "Roasting"],
     ["freshness", "Freshness and storage"],
-    ["devices", "Brewing devices"]
+    ["devices", "Brewing devices"],
+    ["drinks", "Coffee drinks"]
   ];
 
   var path = location.pathname, file = (path.split("/").pop() || "index.html").replace(/\.html$/, "");
   var inBook = /\/chapters\//.test(path), chapter = inBook && file !== "index" ? file : null;
-  var isHome = !inBook && !/\/(journal|trends|calc)\//.test(path);
+  var isHome = !inBook && !/\/(journal|trends|calc|settings)\//.test(path);
   var isCalc = /\/calc\//.test(path);
   var NS = "http://www.w3.org/2000/svg";
 
@@ -160,6 +163,7 @@
     if (/\/journal\//.test(path)) return location.hash === "#log" ? "log" : "journal";
     if (/\/trends\//.test(path)) return "trends";
     if (isCalc) return "calc";
+    if (/\/settings\//.test(path)) return "settings";
     return "home";
   }
   function markActive() {

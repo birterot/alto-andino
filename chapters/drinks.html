@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icons/icon-180.png?v=2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Alto Andino">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Coffee drinks - Coffee atlas</title>
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+/* chapter colours (tabs) and the colours of what is in the cup */
+.drinks{--f:light-dark(#F1E6D8,#3A2E24);--s:light-dark(#8A6A4A,#C4A27C);--t:light-dark(#4A3424,#EAD8C2);
+  --l-espresso:light-dark(#5A3520,#8E5A38);--l-water:light-dark(#CFE2EA,#3C5560);--l-milk:light-dark(#F2E4CA,#CDBB9B);--l-foam:light-dark(#FFFDF8,#EFE8DA);
+  --l-cold:light-dark(#E6EEF2,#AFC2CB);--l-ice:light-dark(#DCEFF7,#6E8D99);--l-filter:light-dark(#8B5A36,#A9744B);--glass:light-dark(#B9AE9F,#6B6258)}
+.drinks .lead{max-width:62ch;margin:-12px 0 18px;color:var(--mut);font-size:14px}
+.dkeys{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 18px;padding:0;list-style:none;font-size:13.5px;color:var(--mut)}
+.dkeys li{display:inline-flex;align-items:center;gap:7px}
+.dkeys i{width:14px;height:14px;border-radius:3px;border:1px solid var(--glass);background:var(--k)}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.dcard{display:grid;grid-template-columns:86px 1fr;gap:14px;align-items:start;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.dcard h3{margin:0 0 2px;font-size:19px}
+.dcard .shot{margin:0 0 8px;font-size:14px;font-weight:600;color:var(--t)}
+.dcard p{margin:0 0 8px;font-size:14.5px}
+.dcard .cupsz,.dcard .flair{font-size:13px;color:var(--mut);margin:0}
+.dcard .flair{margin-top:4px}
+.dcup{display:flex;flex-direction:column;align-items:center;gap:6px}
+.dcup svg{display:block;overflow:visible}
+.dcup small{font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums}
+.ghint{margin:0 0 14px;color:var(--mut);font-size:14px;max-width:62ch}
+.milks{display:grid;gap:10px;margin:0 0 22px;padding:0;list-style:none;max-width:680px}
+.milks li{padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-size:14.5px}
+.milks strong{display:block;margin-bottom:2px}
+.steps{max-width:680px;padding-left:22px}
+.steps li{margin:0 0 10px;font-size:15px}
+.drinks h2{font-size:20px;margin:22px 0 10px}
+@media (max-width:420px){.dcard{grid-template-columns:72px 1fr;gap:12px;padding:14px}}
+</style>
+</head>
+<body>
+<main class="drinks">
+<h1 id="ct"></h1>
+<p class="sub" id="cs"></p>
+<p class="lead">The cups below are drawn to the same scale, so you can compare them. Amounts are typical; every café pours a little differently.</p>
+<div class="tabs" id="tabs" role="tablist" aria-label="Kind of drink"></div>
+<div id="panel"></div>
+</main>
+<script src="../assets/js/shared.js"></script>
+<script src="../data/drinks.js"></script>
+<script src="../assets/js/drinks.js"></script>
+<script src="../assets/js/nav.js" defer></script>
+</body>
+</html>
