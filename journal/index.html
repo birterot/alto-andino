@@ -262,7 +262,9 @@ details.calcbox summary{font-size:15px}
 .rate .best span{color:var(--accent);letter-spacing:2px}
 .rate .cnt{margin-top:2px;font-size:12px;color:var(--mut)}
 .stars{display:flex;gap:2px;margin-top:6px}
-.stars{align-items:center}
+.stars{align-items:center;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;cursor:pointer;width:max-content;padding:4px 10px 4px 0;border-radius:12px}
+.stars:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stars button{pointer-events:none}
 .stars button{width:42px;height:42px;padding:0;border:0;background:none;font-size:30px;line-height:1;cursor:pointer;color:var(--accent);display:grid;place-items:center}
 .stars .starval{margin-left:10px;font-size:14px;color:var(--mut)}
 .starsum{margin:4px 0 0;font-size:17px;color:var(--accent)}
@@ -438,7 +440,7 @@ details.calcbox summary{font-size:15px}
         <label class="adv">Recipe name (optional)<input id="b-recipe" placeholder="Left empty it becomes: device, grind, pressure"></label>
         <label class="chk adv"><input type="checkbox" id="b-dialin"> Dial-in brew (kept in the history, not counted in the coffee's rating)</label>
         <h3 class="sh">Who rates it</h3>
-        <p class="hint">Whoever drank it rates it: stars, taste and notes. If several of you tasted it, add each person.</p>
+        <p class="hint">Whoever drank it rates it: stars, taste and notes. If several of you tasted it, add each person. Swipe across the stars to rate, in half stars.</p>
         <div class="tasters" id="tasters" role="tablist" aria-label="Who rates this brew"></div>
         <div class="tpanel" id="tpanel" role="tabpanel">
         <label id="guestlab" hidden>Guest's name (optional)<input id="b-guest" placeholder="e.g. Lena" autocomplete="off" maxlength="60"></label>
@@ -1080,6 +1082,11 @@ function confirmSave(title, rows, okText, note) {
     if (d.showModal) d.showModal(); else done(confirm(title));
   });
 }
+// Saving an edit without any change: say so clearly, and offer to close the form.
+async function nothingChanged(close) {
+  const leave = await confirmSave("Nothing changed", [], "Close the form", "You have not changed anything, so there is nothing to save.");
+  if (leave) close();
+}
 // Compares the old record with the row that would be saved: [label, new, old] for every field that really changes.
 // fields: [key, label, format]; a format turns a stored value into readable text ("" for empty).
 function changes(old, row, fields) {
@@ -1222,7 +1229,7 @@ $("cf").onsubmit = async e => {
     if (editing) {   // editing: show exactly what changed, old next to new
       const ch = coffeeChanges(editing, row);
       if (photo) ch.push(["Photo", "new photo", editing.photo_path ? "old photo" : ""]);
-      if (!ch.length) { say("Nothing has changed, so there is nothing to save."); return; }
+      if (!ch.length) { nothingChanged(() => { endEdit(); say("Closed, nothing was changed."); }); return; }
       ok = await confirmSave("Save these changes?", ch, "Save changes", ch.length === 1 ? "You changed one thing:" : "You changed " + ch.length + " things:");
     } else {
       ok = await confirmSave(newBagOf ? "Save the new bag?" : "Save this coffee?", [
@@ -1286,13 +1293,53 @@ function setRating(v) {
     b.setAttribute("aria-pressed", String(rating === i || rating === i - 0.5));
   });
   $("starval").textContent = rating === null ? "Not rated" : Stars.text(rating);
+  $("stars").setAttribute("aria-valuenow", String(rating || 0)); $("stars").setAttribute("aria-valuetext", rating === null ? "not rated" : rating + " of 5 stars");
 }
-for (let i = 1; i <= 5; i++) {
-  const b = el("button"); b.type = "button"; b.setAttribute("aria-label", i + (i === 1 ? " star" : " stars") + ", tap again for " + (i - 0.5));
-  b.onclick = () => { setRating(rating === i ? i - 0.5 : rating === i - 0.5 ? null : i); renderTasters(); userChanged(); };
-  $("stars").appendChild(b);
-}
+// Swipe across the stars (or tap one): the left half of a star gives a half star, the right half a full one.
+// Tapping the value that is already set clears it. With a keyboard: arrow keys in half steps.
+for (let i = 1; i <= 5; i++) { const b = el("button"); b.type = "button"; b.tabIndex = -1; b.setAttribute("aria-hidden", "true"); $("stars").appendChild(b); }
 $("stars").appendChild(el("span", "starval")).id = "starval";
+(function () {
+  const box = $("stars"), btns = () => [...box.querySelectorAll("button")];
+  box.tabIndex = 0; box.setAttribute("role", "slider"); box.setAttribute("aria-valuemin", "0"); box.setAttribute("aria-valuemax", "5");
+  const at = x => {
+    const bs = btns(), first = bs[0].getBoundingClientRect(), last = bs[4].getBoundingClientRect();
+    if (x < first.left - 6) return null;               // off to the left: no stars
+    if (x >= last.right) return 5;
+    for (let i = 0; i < 5; i++) {
+      const r = bs[i].getBoundingClientRect(), right = i < 4 ? bs[i + 1].getBoundingClientRect().left : r.right;
+      if (x < right) return i + (x < r.left + r.width / 2 ? 0.5 : 1);
+    }
+    return 5;
+  };
+  let drag = null;
+  box.addEventListener("pointerdown", e => {
+    if (e.button > 0) return;
+    drag = { id: e.pointerId, x: e.clientX, start: rating, moved: false };
+    try { box.setPointerCapture(e.pointerId); } catch (err) {}
+    setRating(at(e.clientX)); e.preventDefault();
+  });
+  box.addEventListener("pointermove", e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (Math.abs(e.clientX - drag.x) > 6) drag.moved = true;
+    setRating(at(e.clientX));
+  });
+  const end = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const v = at(e.clientX);
+    if (!drag.moved && v !== null && v === drag.start) setRating(null);   // tapped the value that was set: clear
+    else setRating(v);
+    drag = null; renderTasters(); userChanged();
+  };
+  box.addEventListener("pointerup", end);
+  box.addEventListener("pointercancel", e => { if (drag && e.pointerId === drag.id) { setRating(drag.start); drag = null; } });
+  box.addEventListener("keydown", e => {
+    const k = e.key; let v = rating == null ? 0 : rating;
+    if (k === "ArrowRight" || k === "ArrowUp") v = Math.min(5, v + 0.5); else if (k === "ArrowLeft" || k === "ArrowDown") v = Math.max(0, v - 0.5);
+    else if (k === "Home") v = 0; else if (k === "End") v = 5; else return;
+    e.preventDefault(); setRating(v === 0 ? null : v); renderTasters(); userChanged();
+  });
+})();
 setRating(null);
 
 // ----- which kind of brewing a device is (from data/devices.js). Unknown devices keep every field open.
@@ -1988,7 +2035,7 @@ $("bf").onsubmit = async e => {
     let ok;
     if (editingBrew) {   // editing: show exactly what changed, old next to new
       const ch = brewChanges(editingBrew, row);
-      if (!ch.length) { say("Nothing has changed, so there is nothing to save."); return; }
+      if (!ch.length) { nothingChanged(() => { store.del(draftKey()); newBrewSetup(); $("brewbox").open = false; say("Closed, nothing was changed."); }); return; }
       ok = await confirmSave("Save these changes?", ch, "Save changes", ch.length === 1 ? "You changed one thing:" : "You changed " + ch.length + " things:");
     } else ok = await confirmSave("Save this brew?", [
       ["Coffee", cur && cur.name], ["Device", dev], ["Made by", !$("mblab").hidden && $("b-madeby").value ? names[$("b-madeby").value] : null],

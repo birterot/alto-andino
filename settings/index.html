@@ -29,7 +29,9 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .go{font:inherit;cursor:pointer;height:48px;padding:0 26px;border-radius:12px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font-size:16px}
 .lnk{font:inherit;cursor:pointer;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--mut);font-size:14px;text-decoration:none;display:inline-block}
 .bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:6px 0 18px;max-width:560px}
-#msg{color:var(--mut);font-size:14px;margin:0}
+#msg{color:var(--mut);font-size:14px;margin:0;padding:6px 12px;border-radius:999px}
+#msg.on{animation:fl 2.4s ease-out}
+@keyframes fl{0%,40%{background:var(--line);color:var(--ink)}100%{background:none}}
 .foot{display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--mut);font-size:14px;max-width:560px}
 .out{max-width:560px}
 </style>
@@ -132,14 +134,18 @@ $("sf").onsubmit = async e => {
   const prefs = Object.assign({}, (profile && profile.prefs) || {});
   [["device", "s-device"], ["grinder", "s-grinder"], ["drink_esp", "s-drink-esp"], ["drink_filter", "s-drink-filter"], ["milk", "s-milk"]].forEach(([k, id]) => { if ($(id).value) prefs[k] = $(id).value; else delete prefs[k]; });
   if (fm) prefs.formmode = fm; else delete prefs.formmode;
+  const same = (x, y) => JSON.stringify(Object.keys(x).sort().map(k => [k, x[k]])) === JSON.stringify(Object.keys(y).sort().map(k => [k, y[k]]));
+  if (profile && profile.display_name === name && same(prefs, profile.prefs || {})) { flash("Nothing changed, your settings are as they were."); return; }
   $("save").disabled = true; $("msg").textContent = "Saving...";
   const { error } = await db.from("profiles").upsert({ id: me.id, display_name: name, prefs, updated_at: new Date().toISOString() });
   $("save").disabled = false;
   if (error) { $("msg").textContent = "Could not save: " + error.message; return; }
   profile = { id: me.id, display_name: name, prefs };
   if (fm) try { localStorage.setItem("alto.formmode", fm); } catch (e2) {}
-  $("msg").textContent = "Saved.";
+  flash("Saved. New brews start with these settings.");
 };
+// the message next to the button, briefly highlighted so it is not missed
+function flash(t) { const m = $("msg"); m.textContent = t; m.classList.remove("on"); void m.offsetWidth; m.classList.add("on"); }
 $("out").onclick = async () => { await db.auth.signOut(); };
 db.auth.onAuthStateChange((_e, session) => setTimeout(() => {
   me = session ? session.user : null;
