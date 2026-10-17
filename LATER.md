@@ -9,6 +9,7 @@ Bundled with the Apple Developer account, so the external costs come together.
 
 ## Friends and households
 - **Friends:** share selected coffees and recipes with friends (read-only), across households.
+- **Friends as tasters:** a brew can already have several tasters (members and guests). Once friends exist, a friend can be picked under "Who rates it" too; the rating stores the person, so nothing has to be rebuilt.
 - **Coffee trending among your friends:** which coffees friends rate highest right now. Needs friends first.
 - **Temporary household membership:** e.g. a guest or a flatmate for a few weeks. An invite with an end date, after which the person leaves the household automatically.
 - **Barista ratings, as a game:** each person's average stars as a barista, compared within the household and between friends.
@@ -36,4 +37,4 @@ Bundled with the Apple Developer account, so the external costs come together.
 - Chapters still to write: tasting and extraction, how to dial in a coffee.
 
 ## Done (from earlier versions of this list)
-Households with invites, open sign-up with captcha, graph per recipe over days since roast or open, charts of grind against time and taste, editing and deleting old entries, the roasting chapter.
+Households with invites, open sign-up with captcha, several tasters per brew (members and guests), graph per recipe over days since roast or open, charts of grind against time and taste, editing and deleting old entries, the roasting chapter.

@@ -123,6 +123,7 @@ th{color:var(--mut);font-weight:500}
   <select id="f-coffee" aria-label="Coffee"></select>
   <select id="f-device" aria-label="Device"></select>
   <select id="f-who" aria-label="Made by"></select>
+  <select id="f-rater" aria-label="Rated by"></select>
   <button id="f-demo" type="button">Example data</button>
 </div>
 <p class="banner" id="banner" hidden>Example data, to show how the charts look. These are not your brews.</p>
@@ -149,7 +150,7 @@ const RCOL = n => "var(--r" + Math.min(5, Math.max(1, Math.round(n))) + ")";   /
 const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
 const D = window.DEFAULTS || {};
 
-const state = { view: "dial", demo: false, signedIn: false, me: null, coffees: [], brews: [], names: {}, coffee: "", device: "", who: "", recipe: "", xk: "roast", hidden: new Set() };
+const state = { view: "dial", demo: false, signedIn: false, me: null, coffees: [], brews: [], names: {}, coffee: "", device: "", who: "", rater: "", recipe: "", xk: "roast", hidden: new Set() };
 
 // ---------- helpers ----------
 const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
@@ -177,9 +178,21 @@ const people = () => Object.keys(state.names).sort((a, b) => state.names[a].loca
 const personCol = id => { const i = people().indexOf(id); return i === 0 ? "var(--p1)" : i === 1 ? "var(--p2)" : "var(--mut)"; };
 const shown = (a, v) => SCALE.isCore(a) ? v - 5 : v;   // stored -> -5..+5 for the four core flavours
 
+// Several people can rate one brew. With "Rated by" set, a brew counts with that person's stars and taste
+// (and only if they rated it); otherwise with the average of everyone who rated it.
+const GUEST = "guest";
+const raterKey = r => r.guest ? GUEST : r.who;
+function asRated(b) {
+  const rs = state.rater ? b.ratings.filter(r => raterKey(r) === state.rater) : b.ratings;
+  if (state.rater && !rs.length) return null;
+  const st = rs.map(r => r.rating).filter(v => v != null), sc = {}, n = {};
+  rs.forEach(r => Object.entries(r.scores).forEach(([a, v]) => { sc[a] = (sc[a] || 0) + v; n[a] = (n[a] || 0) + 1; }));
+  Object.keys(sc).forEach(a => { sc[a] = sc[a] / n[a]; });
+  return Object.assign({}, b, { rating: st.length ? avg(st) : null, scores: sc });
+}
 // brews after the device / person filters (and the coffee filter where the view uses it)
 function filtered(useCoffee) {
-  return state.brews.filter(b => (!state.device || b.device === state.device) && (!state.who || b.who === state.who) && (!useCoffee || !state.coffee || b.coffeeId === state.coffee));
+  return state.brews.filter(b => (!state.device || b.device === state.device) && (!state.who || b.who === state.who) && (!useCoffee || !state.coffee || b.coffeeId === state.coffee)).map(asRated).filter(Boolean);
 }
 
 // ---------- page frame ----------
@@ -351,34 +364,38 @@ function viewTaste() {
 // ---------- 6 + 7 + 8: us ----------
 function viewUs() {
   const list = filtered(false), ppl = people().filter(id => list.some(b => b.who === id));
-  const s = card("Who brews", "Brews and average stars per person. Dial-in brews count as brews, not for the stars.");
+  const s = card("Who brews", "Brews per person, and the average stars their brews got from whoever tasted them. Dial-in brews count as brews, not for the stars.");
   if (!ppl.length) empty(s, "Brews show up here once they have a \"Made by\".");
   else {
     const tiles = el("div", "tiles"); s.appendChild(tiles);
     ppl.forEach(id => {
       const mine = list.filter(b => b.who === id), rated = mine.filter(b => b.rating && !b.dialin), t = el("div", "tile");
       const l = el("div", "tl"), i = el("i"); i.style.setProperty("--col", personCol(id)); l.append(i, document.createTextNode(nameOf(id)));
-      t.appendChild(l); t.appendChild(el("div", "tv", String(mine.length))); t.appendChild(el("div", "ts", (mine.length === 1 ? "brew" : "brews") + (rated.length ? ", " + r1(avg(rated.map(b => b.rating))).toFixed(1) + "★ on average" : "")));
+      const gave = list.reduce((x, b) => x + b.ratings.filter(r => !r.guest && r.who === id && r.rating != null).length, 0);
+      t.appendChild(l); t.appendChild(el("div", "tv", String(mine.length))); t.appendChild(el("div", "ts", (mine.length === 1 ? "brew" : "brews") + (rated.length ? ", " + r1(avg(rated.map(b => b.rating))).toFixed(1) + "★ on average" : "") + (gave ? ". Rated " + gave + (gave === 1 ? " brew" : " brews") : "")));
       tiles.appendChild(t);
     });
   }
 
-  const v = card("Birte vs Andres", "Average stars per coffee, for each of you. Only coffees you have both rated.");
-  if (ppl.length < 2) empty(v, "Needs rated brews from two people.");
+  // who gives which stars: by the person who rated, whoever made the brew
+  const raters = people().filter(id => list.some(b => b.ratings.some(r => !r.guest && r.who === id && r.rating != null)));
+  const v = card("Birte vs Andres", "The stars each of you gives, per coffee. Only coffees you have both rated, whoever brewed them.");
+  if (raters.length < 2) empty(v, "Needs ratings from two people.");
   else {
-    v.querySelector("h2").textContent = nameOf(ppl[0]) + " vs " + nameOf(ppl[1]);
+    const rp = raters.slice(0, 2);
+    v.querySelector("h2").textContent = nameOf(rp[0]) + " vs " + nameOf(rp[1]);
     const by = {};
-    list.filter(b => b.rating && !b.dialin && (b.who === ppl[0] || b.who === ppl[1])).forEach(b => { const k = b.coffeeId; by[k] = by[k] || { a: [], b: [] }; by[k][b.who === ppl[0] ? "a" : "b"].push(b.rating); });
+    list.filter(b => !b.dialin).forEach(b => b.ratings.forEach(r => { if (r.guest || r.rating == null || (r.who !== rp[0] && r.who !== rp[1])) return; const k = b.coffeeId; by[k] = by[k] || { a: [], b: [] }; by[k][r.who === rp[0] ? "a" : "b"].push(r.rating); }));
     const rows = Object.keys(by).filter(k => by[k].a.length && by[k].b.length).map(k => ({ c: coffeeOf(k), a: avg(by[k].a), b: avg(by[k].b), na: by[k].a.length, nb: by[k].b.length }));
-    const leg = el("div", "legend"); legendItem(leg, "var(--p1)", nameOf(ppl[0]), "dot"); legendItem(leg, "var(--p2)", nameOf(ppl[1]), "dot"); v.appendChild(leg);
+    const leg = el("div", "legend"); legendItem(leg, "var(--p1)", nameOf(rp[0]), "dot"); legendItem(leg, "var(--p2)", nameOf(rp[1]), "dot"); v.appendChild(leg);
     if (!rows.length) empty(v, "No coffee rated by both of you yet.");
     else {
       const box = chartBox(v);
       Charts.dumbbell({ box, domain: [1, 5], colors: ["var(--p1)", "var(--p2)"], fmt: x => x + "★",
-        rows: rows.map(r => ({ label: r.c ? r.c.name : "Coffee", a: r.a, b: r.b, tip: () => ({ title: r.c ? r.c.name : "", rows: [{ value: r1(r.a).toFixed(1) + "★", label: nameOf(ppl[0]) + ", " + r.na + " brews", color: "var(--p1)", kind: "dot" }, { value: r1(r.b).toFixed(1) + "★", label: nameOf(ppl[1]) + ", " + r.nb + " brews", color: "var(--p2)", kind: "dot" }] }) })) });
+        rows: rows.map(r => ({ label: r.c ? r.c.name : "Coffee", a: r.a, b: r.b, tip: () => ({ title: r.c ? r.c.name : "", rows: [{ value: r1(r.a).toFixed(1) + "★", label: nameOf(rp[0]) + ", " + r.na + " brews", color: "var(--p1)", kind: "dot" }, { value: r1(r.b).toFixed(1) + "★", label: nameOf(rp[1]) + ", " + r.nb + " brews", color: "var(--p2)", kind: "dot" }] }) })) });
       const diff = avg(rows.map(r => r.a - r.b));
-      v.appendChild(el("p", "take", Math.abs(diff) < 0.25 ? "You rate the same coffees about the same." : (diff > 0 ? nameOf(ppl[0]) : nameOf(ppl[1])) + " rates the same coffees " + r1(Math.abs(diff)).toFixed(1) + "★ higher on average."));
-      numbers(v, ["Coffee", nameOf(ppl[0]), nameOf(ppl[1])], rows.map(r => [r.c ? r.c.name : "", r1(r.a).toFixed(1), r1(r.b).toFixed(1)]));
+      v.appendChild(el("p", "take", Math.abs(diff) < 0.25 ? "You rate the same coffees about the same." : (diff > 0 ? nameOf(rp[0]) : nameOf(rp[1])) + " rates the same coffees " + r1(Math.abs(diff)).toFixed(1) + "★ higher on average."));
+      numbers(v, ["Coffee", nameOf(rp[0]), nameOf(rp[1])], rows.map(r => [r.c ? r.c.name : "", r1(r.a).toFixed(1), r1(r.b).toFixed(1)]));
     }
   }
 
@@ -485,8 +502,13 @@ function fillFilters() {
   const devs = [...new Set(state.brews.map(b => b.device).filter(Boolean))].sort();
   state.device = fill("f-device", "All devices", devs.map(d => [d, d]), state.device);
   const ppl = people().filter(id => state.brews.some(b => b.who === id));
-  state.who = fill("f-who", "Everyone", ppl.map(id => [id, state.names[id]]), state.who);
+  state.who = fill("f-who", "Made by anyone", ppl.map(id => [id, "Made by " + state.names[id]]), state.who);
   $("f-who").hidden = ppl.length < 2;
+  // rated by: everyone who rated something, and guests
+  const rated = people().filter(id => state.brews.some(b => b.ratings.some(r => !r.guest && r.who === id)));
+  const guests = state.brews.some(b => b.ratings.some(r => r.guest));
+  state.rater = fill("f-rater", "Rated by anyone", rated.map(id => [id, "Rated by " + state.names[id]]).concat(guests ? [[GUEST, "Rated by guests"]] : []), state.rater);
+  $("f-rater").hidden = rated.length + (guests ? 1 : 0) < 2;
 }
 
 // ---------- data ----------
@@ -494,9 +516,14 @@ function shape(raw, coffees) {
   return raw.map(b => {
     const t = new Date(b.brewed_at), c = coffees.find(x => x.id === b.coffee_id), scores = {};
     (b.brew_scores || []).forEach(x => { scores[x.attribute] = x.score; });
+    // everyone who rated it (supabase/19_brew_ratings.sql); a brew from before: one rating, by whoever made it
+    const sco = id => { const o = {}; (b.brew_scores || []).filter(x => x.rating_id === id).forEach(x => { o[x.attribute] = x.score; }); return o; };
+    const ratings = (b.brew_ratings || []).length
+      ? b.brew_ratings.map(r => ({ who: r.is_guest ? null : r.rater_id, guest: !!r.is_guest, name: r.guest_name || null, rating: r.rating == null ? null : Number(r.rating), scores: sco(r.id) }))
+      : (b.rating != null || (b.brew_scores || []).length ? [{ who: b.made_by || b.created_by || null, guest: false, name: null, rating: b.rating == null ? null : Number(b.rating), scores }] : []);
     const day = iso => iso ? Math.floor((t - new Date(iso + "T00:00:00")) / 864e5) : null;
     return { id: b.id, coffeeId: b.coffee_id, t, device: b.device, grind: b.grind, dose: b.dose_g, yld: b.yield_g, water: b.water_g, time: b.time_s,
-      rating: b.rating == null ? null : Number(b.rating), dialin: !!b.is_dialin, recipe: b.recipe, who: b.made_by || b.created_by || null, scores, dRoast: c ? day(c.roast_date) : null, dOpen: c ? day(c.open_date) : null };
+      rating: b.rating == null ? null : Number(b.rating), dialin: !!b.is_dialin, recipe: b.recipe, who: b.made_by || b.created_by || null, ratings, scores, dRoast: c ? day(c.roast_date) : null, dOpen: c ? day(c.open_date) : null };
   });
 }
 async function loadMine() {
@@ -508,7 +535,7 @@ async function loadMine() {
   const cq = db.from("coffees").select("*");
   const [cs, bs, ps] = await Promise.all([
     (hh ? cq.eq("household_id", hh) : cq).order("created_at", { ascending: false }),
-    db.from("brews").select("*, brew_scores(attribute,score)").order("brewed_at"),
+    db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating), brew_scores(attribute,score,rating_id)").order("brewed_at"),
     db.from("profiles").select("id,display_name")
   ]);
   $("msg").textContent = "";
@@ -547,16 +574,29 @@ function demo() {
           .concat(ci === 1 ? [{ attribute: "blueberry", score: rnd() < 0.6 ? 7 : 3 }] : ci === 0 ? [{ attribute: "panela", score: rnd() < 0.5 ? 7 : 3 }] : [{ attribute: "nutty", score: 7 }]) });
     }
   });
+  // who tasted it: mostly whoever made it, sometimes both of you, now and then a guest
+  brews.forEach((b, i) => {
+    const other = b.made_by === "pa" ? "pb" : "pa", rid = k => b.id + k, cl = v => Math.max(1, Math.min(5, Math.round(v * 2) / 2));
+    const own = rnd() < 0.3 ? other : b.made_by;   // brewed for the other one
+    b.brew_ratings = [{ id: rid("a"), rater_id: own, is_guest: false, guest_name: null, rating: b.rating }];
+    b.brew_scores.forEach(x => { x.rating_id = rid("a"); });
+    if (b.rating != null && rnd() < 0.3) {
+      const r2 = cl(b.rating + (own === "pa" ? -0.5 : 0.5) + (rnd() - 0.5));
+      b.brew_ratings.push({ id: rid("b"), rater_id: own === "pa" ? "pb" : "pa", is_guest: false, guest_name: null, rating: r2 });
+      b.brew_scores = b.brew_scores.concat(b.brew_scores.filter(x => SCALE.isCore(x.attribute)).map(x => ({ attribute: x.attribute, score: Math.max(0, Math.min(10, x.score + Math.round((rnd() - 0.5) * 3))), rating_id: rid("b") })));
+    }
+    if (b.rating != null && rnd() < 0.07) b.brew_ratings.push({ id: rid("g"), rater_id: null, is_guest: true, guest_name: rnd() < 0.5 ? "Lena" : null, rating: cl(b.rating + 0.5) });
+  });
   return { coffees, brews, names: { pa: "Birte (example)", pb: "Andres (example)" } };
 }
 function enterDemo() {
   const d = demo(); state.demo = true;
   state.coffees = d.coffees.map(c => Object.assign({}, c, { bag_g: c.bag_size_g || null })); state.names = d.names; state.brews = shape(d.brews, state.coffees);
-  state.coffee = ""; state.device = ""; state.who = "";
+  state.coffee = ""; state.device = ""; state.who = ""; state.rater = "";
   $("f-demo").textContent = "Back to my data"; fillFilters(); render();
 }
 function leaveDemo() {
-  state.demo = false; state.coffees = []; state.brews = []; state.names = {}; state.coffee = ""; state.device = ""; state.who = "";
+  state.demo = false; state.coffees = []; state.brews = []; state.names = {}; state.coffee = ""; state.device = ""; state.who = ""; state.rater = "";
   $("f-demo").textContent = "Example data";
   if (state.signedIn) loadMine(); else { fillFilters(); render(); }
 }
@@ -567,6 +607,7 @@ document.querySelectorAll(".tabs .tab").forEach(t => { t.onclick = () => { state
 $("f-coffee").onchange = () => { state.coffee = $("f-coffee").value; state.recipe = ""; render(); };
 $("f-device").onchange = () => { state.device = $("f-device").value; render(); };
 $("f-who").onchange = () => { state.who = $("f-who").value; render(); };
+$("f-rater").onchange = () => { state.rater = $("f-rater").value; render(); };
 $("f-demo").onclick = () => state.demo ? leaveDemo() : enterDemo();
 let rz = null; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (state.brews.length) render(); }, 200); });
 

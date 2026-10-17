@@ -174,6 +174,21 @@ dialog.dlg p{margin:0 0 4px;font-size:14.5px;color:var(--mut)}
 .addnote .btn{height:48px;border-radius:999px;padding:0 18px}
 .addnote input{height:48px}
 h3.sh{font-size:16px;margin:26px 0 2px}
+/* who rates: one tab per taster, the panel below shows that person's stars, taste and notes */
+.tasters{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;max-width:460px}
+.tasters .tst{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:14.5px;cursor:pointer}
+.tasters .tst small{font-size:12.5px;color:var(--mut)}
+.tasters .tst.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.tasters .tst.on small{color:inherit;opacity:.8}
+.tasters .tx{width:32px;height:32px;margin-left:-4px;display:grid;place-items:center;border:0;border-radius:999px;background:none;color:var(--mut);cursor:pointer}
+.tasters select.tadd{width:auto;height:40px;min-height:40px;margin:0;padding:0 30px 0 14px;font-size:14.5px;color:var(--accent);border-style:dashed}
+.tpanel{margin-top:10px;padding:2px 14px 16px;border:1px solid var(--line);border-radius:14px;max-width:460px}
+.tpanel>label:first-child,.tpanel>label#ovlab{margin-top:12px}
+.bc .rts{margin-top:10px;display:grid;gap:10px}
+.bc .rt .rh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bc .rt .rn{font-size:14px;color:var(--mut)}
+.bc .rt .tags{margin-top:4px}
+.bc .rby{font-size:14px;color:var(--mut);margin-left:8px}
 label.off{opacity:.45}
 body.simple .adv{display:none!important}
 .fmode{display:flex;gap:6px;margin:6px 0 4px}
@@ -420,9 +435,14 @@ details.calcbox summary{font-size:15px}
         </details>
         </div>
         <label class="adv">Recipe name (optional)<input id="b-recipe" placeholder="Left empty it becomes: device, grind, pressure"></label>
-        <label>Overall</label>
-        <div class="stars" id="stars" role="group" aria-label="Overall rating"></div>
         <label class="chk adv"><input type="checkbox" id="b-dialin"> Dial-in brew (kept in the history, not counted in the coffee's rating)</label>
+        <h3 class="sh">Who rates it</h3>
+        <p class="hint">Whoever drank it rates it: stars, taste and notes. If several of you tasted it, add each person.</p>
+        <div class="tasters" id="tasters" role="tablist" aria-label="Who rates this brew"></div>
+        <div class="tpanel" id="tpanel" role="tabpanel">
+        <label id="guestlab" hidden>Guest's name (optional)<input id="b-guest" placeholder="e.g. Lena" autocomplete="off" maxlength="60"></label>
+        <label id="ovlab">Overall</label>
+        <div class="stars" id="stars" role="group" aria-label="Overall rating"></div>
         <h3 class="sh">Taste</h3>
         <p class="hint">0 is just right, minus is too little, plus is too much. Sliders you leave alone are not saved. The x clears one.</p>
         <div id="scorebox"></div>
@@ -431,6 +451,7 @@ details.calcbox summary{font-size:15px}
         <p class="hint">Did you find it? None, a little, or clearly there. Flavour or tasting notes you leave alone are not saved.</p>
         <div id="notebox"></div>
         <div class="addnote"><input id="b-newnote" placeholder="Another note, e.g. jasmine" autocomplete="off" aria-label="Add a tasting note"><button type="button" class="btn ghost" id="b-addnote"></button></div>
+        </div>
         </div>
         <label>Comments<textarea id="b-notes" rows="3" placeholder="Anything else about this brew"></textarea></label>
         <button class="go" id="bsave">Save brew</button>
@@ -801,10 +822,10 @@ async function load() {
   const my = ++loadId;   // only the newest load may draw, so parallel loads cannot add cards twice
   const [{ data, error }, { data: bs }] = await Promise.all([
     inHH(db.from("coffees").select("*")).order("created_at", { ascending: false }),
-    db.from("brews").select("coffee_id,rating,is_dialin,brewed_at,dose_g").order("brewed_at")
+    db.from("brews").select("coffee_id,rating,is_dialin,brewed_at,dose_g,brew_ratings(rating)").order("brewed_at")
   ]);
   const counts = {}, rates = {}, used = {};
-  (bs || []).forEach(b => { used[b.coffee_id] = (used[b.coffee_id] || 0) + (Number(b.dose_g) || 0); counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; (rates[b.coffee_id] = rates[b.coffee_id] || []).push({ r: b.rating == null ? null : Number(b.rating), d: !!b.is_dialin, t: b.brewed_at }); });
+  (bs || []).forEach(b => { used[b.coffee_id] = (used[b.coffee_id] || 0) + (Number(b.dose_g) || 0); counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; (rates[b.coffee_id] = rates[b.coffee_id] || []).push({ r: brewAvg(b), d: !!b.is_dialin, t: b.brewed_at }); });
   if (my !== loadId) return;
   if (error) { say("Could not load coffees: " + error.message); return; }
   const uniq = k => [...new Set(data.map(c => c[k]).filter(Boolean))];
@@ -1096,7 +1117,7 @@ const BREW_FIELDS = [
   ["temp_c", "Water temperature", unit(" \u00B0C")], ["preheat", "Preheat"], ["time_s", "Time", fmtTime],
   ["pressure_bar", "Pressure", unit(" bar")], ["preinfusion_bar", "Pre-infusion", unit(" bar")], ["preinfusion_s", "Pre-infusion time", unit(" s")],
   ["pressure_profile", "Pressure profile", v => Array.isArray(v) && v.length ? v.map(x => x.s + " s at " + x.bar + " bar").join(", ") : ""],
-  ["rating", "Overall", v => v == null ? "not rated" : Stars.text(v)], ["is_dialin", "Dial-in shot"], ["notes", "Comments"]
+  ["is_dialin", "Dial-in shot"], ["notes", "Comments"]
 ];
 function brewChanges(old, row) {
   const out = [];
@@ -1108,14 +1129,29 @@ function brewChanges(old, row) {
   // a recipe name typed by hand (the automatic one follows the settings and is not worth a line)
   const auto = b => !b.recipe || b.recipe === settingsLabel(b);
   if (!(auto(old) && auto(row)) && (old.recipe || "") !== (row.recipe || "")) out.push(["Recipe name", auto(row) ? "" : row.recipe, auto(old) ? "" : old.recipe]);
-  const was = {}; (old.brew_scores || []).forEach(x => { was[x.attribute] = x.score; });
-  const keys = [...new Set(Object.keys(was).concat(Object.keys(scores)))];
-  keys.forEach(k => {
-    const a = was[k], b = scores[k];
-    const nt = b == null ? "" : SCALE.text(k, b), ot = a == null ? "" : SCALE.text(k, a);
-    if (nt === ot) return;   // reads the same (an old in-between value of a tasting note, say)
-    out.push([SCALE.isCore(k) ? k.charAt(0).toUpperCase() + k.slice(1) : "Tasting note: " + k, nt, ot]);
+  // ratings: per taster, their stars and each taste score; tasters added or removed get one line
+  const tkey = t => t.guest ? "g:" + (t.guest_name || "").toLowerCase() : "u:" + t.rater_id;
+  const before = tastersOf(old), after = tasterRows().map(x => ({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name, rating: x.rating, scores: x.scores }));
+  const several = before.length > 1 || after.length > 1;
+  const brief = t => [t.rating == null ? null : Stars.text(t.rating), Object.keys(t.scores || {}).length ? Object.keys(t.scores).length + (Object.keys(t.scores).length === 1 ? " score" : " scores") : null].filter(Boolean).join(", ") || "no rating";
+  const label = (t, what) => several ? tName(t) + ": " + what : what;
+  const used = new Set();
+  after.forEach((t, i) => {
+    let j = before.findIndex((o, k) => !used.has(k) && tkey(o) === tkey(t));
+    if (j < 0 && before.length === 1 && after.length === 1 && !used.has(0)) j = 0;   // one taster, now someone else
+    if (j < 0) { out.push(["New taster: " + tName(t), brief(t), ""]); return; }
+    used.add(j); const o = before[j];
+    if (tkey(o) !== tkey(t)) out.push(["Rated by", tName(t), tName(o)]);
+    const ns = t.rating == null ? "not rated" : Stars.text(t.rating), os = o.rating == null ? "not rated" : Stars.text(o.rating);
+    if (ns !== os) out.push([label(t, "Overall"), ns, os]);
+    [...new Set(Object.keys(o.scores || {}).concat(Object.keys(t.scores || {})))].forEach(k => {
+      const a = (o.scores || {})[k], b = (t.scores || {})[k];
+      const nt = b == null ? "" : SCALE.text(k, b), ot = a == null ? "" : SCALE.text(k, a);
+      if (nt === ot) return;   // reads the same (an old in-between value of a tasting note, say)
+      out.push([label(t, SCALE.isCore(k) ? k.charAt(0).toUpperCase() + k.slice(1) : "Tasting note: " + k), nt, ot]);
+    });
   });
+  before.forEach((o, k) => { if (!used.has(k) && (o.rating != null || Object.keys(o.scores || {}).length)) out.push(["Removed taster: " + tName(o), "", brief(o)]); });
   return out;
 }
 // "Simple" shows what you need to log and rate a brew; "All fields" shows everything. Each phone remembers its choice.
@@ -1248,7 +1284,7 @@ function setRating(v) {
 }
 for (let i = 1; i <= 5; i++) {
   const b = el("button"); b.type = "button"; b.setAttribute("aria-label", i + (i === 1 ? " star" : " stars") + ", tap again for " + (i - 0.5));
-  b.onclick = () => { setRating(rating === i ? i - 0.5 : rating === i - 0.5 ? null : i); userChanged(); };
+  b.onclick = () => { setRating(rating === i ? i - 0.5 : rating === i - 0.5 ? null : i); renderTasters(); userChanged(); };
   $("stars").appendChild(b);
 }
 $("stars").appendChild(el("span", "starval")).id = "starval";
@@ -1398,6 +1434,90 @@ function newNote() {
 $("b-addnote").onclick = newNote;
 $("b-newnote").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); newNote(); } });
 
+// ----- who rates: several people can rate one brew (supabase/19_brew_ratings.sql). Each taster has their own
+// stars, taste sliders and tasting notes; the form shows the active taster's. A taster is a household member
+// (later also a friend) or a guest with an optional name. The brew's own rating is the average, for older pages.
+let tasters = [], tAct = 0;
+const meTaster = () => ({ rater_id: me ? me.id : null, guest: false, guest_name: null, rating: null, scores: {} });
+function tName(t) {
+  if (!t) return "";
+  if (t.guest) return t.guest_name ? t.guest_name + " (guest)" : "Guest";
+  if (me && t.rater_id === me.id) return names[me.id] ? names[me.id] : "You";
+  return nameOf(t.rater_id) || "Someone";
+}
+// everyone who can be picked: the people in this household (and you)
+function hhPeople() {
+  const ids = hhOk && hh ? (hhMembers[hh] || []).map(m => m.user_id) : Object.keys(names);
+  return [...new Set([me && me.id, ...ids].filter(Boolean))].sort((x, y) => (x === (me && me.id) ? -1 : y === (me && me.id) ? 1 : String(nameOf(x) || "").localeCompare(String(nameOf(y) || ""))));
+}
+function stashTaster() {
+  const t = tasters[tAct]; if (!t) return;
+  t.rating = rating; t.scores = { ...scores };
+  if (t.guest) t.guest_name = $("b-guest").value.trim() || null;
+}
+function showTaster(i) {
+  tAct = Math.max(0, Math.min(i, tasters.length - 1));
+  const t = tasters[tAct] || {};
+  Object.values(ctl).forEach(c => c.clear()); scores = {};
+  setRating(t.rating == null ? null : t.rating);
+  Object.entries(t.scores || {}).forEach(([a, v]) => setScore(a, v));
+  $("guestlab").hidden = !t.guest; $("b-guest").value = t.guest ? (t.guest_name || "") : "";
+  $("ovlab").textContent = tasters.length > 1 ? "Overall, for " + tName(t) : "Overall";
+  renderTasters();
+}
+function setTasters(list, act) { tasters = list && list.length ? list : [meTaster()]; showTaster(act || 0); }
+function renderTasters() {
+  const box = $("tasters"); box.textContent = "";
+  tasters.forEach((t, i) => {
+    const on = i === tAct, shown = on ? { ...t, guest_name: t.guest ? ($("b-guest").value.trim() || null) : null } : t, r = on ? rating : t.rating;
+    const b = el("button", "tst" + (on ? " on" : "")); b.type = "button";
+    b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(on)); b.setAttribute("aria-controls", "tpanel");
+    b.append(el("span", "", tName(shown)));
+    if (r != null) b.append(el("small", "", Stars.text(r)));
+    b.onclick = () => { if (on) return; stashTaster(); showTaster(i); };
+    box.appendChild(b);
+    if (on && tasters.length > 1) {
+      const x = el("button", "tx"); x.type = "button"; x.setAttribute("aria-label", "Remove " + tName(shown) + " as taster"); x.appendChild(ico("close", 15));
+      x.onclick = () => { tasters.splice(i, 1); showTaster(i - 1); userChanged(); };
+      box.appendChild(x);
+    }
+  });
+  const taken = new Set(tasters.filter(t => !t.guest).map(t => t.rater_id));
+  const s = el("select", "tadd"); s.setAttribute("aria-label", "Add someone who tasted it");
+  const o0 = el("option", "", tasters.length ? "+ Someone else" : "+ Who tasted it"); o0.value = ""; s.appendChild(o0);
+  hhPeople().filter(id => !taken.has(id)).forEach(id => { const o = el("option", "", tName({ rater_id: id })); o.value = "u:" + id; s.appendChild(o); });
+  const og = el("option", "", "A guest"); og.value = "g"; s.appendChild(og);
+  s.onchange = () => {
+    const v = s.value; if (!v) return;
+    stashTaster();
+    tasters.push(v === "g" ? { rater_id: null, guest: true, guest_name: null, rating: null, scores: {} } : { rater_id: v.slice(2), guest: false, guest_name: null, rating: null, scores: {} });
+    showTaster(tasters.length - 1); userChanged();
+    if (v === "g") $("b-guest").focus();
+  };
+  box.appendChild(s);
+}
+$("b-guest").addEventListener("input", () => { renderTasters(); $("ovlab").textContent = tasters.length > 1 ? "Overall, for " + tName({ guest: true, guest_name: $("b-guest").value.trim() || null }) : "Overall"; });
+// the tasters of a saved brew, from its ratings (or, for a brew saved before, from its own stars and scores)
+function tastersOf(b) {
+  const sc = b.brew_scores || [], rs = (b.brew_ratings || []).slice().sort((x, y) => String(x.created_at || "").localeCompare(String(y.created_at || "")) || String(x.id).localeCompare(String(y.id)));
+  const sco = list => { const o = {}; list.forEach(x => { o[x.attribute] = x.score; }); return o; };
+  if (rs.length) return rs.map(r => ({ id: r.id, rater_id: r.is_guest ? null : r.rater_id, guest: !!r.is_guest, guest_name: r.guest_name || null, rating: r.rating == null ? null : Number(r.rating), scores: sco(sc.filter(x => x.rating_id === r.id)) }));
+  if (b.rating != null || sc.length) return [{ rater_id: b.made_by || b.created_by || null, guest: false, guest_name: null, rating: b.rating == null ? null : Number(b.rating), scores: sco(sc) }];
+  return [];
+}
+// average stars of a brew over everyone who rated it
+function brewAvg(b) {
+  const rs = (b.brew_ratings || []).map(r => r.rating).filter(v => v != null).map(Number);
+  if (rs.length) return rs.reduce((a, c) => a + c, 0) / rs.length;
+  return b.rating == null ? null : Number(b.rating);
+}
+// what will be saved: tasters who gave stars or at least one score
+function tasterRows() {
+  stashTaster();
+  return tasters.filter(t => t.rating != null || Object.keys(t.scores || {}).length)
+    .map(t => ({ rater_id: t.guest ? null : t.rater_id, is_guest: !!t.guest, guest_name: t.guest ? (t.guest_name || null) : null, rating: t.rating, scores: { ...t.scores } }));
+}
+
 // One text for the settings of a brew. It is also the automatic recipe name.
 function settingsLabel(o) {
   const pre = [o.preinfusion_bar != null ? o.preinfusion_bar + " bar" : null, o.preinfusion_s != null ? o.preinfusion_s + " s" : null].filter(Boolean).join(" ");
@@ -1477,7 +1597,8 @@ $("b-device-new").addEventListener("change", () => { applyType(); });
 function saveDraft() {
   if (!cur || editingBrew || !edited) return;
   const f = {}; BF.forEach(i => { f[i] = $(i).value; });
-  store.set(draftKey(), JSON.stringify({ f, rating, dial: $("b-dialin").checked, scores: { ...scores }, notes: noteNames.slice(), prof, touched: [...touched], t: Date.now() }));
+  stashTaster();
+  store.set(draftKey(), JSON.stringify({ f, tasters, act: tAct, dial: $("b-dialin").checked, notes: noteNames.slice(), prof, touched: [...touched], t: Date.now() }));
 }
 function restoreDraft() {
   const raw = store.get(draftKey()); if (!raw) return false;
@@ -1486,11 +1607,13 @@ function restoreDraft() {
   (d.notes || []).forEach(addNote);
   BF.forEach(i => { if (d.f[i] == null) return; if (i === "b-device" || i === "b-grinder") setSel(i, d.f[i]); else $(i).value = d.f[i]; });
   $("b-device-new").hidden = $("b-device").value !== "__other";
-  setRating(d.rating == null ? null : d.rating); $("b-dialin").checked = !!d.dial;
+  $("b-dialin").checked = !!d.dial;
   prof = Array.isArray(d.prof) ? d.prof : []; renderProf();
   touched = new Set(d.touched || []); edited = true;
   applyType();
-  Object.entries(d.scores || {}).forEach(([a, v]) => setScore(a, v));
+  const ts = Array.isArray(d.tasters) ? d.tasters : [{ ...meTaster(), rating: d.rating == null ? null : d.rating, scores: d.scores || {} }];   // older drafts: one taster
+  ts.forEach(t => Object.keys(t.scores || {}).forEach(addNote));
+  setTasters(ts, d.act || 0);
   say("Your unsaved brew was restored.");
   return true;
 }
@@ -1525,6 +1648,7 @@ function newBrewSetup(dev) {
   $("brewsum").textContent = "Log a brew"; $("bsave").textContent = "Save brew"; $("bcancel").hidden = true; syncNewBrew();
   $("cofflab").hidden = false; if (cur) $("b-coffee").value = cur.id;
   buildScores(cur);
+  setTasters([meTaster()]);
   fillMadeBy(me && me.id);
   const h = readHandoff(), sel = $("b-device");
   const want = (h && h.device) || dev || store.get("alto.device") || "Flair 58";
@@ -1545,7 +1669,7 @@ function startBrewEdit(b) {
   $("bf").reset(); $("cofflab").hidden = true;
   prof = Array.isArray(b.pressure_profile) ? b.pressure_profile.map(x => ({ s: x.s, bar: x.bar })) : []; renderProf();
   buildScores(cur, (b.brew_scores || []).map(s => s.attribute));
-  setRating(b.rating == null ? null : b.rating); $("b-dialin").checked = !!b.is_dialin;
+  $("b-dialin").checked = !!b.is_dialin;
   fillMadeBy(b.made_by || b.created_by || "");
   setSel("b-device", b.device); $("b-device-new").hidden = true;
   if (b.grinder) setSel("b-grinder", GR_OLD[b.grinder] || b.grinder); else $("b-grinder").value = "";
@@ -1555,7 +1679,7 @@ function startBrewEdit(b) {
   pt("b-dose", b.dose_g); pt("b-water", b.water_g); pt("b-yield", b.yield_g); pt("b-temp", b.temp_c); pt("b-preheat", b.preheat); pt("b-time", b.time_s); pt("b-notes", b.notes); timeToParts();
   if (!isEsp(typeOf(b.device))) { ["b-pressure", "b-pibar", "b-pis"].forEach(i => { $(i).value = ""; }); }
   $("b-recipe").value = b.recipe && b.recipe !== settingsLabel(b) ? b.recipe : "";   // an automatic name is rebuilt on save
-  (b.brew_scores || []).forEach(s => setScore(s.attribute, s.score));
+  setTasters(tastersOf(b));
   drawCurve();
   $("brewsum").textContent = "Edit brew"; $("bsave").textContent = "Save changes"; $("bcancel").hidden = false;
   $("brewbox").open = true; $("calcbox").open = false; syncNewBrew();
@@ -1714,7 +1838,14 @@ function brewCard(b) {
   const age = [dr !== null ? (dr === 0 ? "roast day" : "day " + dr + " after roast") : dp !== null ? (dp === 0 ? "purchase day" : "day " + dp + " after purchase") : null, dop !== null ? (dop === 0 ? "opening day" : "day " + dop + " after opening") : null].filter(Boolean).join(", ");
   if (age) a.appendChild(el("p", "age", age));
   if (b.is_dialin) a.appendChild(el("p", "age", "Dial-in brew, not counted in the rating"));
-  if (b.rating) { const s = el("p", "starsum"); s.appendChild(Stars.row(b.rating, "Rated " + Stars.text(b.rating) + " of 5")); a.appendChild(s); }
+  // stars on top: the one rating, or the average of everyone who tasted it
+  const ts = tastersOf(b), avg = brewAvg(b), maker = b.made_by || b.created_by;
+  if (avg != null) {
+    const s = el("p", "starsum"); s.appendChild(Stars.row(avg, "Rated " + Stars.text(avg) + " of 5"));
+    if (ts.length > 1) s.appendChild(el("span", "rby", "average of " + ts.length + " tasters"));
+    else if (ts.length === 1 && (ts[0].guest || (ts[0].rater_id && ts[0].rater_id !== maker && nameOf(ts[0].rater_id)))) s.appendChild(el("span", "rby", "rated by " + tName(ts[0])));
+    a.appendChild(s);
+  }
   if (b.recipe) a.appendChild(el("p", "", b.recipe));
   const set = settingsLabel(b);
   if (set && set !== b.recipe) a.appendChild(el("p", "set", set));
@@ -1726,10 +1857,24 @@ function brewCard(b) {
     const pts = pressurePts(b.preinfusion_bar, b.preinfusion_s, b.pressure_profile, null, null);
     if (pts.length) { const w = el("div", "curve"); w.appendChild(curveSvg(pts)); a.appendChild(w); }
   }
-  const sc = (b.brew_scores || []).slice().sort((x, y) => {
-    const i = k => CORE.includes(k) ? CORE.indexOf(k) : 99; return i(x.attribute) - i(y.attribute);
-  });
-  if (sc.length) { const t = el("div", "tags"); sc.forEach(s => { const ch = el("span", "chip"); ch.style.setProperty("--ac", attrColor(s.attribute)); ch.append(ico(attrIcon(s.attribute), 14), document.createTextNode(s.attribute + " " + SCALE.text(s.attribute, s.score))); t.appendChild(ch); }); a.appendChild(t); }
+  const chips = sc => {
+    const list = Object.entries(sc || {}).sort(([x], [y]) => { const i = k => CORE.includes(k) ? CORE.indexOf(k) : 99; return i(x) - i(y); });
+    if (!list.length) return null;
+    const t = el("div", "tags");
+    list.forEach(([k, v]) => { const ch = el("span", "chip"); ch.style.setProperty("--ac", attrColor(k)); ch.append(ico(attrIcon(k), 14), document.createTextNode(k + " " + SCALE.text(k, v))); t.appendChild(ch); });
+    return t;
+  };
+  if (ts.length === 1) { const t = chips(ts[0].scores); if (t) a.appendChild(t); }
+  else if (ts.length > 1) {   // several tasters: each with their stars and taste
+    const box = el("div", "rts");
+    ts.forEach(t => {
+      const r = el("div", "rt"), h = el("div", "rh");
+      if (t.rating != null) h.appendChild(Stars.row(t.rating, tName(t) + ": " + Stars.text(t.rating) + " of 5"));
+      h.appendChild(el("span", "rn", tName(t) + (t.rating == null ? ", taste only" : "")));
+      r.appendChild(h); const c = chips(t.scores); if (c) r.appendChild(c); box.appendChild(r);
+    });
+    a.appendChild(box);
+  }
   if (b.notes) a.appendChild(el("p", "", b.notes));
   const ed = ibtn("Edit", "edit", () => startBrewEdit(b));
   const del = ibtn("Delete", "trash", async () => {
@@ -1744,13 +1889,13 @@ function brewCard(b) {
 
 async function loadBrews() {
   const my = ++brewLoadId;
-  const { data, error } = await db.from("brews").select("*, brew_scores(attribute,score)").eq("coffee_id", cur.id).order("brewed_at", { ascending: false });
+  const { data, error } = await db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,created_at), brew_scores(attribute,score,rating_id)").eq("coffee_id", cur.id).order("brewed_at", { ascending: false });
   if (my !== brewLoadId) return;
   if (error) { say("Could not load brews: " + error.message); return; }
   brewData = data;
   // tasting notes used on earlier brews of this coffee are offered again
   if (!editingBrew) data.forEach(b => (b.brew_scores || []).forEach(s => { if (!SCALE.isCore(s.attribute)) addNote(s.attribute); }));
-  const dr = $("drate"); dr.textContent = ""; const rb = rateBlock(data.slice().reverse().map(b => ({ r: b.rating, d: !!b.is_dialin }))); if (rb) dr.appendChild(rb);
+  const dr = $("drate"); dr.textContent = ""; const rb = rateBlock(data.slice().reverse().map(b => ({ r: brewAvg(b), d: !!b.is_dialin }))); if (rb) dr.appendChild(rb);
   const uniq = k => [...new Set(data.map(b => b[k]).filter(Boolean))].sort();
   fillFilter("bflt-device", "Device", uniq("device"));
   fillFilter("bflt-recipe", "Recipe", uniq("recipe"));
@@ -1782,8 +1927,11 @@ function brewRow() {
     pressure_bar: esp && keep("b-pressure") ? num("b-pressure") : null, preinfusion_bar: esp && keep("b-pibar") ? num("b-pibar") : null, preinfusion_s: esp && keep("b-pis") ? num("b-pis") : null,
     dose_g: num("b-dose"), water_g: esp ? null : num("b-water"), preheat: isFlair(device) && keep("b-preheat") ? ($("b-preheat").value || null) : null, yield_g: num("b-yield"), temp_c: keep("b-temp") ? num("b-temp") : null, time_s: num("b-time"),
     pressure_profile: stages.length ? stages : null,
-    notes: $("b-notes").value.trim() || null, rating, is_dialin: $("b-dialin").checked
+    notes: $("b-notes").value.trim() || null, rating: null, is_dialin: $("b-dialin").checked
   };
+  // the brew's own stars: the average of everyone who rated it, to the nearest half star (the ratings themselves keep the detail)
+  const rs = tasterRows().map(t => t.rating).filter(v => v != null);
+  row.rating = rs.length ? Math.round(rs.reduce((a, c) => a + c, 0) / rs.length * 2) / 2 : null;
   if (!$("mblab").hidden) { const mb = $("b-madeby").value || null; row.made_by = mb && mb !== (editingBrew ? editingBrew.created_by : me.id) ? mb : null; }
   if (stages.length && row.pressure_bar === null) row.pressure_bar = Math.max(...stages.map(s => s.bar));
   for (const k of ["pressure_bar", "preinfusion_bar", "preinfusion_s", "dose_g", "water_g", "yield_g", "temp_c", "time_s"]) if (row[k] !== null && !isFinite(row[k])) throw new Error("check the numbers");
@@ -1798,7 +1946,9 @@ $("bf").onsubmit = async e => {
   try { row = brewRow(); } catch (err) { say("Could not save: " + err.message); return; }
   {
     const dev = chosen("b-device"), esp = isEsp(typeOf(dev)), v = id => $(id).value.trim();
-    const t = numOf("b-time"), tasted = Object.keys(scores).length;
+    const t = numOf("b-time"), tr = tasterRows();
+    const rated = tr.map(x => tName({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name }) + " " + (x.rating == null ? "(taste only)" : Stars.text(x.rating))).join(", ");
+    const tasted = tr.reduce((a, x) => a + Object.keys(x.scores).length, 0);
     let ok;
     if (editingBrew) {   // editing: show exactly what changed, old next to new
       const ch = brewChanges(editingBrew, row);
@@ -1809,7 +1959,7 @@ $("bf").onsubmit = async e => {
       ["Grind", v("b-grind") ? v("b-grind") + (v("b-feel") ? " (" + v("b-feel") + ")" : "") : null],
       ["Dose", v("b-dose") ? v("b-dose") + " g" : null], [esp ? "Yield" : "Water", esp ? (v("b-yield") ? v("b-yield") + " g" : null) : (v("b-water") ? v("b-water") + " g" : null)],
       ["Time", t === null ? null : esp && t < 90 ? t + " s" : mmss(t) + " min"],
-      ["Overall", rating === null ? "not rated" : Stars.text(rating)], ["Taste", tasted ? tasted + (tasted === 1 ? " score" : " scores") : "no scores"]
+      ["Rated by", rated || "nobody yet"], ["Taste", tasted ? tasted + (tasted === 1 ? " score" : " scores") : "no scores"]
     ], "Save brew");
     if (!ok) return;
   }
@@ -1823,18 +1973,24 @@ $("bf").onsubmit = async e => {
       if (error) throw error;
       if (!done.length) throw new Error("nothing was changed");
       id = editingBrew.id;
-      const d = await db.from("brew_scores").delete().eq("brew_id", id);
+      // the ratings are written fresh: the old ones go (their scores with them)
+      const d = await db.from("brew_ratings").delete().eq("brew_id", id);
       if (d.error) throw d.error;
+      const d2 = await db.from("brew_scores").delete().eq("brew_id", id);
+      if (d2.error) throw d2.error;
     } else {
       const { data: b, error } = await db.from("brews").insert({ ...row, coffee_id: cur.id, created_by: me.id }).select().single();
       if (error) throw error;
       id = b.id;
     }
-    const rows = Object.entries(scores).map(([attribute, score]) => ({ brew_id: id, attribute, score }));
-    if (rows.length) {
-      const r2 = await db.from("brew_scores").insert(rows);
-      if (r2.error) { if (!editingBrew) await db.from("brews").delete().eq("id", id); throw r2.error; }
-    }
+    try {
+      for (const t of tasterRows()) {   // one rating per taster, then that taster's scores
+        const { data: r, error } = await db.from("brew_ratings").insert({ brew_id: id, rater_id: t.rater_id, is_guest: t.is_guest, guest_name: t.guest_name, rating: t.rating }).select("id").single();
+        if (error) throw error;
+        const rows = Object.entries(t.scores).map(([attribute, score]) => ({ brew_id: id, rating_id: r.id, attribute, score }));
+        if (rows.length) { const r2 = await db.from("brew_scores").insert(rows); if (r2.error) throw r2.error; }
+      }
+    } catch (err) { if (!editingBrew) await db.from("brews").delete().eq("id", id); throw err; }
     store.del(draftKey());
     if (device) store.set("alto.device", device);
     if (row.grinder) store.set("alto.grinder", row.grinder);
@@ -1967,6 +2123,7 @@ async function loadNames() {
   (data || []).forEach(p => { names[p.id] = p.display_name; });
   showName();
   fillMadeBy(editingBrew ? (editingBrew.made_by || editingBrew.created_by || "") : ($("b-madeby").value || (me && me.id)));
+  if (tasters.length) renderTasters();   // names arrived: label the tasters
 }
 // A name equal to the start of the email was filled in automatically (supabase/13_household_names.sql), so we still ask once.
 const autoName = () => me && me.email ? me.email.split("@")[0].slice(0, 40) : null;
