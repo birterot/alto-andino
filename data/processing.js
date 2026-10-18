@@ -34,7 +34,7 @@ window.CHAPTER={
   slug:"processing",
   title:"From cherry to green coffee",
   sub:"Chapter 1, processing. Source: The World Atlas of Coffee. Pick a method to see its path and its cup.",
-  pageTitle:"Processing | Coffee atlas",
+  pageTitle:"Processing | Alto Andino",
   pathLabel:"The path",
   D:D,G:G,GN:GN,R:R,
   glossary:[

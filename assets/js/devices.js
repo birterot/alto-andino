@@ -105,7 +105,7 @@
       s.appendChild(ul); b.appendChild(s);
     }
     var lg = el("p", "legend"); lg.appendChild(document.createTextNode("Tried it? "));
-    var a = el("a", "", "Log a brew in the journal"); a.href = "../journal/index.html#log"; lg.appendChild(a); b.appendChild(lg);
+    var a = el("a", "", "Log a brew on the Coffee shelf"); a.href = "../journal/index.html#log"; lg.appendChild(a); b.appendChild(lg);
   }
 
   var tb = $("tabs");
