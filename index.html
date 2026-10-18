@@ -18,16 +18,14 @@
 try { if (!sessionStorage.getItem("alto.intro") && !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) { document.documentElement.classList.add("intro"); setTimeout(function () { document.documentElement.classList.remove("intro"); }, 8000); } } catch (e) {}
 </script>
 <style>
-/* opening animation: the page waits hidden while the mountain is drawn in the middle */
-#introlay{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:var(--bg);color:var(--brand);cursor:pointer;-webkit-tap-highlight-color:transparent}
-#introlay .intromark{width:200px;height:auto;overflow:visible;transform-origin:50% 50%;will-change:transform}
+/* opening animation (assets/js/intro.js): the page waits hidden while the mountain is drawn in the middle */
+#introlay{position:fixed;inset:0;z-index:200;display:grid;place-items:center;color:var(--brand);cursor:pointer;-webkit-tap-highlight-color:transparent}
+#introlay .introbox{position:relative;width:200px;aspect-ratio:599/397;will-change:transform;transform-origin:50% 50%}
+#introlay .il,#introlay .plantwin{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+#introlay .plant{transform-origin:55.1% 46.3%;will-change:translate,rotate}
+#introlay .fill,#introlay .line{will-change:opacity}
 html.intro .hero .mark{visibility:hidden}
-html.intro.intro-landed .hero .mark{visibility:visible}
 html.intro .hero h1,html.intro .tiles,html.intro .topnav,html.intro body::before{opacity:0}
-html.intro .hero h1,html.intro .tiles{transform:translateY(10px)}
-html.intro.intro-show .hero h1{opacity:1;transform:none;transition:opacity .6s ease .45s,transform .6s ease .45s}
-html.intro.intro-show .tiles{opacity:1;transform:none;transition:opacity .7s ease .85s,transform .7s ease .85s}
-html.intro.intro-show .topnav{opacity:1;transition:opacity .6s ease 1s}
 .hero{display:flex;flex-direction:column;align-items:center;gap:14px;margin:28px 0 36px;text-align:center}
 .hero{gap:18px}
 .hero .mark{width:168px;color:var(--brand)}.hero .mark svg{display:block;width:100%;height:auto}
