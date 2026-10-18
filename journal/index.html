@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Alto Andino">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>Coffee journal</title>
+<title>Coffee shelf</title>
 <link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="stylesheet" href="../assets/css/base.css">
@@ -282,7 +282,7 @@ details.calcbox summary{font-size:15px}
 </head>
 <body>
 <main>
-<h1>Coffee journal</h1>
+<h1>Coffee shelf</h1>
 
 <form id="login" hidden>
   <div class="modes" id="authmodes"><button type="button" data-m="in">Sign in</button><button type="button" data-m="up">Create account</button></div>
@@ -385,7 +385,7 @@ details.calcbox summary{font-size:15px}
     <summary id="hhsum">Household</summary>
     <div id="hhbody"></div>
   </details>
-  <h2>Our coffees</h2>
+  <h2>Your coffees</h2>
   <div class="filters" id="cfilters" hidden>
     <input id="flt-q" type="search" placeholder="Search name, roaster, origin" aria-label="Search coffees">
     <select id="flt-process" aria-label="Filter by process"></select>
@@ -1019,7 +1019,7 @@ function drawVList() {
     list.appendChild(li); items.push(it);
   };
   items.splice(0).forEach(opt);
-  if (ours.length) { if (!q) list.appendChild(el("li", "grp", "Ours")); ours.forEach(v => opt({ v })); }
+  if (ours.length) { if (!q) list.appendChild(el("li", "grp", "Yours")); ours.forEach(v => opt({ v })); }
   if (common.length) { if (!q && ours.length) list.appendChild(el("li", "grp", "Common")); common.forEach(v => opt({ v })); }
   if (!list.querySelector("[role=option]")) list.appendChild(el("li", "none", have.length ? "All listed varieties are chosen. Type a new one." : "Type a variety."));
   const opts = list.querySelectorAll("[role=option]");
@@ -1529,7 +1529,7 @@ const drinkText = (dk, mk) => !dk ? "" : drinkName(dk).replace(/ \((traditional|
 let prefsOf = {};   // everyone's settings (profiles.prefs), by person
 function defDrink(personId) {
   const ty = typeOf(chosen("b-device")), pf = (personId && prefsOf[personId]) || {}, esp = isEsp(ty) || ty === "moka";   // moka coffee is drunk like espresso
-  const dk = (esp ? pf.drink_esp : pf.drink_filter) || (esp ? "doppio" : "filter");   // our Flair shots (18 g) are doubles
+  const dk = (esp ? pf.drink_esp : pf.drink_filter) || (esp ? "doppio" : "filter");   // Flair shots (18 g) are doubles
   return { drink: drinkOf(dk) ? dk : (esp ? "doppio" : "filter"), milk: drinkOf(dk) && drinkOf(dk).milk ? (pf.milk || "") : "" };
 }
 const meTaster = () => ({ rater_id: me ? me.id : null, guest: false, guest_name: null, rating: null, scores: {}, ...defDrink(me && me.id), auto: true });
@@ -2194,7 +2194,7 @@ function renderHousehold() {
     if (error) { say(error.message); return; }
     const wrap = el("div", "invlink"), li = el("input"); li.readOnly = true; li.value = joinUrl(data); li.setAttribute("aria-label", "Invite link");
     const sh = abtn("btn ghost", navigator.share ? "Share" : "Copy", "check", async () => {
-      try { if (navigator.share) await navigator.share({ title: "Join " + cur.name, text: "Join our coffee journal \u201C" + cur.name + "\u201D:", url: li.value }); else { await navigator.clipboard.writeText(li.value); say("Link copied."); } }
+      try { if (navigator.share) await navigator.share({ title: "Join " + cur.name, text: "Join the coffee shelf \u201C" + cur.name + "\u201D:", url: li.value }); else { await navigator.clipboard.writeText(li.value); say("Link copied."); } }
       catch (e) { li.select(); }
     });
     wrap.append(li, sh); ib.replaceWith(wrap); li.select();
@@ -2231,7 +2231,7 @@ function fillMadeBy(want) {
   $("mblab").hidden = !namesOk;
   const hint = $("mbhint"); hint.hidden = !namesOk; hint.textContent = "";
   if (namesOk) {
-    hint.append(document.createTextNode(hhOk ? "Someone missing? Invite them under \u201CHousehold\u201D in the Journal. " : Object.keys(names).length < 2 ? "Someone missing? They appear here once they sign in and set their name. " : "Only people who have set a name are listed. "));
+    hint.append(document.createTextNode(hhOk ? "Someone missing? Invite them under \u201CHousehold\u201D on the Coffee shelf. " : Object.keys(names).length < 2 ? "Someone missing? They appear here once they sign in and set their name. " : "Only people who have set a name are listed. "));
     const b = el("button", "lnk", me && names[me.id] ? "Change my name" : "Set my name"); b.type = "button"; b.onclick = () => $("rename").onclick(); hint.appendChild(b);
   }
 }

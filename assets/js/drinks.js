@@ -18,6 +18,10 @@
       var h = l[1] * PX; y -= h;
       var r = sv("rect", { x: inset, y: y, width: W - 2 * inset, height: h, fill: "var(--l-" + l[0] + ")" });
       s.appendChild(r);
+      if (l[0] === "foam") {   // foam: bubbles and a soft edge, so it shows against the milk and the page
+        s.appendChild(sv("rect", { x: inset, y: y, width: W - 2 * inset, height: h, fill: "url(#dfoam)" }));
+        s.appendChild(sv("line", { x1: inset, x2: W - inset, y1: y + 0.5, y2: y + 0.5, stroke: "var(--l-foamdot)", "stroke-width": 1 }));
+      }
       if (l[0] === "ice") for (var i = 0; i < 3; i++) s.appendChild(sv("rect", { x: inset + 6 + i * 16, y: y + 4 + (i % 2) * 8, width: 11, height: 11, rx: 2, fill: "none", stroke: "var(--glass)", "stroke-width": 1 }));
     });
     // the cup: an outline a bit taller than what is in it
@@ -32,9 +36,14 @@
     r.appendChild(el("p", "cupsz", d.cup)); if (d.flair) r.appendChild(el("p", "flair", d.flair));
     c.append(left, r); return c;
   }
+  // one shared bubble pattern for the foam
+  var defs = sv("svg", { width: 0, height: 0, "aria-hidden": "true", style: "position:absolute" }), pat = sv("pattern", { id: "dfoam", width: 9, height: 7, patternUnits: "userSpaceOnUse" });
+  pat.appendChild(sv("circle", { cx: 2.5, cy: 2.5, r: 1.6, fill: "none", stroke: "var(--l-foamdot)", "stroke-width": 0.9 }));
+  pat.appendChild(sv("circle", { cx: 7, cy: 5.5, r: 1.1, fill: "none", stroke: "var(--l-foamdot)", "stroke-width": 0.8 }));
+  defs.appendChild(pat); document.querySelector("main").appendChild(defs);   // inside main, where the colours are defined
   function keys(kinds) {
     var u = el("ul", "dkeys");
-    kinds.forEach(function (k) { var li = el("li"), i = el("i"); i.style.setProperty("--k", "var(--l-" + k + ")"); li.append(i, document.createTextNode(NAMES[k])); u.appendChild(li); });
+    kinds.forEach(function (k) { var li = el("li"), i = el("i", k === "foam" ? "foam" : ""); i.style.setProperty("--k", "var(--l-" + k + ")"); li.append(i, document.createTextNode(NAMES[k])); u.appendChild(li); });
     return u;
   }
   var TABS = C.groups.map(function (g) { return g[0]; }).concat(["milkinfo"]), cur = 0;

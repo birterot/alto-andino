@@ -154,7 +154,7 @@ window.DEVICES = {
             ["Under 25 seconds", "Fast. Risk of underextraction (sour)."],
             ["Over 35 to 40 seconds", "Slow. Risk of overextraction (bitter)."],
             ["The cup decides", "These are only guides. If it tastes good to you, the recipe is right, even at 40 or 50 seconds. Many specialty coffees today run longer than 35 seconds."],
-            ["Our experience", "80 to 90% of our coffees end up at around 45 seconds."]]],
+            ["From experience", "80 to 90% of coffees end up at around 45 seconds."]]],
           ["Taste says...", [
             ["Sour (underextracted)", "Raise the water temperature a few degrees, grind finer even if the shot goes past 30 seconds, or lower the dose slightly."],
             ["Bitter (overextracted)", "Lower the water temperature a few degrees, grind coarser even if the shot goes under 30 seconds, or raise the dose slightly."],

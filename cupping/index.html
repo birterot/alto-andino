@@ -283,7 +283,7 @@ function route() {
 window.addEventListener("hashchange", route);
 db.auth.onAuthStateChange((_e, session) => setTimeout(async () => {
   const was = me; me = session ? session.user : null;
-  if (!me) { $("view").textContent = ""; const p = el("p", "hint", "Sign in in the Journal first, then come back here. "); const a = el("a", "lnk", "Go to the Journal"); a.href = "../journal/index.html"; p.appendChild(a); $("view").appendChild(p); return; }
+  if (!me) { $("view").textContent = ""; const p = el("p", "hint", "Sign in on the Coffee shelf first, then come back here. "); const a = el("a", "lnk", "Go to the Coffee shelf"); a.href = "../journal/index.html"; p.appendChild(a); $("view").appendChild(p); return; }
   if (!was && await loadAll()) route();
 }, 0));
 </script>

@@ -24,7 +24,7 @@
     ["home", "Home", "index.html"],
     ["log", "Log a brew", "journal/index.html#log"],
     ["calc", "Calculator", "calc/index.html"],
-    ["journal", "Journal", "journal/index.html"],
+    ["journal", "Coffee shelf", "journal/index.html"],
     ["trends", "Trends", "trends/index.html"],
     ["cupping", "Cupping", "cupping/index.html"],
     ["book", BOOK, "chapters/index.html"],

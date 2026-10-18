@@ -10,7 +10,7 @@ Live at https://birterot.github.io/alto-andino/
 alto-andino/
   index.html               home
   chapters/                Bean to cup: processing, roasting, freshness, devices
-  journal/index.html       coffees, bags and brews (Supabase)
+  journal/index.html       the Coffee shelf: coffees, bags and brews (Supabase)
   trends/index.html        charts of our brews
   calc/index.html          brew calculator
   data/processing.js       all content of chapter 1 (edit this)

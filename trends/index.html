@@ -423,7 +423,7 @@ function viewUs() {
 
   const bl = card("Beans left", "Open bags with a bag size: grams used by the brews logged so far.");
   const bags = state.coffees.filter(c => !c.archived && !c.finished_at && c.bag_g && c.open_date);
-  if (!bags.length) empty(bl, "Add the bag size (in grams) to an opened coffee in the Journal to see how much is left.");
+  if (!bags.length) empty(bl, "Add the bag size (in grams) to an opened coffee on the Coffee shelf to see how much is left.");
   else bags.forEach(c => {
     const mine = state.brews.filter(b => b.coffeeId === c.id), used = mine.reduce((x, b) => x + (b.dose || 0), 0);
     const left = Math.max(0, c.bag_g - used), doses = mine.map(b => b.dose).filter(Boolean).sort((x, y) => x - y);
@@ -454,7 +454,7 @@ function viewTime() {
   const xs = el("select"); xs.setAttribute("aria-label", "Count days from");
   [["roast", "Days after roast"], ["open", "Days after opening"]].forEach(([v, t]) => { const o = el("option", "", t); o.value = v; xs.appendChild(o); });
   xs.value = xk; xs.onchange = () => { state.xk = xs.value; render(); }; sub.appendChild(xs);
-  if (!all.length) { empty(m, (xk === "roast" ? !c.roast_date : !c.open_date) ? "This coffee has no " + (xk === "roast" ? "roast" : "opening") + " date yet. Add it in the Journal, or count from the other date." : "No scored brews for this coffee yet."); return; }
+  if (!all.length) { empty(m, (xk === "roast" ? !c.roast_date : !c.open_date) ? "This coffee has no " + (xk === "roast" ? "roast" : "opening") + " date yet. Add it on the Coffee shelf, or count from the other date." : "No scored brews for this coffee yet."); return; }
   const use = all.filter(p => !state.recipe || (p.b.recipe || "(no recipe name)") === state.recipe);
   const leg = el("div", "legend"); m.appendChild(leg);
   CORE.forEach(a => legendItem(leg, FCOL[a], a, "line", () => { if (state.hidden.has(a)) state.hidden.delete(a); else state.hidden.add(a); render(); }, !state.hidden.has(a)));
@@ -480,8 +480,8 @@ function render() {
   $("f-coffee").hidden = !(state.view === "time" || state.view === "dial");
   $("banner").hidden = !state.demo;
   $("views").textContent = "";
-  if (!state.demo && !state.signedIn) { const c = card("Sign in first", null); empty(c, "Sign in in the Journal, then come back here. Until then, tap \"Example data\" to see how the charts look."); return; }
-  if (!state.brews.length) { const c = card("No brews yet", null); empty(c, "Log a few brews in the Journal and the charts appear here. Tap \"Example data\" to see how they will look."); return; }
+  if (!state.demo && !state.signedIn) { const c = card("Sign in first", null); empty(c, "Sign in on the Coffee shelf, then come back here. Until then, tap \"Example data\" to see how the charts look."); return; }
+  if (!state.brews.length) { const c = card("No brews yet", null); empty(c, "Log a few brews on the Coffee shelf and the charts appear here. Tap \"Example data\" to see how they will look."); return; }
   VIEWS[state.view]();
 }
 function fillFilters() {

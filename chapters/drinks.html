@@ -16,12 +16,13 @@
 <style>
 /* chapter colours (tabs) and the colours of what is in the cup */
 .drinks{--f:light-dark(#F1E6D8,#3A2E24);--s:light-dark(#8A6A4A,#C4A27C);--t:light-dark(#4A3424,#EAD8C2);
-  --l-espresso:light-dark(#5A3520,#8E5A38);--l-water:light-dark(#CFE2EA,#3C5560);--l-milk:light-dark(#F2E4CA,#CDBB9B);--l-foam:light-dark(#FFFDF8,#EFE8DA);
+  --l-espresso:light-dark(#5A3520,#8E5A38);--l-water:light-dark(#CFE2EA,#3C5560);--l-milk:light-dark(#EAD3AC,#C7AE86);--l-foam:light-dark(#FFFCF6,#F4EEE3);--l-foamdot:light-dark(#BFAE93,#9C8B72);
   --l-cold:light-dark(#E6EEF2,#AFC2CB);--l-ice:light-dark(#DCEFF7,#6E8D99);--l-filter:light-dark(#8B5A36,#A9744B);--glass:light-dark(#B9AE9F,#6B6258)}
 .drinks .lead{max-width:62ch;margin:-12px 0 18px;color:var(--mut);font-size:14px}
 .dkeys{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 18px;padding:0;list-style:none;font-size:13.5px;color:var(--mut)}
 .dkeys li{display:inline-flex;align-items:center;gap:7px}
 .dkeys i{width:14px;height:14px;border-radius:3px;border:1px solid var(--glass);background:var(--k)}
+.dkeys i.foam{background:radial-gradient(circle at 30% 35%,transparent 1.2px,var(--l-foamdot) 1.3px,var(--l-foamdot) 2px,transparent 2.1px),radial-gradient(circle at 75% 70%,transparent 1px,var(--l-foamdot) 1.1px,var(--l-foamdot) 1.7px,transparent 1.8px),var(--k)}
 .dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
 .dcard{display:grid;grid-template-columns:86px 1fr;gap:14px;align-items:start;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
 .dcard h3{margin:0 0 2px;font-size:19px}
@@ -46,7 +47,7 @@
 <main class="drinks">
 <h1 id="ct"></h1>
 <p class="sub" id="cs"></p>
-<p class="lead">The cups below are drawn to the same scale, so you can compare them. Amounts are typical; every café pours a little differently.</p>
+<p class="lead">The cups below are drawn to the same scale, so you can compare them. Amounts are typical; every café and country pours a little differently. Where there is an official definition (the Italian espresso standard), it is mentioned.</p>
 <div class="tabs" id="tabs" role="tablist" aria-label="Kind of drink"></div>
 <div id="panel"></div>
 </main>
