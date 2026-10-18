@@ -35,7 +35,7 @@ input[type=checkbox]{width:20px;height:20px;padding:0;margin:0;accent-color:var(
 label.chk{display:flex;align-items:center;gap:10px;color:var(--ink);font-size:15px;margin-top:16px}
 label.chk input{width:20px;height:20px;margin:0;flex:none}
 .go,.lnk{font:inherit;cursor:pointer;border-radius:6px}
-.go{margin-top:20px;height:48px;padding:0 24px;border-radius:12px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font-size:16px}
+.go{margin-top:20px;height:48px;padding:0 24px;border-radius:12px;border:1px solid var(--act);background:var(--act);color:var(--on-act);font-size:16px}
 .lnk{padding:2px 10px;border:1px solid var(--line);background:none;color:var(--mut);font-size:13px}
 .hint,#msg{color:var(--mut);font-size:14px}
 .foot{margin:72px 0 0;text-align:center;font-size:12px;color:var(--mut);opacity:.7}
@@ -68,7 +68,7 @@ details.add summary{cursor:pointer;font-weight:600}
 .vbox:focus-within{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 .vbox input{flex:1 1 120px;min-width:120px;height:34px;margin:0;padding:0 6px;border:0;background:none;outline:none;max-width:none}
 .vbox input:focus-visible{outline:none}
-.vtok{display:inline-flex;align-items:center;gap:2px;height:32px;padding:0 4px 0 12px;border-radius:999px;background:var(--ink);color:var(--bg);font-size:14px}
+.vtok{display:inline-flex;align-items:center;gap:2px;height:32px;padding:0 4px 0 12px;border-radius:999px;background:var(--act);color:var(--on-act);font-size:14px}
 .vtok button{width:28px;height:28px;display:grid;place-items:center;border:0;background:none;color:inherit;font:inherit;font-size:17px;line-height:1;cursor:pointer;border-radius:999px;opacity:.8}
 .vtog{position:absolute;right:4px;top:4px;width:40px;height:40px;display:grid;place-items:center;border:0;background:none;color:var(--mut);cursor:pointer;border-radius:10px;-webkit-tap-highlight-color:transparent}
 .vtog svg{transition:transform .15s}.vcombo.open .vtog svg{transform:rotate(180deg)}
@@ -80,6 +80,15 @@ details.add summary{cursor:pointer;font-weight:600}
 .vlist li.none{color:var(--mut);cursor:default;background:none}
 .cfacts{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:6px 18px;margin-top:12px;font-size:14px}
 .cfacts .f{display:inline-flex;align-items:center;gap:7px}
+.cfacts .f.sca,.cfacts .f.cupd{gap:5px}.cfacts .f.sca b,.cfacts .f.cupd b{font-variant-numeric:tabular-nums}
+.cfacts a.f.cupd{color:inherit;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+/* bag photo: on the coffee page too, tap for the full picture */
+.cc img.ph{cursor:zoom-in}
+#dphoto{display:block;width:100%;height:180px;object-fit:cover;cursor:zoom-in}
+dialog.photo{padding:0;border:0;background:transparent;max-width:min(96vw,720px);max-height:92vh}
+dialog.photo::backdrop{background:rgba(10,7,5,.82)}
+dialog.photo img{display:block;max-width:min(96vw,720px);max-height:86vh;object-fit:contain;border-radius:12px}
+dialog.photo button{display:block;margin:10px auto 0;font:inherit;font-size:15px;padding:8px 20px;border-radius:999px;border:1px solid rgba(255,255,255,.5);background:none;color:#fff;cursor:pointer}
 .cfacts svg{color:var(--s)}
 .rscale{display:inline-flex;gap:3px}
 .rscale i{display:block;width:12px;height:6px;border-radius:3px;background:currentColor;opacity:.18}
@@ -178,7 +187,7 @@ h3.sh{font-size:16px;margin:26px 0 2px}
 .tasters{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;max-width:460px}
 .tasters .tst{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:14.5px;cursor:pointer}
 .tasters .tst small{font-size:12.5px;color:var(--mut)}
-.tasters .tst.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.tasters .tst.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
 .tasters .tst.on small{color:inherit;opacity:.8}
 .tasters .tx{width:32px;height:32px;margin-left:-4px;display:grid;place-items:center;border:0;border-radius:999px;background:none;color:var(--mut);cursor:pointer}
 .tasters select.tadd{width:auto;height:40px;min-height:40px;margin:0;padding:0 30px 0 14px;font-size:14.5px;color:var(--accent);border-style:dashed}
@@ -194,7 +203,7 @@ label.off{opacity:.45}
 body.simple .adv{display:none!important}
 .fmode{display:flex;gap:6px;margin:6px 0 4px}
 .fmode button{font:inherit;font-size:13.5px;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--mut);cursor:pointer}
-.fmode button.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.fmode button.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
 .fmode-hint{margin:0 0 4px;font-size:13px;color:var(--mut)}
 .mmss{display:flex;align-items:center;gap:6px;margin-top:6px}
 .mmss input{margin:0;min-width:0;text-align:center}
@@ -219,12 +228,12 @@ details.calcbox summary{font-size:15px}
 .calcacts .reset{margin:0}
 .dvrow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px}
 .dvrow button,.modes button{font:inherit;font-size:14px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
-.dvrow button.on,.modes button.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.dvrow button.on,.modes button.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
 .modes{display:flex;gap:8px;margin:8px 0 4px}
 .sfor{border:0;padding:0;margin:12px 0 0}
 .sfor legend{padding:0;font-size:14px;color:var(--mut)}
 .sfor label.chk{display:inline-flex;gap:8px;margin:8px 8px 0 0;padding:0 14px;min-height:40px;border:1px solid var(--line);border-radius:999px;background:var(--card);font-size:14px;cursor:pointer}
-.sfor label.chk:has(input:checked){border-color:var(--ink);background:var(--ink);color:var(--bg)}
+.sfor label.chk:has(input:checked){border-color:var(--act);background:var(--act);color:var(--on-act)}
 .sfor label.chk input{width:16px;height:16px;accent-color:var(--bg)}
 .sfor legend{margin-bottom:2px}
 .curve{max-width:420px;margin-top:12px;color:var(--mut)}
@@ -323,8 +332,9 @@ details.calcbox summary{font-size:15px}
   <details class="add" id="addbox">
     <summary id="addsum">Add a coffee</summary>
     <form id="cf">
-      <label>Name<input id="f-name" required></label>
-      <label>Roaster<input id="f-roaster"></label>
+      <label>Roaster or brand<input id="f-roaster" placeholder="e.g. 80 Cup, or Lavazza"></label>
+      <label>Name, as they call it<input id="f-name" required placeholder="e.g. Colombia Huila, or Qualità Oro"></label>
+      <p class="hint">Specialty coffee: the roaster and the coffee's name. Supermarket coffee: the brand and the product name.</p>
       <label>Origin<input id="f-origin" placeholder="Country, region"></label>
       <div class="vfield adv">
         <span class="vl" id="vlab">Botanical variety</span>
@@ -361,6 +371,7 @@ details.calcbox summary{font-size:15px}
       <label>Open date<input type="date" id="f-od"></label>
       <label class="adv">Notes<textarea id="f-notes" rows="3"></textarea></label>
       <label class="adv">Bag size (g, optional)<input id="f-bag" type="number" inputmode="numeric" min="1" max="5000" step="1" placeholder="250"></label>
+      <label class="adv">SCA score (from the bag, optional)<input id="f-sca" type="number" inputmode="decimal" min="0" max="100" step="0.25" placeholder="e.g. 86.5"></label>
       <p class="hint adv">Used to show how much coffee is left.</p>
       <label class="adv">Where to buy (link, optional)<input id="f-url" type="url" inputmode="url" placeholder="https://..."></label>
       <label>Bag photo<input type="file" id="f-photo" accept="image/*"></label>
@@ -387,7 +398,7 @@ details.calcbox summary{font-size:15px}
 
   <div id="detail" hidden>
     <a class="back" href="#">All coffees</a>
-    <section id="dhead" class="cc"><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><div class="acts" id="dacts"><span id="dbuy"></span><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button></div><p class="darch" id="darch" hidden></p></div></section>
+    <section id="dhead" class="cc"><img id="dphoto" alt="" hidden><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><div class="acts" id="dacts"><span id="dbuy"></span><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button></div><p class="darch" id="darch" hidden></p></div></section>
     <details class="add" id="brewbox" open>
       <summary id="brewsum">Log a brew</summary>
       <form id="bf">
@@ -445,6 +456,7 @@ details.calcbox summary{font-size:15px}
         <div class="tpanel" id="tpanel" role="tabpanel">
         <label id="guestlab" hidden>Guest's name (optional)<input id="b-guest" placeholder="e.g. Lena" autocomplete="off" maxlength="60"></label>
         <div class="row2 dmrow"><label>Drink<select id="b-drink"></select></label><label id="milklab">Milk<select id="b-milk"></select></label></div>
+        <label id="ownlab" hidden>Your name for the drink<input id="b-drink-own" maxlength="40" placeholder="e.g. Espresso tonic" autocomplete="off"></label>
         <label id="ovlab">Overall</label>
         <div class="stars" id="stars" role="group" aria-label="Overall rating"></div>
         <h3 class="sh">Taste</h3>
@@ -491,6 +503,7 @@ details.calcbox summary{font-size:15px}
     <button class="lnk" id="sd-back" type="button">Keep editing</button>
   </div>
 </dialog>
+<dialog id="photodlg" class="photo" aria-label="Photo of the bag"><img id="photobig" alt=""><button type="button" id="photoclose">Close</button></dialog>
 <dialog id="deldlg" class="dlg" aria-labelledby="dlgtitle">
   <h3 id="dlgtitle">Remove this bag?</h3>
   <p id="dlgtext"></p>
@@ -629,6 +642,9 @@ function factsBlock(c, withTag) {
     f.appendChild(el("span", "", c.roast_level + " roast")); facts.appendChild(f);
   }
   if (c.process) { const f = el("span", "f"); f.append(ico(procInfo(c.process).icon, 18), el("span", "", c.process)); facts.appendChild(f); }
+  const cu = coffeeCups[c.id];
+  if (cu && cu.length) { const f = el("a", "f cupd"); f.href = "../cupping/#c=" + c.id; f.title = "Cupped " + cu.length + "\u00D7, see the cuppings"; f.append(el("b", "", (Math.round(cu.reduce((a, b) => a + b, 0) / cu.length * 10) / 10).toString()), el("span", "", "cupped" + (cu.length > 1 ? " " + cu.length + "\u00D7" : ""))); facts.appendChild(f); }
+  if (c.sca_score != null) { const f = el("span", "f sca"); f.title = "Official SCA cupping score"; f.append(el("b", "", String(Number(c.sca_score))), el("span", "", "SCA")); facts.appendChild(f); }
   if (facts.children.length) box.appendChild(facts);
   const tag = withTag && c.process ? procInfo(c.process).tag : null;
   if (tag) box.appendChild(el("p", "ptag", tag));
@@ -761,7 +777,7 @@ const gk = c => c.group_id || c.id;   // bags of one coffee share this key
 function card(c, photoUrl, nBrews, ratings, bags) {
   const a = el("article", "cc");
   applyLook(a, c);
-  if (photoUrl) { const i = el("img"); i.src = photoUrl; i.alt = "Bag of " + c.name; i.loading = "lazy"; a.appendChild(i); }
+  if (photoUrl) { const i = el("img", "ph"); i.src = photoUrl; i.alt = "Bag of " + c.name; i.loading = "lazy"; i.onclick = () => showPhoto(photoUrl, c.name); a.appendChild(i); }
   const b = el("div", "in");
   const hd = el("div", "hd"); hd.appendChild(el("h3", "", c.name)); b.appendChild(hd);
   const meta = [c.is_decaf ? "Decaf" : null, c.roaster, c.origin, c.variety, altText(c), c.is_blend ? "Blend" : null].filter(Boolean).join(", ");
@@ -822,17 +838,20 @@ function card(c, photoUrl, nBrews, ratings, bags) {
   return a;
 }
 
-let loadId = 0, coffeeData = [], coffeeUrls = {}, coffeeCounts = {}, coffeeRates = {}, coffeeUsed = {};
+let loadId = 0, coffeeData = [], coffeeUrls = {}, coffeeCounts = {}, coffeeRates = {}, coffeeUsed = {}, coffeeCups = {};
+let cupRows = [];
 async function load() {
   const my = ++loadId;   // only the newest load may draw, so parallel loads cannot add cards twice
   const [{ data, error }, { data: bs }] = await Promise.all([
     inHH(db.from("coffees").select("*")).order("created_at", { ascending: false }),
-    db.from("brews").select("coffee_id,rating,is_dialin,brewed_at,dose_g,brew_ratings(rating)").order("brewed_at")
-  ]);
+    db.from("brews").select("coffee_id,rating,is_dialin,brewed_at,dose_g,brew_ratings(rating)").order("brewed_at"),
+    db.from("cuppings").select("coffee_id,total")   // cupping (supabase/21_sca_cupping.sql); before that it just fails and is left out
+  ]).then(r => [r[0], r[1], r[2] && !r[2].error ? r[2] : { data: [] }]).then(r => { cupRows = r[2].data || []; return r; });
   const counts = {}, rates = {}, used = {};
   (bs || []).forEach(b => { used[b.coffee_id] = (used[b.coffee_id] || 0) + (Number(b.dose_g) || 0); counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; (rates[b.coffee_id] = rates[b.coffee_id] || []).push({ r: brewAvg(b), d: !!b.is_dialin, t: b.brewed_at }); });
   if (my !== loadId) return;
   if (error) { say("Could not load coffees: " + error.message); return; }
+  coffeeCups = {}; cupRows.forEach(r => { if (r.total != null) (coffeeCups[r.coffee_id] = coffeeCups[r.coffee_id] || []).push(Number(r.total)); });
   const uniq = k => [...new Set(data.map(c => c[k]).filter(Boolean))];
   fill("f-process", Object.keys(PAL), uniq("process")); fill("f-roast", window.LISTS.roast, uniq("roast_level"));
   const paths = data.map(c => c.photo_path).filter(Boolean), urls = {};
@@ -936,7 +955,7 @@ function startEdit(c) {
   $("f-blend").checked = !!c.is_blend; $("f-decaf").checked = !!c.is_decaf; setSfor(c.suitable_for); renderVarieties();
   setSel("f-process", c.process); setSel("f-roast", c.roast_level);
   $("f-tags").value = (c.flavour_tags || []).join(", ");
-  $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || ""; $("f-url").value = c.buy_url || ""; $("f-pd").value = c.purchase_date || ""; $("f-rdx").checked = !c.roast_date && !!c.purchase_date; syncRoastUnknown(); $("f-bag").value = c.bag_size_g || "";
+  $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || ""; $("f-url").value = c.buy_url || ""; $("f-pd").value = c.purchase_date || ""; $("f-rdx").checked = !c.roast_date && !!c.purchase_date; syncRoastUnknown(); $("f-bag").value = c.bag_size_g || ""; $("f-sca").value = c.sca_score == null ? "" : Number(c.sca_score);
   $("addsum").textContent = "Edit coffee";
   $("save").textContent = "Save changes";
   $("cancel").hidden = false;
@@ -1082,9 +1101,15 @@ function confirmSave(title, rows, okText, note) {
     if (d.showModal) d.showModal(); else done(confirm(title));
   });
 }
+// The bag photo, big. Tap anywhere (or Close) to go back.
+function showPhoto(url, name) {
+  const d = $("photodlg"); $("photobig").src = url; $("photobig").alt = "Bag of " + (name || "the coffee");
+  if (d.showModal) d.showModal(); else window.open(url, "_blank");
+}
+$("photodlg").onclick = () => $("photodlg").close();
 // Saving an edit without any change: say so clearly, and offer to close the form.
 async function nothingChanged(close) {
-  const leave = await confirmSave("Nothing changed", [], "Close the form", "You have not changed anything, so there is nothing to save.");
+  const leave = await confirmSave("Nothing changed", [], "Close form", "You have not changed anything, so there is nothing to save.");
   if (leave) close();
 }
 // Compares the old record with the row that would be saved: [label, new, old] for every field that really changes.
@@ -1110,11 +1135,11 @@ function changes(old, row, fields) {
   return out;
 }
 const COFFEE_FIELDS = [
-  ["name", "Name"], ["roaster", "Roaster"], ["origin", "Origin"], ["variety", "Variety"],
+  ["roaster", "Roaster or brand"], ["name", "Name"], ["origin", "Origin"], ["variety", "Variety"],
   [r => r.altitude_min_m == null ? "" : r.altitude_max_m != null ? r.altitude_min_m + "\u2013" + r.altitude_max_m + " m" : r.altitude_min_m + " m", "Altitude"],
   ["process", "Process"], ["roast_level", "Roast level"], ["is_blend", "Blend"], ["is_decaf", "Decaf"],
   ["roast_date", "Roasted", fmtD], ["purchase_date", "Bought", fmtD], ["open_date", "Opened", fmtD],
-  ["bag_size_g", "Bag size", v => v == null ? "" : v + " g"],
+  ["bag_size_g", "Bag size", v => v == null ? "" : v + " g"], ["sca_score", "SCA score", v => v == null ? "" : String(Number(v))],
   ["flavour_tags", "Flavour tags"], ["suitable_for", "Ideal for", v => (v || []).map(typeLabel).join(", ")],
   ["notes", "Notes"], ["buy_url", "Link"]
 ];
@@ -1166,8 +1191,8 @@ function brewChanges(old, row) {
   before.forEach((o, k) => { if (!used.has(k) && (o.rating != null || Object.keys(o.scores || {}).length)) out.push(["Removed taster: " + tName(o), "", brief(o)]); });
   return out;
 }
-// "Simple" shows what you need to log and rate a brew; "All fields" shows everything. Each phone remembers its choice.
-// Phones that already used the app start on "All fields", new ones on "Simple".
+// "Simple" shows what you need to log and rate a brew; "All" shows every field. Each phone remembers its choice.
+// Phones that already used the app start on "All", new ones on "Simple".
 const MODE_KEY = "alto.formmode";
 let formMode = (() => { try { const m = localStorage.getItem(MODE_KEY); if (m) return m; return localStorage.getItem("alto.device") ? "all" : "simple"; } catch (e) { return "all"; } })();
 const isSimple = () => formMode === "simple";
@@ -1175,11 +1200,11 @@ function setFormMode(m) {
   formMode = m; try { localStorage.setItem(MODE_KEY, m); } catch (e) {}
   document.body.classList.toggle("simple", m === "simple");
   document.querySelectorAll(".fmode button").forEach(b => { const on = b.dataset.m === m; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
-  document.querySelectorAll(".fmode-hint").forEach(h => { h.textContent = m === "simple" ? "More fields (grinder, temperature, pressure, tasting notes...) are under \u201CAll fields\u201D." : ""; });
+  document.querySelectorAll(".fmode-hint").forEach(h => { h.textContent = m === "simple" ? "More fields (grinder, temperature, pressure, tasting notes...) are under \u201CAll\u201D." : ""; });
 }
 ["cf", "bf"].forEach(id => {
   const box = el("div", "fmode"); box.setAttribute("role", "group"); box.setAttribute("aria-label", "How many fields to show");
-  [["simple", "Simple"], ["all", "All fields"]].forEach(([m, t]) => { const b = el("button", "", t); b.type = "button"; b.dataset.m = m; b.onclick = () => setFormMode(m); box.appendChild(b); });
+  [["simple", "Simple"], ["all", "All"]].forEach(([m, t]) => { const b = el("button", "", t); b.type = "button"; b.dataset.m = m; b.onclick = () => setFormMode(m); box.appendChild(b); });
   const f = $(id); f.insertBefore(el("p", "fmode-hint"), f.firstChild); f.insertBefore(box, f.firstChild);
 });
 setFormMode(formMode);
@@ -1212,6 +1237,10 @@ function coffeeRow() {
   const bag = v("f-bag") === "" ? null : Math.round(Number(v("f-bag")));
   if (bag !== null && !(bag >= 1 && bag <= 5000)) throw new Error("the bag size must be between 1 and 5000 g");
   if (bag !== null || (editing && editing.bag_size_g) || (newBagOf && newBagOf.bag_size_g)) row.bag_size_g = bag;
+  // SCA score: only sent when filled in (or cleared), so saving works before supabase/21_sca_cupping.sql
+  const sca = v("f-sca") === "" ? null : Math.round(Number(v("f-sca").replace(",", ".")) * 100) / 100;
+  if (sca !== null && !(sca >= 0 && sca <= 100)) throw new Error("the SCA score must be between 0 and 100");
+  if (sca !== null || (editing && editing.sca_score != null) || (newBagOf && newBagOf.sca_score != null)) row.sca_score = sca;
   // purchase date: only sent when used (or cleared), so saving works before supabase/17_purchase_finished.sql
   const pd = $("f-rdx").checked ? (v("f-pd") || null) : null;
   if (pd !== null || (editing && editing.purchase_date)) row.purchase_date = pd;
@@ -1233,7 +1262,7 @@ $("cf").onsubmit = async e => {
       ok = await confirmSave("Save these changes?", ch, "Save changes", ch.length === 1 ? "You changed one thing:" : "You changed " + ch.length + " things:");
     } else {
       ok = await confirmSave(newBagOf ? "Save the new bag?" : "Save this coffee?", [
-        ["Name", v("f-name")], ["Roaster", v("f-roaster")], ["Origin", v("f-origin")], ["Variety", v("f-variety")], ["Process", chosen("f-process")], ["Roast level", chosen("f-roast")],
+        ["Roaster or brand", v("f-roaster")], ["Name", v("f-name")], ["Origin", v("f-origin")], ["Variety", v("f-variety")], ["Process", chosen("f-process")], ["Roast level", chosen("f-roast")],
         ["Roasted", $("f-rdx").checked ? null : fmtD(v("f-rd"))], ["Bought", $("f-rdx").checked ? fmtD(v("f-pd")) : null], ["Opened", fmtD(v("f-od"))], ["Photo", photo ? "new photo" : null]
       ], "Save");
     }
@@ -1496,12 +1525,12 @@ const DR = (window.DRINKS && window.DRINKS.D) || [], MILKS = (window.DRINKS && w
 const drinkOf = id => DR.find(d => d.id === id) || null;
 const drinkName = id => { const d = drinkOf(id); return d ? d.name : id || ""; };
 const milkName = id => { const m = MILKS.find(x => x[0] === id); return m ? m[1].replace(/ \(.*\)$/, "") : id || ""; };
-const drinkText = (dk, mk) => !dk ? "" : drinkName(dk) + (mk && drinkOf(dk) && drinkOf(dk).milk ? ", " + milkName(mk).toLowerCase() : "");
+const drinkText = (dk, mk) => !dk ? "" : drinkName(dk).replace(/ \((traditional|common), \d shots?\)$/, "") + (mk && (!drinkOf(dk) || drinkOf(dk).milk) ? ", " + milkName(mk).toLowerCase() : "");
 let prefsOf = {};   // everyone's settings (profiles.prefs), by person
 function defDrink(personId) {
   const ty = typeOf(chosen("b-device")), pf = (personId && prefsOf[personId]) || {}, esp = isEsp(ty) || ty === "moka";   // moka coffee is drunk like espresso
-  const dk = (esp ? pf.drink_esp : pf.drink_filter) || (esp ? "espresso" : "filter");
-  return { drink: drinkOf(dk) ? dk : (esp ? "espresso" : "filter"), milk: drinkOf(dk) && drinkOf(dk).milk ? (pf.milk || "") : "" };
+  const dk = (esp ? pf.drink_esp : pf.drink_filter) || (esp ? "doppio" : "filter");   // our Flair shots (18 g) are doubles
+  return { drink: drinkOf(dk) ? dk : (esp ? "doppio" : "filter"), milk: drinkOf(dk) && drinkOf(dk).milk ? (pf.milk || "") : "" };
 }
 const meTaster = () => ({ rater_id: me ? me.id : null, guest: false, guest_name: null, rating: null, scores: {}, ...defDrink(me && me.id), auto: true });
 (function () {   // the drink and milk lists
@@ -1511,12 +1540,15 @@ const meTaster = () => ({ rater_id: me ? me.id : null, guest: false, guest_name:
     DR.filter(d => d.group === g[0]).forEach(d => { const o = el("option", "", d.name); o.value = d.id; og.appendChild(o); });
     s.appendChild(og);
   });
+  const ow = el("option", "", "Something else (type it)"); ow.value = "__own"; s.appendChild(ow);
   const m = $("b-milk"); m.appendChild(Object.assign(el("option", "", "Not set"), { value: "" }));
   MILKS.forEach(x => { const o = el("option", "", x[1]); o.value = x[0]; m.appendChild(o); });
 })();
-function syncMilk() { const d = drinkOf($("b-drink").value); $("milklab").hidden = !(d && d.milk); }
+// a drink of your own: any name, and the milk field stays open (it may have milk)
+function syncMilk() { const v = $("b-drink").value, d = drinkOf(v), own = v === "__own"; $("ownlab").hidden = !own; $("milklab").hidden = !(own || (d && d.milk)); }
 $("b-drink").addEventListener("change", () => { const t = tasters[tAct]; if (t) t.auto = false; syncMilk(); if (!$("milklab").hidden && !$("b-milk").value) { const pf = (t && !t.guest && prefsOf[t.rater_id]) || {}; $("b-milk").value = pf.milk || ""; } });
 $("b-milk").addEventListener("change", () => { const t = tasters[tAct]; if (t) t.auto = false; });
+$("b-drink-own").addEventListener("input", () => { const t = tasters[tAct]; if (t) t.auto = false; });
 function tName(t) {
   if (!t) return "";
   if (t.guest) return t.guest_name ? t.guest_name + " (guest)" : "Guest";
@@ -1531,7 +1563,7 @@ function hhPeople() {
 function stashTaster() {
   const t = tasters[tAct]; if (!t) return;
   t.rating = rating; t.scores = { ...scores };
-  t.drink = $("b-drink").value || null; t.milk = $("milklab").hidden ? null : ($("b-milk").value || null);
+  const dv = $("b-drink").value; t.drink = dv === "__own" ? ($("b-drink-own").value.trim() || null) : (dv || null); t.milk = $("milklab").hidden ? null : ($("b-milk").value || null);
   if (t.guest) t.guest_name = $("b-guest").value.trim() || null;
 }
 function showTaster(i) {
@@ -1541,7 +1573,8 @@ function showTaster(i) {
   setRating(t.rating == null ? null : t.rating);
   Object.entries(t.scores || {}).forEach(([a, v]) => setScore(a, v));
   $("guestlab").hidden = !t.guest; $("b-guest").value = t.guest ? (t.guest_name || "") : "";
-  $("b-drink").value = t.drink || ""; $("b-milk").value = t.milk || ""; syncMilk();
+  const own = !!t.drink && !drinkOf(t.drink);
+  $("b-drink").value = own ? "__own" : (t.drink || ""); $("b-drink-own").value = own ? t.drink : ""; $("b-milk").value = t.milk || ""; syncMilk();
   $("ovlab").textContent = tasters.length > 1 ? "Overall, for " + tName(t) : "Overall";
   renderTasters();
 }
@@ -1595,7 +1628,7 @@ function brewAvg(b) {
 function tasterRows() {
   stashTaster();
   return tasters.filter(t => t.rating != null || Object.keys(t.scores || {}).length)
-    .map(t => ({ rater_id: t.guest ? null : t.rater_id, is_guest: !!t.guest, guest_name: t.guest ? (t.guest_name || null) : null, rating: t.rating, drink: t.drink || null, milk: t.drink && drinkOf(t.drink) && drinkOf(t.drink).milk ? (t.milk || null) : null, scores: { ...t.scores } }));
+    .map(t => ({ rater_id: t.guest ? null : t.rater_id, is_guest: !!t.guest, guest_name: t.guest ? (t.guest_name || null) : null, rating: t.rating, drink: t.drink || null, milk: t.drink && (!drinkOf(t.drink) || drinkOf(t.drink).milk) ? (t.milk || null) : null, scores: { ...t.scores } }));
 }
 
 // One text for the settings of a brew. It is also the automatic recipe name.
@@ -1849,6 +1882,8 @@ async function openCoffee(id, dev, wantForm) {
   const da = $("darch"); da.textContent = ""; da.hidden = !c.archived;
   if (c.archived) { da.append(document.createTextNode("This bag is archived. Its brews still count in Trends.")); da.appendChild(abtn("btn ghost", "Restore", "check", async () => { if (await setArchived(c, false)) openCoffee(c.id); })); }
   $("dname").textContent = c.name;
+  const ph = $("dphoto"), pu = c.photo_path ? coffeeUrls[c.photo_path] : null;
+  ph.hidden = !pu; if (pu) { ph.src = pu; ph.alt = "Bag of " + c.name; ph.onclick = () => showPhoto(pu, c.name); } else ph.removeAttribute("src");
   $("dmeta").textContent = [c.is_decaf ? "Decaf" : null, c.roaster, c.origin, c.variety, altText(c)].filter(Boolean).join(", ") +
     (c.roast_date ? ". Roasted " + fmtD(c.roast_date) : c.purchase_date ? ". Bought " + fmtD(c.purchase_date) + " (roast date unknown)" : "") + (c.open_date ? ", opened " + fmtD(c.open_date) : "") + (c.finished_at ? ", finished " + fmtD(c.finished_at) : "") + ".";
   const bx = $("dbuy"); bx.textContent = ""; const bl = buyLink(c); if (bl) bx.appendChild(bl);
@@ -1887,7 +1922,7 @@ $("b-coffee").addEventListener("change", () => {
 function syncNewBrew() {
   const open = $("brewbox").open, b = $("newbrew"); b.textContent = "";
   b.setAttribute("aria-expanded", String(open));
-  if (open) b.append(ico("close", 16), el("span", "", editingBrew ? "Close without saving" : "Close the form"));
+  if (open) b.append(ico("close", 16), el("span", "", editingBrew ? "Close without saving" : "Close form"));
   else b.append(ico("plus", 16), el("span", "", "Log a brew"));
 }
 $("newbrew").onclick = () => {

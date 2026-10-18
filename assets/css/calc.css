@@ -1,5 +1,5 @@
 .calc .head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.calc .go{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 18px;border-radius:999px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font:inherit;font-size:15px;cursor:pointer}
+.calc .go{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 18px;border-radius:999px;border:1px solid var(--act);background:var(--act);color:var(--on-act);font:inherit;font-size:15px;cursor:pointer}
 .calc .go svg{display:block}
 .calc .fl{display:block;margin:20px 0 6px;font-size:14px;color:var(--mut)}
 .calc select{width:100%;max-width:420px}

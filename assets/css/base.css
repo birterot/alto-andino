@@ -1,5 +1,6 @@
 :root{color-scheme:light dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
---bg:light-dark(#F3EFE8,#1E1B18);--card:light-dark(#FAF8F3,#26221E);--ink:light-dark(#2B2723,#EAE4D9);--mut:light-dark(#6E665C,#A89F92);--line:light-dark(#D9D1C4,#3E3832);--accent:light-dark(#8A6A4A,#C4A27C);--brand:light-dark(#6B4A2E,#D6BC98);--cof:light-dark(#6F4E37,#8B6347);--crema:light-dark(#C9A27A,#B58B63)}
+--bg:light-dark(#F3EFE8,#1E1B18);--card:light-dark(#FAF8F3,#26221E);--ink:light-dark(#2B2723,#EAE4D9);--mut:light-dark(#6E665C,#A89F92);--line:light-dark(#D9D1C4,#3E3832);--accent:light-dark(#8A6A4A,#C4A27C);--brand:light-dark(#6B4A2E,#D6BC98);--cof:light-dark(#6F4E37,#8B6347);--crema:light-dark(#C9A27A,#B58B63);
+--act:light-dark(#4A2F1C,#E3CCA9);--on-act:light-dark(#FBF6EE,#2A1F16)}
 :root[data-theme=light]{color-scheme:light}
 :root[data-theme=dark]{color-scheme:dark}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}

@@ -4,6 +4,18 @@
    Colours come from CSS variables on the page (see trends/index.html), so light and dark mode both work. */
 window.Charts = (function () {
   var NS = "http://www.w3.org/2000/svg";
+  // a row label that never runs out of its space: cut with "…" (the full name stays in the tooltip and as a title)
+  function rowLabel(g, xr, cy, text, maxW) {
+    var n = Math.max(4, Math.floor(maxW / 7.1)), t = String(text);
+    var el = s("text", { x: xr, y: cy + 4, "text-anchor": "end", class: "rl" }, t.length > n ? t.slice(0, n - 1).trim() + "\u2026" : t);
+    if (t.length > n) el.appendChild(s("title", {}, t));
+    g.appendChild(el); return el;
+  }
+  // label space: fits the longest label, but at most 150 px and about 40% of the chart width (phones)
+  function labelSpace(box, rows, min) {
+    var w = (box && box.clientWidth) || 360;
+    return Math.min(150, Math.round(w * 0.4), Math.max(min, Math.max.apply(null, rows.map(function (r) { return String(r.label).length; })) * 7.2));
+  }
   function s(tag, a, text) {
     var e = document.createElementNS(NS, tag);
     for (var k in a) if (a[k] !== undefined && a[k] !== null) e.setAttribute(k, a[k]);
@@ -181,7 +193,7 @@ window.Charts = (function () {
   // ---------- horizontal bars (one series) ----------
   // o: { box, rows: [{ label, value, note, tip }], domain: [0, max], fmt, color }
   function hbars(o) {
-    var lw = o.labelWidth || Math.min(150, Math.max(70, Math.max.apply(null, o.rows.map(function (r) { return r.label.length; })) * 7.2));
+    var lw = o.labelWidth || labelSpace(o.box, o.rows, 70);
     var rowH = 30, f = frame(o.box, o.rows.length * rowH + 30, [6, o.rows.some(function (r) { return r.sub; }) ? 76 : 44, 24, lw + 12]);
     var d = o.domain || [0, Math.max.apply(null, o.rows.map(function (r) { return r.value; }))];
     var x = scale(d[0], d[1], f.L, f.R);
@@ -190,7 +202,7 @@ window.Charts = (function () {
       var cy = f.T + i * rowH + rowH / 2, bh = 16, w = Math.max(2, x(r.value) - f.L);
       var g = s("g", { class: "bar" });
       g.appendChild(s("rect", { x: 0, y: cy - rowH / 2, width: f.W, height: rowH, class: "hit" }));
-      g.appendChild(s("text", { x: f.L - 10, y: cy + 4, "text-anchor": "end", class: "rl" }, r.label));
+      rowLabel(g, f.L - 10, cy, r.label, f.L - 14);
       g.appendChild(s("path", { d: barPath(f.L, cy - bh / 2, w, bh, 4), style: "fill:" + (r.color || o.color) }));
       var vt = s("text", { x: f.L + w + 6, y: cy + 4, class: "val" }, r.text || (o.fmt ? o.fmt(r.value) : r.value));
       if (r.sub) vt.appendChild(s("tspan", { class: "note", dx: 4 }, r.sub));
@@ -221,7 +233,7 @@ window.Charts = (function () {
     o.rows.forEach(function (r, i) {
       var cy = f.T + i * rowH + rowH / 2, bh = o.compact ? 12 : 16, g = s("g", { class: "bar" });
       g.appendChild(s("rect", { x: 0, y: cy - rowH / 2, width: f.W, height: rowH, class: "hit" }));
-      g.appendChild(s("text", { x: f.L - 8, y: cy + 4, "text-anchor": "end", class: "rl" }, r.label));
+      rowLabel(g, f.L - 8, cy, r.label, f.L - 10);
       if (r.value === null || r.value === undefined) g.appendChild(s("text", { x: z + 6, y: cy + 4, class: "note" }, "no score yet"));
       else {
         var w = Math.abs(x(r.value) - z);
@@ -267,14 +279,14 @@ window.Charts = (function () {
   // ---------- dumbbell (two values per row, e.g. two people) ----------
   // o: { box, rows: [{ label, a, b, tip }], domain: [1, 5], colors: [ca, cb], fmt }
   function dumbbell(o) {
-    var lw = Math.min(150, Math.max(80, Math.max.apply(null, o.rows.map(function (r) { return r.label.length; })) * 7.2));
+    var lw = labelSpace(o.box, o.rows, 80);
     var rowH = 32, f = frame(o.box, o.rows.length * rowH + 30, [6, 18, 24, lw + 12]);
     var d = o.domain, x = scale(d[0], d[1], f.L, f.R);
     axes(f, { x: x, y: function () { return 0; }, xTicks: ticks(d[0], d[1], 4), xGrid: true, xFmt: o.fmt, noBaseline: true });
     o.rows.forEach(function (r, i) {
       var cy = f.T + i * rowH + rowH / 2, g = s("g", { class: "bar" });
       g.appendChild(s("rect", { x: 0, y: cy - rowH / 2, width: f.W, height: rowH, class: "hit" }));
-      g.appendChild(s("text", { x: f.L - 10, y: cy + 4, "text-anchor": "end", class: "rl" }, r.label));
+      rowLabel(g, f.L - 10, cy, r.label, f.L - 14);
       if (r.a !== null && r.b !== null) g.appendChild(s("line", { x1: x(r.a), x2: x(r.b), y1: cy, y2: cy, class: "stem" }));
       [[r.a, o.colors[0]], [r.b, o.colors[1]]].forEach(function (v) { if (v[0] !== null) g.appendChild(s("circle", { cx: x(v[0]), cy: cy, r: 6, class: "dot", style: "fill:" + v[1] })); });
       if (r.tip) bind(g, o.box, r.tip);

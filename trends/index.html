@@ -465,7 +465,7 @@ function viewTime() {
   const box = chartBox(m);
   if (!state.recipe) series.forEach(s => { s.points.sort((p, q) => p.x - q.x); });
   Charts.lines({ box, height: 300, xLabel: xk === "roast" ? "Days after roast" : "Days after opening", yDomain: [-5, 5], yTicks: [-5, 0, 5], yBase: 0, yFmt: v => v > 0 ? "+" + v : String(v),
-    series: state.recipe ? series : series.map(s => Object.assign({}, s, { points: s.points })), labelEnds: !!state.recipe && series.length <= 4,
+    series: state.recipe ? series : series.map(s => Object.assign({}, s, { points: s.points })), labelEnds: false,   // the legend names the lines; labels at the line ends only got in each other's way
     tipTitle: x => "Day " + x, valueFmt: (s, y) => (y > 0 ? "+" : "") + y });
   if (!state.recipe) box.querySelectorAll(".ln").forEach(l => l.remove());
   m.appendChild(el("p", "take", use.length < 3 ? "Only " + use.length + " scored brew" + (use.length === 1 ? "" : "s") + " here. A trend needs at least three brews of the same recipe over a few weeks." : "Each point is the average of the brews on that day."));

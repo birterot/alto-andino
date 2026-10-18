@@ -25,8 +25,8 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .seg{display:inline-flex;margin-top:8px;border:1px solid var(--line);border-radius:999px;overflow:hidden}
 .seg button{font:inherit;font-size:14.5px;min-height:42px;padding:0 18px;border:0;background:var(--card);color:var(--mut);cursor:pointer}
 .seg button+button{border-left:1px solid var(--line)}
-.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg);font-weight:600}
-.go{font:inherit;cursor:pointer;height:48px;padding:0 26px;border-radius:12px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font-size:16px}
+.seg button[aria-pressed=true]{background:var(--act);color:var(--on-act);font-weight:600}
+.go{font:inherit;cursor:pointer;height:48px;padding:0 26px;border-radius:12px;border:1px solid var(--act);background:var(--act);color:var(--on-act);font-size:16px}
 .lnk{font:inherit;cursor:pointer;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--mut);font-size:14px;text-decoration:none;display:inline-block}
 .bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:6px 0 18px;max-width:560px}
 #msg{color:var(--mut);font-size:14px;margin:0;padding:6px 12px;border-radius:999px}
@@ -60,9 +60,9 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
     <label>Grinder<select id="s-grinder"></select></label>
     <label id="fmlab">Fields in the brew form</label>
     <div class="seg" id="s-fm" role="group" aria-labelledby="fmlab">
-      <button type="button" data-m="simple">Simple</button><button type="button" data-m="all">All fields</button>
+      <button type="button" data-m="simple">Simple</button><button type="button" data-m="all">All</button>
     </div>
-    <p class="hint">Simple shows what you need to log and rate a brew; All fields shows grinder, temperature, pressure, tasting notes and more. You can still switch inside the form.</p>
+    <p class="hint">Simple shows what you need to log and rate a brew; All shows grinder, temperature, pressure, tasting notes and more. You can still switch inside the form.</p>
   </section>
 
   <section class="set">
@@ -110,7 +110,7 @@ let me = null, profile = null, fm = "";
     });
   };
   const fromFilter = d => d.layers.some(l => l[0] === "filter");
-  fillDrinks($("s-drink-esp"), d => !fromFilter(d), "Espresso (the default)");
+  fillDrinks($("s-drink-esp"), d => !fromFilter(d), "Espresso doppio (the default)");
   fillDrinks($("s-drink-filter"), d => fromFilter(d), "Filter coffee, black (the default)");
   const m = $("s-milk"); opt(m, "", "Not set"); window.DRINKS.MILKS.forEach(x => opt(m, x[0], x[1]));
 })();

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icons/icon-180.png?v=2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Alto Andino">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Cupping | Alto Andino</title>
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+label{display:block;margin-top:14px;font-size:13.5px;color:var(--mut)}
+input,select,textarea{display:block;width:100%;max-width:420px;margin-top:6px;font:inherit;font-size:16px;border-radius:12px;border:1px solid var(--line);background-color:var(--card);color:var(--ink)}
+input,select{height:48px;padding:0 14px}
+select{padding-right:38px}
+textarea{padding:10px 14px;min-height:70px;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.go{font:inherit;cursor:pointer;height:48px;padding:0 24px;border-radius:12px;border:1px solid var(--act);background:var(--act);color:var(--on-act);font-size:16px;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.lnk{font:inherit;cursor:pointer;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--mut);font-size:14px;text-decoration:none;display:inline-block}
+.hint,#msg{color:var(--mut);font-size:14px;max-width:60ch}
+.box{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:6px 18px 18px;margin:0 0 16px;max-width:640px}
+.box h2{font-size:19px;margin:14px 0 4px}
+.sess{display:block;padding:14px 16px;margin:0 0 10px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:inherit;text-decoration:none;max-width:640px}
+.sess small{display:block;color:var(--mut);font-size:13px}
+.sess .row{display:flex;justify-content:space-between;gap:10px;font-size:15px;margin-top:4px}
+.sess .row b{font-variant-numeric:tabular-nums}
+.picks label{display:flex;align-items:center;gap:10px;color:var(--ink);font-size:15px;margin:8px 0 0}
+.picks input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--act)}
+details.cup{border:1px solid var(--line);border-radius:16px;background:var(--card);margin:0 0 12px;max-width:640px}
+details.cup summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;cursor:pointer;font-weight:600;font-size:17px;list-style:none}
+details.cup summary::-webkit-details-marker{display:none}
+details.cup .tot{font-variant-numeric:tabular-nums;font-size:18px}
+details.cup .tot small{display:block;font-weight:400;font-size:12px;color:var(--mut);text-align:right}
+details.cup .in{padding:0 18px 16px}
+.att{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;margin-top:12px}
+.att span{font-size:15px}.att output{font-variant-numeric:tabular-nums;font-weight:600}
+.att input[type=range]{grid-column:1/-1;height:32px;margin:0;padding:0;border:0;background:none;accent-color:var(--act);max-width:none}
+.att .ends{grid-column:1/-1;display:flex;justify-content:space-between;font-size:12px;color:var(--mut);margin-top:-4px}
+.cups{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
+.cups .c5{display:flex;gap:4px}
+.cups button{width:34px;height:34px;border-radius:999px;border:1px solid var(--act);background:var(--act);color:var(--on-act);font:inherit;font-size:13px;cursor:pointer}
+.cups button[aria-pressed=false]{background:none;color:var(--mut);border-color:var(--line);text-decoration:line-through}
+.res{width:100%;border-collapse:collapse;font-size:14.5px;margin-top:8px}
+.res th,.res td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;font-variant-numeric:tabular-nums}
+.res th{color:var(--mut);font-weight:500;font-size:13px}
+.res td.n{text-align:right}
+.res a{color:inherit}
+.acts{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0}
+.note{font-size:14px;color:var(--mut);margin:6px 0 0}
+.words{font-size:13px;color:var(--mut)}
+</style>
+</head>
+<body>
+<main>
+<h1>Cupping</h1>
+<p class="sub">Now and then, taste one or several coffees side by side, the way roasters do: each person scores each coffee, out of 100.</p>
+<p id="msg" role="status"></p>
+<div id="view"></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
+<script src="../assets/js/config.js"></script>
+<script src="../assets/js/theme.js"></script>
+<script src="../assets/js/nav.js" defer></script>
+<script>
+const db = supabase.createClient(SUPA.url, SUPA.key);
+const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined && text !== null) e.textContent = text; return e; };
+const p2 = n => String(n).padStart(2, "0");
+const fmtD = d => { d = new Date(d); return p2(d.getDate()) + "-" + p2(d.getMonth() + 1) + "-" + d.getFullYear(); };
+const say = t => { $("msg").textContent = t || ""; };
+const fmt = v => (Math.round(v * 100) / 100).toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+
+// The scores, like the classic SCA cupping form: seven qualities from 6 to 10 in quarter points,
+// three where each of the five cups gets 2 points if it is fine, minus defects. Together out of 100.
+const ATTR = [["fragrance", "Fragrance / aroma", "The dry grounds, then the wet crust"], ["flavour", "Flavour", "Taste and smell together"], ["aftertaste", "Aftertaste", "What stays after swallowing"],
+  ["acidity", "Acidity", "Bright and lively, or sharp and sour"], ["body", "Body", "How it feels in the mouth: thin to syrupy"], ["balance", "Balance", "Do flavour, acidity and body fit together?"], ["overall", "Overall", "How much you like it"]];
+const CUPS = [["uniformity", "Uniformity", "All cups taste the same"], ["clean", "Clean cup", "No off-flavours"], ["sweetness", "Sweetness", "A pleasant sweetness"]];
+const START = 7.5;
+const words = t => t >= 90 ? "outstanding" : t >= 85 ? "excellent" : t >= 80 ? "very good" : "below specialty";   // specialty coffee starts at 80
+function totalOf(sc, defects) {
+  let t = 0; ATTR.forEach(([k]) => { t += sc[k] != null ? Number(sc[k]) : START; }); CUPS.forEach(([k]) => { t += sc[k] != null ? Number(sc[k]) : 10; });
+  return Math.max(0, Math.round((t - (Number(defects) || 0)) * 100) / 100);
+}
+
+let me = null, hh = null, coffees = [], names = {}, members = [], cups = [];
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } } };
+const coffee = id => coffees.find(c => c.id === id) || null;
+const cName = c => c ? c.name + (c.roaster ? " · " + c.roaster : "") : "A coffee";
+const whoKey = r => r.is_guest ? "g:" + (r.guest_name || "") : "u:" + r.cupper_id;
+const whoName = r => r.is_guest ? (r.guest_name ? r.guest_name + " (guest)" : "Guest") : (r.cupper_id === (me && me.id) ? (names[me.id] || "You") : names[r.cupper_id] || "Someone");
+
+async function loadAll() {
+  say("Loading...");
+  const hm = await db.from("household_members").select("household_id,user_id").eq("user_id", me.id);
+  if (!hm.error && hm.data.length) { const saved = store.get("alto.household"); hh = (hm.data.find(x => x.household_id === saved) || hm.data[0]).household_id; }
+  const cq = db.from("coffees").select("id,name,roaster,archived,finished_at,open_date,created_at,household_id");
+  const [cs, cp, ps, mm] = await Promise.all([
+    (hh ? cq.eq("household_id", hh) : cq).order("created_at", { ascending: false }),
+    db.from("cuppings").select("*").order("cupped_at", { ascending: false }),
+    db.from("profiles").select("id,display_name"),
+    hh ? db.from("household_members").select("user_id").eq("household_id", hh) : Promise.resolve({ data: [] })
+  ]);
+  say("");
+  if (cs.error) { say("Could not load the coffees: " + cs.error.message); return false; }
+  if (cp.error) { say(/cuppings/.test(cp.error.message) ? "Cupping needs a small database update first (supabase/21_sca_cupping.sql)." : "Could not load cuppings: " + cp.error.message); return false; }
+  coffees = cs.data; names = {}; (ps.data || []).forEach(p => { names[p.id] = p.display_name; });
+  members = [...new Set([me.id, ...((mm.data || []).map(m => m.user_id))])];
+  const ids = new Set(coffees.map(c => c.id)); cups = cp.data.filter(r => ids.has(r.coffee_id));
+  return true;
+}
+function sessions() {
+  const by = {};
+  cups.forEach(r => { (by[r.session_id] = by[r.session_id] || []).push(r); });
+  return Object.keys(by).map(id => ({ id, rows: by[id], at: by[id].reduce((a, r) => (r.cupped_at < a ? r.cupped_at : a), by[id][0].cupped_at) })).sort((a, b) => String(b.at).localeCompare(String(a.at)));
+}
+const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+
+// ---------- list ----------
+function viewList(onlyCoffee) {
+  const v = $("view"); v.textContent = "";
+  const a = el("div", "acts"); const go = el("a", "go", "Start a cupping"); go.href = "#new"; a.appendChild(go); v.appendChild(a);
+  let ss = sessions();
+  if (onlyCoffee) {
+    ss = ss.filter(s => s.rows.some(r => r.coffee_id === onlyCoffee));
+    const c = coffee(onlyCoffee), h = el("p", "hint"); h.append(document.createTextNode("Cuppings with " + cName(c) + ". "));
+    const all = el("a", "lnk", "Show all"); all.href = "#"; h.appendChild(all); v.appendChild(h);
+  }
+  if (!ss.length) { v.appendChild(el("p", "hint", onlyCoffee ? "This coffee has not been cupped yet." : "No cuppings yet. Pick one or a few coffees and score them side by side.")); return; }
+  ss.forEach(s => {
+    const l = el("a", "sess"); l.href = "#s=" + s.id;
+    const ppl = [...new Set(s.rows.map(whoName))];
+    l.appendChild(el("small", "", fmtD(s.at) + " · " + ppl.join(", ")));
+    const cids = [...new Set(s.rows.map(r => r.coffee_id))];
+    cids.map(id => ({ id, t: avg(s.rows.filter(r => r.coffee_id === id && r.total != null).map(r => Number(r.total))) })).sort((x, y) => (y.t || 0) - (x.t || 0)).forEach(x => {
+      const r = el("div", "row"); r.append(el("span", "", cName(coffee(x.id))), el("b", "", x.t == null ? "-" : fmt(x.t))); l.appendChild(r);
+    });
+    v.appendChild(l);
+  });
+}
+
+// ---------- one session ----------
+function viewSession(sid) {
+  const v = $("view"); v.textContent = "";
+  const s = sessions().find(x => x.id === sid);
+  if (!s) { v.appendChild(el("p", "hint", "This cupping was not found.")); const b = el("a", "lnk", "All cuppings"); b.href = "#"; v.appendChild(b); return; }
+  const box = el("section", "box"); v.appendChild(box);
+  box.appendChild(el("h2", "", "Cupping on " + fmtD(s.at)));
+  const ppl = []; s.rows.forEach(r => { if (!ppl.some(p => p.k === whoKey(r))) ppl.push({ k: whoKey(r), name: whoName(r) }); });
+  const cids = [...new Set(s.rows.map(r => r.coffee_id))];
+  const rows = cids.map(id => ({ id, by: ppl.map(p => s.rows.find(r => r.coffee_id === id && whoKey(r) === p.k) || null) }))
+    .map(x => Object.assign(x, { t: avg(x.by.filter(Boolean).filter(r => r.total != null).map(r => Number(r.total))) })).sort((a, b) => (b.t || 0) - (a.t || 0));
+  const wrap = el("div"); wrap.style.overflowX = "auto";
+  const t = el("table", "res"), hr = el("tr");
+  hr.appendChild(el("th", "", "Coffee")); ppl.forEach(p => hr.appendChild(el("th", "n", p.name))); if (ppl.length > 1) hr.appendChild(el("th", "n", "Average"));
+  const th = el("thead"); th.appendChild(hr); t.appendChild(th); const tb = el("tbody");
+  rows.forEach(x => {
+    const tr = el("tr"), td = el("td"), a = el("a", "", cName(coffee(x.id))); a.href = "../journal/#c=" + x.id; td.appendChild(a); tr.appendChild(td);
+    x.by.forEach(r => tr.appendChild(el("td", "n", r && r.total != null ? fmt(Number(r.total)) : "-")));
+    if (ppl.length > 1) tr.appendChild(el("td", "n", x.t == null ? "-" : fmt(x.t)));
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb); wrap.appendChild(t); box.appendChild(wrap);
+  if (rows[0] && rows[0].t != null) box.appendChild(el("p", "note", "Top of this cupping: " + cName(coffee(rows[0].id)) + ", " + fmt(rows[0].t) + " (" + words(rows[0].t) + ")."));
+  // notes per coffee
+  s.rows.filter(r => r.notes).forEach(r => box.appendChild(el("p", "note", whoName(r) + " on " + (coffee(r.coffee_id) || {}).name + ": " + r.notes)));
+  const acts = el("div", "acts");
+  const mine = ppl.find(p => p.k === "u:" + me.id);
+  const add = el("a", "go", mine ? "Edit my scores" : "Add my scores"); add.href = "#s=" + sid + "&who=" + encodeURIComponent("u:" + me.id); acts.appendChild(add);
+  ppl.filter(p => p.k !== "u:" + me.id).forEach(p => { const e = el("a", "lnk", "Edit " + p.name); e.href = "#s=" + sid + "&who=" + encodeURIComponent(p.k); acts.appendChild(e); });
+  const other = el("a", "lnk", "Scores for someone else"); other.href = "#s=" + sid + "&who=new"; acts.appendChild(other);
+  const back = el("a", "lnk", "All cuppings"); back.href = "#"; acts.appendChild(back);
+  v.appendChild(acts);
+}
+
+// ---------- scoring form: new session (pick coffees) or one person's scores in a session ----------
+function viewForm(sid, who) {
+  const v = $("view"); v.textContent = "";
+  const s = sid ? sessions().find(x => x.id === sid) : null;
+  const f = el("form"); v.appendChild(f);
+  let chosen = s ? [...new Set(s.rows.map(r => r.coffee_id))] : [];
+  // who cups
+  const wb = el("section", "box"); f.appendChild(wb); wb.appendChild(el("h2", "", s ? "Scores" : "New cupping"));
+  const wl = el("label", "", "Who is scoring"), ws = el("select"); wl.appendChild(ws); wb.appendChild(wl);
+  members.forEach(id => { const o = el("option", "", id === me.id ? (names[id] || "You") + " (you)" : names[id] || "Someone"); o.value = "u:" + id; ws.appendChild(o); });
+  const og = el("option", "", "A guest"); og.value = "g"; ws.appendChild(og);
+  const gl = el("label", "", "Guest's name (optional)"), gi = el("input"); gi.maxLength = 60; gi.placeholder = "e.g. Lena"; gl.appendChild(gi); wb.appendChild(gl);
+  if (who && who !== "new") { if (who.indexOf("g:") === 0) { ws.value = "g"; gi.value = who.slice(2); } else ws.value = who; }
+  else ws.value = "u:" + me.id;
+  if (who === "new") ws.value = members.find(id => id !== me.id) ? "u:" + members.find(id => id !== me.id) : "g";
+  const curKey = () => ws.value === "g" ? "g:" + gi.value.trim() : ws.value;
+  gl.hidden = ws.value !== "g";
+  // which coffees (new session only)
+  const pb = el("section", "box picks");
+  if (!s) {
+    f.appendChild(pb); pb.appendChild(el("h2", "", "Which coffees"));
+    pb.appendChild(el("p", "hint", "Pick the coffees you cup side by side. One is fine too."));
+    coffees.filter(c => !c.archived).forEach(c => {
+      const l = el("label"), i = el("input"); i.type = "checkbox"; i.value = c.id; i.checked = chosen.includes(c.id);
+      i.onchange = () => { chosen = [...pb.querySelectorAll("input:checked")].map(x => x.value); drawCups(); };
+      l.append(i, document.createTextNode(cName(c) + (c.finished_at ? " (finished)" : ""))); pb.appendChild(l);
+    });
+  }
+  const area = el("div"); f.appendChild(area);
+  const state = {};   // coffee id -> { scores, defects, notes }
+  const existing = () => s ? s.rows.filter(r => whoKey(r) === curKey()) : [];
+  function seed() { chosen.forEach(id => { const r = existing().find(x => x.coffee_id === id); state[id] = r ? { scores: Object.assign({}, r.scores), defects: Number(r.defects) || 0, notes: r.notes || "" } : (state[id] || { scores: {}, defects: 0, notes: "" }); }); }
+  function drawCups() {
+    seed(); area.textContent = "";
+    if (!chosen.length) { area.appendChild(el("p", "hint", "Pick at least one coffee.")); return; }
+    chosen.forEach((id, n) => {
+      const st = state[id], d = el("details", "cup"); d.open = chosen.length <= 2 || n === 0;
+      const sm = el("summary"), tot = el("span", "tot");
+      sm.append(el("span", "", cName(coffee(id))), tot); d.appendChild(sm);
+      const inn = el("div", "in"); d.appendChild(inn);
+      const upd = () => { const t = totalOf(st.scores, st.defects); tot.textContent = ""; tot.append(document.createTextNode(fmt(t))); tot.appendChild(el("small", "", words(t))); };
+      ATTR.forEach(([k, label, help]) => {
+        const row = el("div", "att"), out = el("output"), r = el("input");
+        r.type = "range"; r.min = 6; r.max = 10; r.step = 0.25; r.value = st.scores[k] != null ? st.scores[k] : START; r.setAttribute("aria-label", label);
+        out.textContent = fmt(Number(r.value));
+        r.oninput = () => { st.scores[k] = Number(r.value); out.textContent = fmt(Number(r.value)); upd(); };
+        const lb = el("span", "", label); lb.title = help;
+        row.append(lb, out, r);
+        if (k === ATTR[0][0]) { const ends = el("div", "ends"); ends.append(el("span", "", "6 good"), el("span", "", "7 very good"), el("span", "", "8 excellent"), el("span", "", "9"), el("span", "", "10")); row.appendChild(ends); }
+        inn.appendChild(row);
+      });
+      CUPS.forEach(([k, label, help]) => {
+        const row = el("div", "cups"), c5 = el("div", "c5"); row.appendChild(el("span", "", label)); row.title = help + ". Tap a cup that is not.";
+        const val = st.scores[k] != null ? st.scores[k] : 10; let ok = Math.round(val / 2);
+        for (let i = 0; i < 5; i++) {
+          const b = el("button", "", String(i + 1)); b.type = "button"; b.setAttribute("aria-pressed", String(i < ok)); b.setAttribute("aria-label", label + ", cup " + (i + 1));
+          b.onclick = () => { b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true")); st.scores[k] = 2 * c5.querySelectorAll("[aria-pressed=true]").length; upd(); };
+          c5.appendChild(b);
+        }
+        row.appendChild(c5); inn.appendChild(row);
+      });
+      const dl = el("label", "", "Defects (points off: a taint 2, a fault 4, per cup)"), di = el("input"); di.type = "number"; di.inputMode = "decimal"; di.min = 0; di.max = 60; di.step = 1; di.value = st.defects || "";
+      di.placeholder = "0"; di.oninput = () => { st.defects = Number(di.value) || 0; upd(); }; dl.appendChild(di); inn.appendChild(dl);
+      const nl = el("label", "", "Notes (what you taste)"), ni = el("textarea"); ni.value = st.notes; ni.placeholder = "e.g. cocoa, red apple, long finish"; ni.oninput = () => { st.notes = ni.value; }; nl.appendChild(ni); inn.appendChild(nl);
+      upd(); area.appendChild(d);
+    });
+  }
+  ws.onchange = () => { gl.hidden = ws.value !== "g"; chosen.forEach(id => { delete state[id]; }); drawCups(); };
+  gi.onchange = () => { if (s) { chosen.forEach(id => { delete state[id]; }); drawCups(); } };
+  drawCups();
+  const acts = el("div", "acts"), save = el("button", "go", "Save scores"); save.type = "submit";
+  const cancel = el("a", "lnk", "Cancel"); cancel.href = s ? "#s=" + s.id : "#";
+  acts.append(save, cancel); f.appendChild(acts);
+  f.onsubmit = async e => {
+    e.preventDefault();
+    if (!chosen.length) { say("Pick at least one coffee first."); return; }
+    const guest = ws.value === "g", cupper = guest ? null : ws.value.slice(2), gname = guest ? (gi.value.trim() || null) : null;
+    const session = s ? s.id : (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+    save.disabled = true; say("Saving...");
+    try {
+      for (const id of chosen) {
+        const st = state[id], sc = {};
+        ATTR.forEach(([k]) => { sc[k] = st.scores[k] != null ? st.scores[k] : START; }); CUPS.forEach(([k]) => { sc[k] = st.scores[k] != null ? st.scores[k] : 10; });
+        const row = { session_id: session, coffee_id: id, cupper_id: cupper, is_guest: guest, guest_name: gname, scores: sc, defects: st.defects || 0, total: totalOf(sc, st.defects), notes: (st.notes || "").trim() || null };
+        const old = s ? s.rows.find(r => r.coffee_id === id && whoKey(r) === (guest ? "g:" + (gname || "") : "u:" + cupper)) : null;
+        if (old) { const { error } = await db.from("cuppings").update(row).eq("id", old.id); if (error) throw error; }
+        else { const { error } = await db.from("cuppings").insert(Object.assign(row, s ? { cupped_at: s.at } : {})); if (error) throw error; }
+      }
+      await loadAll(); location.hash = "s=" + session; say("Saved.");
+    } catch (err) { say("Could not save: " + err.message); }
+    finally { save.disabled = false; }
+  };
+}
+
+function route() {
+  if (!me) return;
+  const h = location.hash, ms = h.match(/^#s=([0-9a-f-]+)(?:&who=(.*))?$/), mc = h.match(/^#c=([0-9a-f-]+)$/);
+  window.scrollTo(0, 0);
+  if (h === "#new") viewForm(null, null);
+  else if (ms && ms[2]) viewForm(ms[1], decodeURIComponent(ms[2]));
+  else if (ms) viewSession(ms[1]);
+  else viewList(mc ? mc[1] : null);
+}
+window.addEventListener("hashchange", route);
+db.auth.onAuthStateChange((_e, session) => setTimeout(async () => {
+  const was = me; me = session ? session.user : null;
+  if (!me) { $("view").textContent = ""; const p = el("p", "hint", "Sign in in the Journal first, then come back here. "); const a = el("a", "lnk", "Go to the Journal"); a.href = "../journal/index.html"; p.appendChild(a); $("view").appendChild(p); return; }
+  if (!was && await loadAll()) route();
+}, 0));
+</script>
+</body>
+</html>

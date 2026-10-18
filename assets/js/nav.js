@@ -17,6 +17,7 @@
     trends: "M4 19V5M4 19h16M8 15l4-5 3 3 4-6",
     calc: "M7 3h10a1 1 0 011 1v16a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zM8.5 7h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01",
     book: "book",
+    cupping: "M4 10h16a8 8 0 01-16 0z M8 21h8 M12 18v3 M9 3c-1 1.5 1 2.5 0 4 M13 3c-1 1.5 1 2.5 0 4",
     settings: "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"
   };
   var ITEMS = [               // key, label, link
@@ -25,6 +26,7 @@
     ["calc", "Calculator", "calc/index.html"],
     ["journal", "Journal", "journal/index.html"],
     ["trends", "Trends", "trends/index.html"],
+    ["cupping", "Cupping", "cupping/index.html"],
     ["book", BOOK, "chapters/index.html"],
     ["settings", "Settings", "settings/index.html"]
   ];
@@ -38,7 +40,7 @@
 
   var path = location.pathname, file = (path.split("/").pop() || "index.html").replace(/\.html$/, "");
   var inBook = /\/chapters\//.test(path), chapter = inBook && file !== "index" ? file : null;
-  var isHome = !inBook && !/\/(journal|trends|calc|settings)\//.test(path);
+  var isHome = !inBook && !/\/(journal|trends|calc|settings|cupping)\//.test(path);
   var isCalc = /\/calc\//.test(path);
   var NS = "http://www.w3.org/2000/svg";
 
@@ -59,6 +61,12 @@
     ".topnav nav[hidden]{display:none}" +
     ".topnav nav a{display:flex;align-items:center;gap:14px;padding:11px 14px;min-height:48px;border-radius:10px;color:inherit;text-decoration:none;font-size:16px}" +
     ".topnav nav a svg{flex:none;color:var(--accent,#8A6A4A)}" +
+    ".topnav nav .mrow{display:flex;align-items:center}.topnav nav .mrow a{flex:1}" +
+    ".topnav nav .mtog{width:44px;height:44px;flex:none;display:grid;place-items:center;border:0;background:none;color:var(--mut,#666);border-radius:10px;cursor:pointer}" +
+    ".topnav nav .mtog svg{transition:transform .15s}.topnav nav .mtog.open svg{transform:rotate(180deg)}" +
+    ".topnav nav .subs[hidden]{display:none}" +
+    ".ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 62px);z-index:60;width:38px;height:38px;margin-left:-19px;border-radius:999px;background:var(--card,#fff);border:1px solid var(--line,#ccc);box-shadow:0 4px 14px rgba(20,14,10,.15);display:grid;place-items:center;color:var(--accent,#8A6A4A);opacity:0;transform:translateY(-50px);pointer-events:none}" +
+    ".ptr.go svg{animation:ptrspin .8s linear infinite}@keyframes ptrspin{to{transform:rotate(360deg)}}" +
     ".topnav nav a:hover{background:var(--bg,#f5f5f5)}" +
     ".topnav nav a.child{margin-left:23px;padding:6px 12px 6px 18px;min-height:38px;border-radius:0 10px 10px 0;border-left:1px solid var(--line,#ccc);font-size:14.5px;color:var(--mut,#666)}" +
     ".topnav nav a[aria-current=page]{background:var(--bg,#f5f5f5);font-weight:600;color:var(--ink,#000)}" +
@@ -142,9 +150,22 @@
     a.appendChild(document.createTextNode(label));
     menu.appendChild(a); links.push(a);
   }
+  // "Bean to cup" keeps its chapters folded away (open inside the book, or with the little arrow)
+  var subs = null;
   ITEMS.forEach(function (it) {
     addLink(it[0], it[1], it[2], false, it[0]);
-    if (it[0] === "book") CHAPTERS.forEach(function (c) { addLink("ch-" + c[0], c[1], "chapters/" + c[0] + ".html", true); });
+    if (it[0] === "book") {
+      var a = links[links.length - 1], row = document.createElement("div"); row.className = "mrow";
+      menu.replaceChild(row, a); row.appendChild(a);
+      var tg = document.createElement("button"); tg.type = "button"; tg.className = "mtog"; tg.setAttribute("aria-label", "Show the chapters");
+      tg.appendChild(svgEl(18, function (s) { s.appendChild(pathEl("M6 9l6 6 6-6")); })); row.appendChild(tg);
+      subs = document.createElement("div"); subs.className = "subs"; subs.id = "navsubs"; tg.setAttribute("aria-controls", "navsubs");
+      menu.appendChild(subs);
+      var keep = menu; menu = subs; CHAPTERS.forEach(function (c) { addLink("ch-" + c[0], c[1], "chapters/" + c[0] + ".html", true); }); menu = keep;
+      var setSubs = function (open) { subs.hidden = !open; tg.setAttribute("aria-expanded", String(open)); tg.classList.toggle("open", open); };
+      setSubs(inBook);
+      tg.addEventListener("click", function (e) { e.stopPropagation(); setSubs(subs.hidden); });
+    }
   });
   head.appendChild(bar); head.appendChild(menu);
   var back = document.createElement("div"); back.className = "navback"; back.hidden = true;
@@ -164,6 +185,7 @@
     if (/\/trends\//.test(path)) return "trends";
     if (isCalc) return "calc";
     if (/\/settings\//.test(path)) return "settings";
+    if (/\/cupping\//.test(path)) return "cupping";
     return "home";
   }
   function markActive() {
@@ -177,6 +199,35 @@
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !menu.hidden) { setOpen(false); btn.focus(); } });
   window.addEventListener("hashchange", markActive);
   markActive();
+
+  // Pull down to refresh, in the home-screen app (Safari itself already has it). Pull from the very top of the page;
+  // not while a menu or dialog is open, and not from the star rating or a slider (those are swiped sideways).
+  var standalone = window.navigator.standalone || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+  if (standalone && "ontouchstart" in window) {
+    var ptr = document.createElement("div"); ptr.className = "ptr"; ptr.setAttribute("aria-hidden", "true");
+    ptr.appendChild(svgEl(20, function (s) { s.appendChild(pathEl("M20 12a8 8 0 11-2.3-5.6M20 4v4.5h-4.5")); }));
+    document.body.appendChild(ptr);
+    var y0 = null, x0 = 0, pull = 0;
+    var show = function (d) { ptr.style.opacity = String(Math.min(1, d / 60)); ptr.style.transform = "translateY(" + (d - 50) + "px) rotate(" + d * 3 + "deg)"; };
+    document.addEventListener("touchstart", function (e) {
+      y0 = null; pull = 0;
+      if (window.scrollY > 0 || !menu.hidden || document.querySelector("dialog[open]") || e.touches.length !== 1) return;
+      if (e.target.closest && e.target.closest(".stars,input,select,textarea,.vlist,[data-noptr]")) return;
+      y0 = e.touches[0].clientY; x0 = e.touches[0].clientX;
+    }, { passive: true });
+    document.addEventListener("touchmove", function (e) {
+      if (y0 === null) return;
+      var dy = e.touches[0].clientY - y0, dx = Math.abs(e.touches[0].clientX - x0);
+      if (dy <= 0 || dx > dy || window.scrollY > 0) { if (pull) { pull = 0; show(0); } return; }
+      pull = Math.min(110, dy * 0.55); show(pull);
+    }, { passive: true });
+    document.addEventListener("touchend", function () {
+      if (y0 === null) return; y0 = null;
+      if (pull >= 70) { ptr.classList.add("go"); ptr.style.transform = "translateY(20px)"; ptr.style.opacity = "1"; setTimeout(function () { location.reload(); }, 150); }
+      else { ptr.style.transition = "transform .2s, opacity .2s"; show(0); setTimeout(function () { ptr.style.transition = ""; }, 220); }
+      pull = 0;
+    });
+  }
 
   // Book pages: breadcrumbs on top, previous/next at the bottom.
   var main = document.querySelector("main");
