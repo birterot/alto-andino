@@ -47,7 +47,7 @@
 
   var L = 4000; try { L = Math.ceil(line.getTotalLength()); } catch (e) {}
   line.style.strokeDasharray = L + " " + L; line.style.strokeDashoffset = L;
-  mountain.style.opacity = 0;
+  mountain.style.opacity = 0.001;   // not 0: then it is painted once up front, not in the middle of the animation
   plant.style.transform = "translate3d(" + (18 * BOXW / W).toFixed(1) + "px," + (190 * BOXW / W).toFixed(1) + "px,0) rotate(22deg)";
 
   // the move to where the real mark sits on the page (measured from the box's own place in the middle, untransformed)
@@ -64,31 +64,35 @@
   }
   var px = function (u) { return (u * BOXW / W).toFixed(1); };
   function start() {
-    // the outline is drawn, then the mountain fades in over it
+    // the outline is drawn, then the mountain fades in over it; the line layer goes away once it has faded
     play(line, [{ strokeDashoffset: L }, { strokeDashoffset: 0 }], 0, 1400, EASE);
-    play(mountain, [{ opacity: 0 }, { opacity: 1 }], 1050, 550, OUT);
+    play(mountain, [{ opacity: 0.001 }, { opacity: 1 }], 1050, 550, OUT);
     play(lineL, [{ opacity: 1 }, { opacity: 0 }], 1450, 300);
-    // the plant comes up from behind the mountain, turning in from the side, then wiggles: one transform track, so it stays smooth
-    var T = function (x, y, r) { return { transform: "translate3d(" + x + "px," + y + "px,0) rotate(" + r + "deg)" }; };
-    play(plant, [T(px(18), px(190), 22), Object.assign(T(px(3), px(30), 3), { offset: 0.55 }), Object.assign(T(0, 0, -3), { offset: 0.8 }), T(0, 0, 0)], 1500, 800, OUT);
-    play(plant, [T(0, 0, 0), Object.assign(T(0, 0, -7), { offset: 0.2 }), Object.assign(T(0, 0, 5), { offset: 0.45 }), Object.assign(T(0, 0, -2.5), { offset: 0.7 }), Object.assign(T(0, 0, 1), { offset: 0.87 }), T(0, 0, 0)], 2300, 800, "ease-in-out", "forwards");   // "forwards": before it starts, the rise above is in charge
-    // the mountain flies to its place, the real mark takes over, the name and the page fade in
-    var move = play(box, moveFrames(), 3150, 800, EASE);
-    // measure the landing spot again just before the move: on the phone the page can still shift a little after it opens
-    // (status bar, safe area), and the mountain should land exactly where the real one sits
-    setTimeout(function () { if (!done) try { move.effect.setKeyframes(moveFrames()); } catch (e) {} }, 3100);
+    if (!window.__introPaused) setTimeout(function () { lineL.remove(); }, 1800);   // nothing vector left in the box while it moves and scales
+    // the plant: up from behind the mountain, turning in from the side, then a little wiggle. One animation on one property,
+    // so the graphics chip can run it on its own without the page in between.
+    var T = function (x, y, r, at, ease) { var k = { transform: "translate3d(" + x + "px," + y + "px,0) rotate(" + r + "deg)" }; if (at !== undefined) k.offset = at; if (ease) k.easing = ease; return k; };
+    play(plant, [T(px(18), px(190), 22, 0, OUT), T(px(3), px(30), 3, 0.27, OUT), T(0, 0, -3, 0.4, "ease-in-out"), T(0, 0, 0, 0.5, "ease-in-out"),
+      T(0, 0, -7, 0.6, "ease-in-out"), T(0, 0, 5, 0.72, "ease-in-out"), T(0, 0, -2.5, 0.85, "ease-in-out"), T(0, 0, 1, 0.93, "ease-in-out"), T(0, 0, 0, 1)], 1500, 1600);
+    // the mountain flies to its place. Measured right when it starts: on the phone the page can still shift a little
+    // after it opens (status bar, safe area), and the mountain should land exactly where the real one sits.
+    var fly = function () { play(box, moveFrames(), window.__introPaused ? 3150 : 0, 800, EASE); };
+    if (window.__introPaused) fly(); else setTimeout(function () { if (!done) fly(); }, 3150);
     play(target, [{ visibility: "hidden" }, { visibility: "visible" }], 3950, 1);
     play(lay, [{ opacity: 1 }, { opacity: 0 }], 3950, 250);
-    if (wm) play(wm, [{ opacity: 0, transform: "translate3d(0,10px,0)" }, { opacity: 1, transform: "none" }], 3950, 600, OUT);
-    if (tiles) play(tiles, [{ opacity: 0, transform: "translate3d(0,12px,0)" }, { opacity: 1, transform: "none" }], 4200, 700, OUT);
-    if (bar) play(bar, [{ opacity: 0 }, { opacity: 1 }], 4350, 600, OUT);
+    if (wm) play(wm, [{ opacity: 0.001, transform: "translate3d(0,10px,0)" }, { opacity: 1, transform: "translate3d(0,0,0)" }], 3950, 600, OUT);
+    if (tiles) play(tiles, [{ opacity: 0.001, transform: "translate3d(0,12px,0)" }, { opacity: 1, transform: "translate3d(0,0,0)" }], 4200, 700, OUT);
+    if (bar) play(bar, [{ opacity: 0.001 }, { opacity: 1 }], 4350, 600, OUT);
     setTimeout(function () { if (!window.__introPaused) finish(); }, END);
   }
   var END = 5000;
   // for checking frame by frame (scratch tests): window.__introSeek(ms)
   window.__introSeek = function (t) { anims.forEach(function (an) { an.pause(); an.currentTime = t; }); };
-  // start when the pictures are ready (they are small and cached after the first time), at the latest after a second
+  // start when the page has finished loading and the pictures are ready, then wait two frames so the first frame of the
+  // animation is not also the frame that sets everything up (at the latest after a second and a half)
   var ready = [plant, back, mountain].map(function (i) { return i.decode ? i.decode().catch(function () {}) : Promise.resolve(); });
-  var started = false; function go() { if (started || done) return; started = true; start(); }
-  Promise.all(ready).then(go); setTimeout(go, 1000);
+  var loaded = new Promise(function (r) { if (document.readyState === "complete") r(); else window.addEventListener("load", r, { once: true }); });
+  var started = false;
+  function go() { if (started || done) return; started = true; requestAnimationFrame(function () { requestAnimationFrame(start); }); }
+  Promise.all(ready.concat([loaded])).then(go); setTimeout(go, 1500);
 })();
