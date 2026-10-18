@@ -110,6 +110,7 @@
     host.appendChild(brandSvg(WORD, "Alto Andino"));
   }
   window.altoMark = function (label) { return brandSvg(MARK, label); };
+  window.altoMarkArt = MARK;   // [viewBox, path] for the opening animation (assets/js/intro.js)
   Array.prototype.forEach.call(document.querySelectorAll("[data-wordmark]"), function (h) { wordmark(h); });
   Array.prototype.forEach.call(document.querySelectorAll("[data-mark]"), function (h) { h.textContent = ""; h.appendChild(brandSvg(MARK)); });
 
