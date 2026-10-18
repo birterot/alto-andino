@@ -21,9 +21,9 @@ try { if (!sessionStorage.getItem("alto.intro") && !(window.matchMedia && matchM
 /* opening animation (assets/js/intro.js): the page waits hidden while the mountain is drawn in the middle */
 #introlay{position:fixed;inset:0;z-index:200;display:grid;place-items:center;color:var(--brand);cursor:pointer;-webkit-tap-highlight-color:transparent}
 #introlay .introbox{position:relative;width:200px;aspect-ratio:599/397;will-change:transform;transform-origin:50% 50%}
-#introlay .il,#introlay .plantwin{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
-#introlay .plant{transform-origin:55.1% 46.3%;will-change:translate,rotate}
-#introlay .fill,#introlay .line{will-change:opacity}
+#introlay .il{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible;backface-visibility:hidden}
+#introlay .plant{transform-origin:55.1% 46.3%;will-change:transform}
+#introlay .mountain,#introlay .line{will-change:opacity}
 html.intro .hero .mark{visibility:hidden}
 html.intro .hero h1,html.intro .tiles,html.intro .topnav,html.intro body::before{opacity:0}
 .hero{display:flex;flex-direction:column;align-items:center;gap:14px;margin:28px 0 36px;text-align:center}
