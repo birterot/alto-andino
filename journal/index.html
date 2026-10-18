@@ -542,8 +542,8 @@ function deviceList() {
   const out = [], add = x => { if (x && !out.includes(x)) out.push(x); };
   ((window.DEVICES && window.DEVICES.D) || []).forEach(d => (d.logAs || [d.name]).forEach(add));
   (window.LISTS.device || []).forEach(add);
-  const lo = x => x.toLowerCase();   // "Chemex" is hidden next to "Chemex (3-cup)", "Flair" next to "Flair 58"
-  return out.filter(n => !out.some(o => o !== n && lo(o).indexOf(lo(n) + " ") === 0));   // "Flair" is hidden next to "Flair 58"
+  const lo = x => x.toLowerCase();   // "Chemex" is hidden next to "Chemex (3-cup)"
+  return out.filter(n => !out.some(o => o !== n && lo(o).indexOf(lo(n) + " ") === 0));   // a shorter name is hidden next to a longer one that starts with it
 }
 function fill(id, base, used) {
   const s = $(id), keep = s.value;
@@ -1384,13 +1384,16 @@ function typeOf(name) {
 }
 const isEsp = t => t === "espresso" || t === "";
 
-// ----- Flair preheat setting (only for the Flair)
+// ----- preheat setting (only for manual espresso machines like the Flair 58)
 const PH = D.PREHEAT || [];
 (function () {
   const s = $("b-preheat"), o = el("option", "", "Not set"); o.value = ""; s.appendChild(o);
   PH.forEach(p => { const x = el("option", "", p[1] + " ~" + p[2] + " \u00B0C"); x.value = p[0]; s.appendChild(x); });
 })();
-const isFlair = dev => /^flair/i.test(dev || "");
+const isFlair = dev => /^(flair|manual espresso)/i.test(dev || "");   // manual (lever) machines: the preheat setting
+const isSemi = dev => /^semi-automatic/i.test(dev || "");
+const DEV_OLD = { "Flair 58": "Manual espresso machine", "Flair": "Manual espresso machine" };   // names from before
+if (DEV_OLD[store.get("alto.device")]) store.set("alto.device", DEV_OLD[store.get("alto.device")]);
 const phText = v => { const p = PH.find(x => x[0] === v); return p ? p[1].toLowerCase() : v; };
 
 // ----- grinder and feel word
@@ -1529,7 +1532,7 @@ const drinkText = (dk, mk) => !dk ? "" : drinkName(dk).replace(/ \((traditional|
 let prefsOf = {};   // everyone's settings (profiles.prefs), by person
 function defDrink(personId) {
   const ty = typeOf(chosen("b-device")), pf = (personId && prefsOf[personId]) || {}, esp = isEsp(ty) || ty === "moka";   // moka coffee is drunk like espresso
-  const dk = (esp ? pf.drink_esp : pf.drink_filter) || (esp ? "doppio" : "filter");   // Flair shots (18 g) are doubles
+  const dk = (esp ? pf.drink_esp : pf.drink_filter) || (esp ? "doppio" : "filter");   // an 18 g espresso shot is a double
   return { drink: drinkOf(dk) ? dk : (esp ? "doppio" : "filter"), milk: drinkOf(dk) && drinkOf(dk).milk ? (pf.milk || "") : "" };
 }
 const meTaster = () => ({ rater_id: me ? me.id : null, guest: false, guest_name: null, rating: null, scores: {}, ...defDrink(me && me.id), auto: true });
@@ -1666,7 +1669,8 @@ function applyType() {
   drawCurve();
 }
 function presetFor(dev) {
-  if (/^flair/i.test(dev || "")) return (D.FLAIR_BY_ROAST || {})[((cur && cur.roast_level) || "").toLowerCase()] || "flair-med";
+  if (isFlair(dev)) return (D.FLAIR_BY_ROAST || {})[((cur && cur.roast_level) || "").toLowerCase()] || "flair-med";
+  if (isSemi(dev)) return (D.SEMI_BY_ROAST || {})[((cur && cur.roast_level) || "").toLowerCase()] || "semi-med";
   const n = String(dev || "").toLowerCase();
   const p = (D.PRESETS || []).find(x => x.device.toLowerCase() === n) || (D.PRESETS || []).find(x => n.indexOf(x.device.toLowerCase() + " ") === 0);
   return p ? p.id : null;
@@ -1766,7 +1770,7 @@ function newBrewSetup(dev) {
   setTasters([meTaster()]);
   fillMadeBy(me && me.id);
   const h = readHandoff(), sel = $("b-device");
-  const want = (h && h.device) || dev || myPrefs().device || store.get("alto.device") || "Flair 58";   // Settings first, else the last one used
+  const want = (h && h.device) || dev || DEV_OLD[myPrefs().device] || myPrefs().device || store.get("alto.device") || "Manual espresso machine";   // Settings first, else the last one used
   if ([...sel.options].some(o => o.value === want)) sel.value = want;
   else { const alt = [...sel.options].find(o => o.value && typeOf(o.value) === typeOf(want) && want.indexOf(o.value) === 0); sel.value = alt ? alt.value : ""; }
   const g = myPrefs().grinder || store.get("alto.grinder"); if (g !== null && [...$("b-grinder").options].some(o => o.value === g)) $("b-grinder").value = g;
@@ -1786,7 +1790,7 @@ function startBrewEdit(b) {
   buildScores(cur, (b.brew_scores || []).map(s => s.attribute));
   $("b-dialin").checked = !!b.is_dialin;
   fillMadeBy(b.made_by || b.created_by || "");
-  setSel("b-device", b.device); $("b-device-new").hidden = true;
+  setSel("b-device", DEV_OLD[b.device] || b.device); $("b-device-new").hidden = true;
   if (b.grinder) setSel("b-grinder", GR_OLD[b.grinder] || b.grinder); else $("b-grinder").value = "";
   applyType();
   const pt = (id, v) => { $(id).value = v == null ? "" : v; };
@@ -1841,7 +1845,7 @@ function renderPick() {
   $("logmodes").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.m === logMode));
   $("devpick").hidden = logMode !== "device";
   const devs = deviceList();
-  if (!logDev || !devs.includes(logDev)) logDev = devs.includes(store.get("alto.device")) ? store.get("alto.device") : (devs.includes("Flair 58") ? "Flair 58" : devs[0]);
+  if (!logDev || !devs.includes(logDev)) logDev = devs.includes(store.get("alto.device")) ? store.get("alto.device") : (devs.includes("Manual espresso machine") ? "Manual espresso machine" : devs[0]);
   const row = $("devrow"); row.textContent = "";
   devs.slice().sort((x, y) => (typeOf(y) === "espresso") - (typeOf(x) === "espresso")).forEach(d => { const b = el("button", d === logDev ? "on" : "", d); b.type = "button"; b.onclick = () => { logDev = d; renderPick(); }; row.appendChild(b); });
   const box = $("picklist"); box.textContent = "";
@@ -1889,7 +1893,7 @@ async function openCoffee(id, dev, wantForm) {
   const bx = $("dbuy"); bx.textContent = ""; const bl = buyLink(c); if (bl) bx.appendChild(bl);
   const t = $("dtags"); t.textContent = "";
   (c.flavour_tags || []).forEach(x => t.appendChild(el("span", "chip", x)));
-  fill("b-device", deviceList(), [...new Set((dv || []).map(b => b.device).filter(Boolean))]);
+  fill("b-device", deviceList(), [...new Set((dv || []).map(b => DEV_OLD[b.device] || b.device).filter(Boolean))]);
   otherBox("b-device");
   newBrewSetup(dev);
   // From "Brews" on a card: the form stays folded into one line, so the brews are right below the coffee.

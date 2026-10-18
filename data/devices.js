@@ -117,15 +117,16 @@ window.DEVICES = {
       extra: []
     },
     {
-      id: "flair", type: "espresso", name: "Flair 58", kind: "Manual lever espresso",
+      id: "flair", type: "espresso", name: "Manual espresso machine", tab: "Manual espresso", kind: "Lever espresso by hand, for example the Flair 58",
+      logAs: ["Manual espresso machine"],
       c: { f: ["#F3DEDA", "#3B1D1A"], s: ["#A83A2E", "#E58D7F"], t: ["#7C291F", "#F2C4BB"] },
       tag: "Espresso by hand, with full control of temperature and pressure",
-      body: "You set the temperature and you make the pressure with the lever, so the shot is yours to shape. That also means more to dial in. Change one thing at a time and write it down.",
+      body: "A manual (lever) espresso machine has no pump and often no heater: you heat the water and you make the pressure with the lever, so the shot is yours to shape. That also means more to dial in. Change one thing at a time and write it down. The method below is for the Flair 58; other lever machines work much the same way.",
       ratios: [["Medium roast (about 1:2)", 2.2, "Fine, espresso range. Tune it by the shot time.", "flair-med"],
                ["Dark roast (1:1 to 1:1.5)", 1.5, "Fine, espresso range. Tune it by the shot time.", "flair-dark"],
                ["Light roast (up to 1:3)", 3, "Fine, espresso range. Tune it by the shot time.", "flair-light"]],
       water: 18, time: "25 to 35 seconds",
-      variants: [{ n: "", src: true, calc: "yield", water: 18,
+      variants: [{ n: "Flair 58", src: true, calc: "yield", water: 18,
         tiles: [["Water temperature", "85 to 95 °C, by roast"], ["Pressure", "About 3 bar, then 6 to 9 bar"], ["Dose", "16 to 20 g, 18 g to start"]],
         steps: [
           "Preheat. With the Preheat Control System, pick the setting for your roast (see below), raise the lever fully, lock in the portafilter and wait about 5 minutes. Without it, seal the bottom with the preheat cap, fill with boiling water, wait 45 seconds, discard it and repeat as needed.",
@@ -162,6 +163,51 @@ window.DEVICES = {
         ],
         links: [["Dialing in the Flair 58 Plus (Flair Espresso)", "https://flairespresso.com/blogs/news/dialing-in-flair-58-plus-manual-espresso-maker"],
                 ["Flair 58 Plus 2 product guide (Seattle Coffee Gear)", "https://www.seattlecoffeegear.com/pages/product-resources/flair-58-plus-2-manual-espresso-machine-product-guide"]] }],
+      extra: []
+    },
+    {
+      id: "semi", type: "espresso", name: "Semi-automatic espresso machine", tab: "Semi-automatic", kind: "Espresso machine with a pump",
+      logAs: ["Semi-automatic espresso machine"],
+      c: { f: ["#E3E1EC", "#26232F"], s: ["#5E5682", "#ADA4D6"], t: ["#433C66", "#D3CDF0"] },
+      tag: "The pump makes the pressure, you decide when the shot stops",
+      body: "A pump machine heats the water and builds the pressure for you (usually about 9 bar). You grind, dose, tamp, start the shot and stop it at your yield, so most of the dialing in happens with the grind. Some machines also let you set the temperature, pre-infuse or change the pressure; then the same fields as for a manual machine apply.",
+      ratios: [["Medium roast (about 1:2)", 2.2, "Fine, espresso range. Tune it by the shot time.", "semi-med"],
+               ["Dark roast (1:1 to 1:1.5)", 1.5, "Fine, espresso range. Tune it by the shot time.", "semi-dark"],
+               ["Light roast (up to 1:3)", 3, "Fine, espresso range. Tune it by the shot time.", "semi-light"]],
+      water: 18, time: "25 to 35 seconds",
+      variants: [{ n: "", src: true, calc: "yield", water: 18,
+        tiles: [["Water temperature", "90 to 96 °C, if you can set it"], ["Pressure", "About 9 bar from the pump"], ["Dose", "16 to 20 g, 18 g to start (by basket)"]],
+        steps: [
+          "Switch the machine on early: most need 15 to 30 minutes until the group head and portafilter are properly hot. Keep the portafilter locked in while it heats.",
+          "Run a little water through the group head (a short flush), then dry the basket.",
+          "Grind about 18 g, or the dose your basket is made for. Distribute evenly, then tamp level.",
+          "Lock in the portafilter and start the shot straight away, so the coffee does not cook on the hot group head.",
+          "If your machine can pre-infuse, a few seconds at low pressure help the coffee settle and reduce channeling.",
+          "Stop at the yield, for example 36 to 40 g from 18 g. A good first target is 25 to 30 seconds.",
+          "Knock out the puck, rinse the basket and flush the group head again. Backflush and descale as your manual says."],
+        tips: ["General espresso guidance, not from the Atlas and not for one particular machine. Your machine's manual has the details (warm-up time, temperature settings, cleaning).",
+               "On most pump machines the pressure is fixed at about 9 bar, so the grind is your main tool: finer slows the shot down, coarser speeds it up.",
+               "Log every change as a dial-in on the Coffee Shelf, so you can always go back to an earlier setting."],
+        extra: [
+          ["Temperature and yield by roast", [
+            ["Dark roast", "Cooler, about 90 °C, if you can set it. Yield about 1 to 1.5 times the dose."],
+            ["Medium roast", "About 92 to 94 °C. Yield about 2 times the dose."],
+            ["Light roast", "Hotter, about 94 to 96 °C. Yield up to about 3 times the dose."]]],
+          ["Pressure", [
+            ["About 9 bar", "What most pump machines brew at, and the classic espresso value."],
+            ["Pressure you can set", "Some machines let you pre-infuse or lower the pressure (pressure profiling). Then the same ranges as for a manual machine apply: 6 to 9 bar for the shot, more than about 10 to 12 bar is higher than you need."]]],
+          ["Shot time", [
+            ["25 to 35 seconds", "The classic range for an espresso shot."],
+            ["Under 25 seconds", "Fast. Risk of underextraction (sour)."],
+            ["Over 35 to 40 seconds", "Slow. Risk of overextraction (bitter)."],
+            ["The cup decides", "These are only guides. If it tastes good to you, the recipe is right, even at 40 or 50 seconds. Many specialty coffees today run longer than 35 seconds."],
+            ["From experience", "80 to 90% of coffees end up at around 45 seconds."]]],
+          ["Taste says...", [
+            ["Sour (underextracted)", "Raise the water temperature a few degrees, grind finer even if the shot goes past 30 seconds, or lower the dose slightly."],
+            ["Bitter (overextracted)", "Lower the water temperature a few degrees, grind coarser even if the shot goes under 30 seconds, or raise the dose slightly."],
+            ["Too fast or too slow", "Under about 25 seconds is fast, so grind finer. Over about 35 to 40 seconds is slow, so grind coarser. But if it tastes good, leave it."]]]
+        ],
+        links: [] }],
       extra: []
     }
   ]

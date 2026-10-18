@@ -221,7 +221,7 @@
       return out;
     }).join("");
   }
-  var HEAD = "h1,h2,h3,h4,summary,.topnav nav a", KEEP = ".cc h3,#dname,.bc h3,dialog,[data-case=keep],.vlist,.res,details.cup summary";
+  var HEAD = "h1,h2,h3,h4,summary,.topnav nav a,.crumbs,.pager a", KEEP = ".cc h3,#dname,.bc h3,dialog,[data-case=keep],.vlist,.res,details.cup summary";
   function caseIn(root) {
     var list = [];
     if (root.matches && root.matches(HEAD)) list.push(root);

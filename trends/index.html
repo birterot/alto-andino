@@ -568,8 +568,8 @@ function demo() {
       const rating = Math.max(1, Math.min(5, Math.round(4.2 - Math.abs(ext) * 0.7 + fresh + (who === "pa" ? 0.2 : -0.2) + (ci === 1 ? 0.3 : 0) + (rnd() - 0.5))));
       const dose = flair ? 18 : 30, yld = flair ? Math.round(36 + rnd() * 12) : 440, water = flair ? null : 500;
       const sc = (v) => Math.max(0, Math.min(10, Math.round(v)));
-      brews.push({ id: "b" + (++n) + "x", coffee_id: c.id, brewed_at: new Date(Date.now() - d * 864e5 - rnd() * 3e6).toISOString(), device: flair ? "Flair 58" : "Hario V60",
-        grind: String(grind), dose_g: dose, yield_g: yld, water_g: water, time_s: time, rating: rnd() < 0.9 ? rating : null, is_dialin: rnd() < 0.15, made_by: who, recipe: flair ? "Flair 58, 1:2.2" : "V60, 60 g/l",
+      brews.push({ id: "b" + (++n) + "x", coffee_id: c.id, brewed_at: new Date(Date.now() - d * 864e5 - rnd() * 3e6).toISOString(), device: flair ? "Manual espresso machine" : "Hario V60",
+        grind: String(grind), dose_g: dose, yield_g: yld, water_g: water, time_s: time, rating: rnd() < 0.9 ? rating : null, is_dialin: rnd() < 0.15, made_by: who, recipe: flair ? "Manual espresso, 1:2.2" : "V60, 60 g/l",
         brew_scores: [{ attribute: "sour", score: sc(5 - ext * 1.6 + (rnd() - 0.5) * 2) }, { attribute: "sweet", score: sc(5 + (ci === 1 ? 2 : 1) - Math.abs(ext) + rnd()) }, { attribute: "bitter", score: sc(5 + ext * 1.6 + (ci === 2 ? 1.5 : 0) + (rnd() - 0.5) * 2) }, { attribute: "balance", score: sc(5 + 1.5 - Math.abs(ext) * 1.2) }]
           .concat(ci === 1 ? [{ attribute: "blueberry", score: rnd() < 0.6 ? 7 : 3 }] : ci === 0 ? [{ attribute: "panela", score: rnd() < 0.5 ? 7 : 3 }] : [{ attribute: "nutty", score: 7 }]) });
     }

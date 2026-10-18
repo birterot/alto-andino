@@ -110,7 +110,7 @@
 
   var tb = $("tabs");
   D.forEach(function (m, i) {
-    var t = el("button", "tab " + m.id, m.name); t.type = "button"; t.setAttribute("role", "tab"); t.setAttribute("data-t", m.name);
+    var t = el("button", "tab " + m.id, m.tab || m.name); t.type = "button"; t.setAttribute("role", "tab"); t.setAttribute("data-t", m.tab || m.name);
     t.onclick = function () { cur = i; vi = 0; ri = 0; di = 0; render(); }; tb.appendChild(t);
   });
   render();
