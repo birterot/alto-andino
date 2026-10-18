@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Alto Andino">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>Coffee shelf | Alto Andino</title>
+<title>Coffee Shelf | Alto Andino</title>
 <link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="stylesheet" href="../assets/css/base.css">
@@ -282,7 +282,7 @@ details.calcbox summary{font-size:15px}
 </head>
 <body>
 <main>
-<h1>Coffee shelf</h1>
+<h1>Coffee Shelf</h1>
 
 <form id="login" hidden>
   <div class="modes" id="authmodes"><button type="button" data-m="in">Sign in</button><button type="button" data-m="up">Create account</button></div>
@@ -2231,7 +2231,7 @@ function fillMadeBy(want) {
   $("mblab").hidden = !namesOk;
   const hint = $("mbhint"); hint.hidden = !namesOk; hint.textContent = "";
   if (namesOk) {
-    hint.append(document.createTextNode(hhOk ? "Someone missing? Invite them under \u201CHousehold\u201D on the Coffee shelf. " : Object.keys(names).length < 2 ? "Someone missing? They appear here once they sign in and set their name. " : "Only people who have set a name are listed. "));
+    hint.append(document.createTextNode(hhOk ? "Someone missing? Invite them under \u201CHousehold\u201D on the Coffee Shelf. " : Object.keys(names).length < 2 ? "Someone missing? They appear here once they sign in and set their name. " : "Only people who have set a name are listed. "));
     const b = el("button", "lnk", me && names[me.id] ? "Change my name" : "Set my name"); b.type = "button"; b.onclick = () => $("rename").onclick(); hint.appendChild(b);
   }
 }
@@ -2294,7 +2294,7 @@ function setAuthMode(m) {
   authMode = m;
   $("authmodes").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.m === m));
   $("authmodes").hidden = m === "reset";
-  $("authsub").textContent = m === "up" ? "Create your account. You can start your own household or join one afterwards." : m === "reset" ? "We send you an email with a link to choose a new password." : "Sign in to your Coffee shelf.";
+  $("authsub").textContent = m === "up" ? "Create your account. You can start your own household or join one afterwards." : m === "reset" ? "We send you an email with a link to choose a new password." : "Sign in to your Coffee Shelf.";
   $("nmlab").hidden = m !== "up"; $("nm").required = m === "up";
   $("pwlab").hidden = m === "reset"; $("pw").required = m !== "reset";
   $("pw").autocomplete = m === "up" ? "new-password" : "current-password";

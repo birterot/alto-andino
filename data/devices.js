@@ -7,7 +7,7 @@
      steps [], tips [], extra [], links [[title, url]]. */
 window.DEVICES = {
   title: "Brewing devices",
-  sub: "Recommended methods for each device. Content from the Atlas is plain, content from other sources is marked. Your own dial-ins live on the Coffee shelf.",
+  sub: "Recommended methods for each device. Content from the Atlas is plain, content from other sources is marked. Your own dial-ins live on the Coffee Shelf.",
   D: [
     {
       id: "press", type: "immersion", name: "French press", kind: "Infusion (immersion)",
@@ -138,7 +138,7 @@ window.DEVICES = {
           "Let it cool, then rinse the portafilter, basket, puck screen and valve plunger under cool water. No soap, no dishwasher, and keep the pressure gauge dry."],
         tips: ["Written from Flair's own guides for the Flair 58 and 58 Plus 2. The preheat settings only exist on models with the Preheat Control System, so check your manual if you are unsure which one you have.",
                "The two Flair guides differ a little (25 to 30 seconds and 6 to 7 bar against 30 to 35 seconds and 6 to 9 bar). Start in the overlap, at about 30 seconds, and adjust from there.",
-               "Log every change as a dial-in on the Coffee shelf, so you can always go back to an earlier setting."],
+               "Log every change as a dial-in on the Coffee Shelf, so you can always go back to an earlier setting."],
         extra: [
           ["Temperature and yield by roast", [
             ["Dark roast", "Low preheat setting, about 85 °C (185 °F). Yield about 1 to 1.5 times the dose."],

@@ -1,5 +1,5 @@
 /* Coffee drinks: what goes into each one. Used by the chapter chapters/drinks.html,
-   and by the Coffee shelf and Settings for the "Drink" and "Milk" choices.
+   and by the Coffee Shelf and Settings for the "Drink" and "Milk" choices.
    Amounts are typical; cafés and countries differ, so read them as a starting point, not a rule.
    Where there is an official definition it is named (the Italian espresso standard of the INEI, Istituto Nazionale Espresso Italiano).
    layers: from the bottom of the cup up, [kind, ml]. Kinds: espresso, water, milk (steamed), foam, cold (cold milk), ice, filter.

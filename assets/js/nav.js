@@ -24,7 +24,7 @@
     ["home", "Home", "index.html"],
     ["log", "Log a brew", "journal/index.html#log"],
     ["calc", "Calculator", "calc/index.html"],
-    ["journal", "Coffee shelf", "journal/index.html"],
+    ["journal", "Coffee Shelf", "journal/index.html"],
     ["trends", "Trends", "trends/index.html"],
     ["cupping", "Cupping", "cupping/index.html"],
     ["book", BOOK, "chapters/index.html"],
@@ -199,6 +199,49 @@
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !menu.hidden) { setOpen(false); btn.focus(); } });
   window.addEventListener("hashchange", markActive);
   markActive();
+
+  // Headings in title case ("Golden Rules for Fresh Coffee"): every word capitalised except small words in the middle.
+  // Words with capitals or digits of their own stay as they are (V60, SCA, iPhone), and so do names people typed:
+  // coffee names (.cc h3, #dname), brew dates, dialogs (they are questions) and anything marked data-case="keep".
+  var SMALL = { a: 1, an: 1, the: 1, and: 1, or: 1, but: 1, nor: 1, of: 1, to: 1, in: 1, on: 1, at: 1, by: 1, for: 1, with: 1, vs: 1, per: 1, from: 1, as: 1, into: 1 };
+  function titleCase(t) {
+    var parts = t.split(/(\s+)/), words = parts.filter(function (w) { return /\S/.test(w); }), k = 0, after = true;
+    return parts.map(function (w) {
+      if (!/\S/.test(w)) return w;
+      var first = k === 0, last = k === words.length - 1; k++;
+      var out = w.split("-").map(function (part, j) {
+        var m = part.match(/^([^A-Za-z\u00C0-\u024F]*)([A-Za-z\u00C0-\u024F][^]*?)$/); if (!m) return part;
+        var core = m[2], low = core.toLowerCase();
+        if (core !== low || /\d|@|\./.test(core.replace(/[.,:;!?)\u201D"']+$/, ""))) return part;   // has its own capitals, digits, an email ...
+        var bare = low.replace(/[^a-z\u00E0-\u024F]/g, "");
+        if (!first && !last && !after && j === 0 && SMALL[bare]) return part;
+        return m[1] + core.charAt(0).toUpperCase() + core.slice(1);
+      }).join("-");
+      after = /[:\u2013\u2014]$/.test(w);
+      return out;
+    }).join("");
+  }
+  var HEAD = "h1,h2,h3,h4,summary,.topnav nav a", KEEP = ".cc h3,#dname,.bc h3,dialog,[data-case=keep],.vlist,.res,details.cup summary";
+  function caseIn(root) {
+    var list = [];
+    if (root.matches && root.matches(HEAD)) list.push(root);
+    if (root.querySelectorAll) Array.prototype.push.apply(list, root.querySelectorAll(HEAD));
+    list.forEach(function (h) {
+      if (h.closest(KEEP)) return;
+      var w = document.createTreeWalker(h, NodeFilter.SHOW_TEXT), n;
+      while ((n = w.nextNode())) {
+        if (n.parentElement && n.parentElement.closest("small,.tot small,[data-case=keep],.dc,.starval")) continue;
+        var v = titleCase(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v;
+      }
+    });
+  }
+  caseIn(document.body);
+  new MutationObserver(function (ms) {
+    ms.forEach(function (m) {
+      if (m.type === "characterData") { var pe = m.target.parentElement; if (pe && pe.closest(HEAD)) caseIn(pe.closest(HEAD)); }
+      else m.addedNodes.forEach(function (x) { if (x.nodeType === 1) { caseIn(x); var hh = x.parentElement && x.parentElement.closest(HEAD); if (hh) caseIn(hh); } else if (x.nodeType === 3 && x.parentElement && x.parentElement.closest(HEAD)) caseIn(x.parentElement.closest(HEAD)); });
+    });
+  }).observe(document.body, { childList: true, subtree: true, characterData: true });
 
   // Pull down to refresh, in the home-screen app (Safari itself already has it). Pull from the very top of the page;
   // not while a menu or dialog is open, and not from the star rating or a slider (those are swiped sideways).
