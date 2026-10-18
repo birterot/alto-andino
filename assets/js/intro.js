@@ -50,8 +50,13 @@
   mountain.style.opacity = 0;
   plant.style.transform = "translate3d(" + (18 * BOXW / W).toFixed(1) + "px," + (190 * BOXW / W).toFixed(1) + "px,0) rotate(22deg)";
 
-  var a = box.getBoundingClientRect(), b = target.getBoundingClientRect();
-  var dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2), sc = b.width / a.width;
+  // the move to where the real mark sits on the page (measured from the box's own place in the middle, untransformed)
+  function moveFrames() {
+    var a = lay.getBoundingClientRect(), b = target.getBoundingClientRect(), w = BOXW, h = BOXW * H / W;
+    var cx = a.left + a.width / 2, cy = a.top + a.height / 2;   // the box is centred in the overlay
+    var dx = b.left + b.width / 2 - cx, dy = b.top + b.height / 2 - cy, sc = b.width / w;
+    return [{ transform: "translate3d(0px,0px,0) scale(1)" }, { transform: "translate3d(" + dx.toFixed(1) + "px," + dy.toFixed(1) + "px,0) scale(" + sc.toFixed(4) + ")" }];
+  }
   var EASE = "cubic-bezier(.45,0,.55,1)", OUT = "cubic-bezier(.22,1,.36,1)";
   function play(el, frames, delay, dur, easing, fill) {
     var an = el.animate(frames, { delay: delay, duration: dur, easing: easing || "linear", fill: fill || "both" });
@@ -68,7 +73,10 @@
     play(plant, [T(px(18), px(190), 22), Object.assign(T(px(3), px(30), 3), { offset: 0.55 }), Object.assign(T(0, 0, -3), { offset: 0.8 }), T(0, 0, 0)], 1500, 800, OUT);
     play(plant, [T(0, 0, 0), Object.assign(T(0, 0, -7), { offset: 0.2 }), Object.assign(T(0, 0, 5), { offset: 0.45 }), Object.assign(T(0, 0, -2.5), { offset: 0.7 }), Object.assign(T(0, 0, 1), { offset: 0.87 }), T(0, 0, 0)], 2300, 800, "ease-in-out", "forwards");   // "forwards": before it starts, the rise above is in charge
     // the mountain flies to its place, the real mark takes over, the name and the page fade in
-    play(box, [{ transform: "translate3d(0px,0px,0) scale(1)" }, { transform: "translate3d(" + dx + "px," + dy + "px,0) scale(" + sc + ")" }], 3150, 800, EASE);
+    var move = play(box, moveFrames(), 3150, 800, EASE);
+    // measure the landing spot again just before the move: on the phone the page can still shift a little after it opens
+    // (status bar, safe area), and the mountain should land exactly where the real one sits
+    setTimeout(function () { if (!done) try { move.effect.setKeyframes(moveFrames()); } catch (e) {} }, 3100);
     play(target, [{ visibility: "hidden" }, { visibility: "visible" }], 3950, 1);
     play(lay, [{ opacity: 1 }, { opacity: 0 }], 3950, 250);
     if (wm) play(wm, [{ opacity: 0, transform: "translate3d(0,10px,0)" }, { opacity: 1, transform: "none" }], 3950, 600, OUT);
