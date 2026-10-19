@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icons/icon-180.png?v=2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Alto Andino">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Feedback | Alto Andino</title>
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+.box{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:6px 18px 18px;margin:0 0 16px;max-width:640px}
+.box h2{font-size:19px;margin:14px 0 4px}
+.hint{margin:4px 0 0;color:var(--mut);font-size:14px;max-width:58ch}
+.kinds{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+.kinds button{font:inherit;font-size:14.5px;min-height:42px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.kinds button[aria-pressed=true]{background:var(--act);border-color:var(--act);color:var(--on-act)}
+label.f{display:block;margin-top:14px;font-size:13.5px;color:var(--mut)}
+textarea{display:block;width:100%;min-height:140px;margin-top:6px;padding:12px 14px;font:inherit;font-size:16px;line-height:1.5;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);box-sizing:border-box;resize:vertical}
+textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input[type=file]{display:block;margin-top:8px;font:inherit;font-size:14px;color:var(--mut)}
+.shot{display:flex;align-items:center;gap:10px;margin-top:8px}
+.shot img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.go{font:inherit;cursor:pointer;min-height:48px;padding:0 26px;border-radius:12px;border:1px solid var(--act);background:var(--act);color:var(--on-act);font-size:16px}
+.go:disabled{opacity:.6;cursor:default}
+.lnk{font:inherit;cursor:pointer;min-height:36px;padding:4px 14px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--mut);font-size:14px;text-decoration:none;display:inline-flex;align-items:center}
+.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px}
+.small{font-size:13px;color:var(--mut);margin:10px 0 0}
+.thanks{border-color:var(--act);border-width:2px}
+/* the list: what you sent, and the inbox for admins */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:10px 0 6px}
+.seg button{font:inherit;font-size:13.5px;min-height:36px;padding:0 14px;border:0;background:none;color:var(--mut);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--act);color:var(--on-act)}
+.fb{padding:14px 0;border-top:1px solid var(--line)}
+.fb:first-of-type{border-top:0}
+.fb .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px;color:var(--mut)}
+.fb .k{font-size:12.5px;font-weight:600;padding:2px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--ink)}
+.fb .k.bug{border-color:#c0603a;color:light-dark(#9a3f1c,#f0a07c)}
+.fb .k.praise{border-color:#5a8a4a;color:light-dark(#3c6a2e,#a8d494)}
+.fb .when{margin-left:auto;white-space:nowrap}
+.fb p.m{margin:8px 0 0;font-size:15px;white-space:pre-wrap;overflow-wrap:anywhere}
+.fb .meta{margin:6px 0 0;font-size:12.5px;color:var(--mut);overflow-wrap:anywhere}
+.fb .meta a{color:inherit}
+.fb .ph{margin-top:8px;padding:0;border:0;background:none;cursor:zoom-in}
+.fb .ph img{display:block;max-width:160px;max-height:160px;border-radius:8px;border:1px solid var(--line)}
+.fb .reply{margin:8px 0 0;padding:8px 12px;border-left:3px solid var(--act);background:var(--bg);border-radius:0 8px 8px 0;font-size:14px}
+.fb .reply b{display:block;font-size:12.5px;color:var(--mut);font-weight:600}
+.fb .done{opacity:.72}
+.fb textarea{min-height:64px;font-size:15px}
+.fb .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+#msg{min-height:1.4em;color:var(--mut);font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>Feedback</h1>
+<p class="sub">Something broken, confusing, or a wish? Tell us here. Every message helps make the app better.</p>
+
+<section class="box" id="signedout" hidden>
+  <h2>Sign in first</h2>
+  <p class="hint">Sign in on the Coffee Shelf, then come back here, so we know who wrote and can reply.</p>
+  <p><a class="lnk" href="../journal/index.html">Go to the Coffee Shelf</a></p>
+</section>
+<section class="box" id="nosql" hidden>
+  <h2>Almost there</h2>
+  <p class="hint">Feedback needs a small database update first: supabase/24_feedback.sql, run once in Supabase.</p>
+</section>
+
+<form class="box" id="ff" hidden>
+  <h2>What is it about?</h2>
+  <div class="kinds" id="kinds" role="group" aria-label="Kind of feedback">
+    <button type="button" data-k="bug">Something is broken</button>
+    <button type="button" data-k="confusing">Something is confusing</button>
+    <button type="button" data-k="idea">An idea or wish</button>
+    <button type="button" data-k="praise">I like this</button>
+  </div>
+  <label class="f">Your message<textarea id="fm" maxlength="4000" placeholder="What happened, or what would you like? If something is broken: what did you tap, and what did you expect?"></textarea></label>
+  <label class="f">Screenshot (if it helps)<input type="file" id="fp" accept="image/*"></label>
+  <div class="shot" id="shot" hidden><img id="shotimg" alt="Your screenshot"><button class="lnk" type="button" id="shotx">Remove</button></div>
+  <div class="bar"><button class="go" id="send" type="submit">Send feedback</button></div>
+  <p class="small" id="ctx"></p>
+</form>
+
+<section class="box thanks" id="thanks" hidden>
+  <h2>Thank you!</h2>
+  <p class="hint">Your feedback is in. You can see it below, with our answer once we have looked at it.</p>
+  <div class="bar"><button class="lnk" type="button" id="more">Send more</button><a class="lnk" id="backto" href="../index.html">Back to the app</a></div>
+</section>
+
+<section class="box" id="inbox" hidden>
+  <h2>Inbox</h2>
+  <p class="hint">Everything testers sent, newest first. Only admins see this.</p>
+  <div class="seg" id="ifilter" role="group" aria-label="Show"><button type="button" data-f="open">Open</button><button type="button" data-f="done">Done</button><button type="button" data-f="all">All</button></div>
+  <div id="ilist"></div>
+</section>
+
+<section class="box" id="mine" hidden>
+  <h2>What you sent</h2>
+  <div id="mlist"></div>
+</section>
+<p id="msg" role="status"></p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
+<script src="../assets/js/config.js"></script>
+<script src="../assets/js/theme.js"></script>
+<script src="../assets/js/photoview.js"></script>
+<script src="../assets/js/nav.js" defer></script>
+<script>
+const db = supabase.createClient(SUPA.url, SUPA.key);
+const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const say = t => { $("msg").textContent = t || ""; };
+const KIND = { bug: "Broken", confusing: "Confusing", idea: "Idea", praise: "Praise" };
+let me = null, myName = null, admin = false, kind = "", shot = null, filter = "open", rows = [];
+
+// where it was sent from: the page you came from (the menu passes it along)
+const from = (() => {
+  const m = location.hash.match(/^#from=(.*)$/);
+  if (m) { try { history.replaceState(null, "", location.pathname); } catch (e) {} return decodeURIComponent(m[1]); }
+  try { const r = new URL(document.referrer); if (r.origin === location.origin && !/\/feedback\//.test(r.pathname)) return r.pathname + r.hash; } catch (e) {}
+  return "";
+})();
+const pageName = p => {
+  const x = (p || "").replace(/^.*?\/alto-andino/, "").replace(/index\.html/, "") || "/";
+  const n = [[/^\/journal\/#recent/, "Recent activity"], [/^\/journal\/#log/, "Log a brew"], [/^\/journal\/#c=/, "A coffee on the Coffee Shelf"], [/^\/journal\//, "Coffee Shelf"],
+    [/^\/trends\//, "Trends"], [/^\/calc\//, "Calculator"], [/^\/cupping\//, "Cupping"], [/^\/friends\//, "Friends"], [/^\/settings\//, "Settings"], [/^\/chapters\//, "Bean to Cup"], [/^\/$/, "Home"]].find(([r]) => r.test(x));
+  return n ? n[1] : x;
+};
+if (from) $("backto").href = from;
+function device() {
+  const ua = navigator.userAgent, ios = (ua.match(/OS (\d+)_(\d+)/) || [])[0], standalone = window.navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
+  const what = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android" : /Mac/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : "Other";
+  const br = /CriOS|Chrome/.test(ua) ? "Chrome" : /FxiOS|Firefox/.test(ua) ? "Firefox" : /Safari/.test(ua) ? "Safari" : "Browser";
+  return [what + (ios ? " (iOS " + ios.slice(3).replace("_", ".") + ")" : ""), br, standalone ? "home-screen app" : "in the browser", screen.width + "×" + screen.height, matchMedia("(prefers-color-scheme: dark)").matches ? "dark mode" : "light mode"].join(", ");
+}
+
+function setKind(k) { kind = k; document.querySelectorAll("#kinds button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.k === k))); }
+document.querySelectorAll("#kinds button").forEach(b => { b.onclick = () => setKind(kind === b.dataset.k ? "" : b.dataset.k); });
+$("fp").onchange = () => {
+  const f = $("fp").files[0]; shot = f || null; $("shot").hidden = !f;
+  if (f) $("shotimg").src = URL.createObjectURL(f);
+};
+$("shotx").onclick = () => { $("fp").value = ""; shot = null; $("shot").hidden = true; };
+// screenshots are made smaller before they go up
+function shrink(file, max = 1800) {
+  return new Promise((ok, no) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => { URL.revokeObjectURL(url); const k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement("canvas");
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(b => b ? ok(b) : no(new Error("Could not process the screenshot")), "image/jpeg", 0.85); };
+    img.onerror = () => no(new Error("Could not read the screenshot")); img.src = url;
+  });
+}
+$("ff").onsubmit = async e => {
+  e.preventDefault();
+  const text = $("fm").value.trim();
+  if (!kind) { say("Please pick what it is about first."); return; }
+  if (!text) { say("Please write a few words."); $("fm").focus(); return; }
+  $("send").disabled = true; say("Sending...");
+  try {
+    let photo_path = null;
+    if (shot) {
+      const blob = await shrink(shot), path = me.id + "/" + (crypto.randomUUID ? crypto.randomUUID() : Date.now()) + ".jpg";
+      const up = await db.storage.from("feedback").upload(path, blob, { contentType: "image/jpeg" });
+      if (up.error) throw up.error;
+      photo_path = path;
+    }
+    const { error } = await db.from("feedback").insert({ kind, message: text, page: from ? pageName(from) + " (" + from.slice(0, 200) + ")" : null, device: device(), name: myName, email: me.email, photo_path });
+    if (error) throw error;
+    $("fm").value = ""; $("shotx").onclick(); setKind("");
+    $("ff").hidden = true; $("thanks").hidden = false; say("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    loadList();
+  } catch (err) { say("Could not send: " + err.message); }
+  finally { $("send").disabled = false; }
+};
+$("more").onclick = () => { $("thanks").hidden = true; $("ff").hidden = false; $("fm").focus(); };
+
+// ---------- the list ----------
+async function loadList() {
+  const { data, error } = await db.from("feedback").select("*").order("created_at", { ascending: false }).limit(300);
+  if (error) { say("Could not load the feedback: " + error.message); return; }
+  rows = data || [];
+  const paths = rows.map(r => r.photo_path).filter(Boolean), urls = {};
+  if (paths.length) { const { data: s } = await db.storage.from("feedback").createSignedUrls(paths, 3600); (s || []).forEach(x => { if (x.signedUrl) urls[x.path] = x.signedUrl; }); }
+  rows.forEach(r => { r.url = r.photo_path ? urls[r.photo_path] : null; });
+  render();
+}
+function render() {
+  const mine = rows.filter(r => r.user_id === me.id);
+  $("mine").hidden = admin || !mine.length;
+  const ml = $("mlist"); ml.textContent = ""; mine.forEach(r => ml.appendChild(item(r, false)));
+  $("inbox").hidden = !admin;
+  if (!admin) return;
+  document.querySelectorAll("#ifilter button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.f === filter)));
+  const list = rows.filter(r => filter === "all" || (filter === "done") === r.done), il = $("ilist"); il.textContent = "";
+  const open = rows.filter(r => !r.done).length;
+  document.querySelector('#ifilter [data-f=open]').textContent = "Open" + (open ? " (" + open + ")" : "");
+  if (!list.length) il.appendChild(el("p", "hint", filter === "open" ? "Nothing open. All caught up." : "Nothing here yet."));
+  list.forEach(r => il.appendChild(item(r, true)));
+}
+document.querySelectorAll("#ifilter button").forEach(b => { b.onclick = () => { filter = b.dataset.f; render(); }; });
+const when = iso => new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+function item(r, inbox) {
+  const d = el("article", "fb" + (r.done ? " done" : "")), top = el("div", "top");
+  top.append(el("span", "k " + r.kind, KIND[r.kind] || r.kind));
+  if (inbox) top.append(el("span", "", r.name || "Someone"));
+  if (r.done) top.append(el("span", "", "· done"));
+  top.append(el("span", "when", when(r.created_at)));
+  d.appendChild(top);
+  d.appendChild(el("p", "m", r.message));
+  if (r.url) { const b = el("button", "ph"); b.type = "button"; b.setAttribute("aria-label", "Show the screenshot bigger"); const i = el("img"); i.src = r.url; i.alt = "Screenshot"; b.appendChild(i); b.onclick = () => PhotoView.open(r.url, "Screenshot"); d.appendChild(b); }
+  if (inbox) {
+    const meta = el("p", "meta");
+    if (r.email) { const a = el("a", "", r.email); a.href = "mailto:" + r.email + "?subject=" + encodeURIComponent("Your Alto Andino feedback"); meta.append(a, document.createTextNode(" · ")); }
+    meta.append(document.createTextNode([r.page, r.device].filter(Boolean).join(" · ")));
+    d.appendChild(meta);
+  }
+  if (r.note && !inbox) { const rp = el("div", "reply"); rp.append(el("b", "", "Our answer"), document.createTextNode(r.note)); d.appendChild(rp); }
+  if (inbox) {
+    const ta = el("textarea"); ta.placeholder = "Answer (the sender sees it under their feedback)"; ta.value = r.note || ""; ta.maxLength = 2000; d.appendChild(ta);
+    const acts = el("div", "acts");
+    const save = async patch => {
+      const { data, error } = await db.from("feedback").update(patch).eq("id", r.id).select();
+      if (error || !data || !data.length) { say("Could not save: " + (error ? error.message : "not allowed")); return; }
+      Object.assign(r, data[0]); render(); say(patch.done === true ? "Ticked off." : patch.done === false ? "Open again." : "Answer saved.");
+    };
+    const note = () => ta.value.trim() || null;
+    const b1 = el("button", "go", r.done ? "Open again" : "Done"); b1.type = "button"; b1.style.minHeight = "40px"; b1.style.fontSize = "14.5px";
+    b1.onclick = () => save(r.done ? { done: false, done_at: null, note: note() } : { done: true, done_at: new Date().toISOString(), note: note() });
+    const b2 = el("button", "lnk", "Save answer"); b2.type = "button"; b2.onclick = () => save({ note: note() });
+    acts.append(b1, b2); d.appendChild(acts);
+  }
+  return d;
+}
+
+db.auth.onAuthStateChange((_e, session) => setTimeout(async () => {
+  const was = me && me.id; me = session ? session.user : null;
+  $("signedout").hidden = !!me;
+  if (!me) { ["ff", "thanks", "inbox", "mine"].forEach(i => { $(i).hidden = true; }); return; }
+  if (was === me.id) return;
+  const [p, a] = await Promise.all([db.from("profiles").select("display_name").eq("id", me.id).maybeSingle(), db.rpc("is_admin")]);
+  if (a.error && /function .* does not exist|Could not find the function/i.test(a.error.message)) { $("nosql").hidden = false; return; }
+  myName = (p.data && p.data.display_name) || null; admin = a.data === true;
+  $("ff").hidden = false;
+  $("ctx").textContent = "Sent with your name and email" + (from ? ", the page you came from (" + pageName(from) + ")" : "") + " and what phone you use, so we can understand it and write back.";
+  loadList();
+}, 0));
+</script>
+</body>
+</html>
