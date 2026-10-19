@@ -13,6 +13,7 @@
   var ICONS = {
     home: "M4 11l8-7 8 7M6 10v10h4v-6h4v6h4V10",
     log: "M12 5v14M5 12h14",
+    recent: "M12 7.5V12l3 2 M4.2 13.5A8 8 0 104.6 9 M4 4.5V9h4.5",   // a clock with an arrow going back: what happened lately
     journal: "M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3V4zM5 17a3 3 0 013-3h11",
     trends: "M4 19V5M4 19h16M8 15l4-5 3 3 4-6",
     calc: "M7 3h10a1 1 0 011 1v16a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zM8.5 7h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01",
@@ -25,6 +26,7 @@
     ["log", "Log a brew", "journal/index.html#log"],
     ["calc", "Calculator", "calc/index.html"],
     ["journal", "Coffee Shelf", "journal/index.html"],
+    ["recent", "Recent activity", "journal/index.html#recent"],
     ["trends", "Trends", "trends/index.html"],
     ["cupping", "Cupping", "cupping/index.html"],
     ["book", BOOK, "chapters/index.html"],
@@ -182,7 +184,7 @@
   }
   function current() {
     if (inBook) return chapter ? "ch-" + chapter : "book";
-    if (/\/journal\//.test(path)) return location.hash === "#log" ? "log" : "journal";
+    if (/\/journal\//.test(path)) return location.hash === "#log" ? "log" : location.hash === "#recent" ? "recent" : "journal";
     if (/\/trends\//.test(path)) return "trends";
     if (isCalc) return "calc";
     if (/\/settings\//.test(path)) return "settings";
