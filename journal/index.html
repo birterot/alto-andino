@@ -2218,7 +2218,8 @@ function brewCard(b) {
     if (pts.length) { const w = el("div", "curve"); w.appendChild(curveSvg(pts)); a.appendChild(w); }
   }
   const chips = (sc, bal) => {
-    const list = Object.entries(sc || {}).sort(([x], [y]) => { const i = k => CORE.includes(k) ? CORE.indexOf(k) : 99; return i(x) - i(y); });
+    const list = Object.entries(sc || {}).filter(([k]) => !(k === "balance" && bal != null))   // an old balance score is shown only while there is no new Balance (26_balance_from_old.sql converts them)
+      .sort(([x], [y]) => { const i = k => CORE.includes(k) ? CORE.indexOf(k) : 99; return i(x) - i(y); });
     if (!list.length && bal == null) return null;
     const t = el("div", "tags");
     if (bal != null) { const ch = el("span", "chip bal"); ch.style.setProperty("--ac", attrColor("balance")); ch.title = SCALE.balanceName(bal); ch.append(ico("balance", 14), document.createTextNode("balance " + SCALE.balanceText(bal))); t.appendChild(ch); }
