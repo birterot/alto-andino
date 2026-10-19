@@ -176,7 +176,7 @@ window.DEVICES = {
                ["Light roast (up to 1:3)", 3, "Fine, espresso range. Tune it by the shot time.", "semi-light"]],
       water: 18, time: "25 to 35 seconds",
       variants: [{ n: "", src: true, calc: "yield", water: 18,
-        tiles: [["Water temperature", "90 to 96 °C, if you can set it"], ["Pressure", "About 9 bar from the pump"], ["Dose", "16 to 20 g, 18 g to start (by basket)"]],
+        tiles: [["Temperature", "90 to 96 °C, set on the machine (if it can)"], ["Pressure", "About 9 bar from the pump"], ["Dose", "16 to 20 g, 18 g to start (by basket)"]],
         steps: [
           "Switch the machine on early: most need 15 to 30 minutes until the group head and portafilter are properly hot. Keep the portafilter locked in while it heats.",
           "Run a little water through the group head (a short flush), then dry the basket.",
@@ -203,8 +203,8 @@ window.DEVICES = {
             ["The cup decides", "These are only guides. If it tastes good to you, the recipe is right, even at 40 or 50 seconds. Many specialty coffees today run longer than 35 seconds."],
             ["From experience", "80 to 90% of coffees end up at around 45 seconds."]]],
           ["Taste says...", [
-            ["Sour (underextracted)", "Raise the water temperature a few degrees, grind finer even if the shot goes past 30 seconds, or lower the dose slightly."],
-            ["Bitter (overextracted)", "Lower the water temperature a few degrees, grind coarser even if the shot goes under 30 seconds, or raise the dose slightly."],
+            ["Sour (underextracted)", "Raise the temperature a few degrees if your machine can, grind finer even if the shot goes past 30 seconds, or lower the dose slightly."],
+            ["Bitter (overextracted)", "Lower the temperature a few degrees if your machine can, grind coarser even if the shot goes under 30 seconds, or raise the dose slightly."],
             ["Too fast or too slow", "Under about 25 seconds is fast, so grind finer. Over about 35 to 40 seconds is slow, so grind coarser. But if it tastes good, leave it."]]]
         ],
         links: [] }],

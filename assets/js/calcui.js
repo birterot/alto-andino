@@ -98,7 +98,7 @@ window.altoCalc = (function () {
       var ph = p.preheat && ((window.DEFAULTS && window.DEFAULTS.PREHEAT) || []).filter(function (x) { return x[0] === p.preheat; })[0];
       var parts = [];
       if (ph) parts.push("Preheat: " + ph[1].toLowerCase() + " (about " + ph[2] + " °C).");
-      if (p.temp) parts.push("Water from the kettle: " + p.temp + " °C.");
+      if (p.temp) parts.push(/^semi-automatic/i.test(p.device || "") ? "Temperature on the machine: " + p.temp + " °C." : "Water from the kettle: " + p.temp + " °C.");
       temp.hidden = !parts.length; temp.textContent = parts.join(" ");
     }
     function setPreset(id) { var p = byId(id) || presets[0]; st = fresh(p); sel.value = p.id; tempLine(); render(); }
