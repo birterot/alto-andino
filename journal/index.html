@@ -230,6 +230,30 @@ details.calcbox summary{font-size:15px}
 .dvrow button,.modes button{font:inherit;font-size:14px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
 .dvrow button.on,.modes button.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
 .modes{display:flex;gap:8px;margin:8px 0 4px}
+/* Coffees | Recent activity, at the top of the Coffee Shelf */
+.vtabs{margin:10px 0 22px}
+.modes a{display:inline-flex;align-items:center;font-size:14px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none}
+.modes a.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
+/* Recent activity: one day after the other, newest first */
+#feed h3.day{margin:24px 0 8px;font-size:14px;font-weight:600;color:var(--mut)}
+#feed h3.day:first-child{margin-top:4px}
+.fi{display:block;padding:12px 14px 13px;margin-bottom:8px;border:1px solid var(--line);border-left:4px solid var(--s,var(--line));border-radius:10px;background:var(--card);color:var(--ink);text-decoration:none}
+.fi:hover{border-color:var(--ink);border-left-color:var(--s,var(--ink))}
+.fi .ft{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.fi strong{font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi time,.fe time{flex:none;font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}
+.fi p{margin:3px 0 0;font-size:14px;color:var(--mut)}
+.fi .rr{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:7px;font-size:14px}
+.fi .rr span{display:inline-flex;align-items:center;gap:6px}
+.fi .note{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fe{display:flex;align-items:center;gap:10px;padding:7px 4px 7px 8px;margin-bottom:6px;font-size:14px;color:var(--mut);text-decoration:none;border-radius:10px}
+.fe:hover{background:var(--card)}
+.fe svg{flex:none;color:var(--s,var(--accent))}
+.fe span{flex:1;min-width:0}
+.fe b{font-weight:600;color:var(--ink)}
+#rmore{margin-top:8px}
+.bc.hl{animation:bchl 2.6s ease-out}
+@keyframes bchl{0%,35%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
 .sfor{border:0;padding:0;margin:12px 0 0}
 .sfor legend{padding:0;font-size:14px;color:var(--mut)}
 .sfor label.chk{display:inline-flex;gap:8px;margin:8px 8px 0 0;padding:0 14px;min-height:40px;border:1px solid var(--line);border-radius:999px;background:var(--card);font-size:14px;cursor:pointer}
@@ -254,8 +278,8 @@ details.calcbox summary{font-size:15px}
 .bc .chip svg{color:var(--ac)}
 .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0 0 16px}
 .filters input,.filters select{margin:0;max-width:none}
-#bfilters{display:flex;flex-wrap:nowrap;gap:6px}
-#bfilters select{width:auto;flex:1 1 0;min-width:0;height:38px;min-height:38px;padding:0 30px 0 13px;font-size:14.5px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;background-position:calc(100% - 16px) 52%,calc(100% - 11px) 52%;background-size:5px 5px,5px 5px}
+#bfilters,#rfilters{display:flex;flex-wrap:nowrap;gap:6px}
+#bfilters select,#rfilters select{width:auto;flex:1 1 0;min-width:0;height:38px;min-height:38px;padding:0 30px 0 13px;font-size:14.5px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;background-position:calc(100% - 16px) 52%,calc(100% - 11px) 52%;background-size:5px 5px,5px 5px}
 #bfilters select[hidden]{display:none}
 .pick{display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:12px;border-radius:10px;border:1px solid var(--line);border-top:3px solid var(--s);background:var(--f);color:var(--t);font:inherit;cursor:pointer}
 .pick small{display:block;margin-top:2px;opacity:.85}
@@ -327,6 +351,7 @@ details.calcbox summary{font-size:15px}
     <h2>New coffee</h2>
     <div id="addhost"></div>
   </div>
+  <nav class="modes vtabs" id="vtabs" aria-label="Coffee Shelf" hidden><a href="#" data-v="list">Coffees</a><a href="#recent" data-v="recent">Recent activity</a></nav>
   <div id="listview">
   <div id="listhost">
   <details class="add" id="addbox">
@@ -396,8 +421,17 @@ details.calcbox summary{font-size:15px}
   <div id="archived"></div>
   </div>
 
+  <div id="recentview" hidden>
+    <div class="filters" id="rfilters">
+      <select id="rflt-kind" aria-label="What to show"><option value="">Everything</option><option value="brew">Brews</option><option value="bag">Coffees and bags</option><option value="cup">Cuppings</option></select>
+      <select id="rflt-who" aria-label="Who"></select>
+    </div>
+    <div id="feed"></div>
+    <button type="button" class="btn ghost" id="rmore" hidden>Show older</button>
+  </div>
+
   <div id="detail" hidden>
-    <a class="back" href="#">All coffees</a>
+    <a class="back" id="dback" href="#">All coffees</a>
     <section id="dhead" class="cc"><img id="dphoto" alt="" hidden><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><div class="acts" id="dacts"><span id="dbuy"></span><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button></div><p class="darch" id="darch" hidden></p></div></section>
     <details class="add" id="brewbox" open>
       <summary id="brewsum">Log a brew</summary>
@@ -719,6 +753,7 @@ function rateBlock(list) {
 const ICONS = {
   edit: "M4 20h4L19 9l-4-4L4 16v4z M13 7l4 4",
   trash: "M4 7h16 M10 7V4h4v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6",
+  bag: "M6.5 8h11l1 12.5h-13z M9 8V6.5a3 3 0 016 0V8",
   plus: "M12 5v14 M5 12h14",
   check: "M4.5 12.5l5 5L19.5 7",
   cup: "M5 9h11v5a5 5 0 01-5 5h-1a5 5 0 01-5-5V9z M16 10h2a2 2 0 010 4h-2 M8 3v3 M12 3v3",
@@ -1810,9 +1845,13 @@ function route() {
   if (!me) return;
   const noHH = hhOk && !hhs.length;   // signed in, but not in a household yet: start or join one first
   $("hhview").hidden = !noHH;
-  if (noHH) { ["listview", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); return; }
-  const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)((?:&[^&]*)*)$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/);
-  $("listview").hidden = !!m || isLog || !!add;
+  if (noHH) { ["listview", "recentview", "vtabs", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); return; }
+  const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)((?:&[^&]*)*)$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/), isRecent = hash === "#recent";
+  $("listview").hidden = !!m || isLog || !!add || isRecent;
+  $("recentview").hidden = !isRecent;
+  $("vtabs").hidden = !!m || isLog || !!add;
+  $("vtabs").querySelectorAll("a").forEach(a => { const on = a.dataset.v === (isRecent ? "recent" : "list"); a.classList.toggle("on", on); if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  if (!m) { const fromRecent = isRecent; $("dback").href = fromRecent ? "#recent" : "#"; $("dback").textContent = fromRecent ? "Recent activity" : "All coffees"; }
   $("detail").hidden = !m;
   $("pickview").hidden = !isLog;
   $("addview").hidden = !add;
@@ -1824,11 +1863,130 @@ function route() {
     $("addbox").open = true; $("addsum").textContent = "New coffee"; load();
   } else if (m) {
     const ps = new URLSearchParams(m[2].slice(1));
+    focusBrew = ps.get("b");
     openCoffee(m[1], ps.get("d"), ps.has("new") || ps.has("d"));   // coming to log a brew opens the form, coming to look shows the brews
   }
   else if (isLog) pickList();
+  else if (isRecent) loadFeed();
   else { tryRestoreCoffee(); load(); }
 }
+
+// ---------- Recent activity: brews, new coffees and bags, cuppings, newest first ----------
+let focusBrew = null, feedN = 40, feedId = 0, feedItems = [], feedMore = false;
+const hhmm = d => String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+const localDay = (iso, h) => { const [y, m, d] = String(iso).slice(0, 10).split("-").map(Number); return new Date(y, m - 1, d, h, h ? 59 : 0); };
+function dayLabel(d) {
+  const t = new Date(); t.setHours(0, 0, 0, 0); const x = new Date(d); x.setHours(0, 0, 0, 0);
+  const n = Math.round((t - x) / 864e5);
+  if (n === 0) return "Today";
+  if (n === 1) return "Yesterday";
+  if (n > 1 && n < 7) return x.toLocaleDateString("en-GB", { weekday: "long" });
+  return x.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", ...(x.getFullYear() !== t.getFullYear() ? { year: "numeric" } : {}) });
+}
+async function loadFeed() {
+  const my = ++feedId;
+  const { data: cs, error } = await inHH(db.from("coffees").select("*")).order("created_at", { ascending: false });
+  if (my !== feedId) return;
+  if (error) { say("Could not load the activity: " + error.message); return; }
+  const ids = cs.map(c => c.id), byId = {}; cs.forEach(c => { byId[c.id] = c; });
+  let brews = [], cups = [];
+  if (ids.length) {
+    const [rb, rc] = await Promise.all([
+      db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,drink,milk,created_at)").in("coffee_id", ids).order("brewed_at", { ascending: false }).limit(feedN + 1),
+      db.from("cuppings").select("session_id,coffee_id,cupped_at,cupper_id,is_guest,guest_name,total").in("coffee_id", ids).order("cupped_at", { ascending: false }).limit(500)
+    ]);
+    if (my !== feedId) return;
+    if (rb.error) { say("Could not load the brews: " + rb.error.message); return; }
+    brews = rb.data || []; cups = rc.error ? [] : (rc.data || []);   // before supabase/21 has run, there are no cuppings
+  }
+  // only as far back as the brews go: older coffees and cuppings come with "Show older"
+  feedMore = brews.length > feedN; if (feedMore) brews = brews.slice(0, feedN);
+  const cutoff = feedMore ? new Date(brews[brews.length - 1].brewed_at) : null;
+  const items = [];
+  brews.forEach(b => items.push({ k: "brew", t: new Date(b.brewed_at), b, c: byId[b.coffee_id], who: [b.made_by || b.created_by, ...(b.brew_ratings || []).filter(r => !r.is_guest).map(r => r.rater_id)] }));
+  const first = {};
+  cs.slice().sort((x, y) => String(x.created_at || "").localeCompare(String(y.created_at || ""))).forEach(c => { if (!first[gk(c)]) first[gk(c)] = c.id; });
+  cs.forEach(c => {
+    if (c.created_at) items.push({ k: "add", t: new Date(c.created_at), c, again: first[gk(c)] !== c.id, who: [c.created_by] });
+    if (c.open_date) items.push({ k: "open", t: localDay(c.open_date, 0), c, who: [] });   // a date without a time: opened at the start of the day,
+    if (c.finished_at) items.push({ k: "fin", t: localDay(c.finished_at, 23), c, who: [] });   // finished at its end
+  });
+  const ses = {};
+  cups.forEach(r => {
+    const s = ses[r.session_id] = ses[r.session_id] || { k: "cup", sid: r.session_id, t: new Date(r.cupped_at), coffees: [], people: [], who: [], best: null };
+    const t = new Date(r.cupped_at); if (t < s.t) s.t = t;
+    if (!s.coffees.includes(r.coffee_id)) s.coffees.push(r.coffee_id);
+    const p = r.is_guest ? (r.guest_name ? r.guest_name + " (guest)" : "a guest") : tName({ rater_id: r.cupper_id });
+    if (!s.people.includes(p)) s.people.push(p);
+    if (!r.is_guest && r.cupper_id) s.who.push(r.cupper_id);
+    if (r.total != null && (s.best == null || Number(r.total) > s.best)) s.best = Number(r.total);
+  });
+  Object.values(ses).forEach(s => { s.cs = s.coffees.map(id => byId[id]).filter(Boolean); items.push(s); });
+  feedItems = items.filter(x => !cutoff || x.t >= cutoff).sort((x, y) => y.t - x.t);
+  // who: everyone in the household who shows up in the activity
+  const ppl = hhPeople(), s = $("rflt-who"), keep = s.value; s.textContent = "";
+  opt0(s, "", "Everyone"); ppl.forEach(id => opt0(s, id, me && id === me.id ? (names[id] ? names[id] + " (you)" : "You") : nameOf(id) || "Someone"));
+  s.value = ppl.includes(keep) ? keep : ""; s.hidden = ppl.length < 2;
+  renderFeed();
+}
+function opt0(s, v, t) { const o = el("option", "", t); o.value = v; s.appendChild(o); }
+function renderFeed() {
+  const kind = $("rflt-kind").value, who = $("rflt-who").value, KIND = { brew: ["brew"], bag: ["add", "open", "fin"], cup: ["cup"] };
+  const list = feedItems.filter(x => (!kind || KIND[kind].includes(x.k)) && (!who || x.who.includes(who)));
+  const box = $("feed"); box.textContent = "";
+  $("rmore").hidden = !feedMore;
+  if (!feedItems.length) { box.appendChild(el("p", "hint", "Nothing here yet. Brews, new coffees and bags, and cuppings show up here, newest first.")); return; }
+  if (!list.length) { box.appendChild(el("p", "hint", feedMore ? "Nothing matches in the latest activity. \"Show older\" looks further back." : "Nothing matches these filters.")); return; }
+  let day = "";
+  list.forEach(x => {
+    const dk = x.t.toDateString();
+    if (dk !== day) { day = dk; box.appendChild(el("h3", "day", dayLabel(x.t))); }
+    box.appendChild(feedCard(x));
+  });
+}
+function feedCard(x) {
+  const line = (href, icon, parts, time, c) => {   // a short line: added, opened, finished, cupped
+    const a = el("a", "fe"); a.href = href; if (c) applyLook(a, c);
+    const t = el("span"); parts.forEach(p => t.append(typeof p === "string" ? document.createTextNode(p) : p));
+    a.append(ico(icon, 20), t); if (time) a.appendChild(el("time", "", time)); return a;
+  };
+  const cname = c => el("b", "", c ? c.name : "a coffee");
+  if (x.k === "brew") {
+    const b = x.b, c = x.c, a = el("a", "fi"); a.href = "#c=" + b.coffee_id + "&b=" + b.id; if (c) applyLook(a, c);
+    const top = el("div", "ft"); top.append(el("strong", "", c ? c.name : "A coffee"), el("time", "", hhmm(x.t))); a.appendChild(top);
+    const maker = b.made_by || b.created_by, by = maker ? tName({ rater_id: maker }) : null;
+    const nums = [b.dose_g != null ? b.dose_g + "\u00A0g in" : null, b.yield_g != null ? b.yield_g + "\u00A0g out" : b.water_g != null ? b.water_g + "\u00A0g water" : null,
+      b.time_s != null ? (isEsp(typeOf(b.device)) && b.time_s < 90 ? b.time_s + "\u00A0s" : mmss(b.time_s) + "\u00A0min") : null].filter(Boolean).join(", ");
+    const dev = DEV_OLD[b.device] || b.device, devT = dev && /^(Manual|Semi-automatic|Moka|French|Pour|Cold|Turkish|Drip)\b/.test(dev) ? dev[0].toLowerCase() + dev.slice(1) : dev;
+    const what = ["Brewed" + (by ? " by " + (by === "You" ? "you" : by) : "") + (devT ? " on the " + devT : ""), nums, b.is_dialin ? "dial-in" : null].filter(Boolean).join(" · ");
+    a.appendChild(el("p", "", what));
+    const ts = tastersOf(b);
+    if (ts.length) {
+      const rr = el("div", "rr");
+      ts.forEach(t => {
+        const sp = el("span");
+        if (t.rating != null) sp.appendChild(Stars.row(t.rating, tName(t) + ": " + Stars.text(t.rating) + " of 5"));
+        sp.append(document.createTextNode(tName(t) + (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.rating == null ? ", taste only" : "")));
+        rr.appendChild(sp);
+      });
+      a.appendChild(rr);
+    } else a.appendChild(el("p", "", "Not rated yet"));
+    if (b.notes) a.appendChild(el("p", "note", b.notes));
+    return a;
+  }
+  const who = id => id ? tName({ rater_id: id }) : null;
+  if (x.k === "add") { const w = who(x.c.created_by); return line("#c=" + x.c.id, x.again ? "cart" : "plus", [(w || "Someone") + (x.again ? " got a new bag of " : " added "), cname(x.c)], hhmm(x.t), x.c); }
+  if (x.k === "open") return line("#c=" + x.c.id, "bag", ["Opened a bag of ", cname(x.c)], "", x.c);
+  if (x.k === "fin") return line("#c=" + x.c.id, "check", ["Finished the bag of ", cname(x.c)], "", x.c);
+  // a cupping session
+  const cs = x.cs, shown = cs.slice(0, 2), parts = ["Cupping: "];
+  shown.forEach((c, i) => { if (i) parts.push(cs.length === 2 ? " and " : ", "); parts.push(cname(c)); });
+  if (cs.length > 2) parts.push(" and " + (cs.length - 2) + " more");
+  parts.push(", by " + andList(x.people) + (x.best != null ? ", best " + (Math.round(x.best * 4) / 4) : ""));
+  return line("../cupping/#s=" + x.sid, "cup", parts, hhmm(x.t), cs[0]);
+}
+["rflt-kind", "rflt-who"].forEach(id => $(id).addEventListener("change", renderFeed));
+$("rmore").onclick = () => { feedN += 40; loadFeed(); };
 
 // "Log a brew": choose the device first (or the coffee first). Coffees suitable for the device come first.
 let logMode = store.get("alto.logmode") === "coffee" ? "coffee" : "device", logDev = null, logCoffees = [];
@@ -1950,7 +2108,7 @@ function dayN(iso, when) {
 }
 
 function brewCard(b) {
-  const a = el("article", "bc"), when = new Date(b.brewed_at);
+  const a = el("article", "bc"), when = new Date(b.brewed_at); a.dataset.bid = b.id;
   const hd = el("div", "hd"); hd.appendChild(el("h3", "", fmtDT(when))); a.appendChild(hd);
   const who = nameOf(b.made_by || b.created_by);
   if (who) { const w = el("p", "age", "Brewed by "); w.appendChild(el("span", "by", who)); a.appendChild(w); }
@@ -2035,6 +2193,12 @@ function renderBrews() {
   if (!list.length) { box.appendChild(el("p", "hint", "No brews match these filters.")); return; }
   if (list.length !== brewData.length) box.appendChild(el("p", "hint", "Showing " + list.length + " of " + brewData.length + " brews."));
   list.forEach(b => box.appendChild(brewCard(b)));
+  // coming from Recent activity: straight to that brew, briefly outlined
+  const fb = focusBrew && box.querySelector('[data-bid="' + focusBrew + '"]'); focusBrew = null;
+  if (fb) requestAnimationFrame(() => {
+    const bar = document.querySelector(".topnav"), y = fb.getBoundingClientRect().top + window.scrollY - (bar ? bar.offsetHeight : 0) - 12;
+    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" }); fb.classList.add("hl");
+  });
 }
 ["bflt-device", "bflt-recipe", "bflt-who", "bflt-sort"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderBrews)));
 
