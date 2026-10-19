@@ -75,6 +75,7 @@ svg.ch g:focus-visible .hit{stroke:var(--ink);stroke-width:1.5}
 button.leg{cursor:pointer}
 .leg i{width:12px;height:3px;border-radius:2px;background:var(--col)}
 .leg i.d{width:10px;height:10px;border-radius:50%}
+.leg i.dash{width:16px;background:repeating-linear-gradient(90deg,var(--col) 0 4px,transparent 4px 7px)}
 .leg i.h{width:8px;height:8px;border-radius:50%;background:none;border:2px solid var(--mut)}
 .leg[aria-pressed=false]{opacity:.45}
 .ramp{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--mut)}
@@ -150,7 +151,7 @@ const RCOL = n => "var(--r" + Math.min(5, Math.max(1, Math.round(n))) + ")";   /
 const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
 const D = window.DEFAULTS || {};
 
-const state = { view: "dial", demo: false, signedIn: false, me: null, coffees: [], brews: [], names: {}, coffee: "", device: "", who: "", rater: "", recipe: "", xk: "roast", hidden: new Set() };
+const state = { view: "dial", freshC: "", demo: false, signedIn: false, me: null, coffees: [], brews: [], names: {}, coffee: "", device: "", who: "", rater: "", recipe: "", xk: "roast", hidden: new Set() };
 
 // ---------- helpers ----------
 const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
@@ -172,6 +173,7 @@ const timeText = b => b.time == null ? null : (isEsp(b.device) && b.time < 90 ? 
 const ratioOf = b => !b.dose ? null : isEsp(b.device) ? (b.yld ? b.yld / b.dose : null) : (b.water ? b.water / b.dose : b.yld ? b.yld / b.dose : null);
 const numGrind = g => { const m = String(g || "").replace(",", ".").match(/-?\d+(\.\d+)?/); return m ? Number(m[0]) : null; };
 const stars = n => Stars.text(n);
+const andList = arr => arr.length < 2 ? arr.join("") : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1];
 const coffeeOf = id => state.coffees.find(c => c.id === id) || null;
 const nameOf = id => (id && state.names[id]) || null;
 const people = () => Object.keys(state.names).sort((a, b) => state.names[a].localeCompare(state.names[b]));
@@ -209,7 +211,7 @@ function numbers(parent, headers, rows) {
 function empty(parent, text) { parent.appendChild(el("p", "msg", text)); }
 function legendItem(parent, color, label, kind, onToggle, pressed) {
   const b = el(onToggle ? "button" : "span", "leg"); if (onToggle) { b.type = "button"; b.setAttribute("aria-pressed", String(pressed)); b.onclick = onToggle; }
-  const i = el("i", kind === "dot" ? "d" : kind === "hollow" ? "h" : ""); i.style.setProperty("--col", color); b.append(i, document.createTextNode(label)); parent.appendChild(b); return b;
+  const i = el("i", kind === "dot" ? "d" : kind === "hollow" ? "h" : kind === "dash" ? "dash" : ""); i.style.setProperty("--col", color); b.append(i, document.createTextNode(label)); parent.appendChild(b); return b;
 }
 function starRamp(parent, withUnrated) {
   const r = el("div", "legend"), w = el("span", "ramp");
@@ -250,7 +252,7 @@ function viewDial() {
   else {
     const box = chartBox(m);
     Charts.scatter({
-      box, height: 300, xLabel: "Grind setting", yLabel: esp ? "Time (s)" : "Time (min)", yFmt: esp ? null : v => mmss(v),
+      box, height: 300, xLabel: "Grind setting", xStep: 0.5, yLabel: esp ? "Time (s)" : "Time (min)", yFmt: esp ? null : v => mmss(v),   // grind marks every half step at the finest
       points: pts.map(b => ({ x: numGrind(b.grind), y: b.time, color: b.rating ? RCOL(b.rating) : "var(--mut)", hollow: !b.rating, r: b.dialin ? 4.5 : 5.5, tip: () => brewTip(b) }))
     });
     starRamp(m, pts.some(b => !b.rating));
@@ -287,25 +289,39 @@ function viewDial() {
 
 // ---------- 3: freshness curve ----------
 function viewFresh() {
-  const list = filtered(false).filter(b => b.rating && !b.dialin && b.dRoast != null && b.dRoast >= 0 && b.dRoast <= 75);
-  const m = card("Freshness curve", "Stars against days after roast, all coffees together. Grey dots are single brews, the line is the average.");
-  if (list.length < 3) { empty(m, "Rate at least three brews of coffees with a roast date to see when they taste best."); return; }
-  const bins = {};
-  list.forEach(b => { const k = Math.floor(b.dRoast / 3) * 3; (bins[k] = bins[k] || []).push(b.rating); });
-  const line = Object.keys(bins).map(Number).sort((a, b) => a - b).map(k => ({ x: k + 1, y: r1(avg(bins[k])), n: bins[k].length }));
+  const every = filtered(false).filter(b => b.rating && !b.dialin && b.dRoast != null && b.dRoast >= 0 && b.dRoast <= 75);
+  const m = card("Freshness curve", "Stars against days after roast. Grey dots are single brews, the line is the average. Pick one coffee to see its own curve next to all coffees together.");
+  if (every.length < 3) { empty(m, "Rate at least three brews of coffees with a roast date to see when they taste best."); return; }
+  // one coffee or all of them
+  const cnt = {}; every.forEach(b => { cnt[b.coffeeId] = (cnt[b.coffeeId] || 0) + 1; });
+  const ids = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]);
+  if (state.freshC && !cnt[state.freshC]) state.freshC = "";
+  if (ids.length > 1) {
+    const sub = el("div", "subctl"), sel = el("select"); sel.setAttribute("aria-label", "Which coffee");
+    [["", "All coffees together"]].concat(ids.map(id => { const c = coffeeOf(id); return [id, (c ? c.name : "Coffee") + (c && c.roast_date ? ", roasted " + fmtIso(c.roast_date) : "") + " · " + cnt[id]]; }))
+      .forEach(([v, t]) => { const o = el("option", "", t); o.value = v; sel.appendChild(o); });
+    sel.value = state.freshC; sel.onchange = () => { state.freshC = sel.value; render(); };
+    sub.appendChild(sel); m.insertBefore(sub, m.querySelector(".what") ? m.querySelector(".what").nextSibling : null);
+  }
+  const one = state.freshC ? coffeeOf(state.freshC) : null, list = state.freshC ? every.filter(b => b.coffeeId === state.freshC) : every;
+  const binLine = arr => { const bins = {}; arr.forEach(b => { const k = Math.floor(b.dRoast / 3) * 3; (bins[k] = bins[k] || []).push(b.rating); }); return Object.keys(bins).map(Number).sort((a, b) => a - b).map(k => ({ x: k + 1, y: r1(avg(bins[k])), n: bins[k].length })); };
+  const line = binLine(list);
+  const series = [{ name: one ? one.name : "Average", color: "var(--one)", points: line }];
+  if (one && list.length < every.length) series.push({ name: "All coffees", color: "var(--mut)", points: binLine(every), dots: false, dash: true });
+  if (series.length > 1) { const leg = el("div", "legend"); series.forEach(sr => legendItem(leg, sr.color, sr.name, sr.dash ? "dash" : "line")); m.appendChild(leg); }
   const box = chartBox(m);
   // a small, fixed vertical spread so brews with the same stars on the same day stay visible
   const jit = b => ((b.id.charCodeAt(0) + b.id.charCodeAt(b.id.length - 1)) % 5 - 2) * 0.06;
   Charts.lines({
     box, height: 300, xLabel: "Days after roast", yDomain: [0.5, 5.5], yTicks: [1, 2, 3, 4, 5], yFmt: v => v + "★",
     cloud: list.map(b => ({ x: b.dRoast, y: b.rating + jit(b) })),
-    series: [{ name: "Average", color: "var(--one)", points: line }],
+    series,
     tipTitle: x => "Days " + (x - 1) + " to " + (x + 1) + " after roast",
     valueFmt: (sr, y, p) => y + "★ on average, " + p.n + (p.n === 1 ? " brew" : " brews")
   });
   const good = line.filter(p => p.n >= 2);
   const top = (good.length ? good : line).slice().sort((a, b) => b.y - a.y || b.n - a.n)[0];
-  m.appendChild(el("p", "take", "So far your best brews come around day " + (top.x - 1) + " to " + (top.x + 1) + " after roast (" + top.y + "★ on average)." + (good.length < 3 ? " This gets more reliable with more rated brews." : "")));
+  m.appendChild(el("p", "take", (one ? "So far " + one.name + " tastes best" : "So far your best brews come") + " around day " + (top.x - 1) + " to " + (top.x + 1) + " after roast (" + top.y + "★ on average)." + (good.length < 3 ? " This gets more reliable with more rated brews." : "")));
   numbers(m, ["Days after roast", "Average stars", "Brews"], line.map(p => [(p.x - 1) + " to " + (p.x + 1), p.y, p.n]));
 }
 
@@ -337,6 +353,7 @@ function viewTaste() {
     numbers(m, ["Group", "Kind", "Average stars", "Brews"], tbl);
   }
 
+  sweetSpot();
   const f = card("Flavour fingerprint", "The average sour, sweet, bitter and balance of each coffee, from -5 to +5. 0 is just right.");
   const scored = filtered(false).filter(b => CORE.some(a => b.scores[a] != null));
   const byC = {}; scored.forEach(b => (byC[b.coffeeId] = byC[b.coffeeId] || []).push(b));
@@ -359,6 +376,48 @@ function viewTaste() {
     tbl.push([c ? c.name : "", ...vals.map(x => x.v === null ? null : r1(x.v)), bs.length]);
   });
   numbers(f, ["Coffee", ...CORE, "Brews"], tbl);
+}
+
+// Your sweet spot: how the brews you liked most taste, next to the others (and which tasting notes they have)
+function sweetSpot() {
+  const sc = filtered(false).filter(b => b.rating && !b.dialin && Object.keys(b.scores).length);
+  const who = state.rater && state.rater !== GUEST ? state.names[state.rater] : null;
+  const f = card("Your sweet spot", "Where the brews you liked most sit: their average sour, sweet, bitter and balance (4 stars and up), next to the rest, and their most common tasting notes." + (who ? " Only " + who + "'s ratings." : $("f-rater").hidden ? "" : " Pick someone under \"Rated by\" to see one person's taste."));
+  if (sc.length < 3) { empty(f, "Rate and score the taste of at least three brews to find your sweet spot."); return; }
+  let fav = sc.filter(b => b.rating >= 4), favLabel = "4★ and up";
+  if (fav.length < 2 || fav.length === sc.length) {   // few 4-star brews, or only 4-star brews: the best third instead
+    const sorted = sc.slice().sort((a, b) => b.rating - a.rating), n = Math.max(1, Math.ceil(sc.length / 3)), cut = sorted[n - 1].rating;
+    fav = sc.filter(b => b.rating >= cut && b.rating > Math.min(...sc.map(x => x.rating))); if (!fav.length) fav = sorted.slice(0, n);
+    favLabel = "your best rated, " + stars(cut) + " and up";
+  }
+  const rest = sc.filter(b => !fav.includes(b));
+  const prof = arr => CORE.map(a => { const v = arr.map(b => b.scores[a]).filter(v => v != null).map(v => shown(a, v)); return { a, v: v.length ? avg(v) : null, n: v.length }; });
+  const pf = prof(fav), pr = prof(rest);
+  const leg = el("div", "legend"); CORE.forEach(a => legendItem(leg, FCOL[a], a, "dot")); f.appendChild(leg);
+  const grid = el("div", "grid2"); f.appendChild(grid);
+  const bars = (title, sub, vals) => {
+    const cell = el("div"); grid.appendChild(cell); cell.appendChild(el("h3", "", title)); cell.appendChild(el("p", "small", sub));
+    Charts.divbars({ box: chartBox(cell), compact: true, domain: [-5, 5], xTicks: [-5, 0, 5], xFmt: v => v > 0 ? "+" + v : String(v),
+      rows: vals.map(x => ({ label: x.a, value: x.v, color: FCOL[x.a], tip: () => ({ title, rows: [{ value: x.v === null ? "no score" : (x.v > 0 ? "+" : "") + r1(x.v), label: x.a + ", " + x.n + (x.n === 1 ? " brew" : " brews"), color: FCOL[x.a], kind: "dot" }] }) })) });
+  };
+  bars("Your favourites", fav.length + (fav.length === 1 ? " brew, " : " brews, ") + favLabel, pf);
+  if (rest.length) bars("The others", rest.length + (rest.length === 1 ? " brew" : " brews"), pr);
+  // in words: where the favourites sit
+  const W = { sour: ["more sour", "less sour", "sourness"], sweet: ["sweeter", "less sweet", "sweetness"], bitter: ["more bitter", "less bitter", "bitterness"] };
+  const lean = [], right = [];
+  pf.forEach(x => { if (!W[x.a] || x.v === null) return; const d = Math.abs(x.v); if (d < 0.75) right.push(W[x.a][2]); else lean.push((d > 2 ? "clearly " : "a little ") + W[x.a][x.v > 0 ? 0 : 1]); });
+  let txt = !lean.length && !right.length ? "" : !lean.length ? "Your favourites sit right in the middle: " + andList(right) + " just right." :
+    "Your favourites are " + andList(lean) + " than just right" + (right.length ? ", with " + andList(right) + " just right." : ".");
+  const diff = pf.map((x, i) => ({ a: x.a, f: x.v, r: pr[i].v })).filter(x => x.f !== null && x.r !== null).sort((x, y) => Math.abs(y.f - y.r) - Math.abs(x.f - x.r))[0];
+  const sg = v => (v > 0 ? "+" : v < 0 ? "\u2212" : "") + Math.abs(r1(v));
+  if (diff && Math.abs(diff.f - diff.r) >= 0.75) txt += " The biggest difference to your other brews is " + diff.a + ": " + sg(diff.f) + " against " + sg(diff.r) + ".";
+  if (txt) f.appendChild(el("p", "take", txt));
+  // tasting notes: how often they are there in the favourites (and in the others)
+  const notes = {}, cnt = (arr, k) => arr.forEach(b => Object.keys(b.scores).forEach(a => { if (!SCALE.isCore(a) && SCALE.levelOf(b.scores[a]) >= 1) { notes[a] = notes[a] || { f: 0, r: 0 }; notes[a][k]++; } }));
+  cnt(fav, "f"); cnt(rest, "r");
+  const top = Object.keys(notes).filter(a => notes[a].f).sort((a, b) => notes[b].f - notes[a].f || notes[a].r - notes[b].r).slice(0, 5);
+  if (top.length) f.appendChild(el("p", "small", "Tasting notes in your favourites: " + top.map(a => a + " (" + notes[a].f + " of " + fav.length + (rest.length ? ", in the others " + notes[a].r + " of " + rest.length : "") + ")").join(", ") + "."));
+  numbers(f, ["", ...CORE, "Brews"], [["Favourites", ...pf.map(x => x.v === null ? null : r1(x.v)), fav.length]].concat(rest.length ? [["The others", ...pr.map(x => x.v === null ? null : r1(x.v)), rest.length]] : []));
 }
 
 // ---------- 6 + 7 + 8: us ----------
