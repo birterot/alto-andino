@@ -16,5 +16,7 @@ window.LISTS = {
     "Semi-washed": ["#E6F1FB","#042C53","#185FA5","#85B7EB","#0C447C","#B5D4F4"]
   },
   roast: ["Light", "Medium-light", "Medium", "Medium-dark", "Dark"],
-  device: ["Chemex (3-cup)", "French Press (1-cup)", "Hario V60", "Moka Pot (6-cup)"]
+  // extra devices for the brew form, besides the ones in data/devices.js (French press, AeroPress, V60, Chemex,
+  // pour-over, moka pot, manual and semi-automatic espresso machine). Anyone can add their own with "Other (add new)".
+  device: ["Kalita Wave", "Clever Dripper", "Cold brew", "Filter coffee machine", "Fully automatic machine"]
 };

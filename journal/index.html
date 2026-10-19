@@ -583,8 +583,7 @@ function deviceList() {
   const out = [], add = x => { if (x && !out.includes(x)) out.push(x); };
   ((window.DEVICES && window.DEVICES.D) || []).forEach(d => (d.logAs || [d.name]).forEach(add));
   (window.LISTS.device || []).forEach(add);
-  const lo = x => x.toLowerCase();   // "Chemex" is hidden next to "Chemex (3-cup)"
-  return out.filter(n => !out.some(o => o !== n && lo(o).indexOf(lo(n) + " ") === 0));   // a shorter name is hidden next to a longer one that starts with it
+  return out;   // plain names, no sizes: your own ("French press (1 l)") come with "Other (add new)" and stay in the list once used
 }
 function fill(id, base, used) {
   const s = $(id), keep = s.value;
@@ -1442,16 +1441,7 @@ $("stars").appendChild(el("span", "starval")).id = "starval";
 setRating(null);
 
 // ----- which kind of brewing a device is (from data/devices.js). Unknown devices keep every field open.
-function typeOf(name) {
-  const n = (name || "").trim().toLowerCase();
-  if (!n) return "";
-  const list = (window.DEVICES && window.DEVICES.D) || [];
-  for (const d of list) if ([d.name, ...(d.logAs || [])].some(x => x.toLowerCase() === n)) return d.type || "";
-  // your own names such as "Chemex (3-cup)" or "Moka Pot (6-cup)" count as the device they start with
-  for (const d of list) if ([d.name, ...(d.logAs || [])].some(x => n.indexOf(x.toLowerCase() + " ") === 0)) return d.type || "";
-  if (n.indexOf("flair") === 0) return "espresso";
-  return "";
-}
+function typeOf(name) { return window.DEVICES && window.DEVICES.typeOf ? window.DEVICES.typeOf(name) : ""; }   // data/devices.js
 const isEsp = t => t === "espresso" || t === "";
 
 // ----- preheat setting (only for manual espresso machines like the Flair 58)
@@ -1747,7 +1737,12 @@ function presetFor(dev) {
   if (isSemi(dev)) return (D.SEMI_BY_ROAST || {})[((cur && cur.roast_level) || "").toLowerCase()] || "semi-med";
   const n = String(dev || "").toLowerCase();
   const p = (D.PRESETS || []).find(x => x.device.toLowerCase() === n) || (D.PRESETS || []).find(x => n.indexOf(x.device.toLowerCase() + " ") === 0);
-  return p ? p.id : null;
+  if (p) return p.id;
+  // a device of your own: start from the recipe of its kind (not for cold brew, which is a different thing)
+  const t = typeOf(dev);
+  if (t === "espresso") return (D.SEMI_BY_ROAST || {})[((cur && cur.roast_level) || "").toLowerCase()] || "semi-med";
+  if (/cold ?brew/.test(n)) return null;
+  return { filter: "pour", immersion: "press", moka: "moka" }[t] || null;
 }
 function put(id, v) { if (!touched.has(id)) $(id).value = v === null || v === undefined ? "" : v; }
 function fillFromCalc(n, force) {

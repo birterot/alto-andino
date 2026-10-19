@@ -210,5 +210,19 @@ window.DEVICES = {
         links: [] }],
       extra: []
     }
-  ]
+  ],
+  // What kind of device a name is, also for names people type themselves ("French press (1 l)", "Kalita Wave", "Gaggia Classic"):
+  // the devices above (and names that start with them) first, then a guess from words in the name. Unknown names count as filter coffee.
+  typeOf: function (name) {
+    var n = String(name || "").trim().toLowerCase();
+    if (!n) return "";
+    var list = this.D, i, j, names;
+    for (i = 0; i < list.length; i++) { names = [list[i].name].concat(list[i].logAs || []); for (j = 0; j < names.length; j++) if (names[j].toLowerCase() === n) return list[i].type || ""; }
+    for (i = 0; i < list.length; i++) { names = [list[i].name].concat(list[i].logAs || []); for (j = 0; j < names.length; j++) if (n.indexOf(names[j].toLowerCase() + " ") === 0) return list[i].type || ""; }
+    if (/moka|bialetti|stove.?top|caffettiera/.test(n)) return "moka";
+    if (/clever|switch|aeropress|french|\bpress\b|cold ?brew|immersion|siphon|syphon|vacuum|cezve|ibrik|turkish|steep/.test(n)) return "immersion";
+    if (/filter|drip|pour/.test(n)) return "filter";   // "Filter coffee machine" is filter coffee, not espresso
+    if (/espresso|automatic|bean.?to.?cup|machine|flair|lever|portafilter|siebträger|gaggia|rancilio|sage|breville|marzocco|lelit|rocket|decent|cafelat|robot|delonghi|de'longhi/.test(n)) return "espresso";
+    return "filter";   // V60, Kalita, Origami, Chemex, Melitta, drip machines and everything else poured through a filter
+  }
 };

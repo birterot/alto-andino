@@ -162,12 +162,7 @@ const fmtDate = d => p2(d.getDate()) + "-" + p2(d.getMonth() + 1) + "-" + d.getF
 const fmtShort = d => p2(d.getDate()) + "-" + p2(d.getMonth() + 1);
 const fmtIso = iso => { const [y, m, d] = String(iso).slice(0, 10).split("-"); return d + "-" + m + "-" + y; };
 const mmss = n => Math.floor(n / 60) + ":" + String(Math.round(n % 60)).padStart(2, "0");
-function typeOf(name) {
-  const n = (name || "").trim().toLowerCase(); if (!n) return "";
-  const list = (window.DEVICES && window.DEVICES.D) || [];
-  for (const d of list) if ([d.name, ...(d.logAs || [])].some(x => x.toLowerCase() === n || n.indexOf(x.toLowerCase() + " ") === 0)) return d.type || "";
-  return n.indexOf("flair") === 0 ? "espresso" : "";
-}
+function typeOf(name) { return window.DEVICES && window.DEVICES.typeOf ? window.DEVICES.typeOf(name) : ""; }   // data/devices.js
 const isEsp = dev => { const t = typeOf(dev); return t === "espresso" || t === ""; };
 const timeText = b => b.time == null ? null : (isEsp(b.device) && b.time < 90 ? b.time + " s" : mmss(b.time) + " min");
 const ratioOf = b => !b.dose ? null : isEsp(b.device) ? (b.yld ? b.yld / b.dose : null) : (b.water ? b.water / b.dose : b.yld ? b.yld / b.dose : null);

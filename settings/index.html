@@ -97,7 +97,7 @@ let me = null, profile = null, fm = "";
   const out = [], add = x => { if (x && !out.includes(x)) out.push(x); };
   ((window.DEVICES && window.DEVICES.D) || []).forEach(d => (d.logAs || [d.name]).forEach(add));
   ((window.LISTS && window.LISTS.device) || []).forEach(add);
-  const lo = x => x.toLowerCase(), list = out.filter(n => !out.some(o => o !== n && lo(o).indexOf(lo(n) + " ") === 0));
+  const list = out;
   const s = $("s-device"); opt(s, "", "The last one used"); list.forEach(d => opt(s, d, d));
   const g = $("s-grinder"); opt(g, "", "The last one used"); ((window.DEFAULTS && DEFAULTS.GRINDERS) || []).forEach(x => opt(g, x.name, x.name));
   // drinks: espresso-based for espresso, filter-based for filter coffee
