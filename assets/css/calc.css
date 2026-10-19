@@ -27,4 +27,5 @@
 .calc .msg{min-height:1.4em;margin:16px 0 0;font-size:14px;color:var(--mut)}
 .calc .reset{margin-top:8px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--mut);font:inherit;font-size:13px;cursor:pointer;min-height:36px}
 .calc input[type=number]{-moz-appearance:textfield;appearance:textfield}
+.calc input[data-num]{font-variant-numeric:tabular-nums}
 .calc input[type=number]::-webkit-outer-spin-button,.calc input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}

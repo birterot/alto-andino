@@ -247,6 +247,27 @@
     });
   }
   caseIn(document.body);
+
+  // Decimal numbers with a comma or a dot: many phones (German, Spanish, ...) only offer a comma, and number fields
+  // then refuse it. So number fields become text fields with the decimal keyboard, and a comma turns into a dot as
+  // you type: "18,5" is saved as 18.5. Fields added later (the brew form, the calculator) are caught as they appear.
+  function decimals(root) {
+    var list = root.matches && root.matches("input[type=number]") ? [root] : root.querySelectorAll ? root.querySelectorAll("input[type=number]") : [];
+    Array.prototype.forEach.call(list, function (i) {
+      var whole = i.inputMode === "numeric" || i.getAttribute("inputmode") === "numeric";
+      i.type = "text"; i.setAttribute("inputmode", whole ? "numeric" : "decimal"); i.setAttribute("autocomplete", "off");
+      i.setAttribute("data-num", whole ? "int" : "dec");
+    });
+  }
+  decimals(document.body);
+  document.addEventListener("input", function (e) {   // capture: runs before the page reads the value
+    var t = e.target; if (!t || !t.getAttribute || !t.getAttribute("data-num")) return;
+    var v = t.value, n = v.replace(/,/g, ".").replace(t.getAttribute("data-num") === "int" ? /[^0-9\-]/g : /[^0-9.\-]/g, "");
+    if (n !== v) { var p = t.selectionStart, d = v.length - n.length; t.value = n; try { t.setSelectionRange(Math.max(0, p - d), Math.max(0, p - d)); } catch (x) {} }
+  }, true);
+  new MutationObserver(function (ms) { ms.forEach(function (m) { m.addedNodes.forEach(function (x) { if (x.nodeType === 1) decimals(x); }); }); })
+    .observe(document.body, { childList: true, subtree: true });
+
   new MutationObserver(function (ms) {
     ms.forEach(function (m) {
       if (m.type === "characterData") { var pe = m.target.parentElement; if (pe && pe.closest(HEAD)) caseIn(pe.closest(HEAD)); }
