@@ -5,7 +5,7 @@
   var NS = "http://www.w3.org/2000/svg";
   function el(t, c, x) { var e = document.createElement(t); if (c) e.className = c; if (x) e.textContent = x; return e; }
   function sv(t, a) { var e = document.createElementNS(NS, t); for (var k in a) e.setAttribute(k, a[k]); return e; }
-  var NAMES = { espresso: "Espresso", water: "Hot water", milk: "Steamed milk", foam: "Milk foam", cold: "Cold milk", ice: "Ice", filter: "Filter coffee" };
+  var NAMES = { espresso: "Espresso", water: "Hot water", milk: "Steamed milk", foam: "Milk foam", cold: "Cold milk", ice: "Ice", filter: "Filter coffee", gelato: "Ice cream" };
   $("ct").textContent = C.title; $("cs").textContent = C.sub;
 
   var PX = 0.5, MAXML = 300, W = 62;   // 0.5 px per ml, every cup on the same scale
@@ -21,6 +21,10 @@
       if (l[0] === "foam") {   // foam: bubbles and a soft edge, so it shows against the milk and the page
         s.appendChild(sv("rect", { x: inset, y: y, width: W - 2 * inset, height: h, fill: "url(#dfoam)" }));
         s.appendChild(sv("line", { x1: inset, x2: W - inset, y1: y + 0.5, y2: y + 0.5, stroke: "var(--l-foamdot)", "stroke-width": 1 }));
+      }
+      if (l[0] === "gelato") {   // a round scoop, sitting in the espresso
+        s.removeChild(r);
+        s.appendChild(sv("path", { d: "M" + (inset + 3) + " " + (y + h) + " Q" + (inset + 3) + " " + (y + 2) + " " + (W / 2) + " " + (y + 1) + " Q" + (W - inset - 3) + " " + (y + 2) + " " + (W - inset - 3) + " " + (y + h) + " Z", fill: "var(--l-gelato)", stroke: "var(--l-foamdot)", "stroke-width": 0.8 }));
       }
       if (l[0] === "ice") for (var i = 0; i < 3; i++) s.appendChild(sv("rect", { x: inset + 6 + i * 16, y: y + 4 + (i % 2) * 8, width: 11, height: 11, rx: 2, fill: "none", stroke: "var(--glass)", "stroke-width": 1 }));
     });

@@ -10,7 +10,8 @@ window.DRINKS = {
   groups: [
     ["black", "Black", "Espresso on its own or with water."],
     ["milk", "With milk", "Espresso with steamed milk and foam. The drinks differ mostly in how much milk there is and how thick the foam is."],
-    ["filter", "Filter", "Coffee from the V60, Chemex, AeroPress, French press or moka pot."]
+    ["filter", "Filter", "Coffee from the V60, Chemex, AeroPress, French press or moka pot."],
+    ["dessert", "Dessert", "Espresso as a dessert."]
   ],
   D: [
     { id: "espresso", name: "Espresso (traditional, 1 shot)", group: "black", milk: false, cup: "Espresso cup, 50–90 ml",
@@ -64,6 +65,10 @@ window.DRINKS = {
       layers: [["filter", 120], ["milk", 120]], shot: "Filter coffee and hot milk, about half and half",
       what: "Not espresso: filter or French press coffee with about the same amount of hot milk. The French breakfast coffee." },
 
+    { id: "affogato", name: "Affogato", group: "dessert", milk: false, cup: "Small glass or cup, 120–180 ml",
+      layers: [["espresso", 30], ["gelato", 70]], shot: "1 shot of hot espresso over 1 scoop of vanilla ice cream",
+      what: "Italian for \"drowned\": a scoop of vanilla gelato (or fior di latte) with a freshly pulled, hot espresso poured over it. Eaten with a spoon, and quickly, while the ice cream is still cold and the coffee still hot.",
+      flair: "On your espresso machine: pull a single (or a doppio for a bigger glass) straight onto the scoop, or into a cup and pour it over at the table." },
     { id: "filter", name: "Filter coffee, black", group: "filter", milk: false, cup: "Cup or mug, 200–300 ml",
       layers: [["filter", 220]], shot: "About 55–65 g coffee per litre of water",
       what: "Coffee from the V60, Chemex, AeroPress or French press, without milk. The way to taste the coffee itself." },
