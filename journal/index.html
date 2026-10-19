@@ -1883,6 +1883,7 @@ function route() {
   const noHH = hhOk && !hhs.length;   // signed in, but not in a household yet: start or join one first
   $("hhview").hidden = !noHH;
   if (noHH) { ["listview", "recentview", "vtabs", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); return; }
+  if (store.get("alto.friend")) { location.href = "../friends/index.html"; return; }   // came with a friend link: back to it, now signed in
   const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)((?:&[^&]*)*)$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/), isRecent = hash === "#recent";
   $("listview").hidden = !!m || isLog || !!add || isRecent;
   $("recentview").hidden = !isRecent;

@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icons/icon-180.png?v=2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Alto Andino">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Friends | Alto Andino</title>
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+:root{--f-sour:light-dark(#2a78d6,#3987e5);--f-sweet:light-dark(#eb6834,#d95926);--f-bitter:light-dark(#1baf7a,#199e70);--f-balance:light-dark(#eda100,#c98500);
+  --them:light-dark(#8A6A4A,#C4A27C);--you:light-dark(#4A2F1C,#E3CCA9);--track:light-dark(#E9DFD2,#3A332C)}
+input{display:block;width:100%;height:48px;margin-top:6px;padding:0 14px;font:inherit;font-size:16px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);box-sizing:border-box}
+input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.box{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:6px 18px 18px;margin:0 0 16px}
+.box h2{font-size:19px;margin:14px 0 4px}
+.hint{margin:4px 0 0;color:var(--mut);font-size:14px;max-width:58ch}
+.go{font:inherit;cursor:pointer;min-height:44px;padding:0 20px;border-radius:12px;border:1px solid var(--act);background:var(--act);color:var(--on-act);font-size:15px}
+.lnk{font:inherit;cursor:pointer;min-height:38px;padding:4px 14px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--mut);font-size:14px;text-decoration:none;display:inline-flex;align-items:center}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.code{display:flex;gap:8px;align-items:center;margin-top:12px;padding:10px 14px;border-radius:12px;background:var(--bg);border:1px dashed var(--line);font-size:14px;overflow:hidden}
+.code b{font-size:18px;letter-spacing:.12em;font-variant-numeric:tabular-nums}
+.code span{color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.row2{display:flex;gap:8px;align-items:flex-end}.row2 label{flex:1;font-size:13.5px;color:var(--mut)}
+.fr{display:flex;align-items:center;gap:12px;padding:12px 2px;border-top:1px solid var(--line);color:inherit;text-decoration:none}
+.fr:first-of-type{border-top:0}
+.fr .av{flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--f,var(--bg));color:var(--t,var(--ink));border:1px solid var(--line);font-weight:600}
+.fr div{flex:1;min-width:0}.fr strong{display:block}.fr small{color:var(--mut)}
+.fr svg{flex:none;color:var(--mut)}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:15px;cursor:pointer}
+.sw:first-of-type{border-top:0}
+.sw small{display:block;color:var(--mut);font-size:13px}
+.sw input{appearance:none;-webkit-appearance:none;flex:none;width:46px;height:28px;margin:0;padding:0;border-radius:999px;background:var(--track);border:1px solid var(--line);position:relative;cursor:pointer;transition:background .2s}
+.sw input::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.sw input:checked{background:var(--act);border-color:var(--act)}
+.sw input:checked::after{transform:translateX(18px)}
+.accept{border-color:var(--act);border-width:2px}
+/* a friend's page */
+.back{display:inline-block;margin:0 0 14px;color:var(--mut);text-decoration:none;font-size:14px}
+.who{color:var(--mut);margin:4px 0 18px}
+.heads{display:grid;gap:8px;margin:0 0 18px;padding:0;list-style:none}
+.heads li{padding:12px 14px;border-radius:12px;background:var(--f,var(--card));border:1px solid var(--line);font-size:15px}
+.cmp{width:100%;border-collapse:collapse;font-size:14.5px;margin-top:8px}
+.cmp th{font-weight:600;font-size:13px;color:var(--mut);text-align:right;padding:4px 0 6px 8px}
+.cmp th:first-child{text-align:left;padding-left:0}
+.cmp td{padding:8px 0 8px 8px;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;vertical-align:top}
+.cmp td:first-child{text-align:left;padding-left:0;color:var(--mut)}
+.cmp td.win{font-weight:700}
+.cmp .k-them{color:var(--them)}.cmp .k-you{color:var(--you)}
+.pill{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:8px 0 4px}
+.pill button{font:inherit;font-size:13px;min-height:34px;padding:0 14px;border:0;background:none;color:var(--mut);cursor:pointer}
+.pill button+button{border-left:1px solid var(--line)}
+.pill button[aria-pressed=true]{background:var(--act);color:var(--on-act)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:6px 22px}
+.grid2 h3{font-size:15px;margin:14px 0 6px}
+.bars{display:grid;gap:7px}
+.bar{display:grid;grid-template-columns:minmax(64px,auto) 1fr 34px;align-items:center;gap:10px;font-size:14px}
+.bar .tr{height:10px;border-radius:5px;background:var(--track);overflow:hidden}
+.bar .fl{height:100%;border-radius:5px;background:var(--col,var(--them))}
+.bar b{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.top{font-size:12px;color:var(--mut);margin-left:4px}
+.hours{display:flex;align-items:flex-end;gap:2px;height:56px;margin-top:6px}
+.hours i{flex:1;background:var(--col,var(--them));border-radius:2px 2px 0 0;min-height:2px;opacity:.9}
+.hours i.z{opacity:.18}
+.hlab{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mut);margin-top:3px}
+.fav{padding:12px 0;border-top:1px solid var(--line)}
+.fav:first-of-type{border-top:0}
+.fav .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.fav strong{font-size:16px}
+.fav small{display:block;color:var(--mut);font-size:13.5px}
+.fav .st{display:flex;align-items:center;gap:8px;margin-top:4px;font-size:13.5px;color:var(--mut)}
+.rank{flex:none;font-size:13px;color:var(--mut)}
+.fav .lnk{white-space:nowrap;flex:none}
+.cmp td:first-child{width:42%}
+.div{display:grid;gap:6px}
+.dv{display:grid;grid-template-columns:64px 1fr 40px;align-items:center;gap:8px;font-size:14px}
+.dv .tr{position:relative;height:12px;background:var(--track);border-radius:6px}
+.dv .tr::before{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--mut);opacity:.5}
+.dv .fl{position:absolute;top:0;bottom:0;border-radius:6px;background:var(--col)}
+.dv b{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.dvax{display:grid;grid-template-columns:64px 1fr 40px;gap:8px;font-size:11.5px;color:var(--mut)}.dvax span{display:flex;justify-content:space-between}
+.notes{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.notes span{font-size:13.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--bg)}
+.take{margin:10px 0 0;font-size:14.5px}
+.off{color:var(--mut);font-size:14px;font-style:italic}
+#msg{min-height:1.4em;color:var(--mut);font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>Friends</h1>
+<p class="sub" id="lead">Befriend other households and see a few fun stats of each other: who brews more, favourite coffees, what you like. Friends never see your coffees, brews or notes themselves.</p>
+
+<section class="box" id="signedout" hidden>
+  <h2>Sign in first</h2>
+  <p class="hint" id="soText">Friends are households. Sign in on the Coffee Shelf (or create an account and start your household), then come back here.</p>
+  <div class="btns"><a class="go" style="display:inline-flex;align-items:center;text-decoration:none" href="../journal/index.html">Go to the Coffee Shelf</a></div>
+</section>
+<section class="box" id="nosql" hidden>
+  <h2>Almost there</h2>
+  <p class="hint">Friends need a small database update first: supabase/23_friends.sql, run once in Supabase.</p>
+</section>
+
+<section class="box accept" id="accept" hidden>
+  <h2 id="acTitle">Become friends?</h2>
+  <p class="hint" id="acText"></p>
+  <div class="btns"><button class="go" id="acYes" type="button">Become friends</button><button class="lnk" id="acNo" type="button">Not now</button></div>
+</section>
+
+<div id="listview" hidden>
+  <section class="box">
+    <h2>Your friends</h2>
+    <div id="friends"></div>
+  </section>
+
+  <section class="box">
+    <h2>Invite friends</h2>
+    <p class="hint">Send this link to friends. When they open it and accept, you are friends both ways. The link works for 30 days, for everyone you send it to.</p>
+    <div class="code" id="codebox"><b id="code">........</b><span id="codeurl"></span></div>
+    <div class="btns"><button class="go" id="share" type="button">Send link</button><button class="lnk" id="copy" type="button">Copy</button><button class="lnk" id="renew" type="button">New link</button></div>
+    <div class="row2" style="margin-top:16px"><label>Got a code from a friend?<input id="codein" maxlength="12" autocomplete="off" autocapitalize="characters" placeholder="e.g. 6A5FDBAA"></label><button class="go" id="codego" type="button">Add</button></div>
+  </section>
+
+  <section class="box">
+    <h2>What your friends see</h2>
+    <p class="hint">For everyone in <span id="hhname">your household</span>. You always see all of it yourself.</p>
+    <div id="shares" style="margin-top:6px">
+      <label class="sw"><span>Fun stats<small>How many brews, who brews more, coffee used, devices, days in a row, when you brew</small></span><input type="checkbox" data-k="stats"></label>
+      <label class="sw"><span>Favourite coffees<small>Your five best rated coffees, with roaster and the shop link</small></span><input type="checkbox" data-k="favourites"></label>
+      <label class="sw"><span>Taste profile<small>How your favourite brews taste, their tasting notes, and everyone's usual drink</small></span><input type="checkbox" data-k="taste"></label>
+    </div>
+    <div class="btns"><a class="lnk" id="preview" href="#">See your page as friends see it</a></div>
+  </section>
+</div>
+
+<div id="friendview" hidden>
+  <a class="back" href="#">Friends</a>
+  <h2 id="fname" style="margin:0;font-size:26px"></h2>
+  <p class="who" id="fwho"></p>
+  <ul class="heads" id="heads"></ul>
+  <div id="fbody"></div>
+</div>
+<p id="msg" role="status"></p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
+<script src="../assets/js/config.js"></script>
+<script src="../assets/js/theme.js"></script>
+<script src="../assets/js/stars.js"></script>
+<script src="../data/drinks.js"></script>
+<script src="../assets/js/nav.js" defer></script>
+<script>
+const db = supabase.createClient(SUPA.url, SUPA.key);
+const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const say = t => { $("msg").textContent = t || ""; };
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
+const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (e) { return "UTC"; } })();
+const andList = a => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+const r1 = n => Math.round(n * 10) / 10;
+const CORE = ["sour", "sweet", "bitter", "balance"], FCOL = { sour: "var(--f-sour)", sweet: "var(--f-sweet)", bitter: "var(--f-bitter)", balance: "var(--f-balance)" };
+let me = null, hh = null, hhs = [], mine = null, stats = {};
+
+// a friend link (#code=...) is kept until you are signed in and have a household
+(function () {
+  const m = location.hash.match(/^#code=([A-Za-z0-9]+)/);
+  if (m) { store.set("alto.friend", m[1].toUpperCase()); history.replaceState(null, "", location.pathname); }
+})();
+const pending = () => store.get("alto.friend");
+
+async function loadHouseholds() {
+  const { data, error } = await db.from("household_members").select("household_id,households(id,name,share)").eq("user_id", me.id);
+  if (error) return false;
+  hhs = (data || []).filter(r => r.households).map(r => r.households);
+  const saved = store.get("alto.household");
+  mine = hhs.find(x => x.id === saved) || hhs[0] || null; hh = mine && mine.id;
+  return true;
+}
+async function stat(id, fresh) {
+  if (!fresh && stats[id]) return stats[id];
+  const { data, error } = await db.rpc("household_stats", { p_household: id, p_tz: TZ });
+  if (error) throw error;
+  return (stats[id] = data);
+}
+
+async function route() {
+  if (!me) return;
+  ["listview", "friendview", "accept", "nosql"].forEach(i => { $(i).hidden = true; });
+  if (!hh) { $("signedout").hidden = false; $("soText").textContent = "Friends are households, and you are not in one yet. Start yours (or join one) on the Coffee Shelf, then come back here."; return; }
+  if (pending()) { if (await showAccept()) return; }
+  const m = location.hash.match(/^#f=([0-9a-f-]{36})$/);
+  if (m) return showFriend(m[1]);
+  return showList();
+}
+
+// ---------- someone sent you a friend link ----------
+async function showAccept() {
+  const code = pending();
+  const { data, error } = await db.rpc("friend_code_info", { p_code: code });
+  if (error) {
+    if (/function .* does not exist|Could not find the function/i.test(error.message)) { $("nosql").hidden = false; return true; }
+    store.del("alto.friend"); say(error.message); return false;
+  }
+  if (data.mine) { store.del("alto.friend"); say("That was your own friend link: send it to your friends."); return false; }
+  if (data.friends) { store.del("alto.friend"); location.hash = "f=" + data.id; return true; }
+  $("accept").hidden = false;
+  $("acTitle").textContent = "Become friends with " + data.name + "?";
+  $("acText").textContent = data.name + " sent you a friend link. As friends you both see a few fun stats of each other (only what each of you shares), never your coffees or brews themselves." + (hhs.length > 1 ? " You befriend them as " + mine.name + "." : "");
+  $("acYes").onclick = async () => {
+    $("acYes").disabled = true;
+    const r = await db.rpc("befriend", { p_household: hh, p_code: code });
+    $("acYes").disabled = false;
+    if (r.error) { say(r.error.message); return; }
+    store.del("alto.friend"); say("You are now friends with " + data.name + ".");
+    location.hash = "f=" + r.data; route();
+  };
+  $("acNo").onclick = () => { store.del("alto.friend"); route(); };
+  return true;
+}
+
+// ---------- the list: friends, your link, what you share ----------
+async function showList() {
+  $("listview").hidden = false;
+  const { data, error } = await db.rpc("my_friends", { p_household: hh });
+  if (error) {
+    if (/function .* does not exist|Could not find the function/i.test(error.message)) { $("listview").hidden = true; $("nosql").hidden = false; return; }
+    say("Could not load your friends: " + error.message); return;
+  }
+  const box = $("friends"); box.textContent = "";
+  if (!data.length) box.appendChild(el("p", "hint", "No friends yet. Send them your link below; once they accept, they show up here."));
+  data.forEach(f => {
+    const a = el("a", "fr"); a.href = "#f=" + f.id;
+    a.append(el("span", "av", (f.name || "?").trim().charAt(0).toUpperCase()));
+    const d = el("div"); d.append(el("strong", "", f.name), el("small", "", "Friends since " + new Date(f.since).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })));
+    a.append(d, chev()); box.appendChild(a);
+  });
+  $("hhname").textContent = mine.name;
+  const sh = mine.share || {};
+  document.querySelectorAll("#shares input").forEach(i => { i.checked = sh[i.dataset.k] !== false; });
+  $("preview").href = "#f=" + hh;
+  const c = await db.rpc("friend_code", { p_household: hh });
+  if (!c.error) showCode(c.data);
+}
+function chev() { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("width", 20); s.setAttribute("height", 20); s.setAttribute("aria-hidden", "true"); const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", "M9 6l6 6-6 6"); p.setAttribute("fill", "none"); p.setAttribute("stroke", "currentColor"); p.setAttribute("stroke-width", "1.8"); p.setAttribute("stroke-linecap", "round"); s.appendChild(p); return s; }
+let linkUrl = "";
+function showCode(code) {
+  linkUrl = location.origin + location.pathname.replace(/index\.html$/, "") + "#code=" + code;
+  $("code").textContent = code; $("codeurl").textContent = linkUrl.replace(/^https?:\/\//, "");
+}
+$("share").onclick = async () => {
+  const text = "Be our coffee friends on Alto Andino: we can see each other's coffee stats.";
+  if (navigator.share) { try { await navigator.share({ title: "Alto Andino", text, url: linkUrl }); } catch (e) {} }
+  else $("copy").onclick();
+};
+$("copy").onclick = async () => { try { await navigator.clipboard.writeText(linkUrl); say("Link copied."); } catch (e) { say("Copy this link: " + linkUrl); } };
+$("renew").onclick = async () => {
+  if (!confirm("Make a new link? The old one stops working (friends you already have stay friends).")) return;
+  const r = await db.rpc("new_friend_code", { p_household: hh });
+  if (r.error) say(r.error.message); else { showCode(r.data); say("New link ready."); }
+};
+$("codego").onclick = () => { const v = $("codein").value.trim().toUpperCase(); if (!v) return; store.set("alto.friend", v); $("codein").value = ""; route(); };
+$("codein").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("codego").onclick(); } });
+document.querySelectorAll("#shares input").forEach(i => i.addEventListener("change", async () => {
+  const want = {}; document.querySelectorAll("#shares input").forEach(x => { want[x.dataset.k] = x.checked; });
+  const r = await db.rpc("set_sharing", { p_household: hh, p_share: want });
+  if (r.error) { say("Could not save: " + r.error.message); i.checked = !i.checked; return; }
+  mine.share = r.data; delete stats[hh];
+  say(i.checked ? "Friends can see this now." : "Friends no longer see this.");
+}));
+
+// ---------- a friend's page (or your own, as friends see it) ----------
+async function showFriend(id) {
+  $("friendview").hidden = false; say("Loading...");
+  let them, you;
+  try { [them, you] = await Promise.all([stat(id, true), id === hh ? null : stat(hh)]); }
+  catch (e) { say(e.message); $("friendview").hidden = true; $("listview").hidden = false; return; }
+  say("");
+  const self = id === hh;
+  if (self) them = asFriendsSee(them);
+  $("fname").textContent = self ? "Your page, as friends see it" : them.name;
+  $("fwho").textContent = (self ? them.name + ": " : "") + andList(them.members.map(m => m.name));
+  const body = $("fbody"); body.textContent = ""; const heads = $("heads"); heads.textContent = "";
+  const nm = (h, uid) => { const m = (h.members || []).find(x => x.id === uid); return m ? m.name : "Someone"; };
+  const tn = them.name, Y = !self && you;
+  // headlines: the fun bits first
+  const H = t => heads.appendChild(el("li", "", t));
+  if (them.stats) {
+    const s = them.stats;
+    if (Y && you.stats) {
+      const a = s.brews_30, b = you.stats.brews_30;
+      H(a === b ? "You are neck and neck: " + a + " brews each in the last 30 days." : a > b ? tn + " brewed " + a + " coffees in the last 30 days, " + (a - b) + " more than you." : "You brewed " + b + " coffees in the last 30 days, " + (b - a) + " more than " + tn + ".");
+    } else H(tn + " brewed " + s.brews_30 + (s.brews_30 === 1 ? " coffee" : " coffees") + " in the last 30 days, " + s.brews + " in total.");
+    const ppl = s.people.filter(p => p.n);
+    if (ppl.length > 1) { const p = ppl[0]; H("Top brewer: " + nm(them, p.id) + ", with " + Math.round(p.n / s.brews * 100) + "% of the brews."); }
+    const st = streaks(s); if (st.now >= 2) H(st.now + " days in a row with coffee, and counting.");
+    const pk = peak(s.hours); if (pk) H(pk.text);
+  }
+  if (them.favourites && them.favourites.length) { const f = them.favourites[0]; H("Their favourite: " + f.name + (f.roaster ? " from " + f.roaster : "") + " (" + r1(f.stars) + "★)."); }
+  if (self) heads.querySelectorAll("li").forEach(li => { li.textContent = li.textContent.replace(/^Their favourite/, "Your favourite"); });
+  heads.hidden = !heads.children.length;
+
+  if (them.stats) funStats(body, them, Y && you.stats ? you : null, nm);
+  else body.appendChild(offBox("Fun Stats", tn + " keep their fun stats to themselves."));
+  if (them.favourites) favourites(body, them, self);
+  else body.appendChild(offBox("Favourite Coffees", tn + " keep their favourite coffees to themselves."));
+  if (them.taste) taste(body, them, Y && you.taste ? you : null, nm);
+  else body.appendChild(offBox("Taste Profile", tn + " keep their taste profile to themselves."));
+
+  const end = el("div", "btns");
+  if (self) {
+    const sb = el("button", "go", "Share your stats"); sb.type = "button"; sb.onclick = () => shareText(them); end.appendChild(sb);
+  } else {
+    const ub = el("button", "lnk", "Unfriend " + tn); ub.type = "button";
+    ub.onclick = async () => {
+      if (!confirm("Unfriend " + tn + "? You both stop seeing each other's stats. You can befriend again with a new link.")) return;
+      const r = await db.rpc("unfriend", { p_household: hh, p_friend: id });
+      if (r.error) say(r.error.message); else { say("You are no longer friends with " + tn + "."); location.hash = ""; }
+    };
+    end.appendChild(ub);
+  }
+  body.appendChild(end);
+  window.scrollTo(0, 0);
+}
+// your own data, cut down to what you share
+function asFriendsSee(s) { const o = Object.assign({}, s), sh = s.share || {}; ["stats", "favourites", "taste"].forEach(k => { if (sh[k] === false) delete o[k]; }); return o; }
+function offBox(title, text) { const b = el("section", "box"); b.append(el("h2", "", title), el("p", "off", text)); return b; }
+
+// days in a row: now (ending today or yesterday) and the longest
+function streaks(s) {
+  const days = (s.days || []).map(d => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 864e5).sort((a, b) => b - a);
+  const t = Date.UTC(+s.today.slice(0, 4), +s.today.slice(5, 7) - 1, +s.today.slice(8, 10)) / 864e5;
+  let now = 0, best = 0, run = 0, prev = null;
+  if (days.length && t - days[0] <= 1) { now = 1; for (let i = 1; i < days.length && days[i - 1] - days[i] === 1; i++) now++; }
+  days.forEach(d => { run = prev !== null && prev - d === 1 ? run + 1 : 1; best = Math.max(best, run); prev = d; });
+  return { now, best };
+}
+// when most brews happen: the busiest two hours
+function peak(h) {
+  if (!h || !h.some(Boolean)) return null;
+  let bi = 0, bv = -1; for (let i = 0; i < 24; i++) { const v = h[i] + h[(i + 1) % 24]; if (v > bv) { bv = v; bi = i; } }
+  const tot = h.reduce((a, c) => a + c, 0), when = bi < 5 ? "night owls" : bi < 11 ? "early birds" : bi < 17 ? "afternoon coffee people" : "evening coffee people";
+  return { from: bi, text: "Mostly brewed between " + bi + ":00 and " + ((bi + 2) % 24) + ":00 (" + Math.round(bv / tot * 100) + "%): " + when + "." };
+}
+const kg = g => g >= 1000 ? r1(g / 1000) + " kg" : Math.round(g) + " g";
+const since = iso => iso ? new Date(iso).toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : null;
+
+function funStats(body, them, you, nm) {
+  const b = el("section", "box"); body.appendChild(b);
+  b.append(el("h2", "", "Fun Stats"));
+  const s = them.stats, y = you && you.stats, st = streaks(s), sy = y ? streaks(y) : null;
+  const rows = [
+    ["Brews, last 30 days", s.brews_30, y && y.brews_30],
+    ["Brews in total", s.brews, y && y.brews],
+    ["Coffee used, last 30 days", s.grams_30, y && y.grams_30, kg],
+    ["Coffee used in total", s.grams, y && y.grams, kg],
+    ["Coffees tried", s.coffees, y && y.coffees],
+    ["Roasters", s.roasters, y && y.roasters],
+    ["Origins", s.origins, y && y.origins],
+    ["Days in a row now", st.now, sy && sy.now],
+    ["Most days in a row", st.best, sy && sy.best],
+    ["Average stars", s.avg, y && y.avg, v => v == null ? "–" : r1(v) + "★"],
+    ["Favourite device", s.devices[0] && s.devices[0].device, y && y.devices[0] && y.devices[0].device, v => v || "–", true],
+    ["Brewing since", since(s.first), y && since(y.first), v => v || "–", true]
+  ];
+  const t = el("table", "cmp"), hd = el("tr");
+  hd.append(el("th", "", ""), el("th", "k-them", them.name)); if (you) hd.appendChild(el("th", "k-you", "You"));
+  const th = el("thead"); th.appendChild(hd); t.appendChild(th);
+  const tb = el("tbody"); t.appendChild(tb);
+  rows.forEach(([label, a, c, fmt, text]) => {
+    const tr = el("tr"), f = fmt || (v => v == null ? "–" : String(v));
+    const ta = el("td", "", f(a)), tc = you ? el("td", "", f(c)) : null;
+    if (you && !text && a != null && c != null && a !== c) (a > c ? ta : tc).classList.add("win");
+    tr.append(el("td", "", label), ta); if (tc) tr.appendChild(tc); tb.appendChild(tr);
+  });
+  b.appendChild(t);
+
+  // who brews more
+  const w = el("div"); b.appendChild(w); w.appendChild(el("h2", "", "Who Brews More"));
+  const pill = el("div", "pill"); pill.setAttribute("role", "group"); pill.setAttribute("aria-label", "Time span");
+  const span = { v: s.brews_30 || (y && y.brews_30) ? "n30" : "n" };
+  [["n30", "Last 30 days"], ["n", "All time"]].forEach(([k, l]) => { const x = el("button", "", l); x.type = "button"; x.dataset.k = k; x.onclick = () => { span.v = k; draw(); }; pill.appendChild(x); });
+  w.appendChild(pill);
+  const grid = el("div", "grid2"); w.appendChild(grid);
+  const draw = () => {
+    pill.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.k === span.v)));
+    grid.textContent = "";
+    const all = [[them, s, "var(--them)"]].concat(you ? [[you, y, "var(--you)"]] : []);
+    const max = Math.max(1, ...all.flatMap(([h, x]) => x.people.map(p => p[span.v])));
+    all.forEach(([h, x, col]) => {
+      const cell = el("div"); grid.appendChild(cell); cell.appendChild(el("h3", "", h === you ? "You (" + h.name + ")" : h.name));
+      const ppl = h.members.map(m => ({ id: m.id, n: (x.people.find(p => p.id === m.id) || {})[span.v] || 0 })).sort((p, q) => q.n - p.n);
+      const bars = el("div", "bars"); cell.appendChild(bars);
+      ppl.forEach((p, i) => {
+        const r = el("div", "bar"), lab = el("span", "", nm(h, p.id)); if (i === 0 && p.n && ppl.length > 1 && p.n > ppl[1].n) lab.appendChild(el("span", "top", "top"));
+        const tr = el("span", "tr"), fl = el("span", "fl"); fl.style.width = (p.n / max * 100) + "%"; fl.style.setProperty("--col", col); fl.style.display = "block"; tr.appendChild(fl);
+        r.append(lab, tr, el("b", "", String(p.n))); bars.appendChild(r);
+      });
+    });
+  };
+  draw();
+
+  // when
+  const wh = el("div"); b.appendChild(wh); wh.appendChild(el("h2", "", them.own ? "When You Brew" : "When They Brew"));
+  const g2 = el("div", "grid2"); wh.appendChild(g2);
+  [[them, s, "var(--them)"]].concat(you ? [[you, y, "var(--you)"]] : []).forEach(([h, x, col]) => {
+    const cell = el("div"); g2.appendChild(cell); cell.appendChild(el("h3", "", h === you ? "You" : h.name));
+    const mx = Math.max(1, ...x.hours), hs = el("div", "hours"); hs.setAttribute("role", "img");
+    const pk = peak(x.hours); hs.setAttribute("aria-label", pk ? pk.text : "No brews yet");
+    x.hours.forEach((v, i) => { const bi = el("i", v ? "" : "z"); bi.style.height = Math.max(4, v / mx * 100) + "%"; bi.style.setProperty("--col", col); bi.title = i + ":00, " + v + (v === 1 ? " brew" : " brews"); hs.appendChild(bi); });
+    cell.appendChild(hs);
+    const hl = el("div", "hlab"); ["0", "6", "12", "18", "24"].forEach(t => hl.appendChild(el("span", "", t + ":00"))); cell.appendChild(hl);
+    if (pk) cell.appendChild(el("p", "hint", pk.text.replace(/: .*$/, ".").replace(/^Mostly/, "Mostly")));
+  });
+}
+
+function favourites(body, them, self) {
+  const b = el("section", "box"); body.appendChild(b);
+  b.append(el("h2", "", self ? "Your Favourite Coffees" : "Their Favourite Coffees"));
+  const list = them.favourites || [];
+  if (!list.length) { b.appendChild(el("p", "off", "No rated brews yet.")); return; }
+  b.appendChild(el("p", "hint", "Best rated first, from the stars of all their brews (dial-ins left out)."));
+  list.forEach((f, i) => {
+    const d = el("div", "fav"), t = el("div", "t");
+    t.append(el("strong", "", f.name), el("span", "rank", "#" + (i + 1))); d.appendChild(t);
+    const sub = [f.roaster, f.origin, f.process, f.roast ? f.roast.toLowerCase() + " roast" : null, f.sca ? Number(f.sca) + " SCA" : null].filter(Boolean).join(" · ");
+    if (sub) d.appendChild(el("small", "", sub));
+    const st = el("div", "st"); st.append(Stars.row(f.stars, Stars.text(f.stars) + " of 5"), document.createTextNode(r1(f.stars) + "★ from " + f.n + (f.n === 1 ? " brew" : " brews")));
+    if (f.url && /^https?:\/\//i.test(f.url)) { const a = el("a", "lnk", "Where to buy"); a.href = f.url; a.target = "_blank"; a.rel = "noopener"; a.style.marginLeft = "auto"; st.appendChild(a); }
+    d.appendChild(st); b.appendChild(d);
+  });
+}
+
+function taste(body, them, you, nm) {
+  const b = el("section", "box"); body.appendChild(b);
+  b.append(el("h2", "", "Taste Profile"));
+  const t = them.taste;
+  b.appendChild(el("p", "hint", "Where the favourite brews (4 stars and up) sit on sour, sweet, bitter and balance, from -5 to +5. 0 is just right."));
+  const grid = el("div", "grid2"); b.appendChild(grid);
+  const prof = (title, x, n) => {
+    const cell = el("div"); grid.appendChild(cell); cell.appendChild(el("h3", "", title));
+    if (!x || !Object.keys(x).length) { cell.appendChild(el("p", "off", "Not enough scored favourites yet.")); return; }
+    cell.appendChild(el("p", "hint", n + (n === 1 ? " favourite brew" : " favourite brews")));
+    const d = el("div", "div"); cell.appendChild(d);
+    CORE.forEach(a => {
+      const v = x[a]; if (v == null) return;
+      const r = el("div", "dv"), tr = el("span", "tr"), fl = el("span", "fl"), c = Math.max(-5, Math.min(5, v));
+      fl.style.setProperty("--col", FCOL[a]); fl.style.left = (c < 0 ? 50 + c * 10 : 50) + "%"; fl.style.width = Math.abs(c) * 10 + "%"; tr.appendChild(fl);
+      r.append(el("span", "", a), tr, el("b", "", (v > 0 ? "+" : "") + r1(v))); d.appendChild(r);
+    });
+    const ax = el("div", "dvax"), sp = el("span"); sp.append(el("i", "", "-5"), el("i", "", "0"), el("i", "", "+5")); ax.append(el("span"), sp, el("span")); cell.appendChild(ax);
+  };
+  prof(them.own ? "Your favourites" : them.name, t.fav, t.n_fav);
+  if (you) prof("You", you.taste.fav, you.taste.n_fav);
+  const words = profileWords(t.fav);
+  if (words) b.appendChild(el("p", "take", (them.own ? "Your" : them.name + "'s") + " favourites are " + words));
+  if (t.notes && t.notes.length) {
+    b.appendChild(el("h3", "", "Tasting notes in the favourites")).style.cssText = "font-size:15px;margin:16px 0 0";
+    const n = el("div", "notes"); t.notes.forEach(x => n.appendChild(el("span", "", x.note + " · " + x.n))); b.appendChild(n);
+  }
+  if (t.drinks && t.drinks.length) {
+    b.appendChild(el("h3", "", "Usual drinks")).style.cssText = "font-size:15px;margin:16px 0 0";
+    const D = (window.DRINKS && window.DRINKS.D) || [], M = (window.DRINKS && window.DRINKS.MILKS) || [];
+    const dn = id => { const d = D.find(x => x.id === id); return d ? d.name.replace(/ \((traditional|common), \d shots?\)$/, "") : id; };
+    const mn = id => { const m = M.find(x => x[0] === id); return m ? m[1].replace(/ \(.*\)$/, "").toLowerCase() : id; };
+    const ul = el("div", "bars");
+    t.drinks.forEach(x => { const d = D.find(y => y.id === x.drink); ul.appendChild(el("p", "", nm(them, x.id) + ": " + dn(x.drink) + (x.milk && (!d || d.milk) ? " with " + mn(x.milk) + " milk" : ""))).style.margin = "4px 0 0"; });
+    b.appendChild(ul);
+  }
+}
+function profileWords(x) {
+  if (!x) return "";
+  const W = { sour: ["more sour", "less sour", "sourness"], sweet: ["sweeter", "less sweet", "sweetness"], bitter: ["more bitter", "less bitter", "bitterness"] };
+  const lean = [], right = [];
+  Object.keys(W).forEach(a => { const v = x[a]; if (v == null) return; const d = Math.abs(v); if (d < 0.75) right.push(W[a][2]); else lean.push((d > 2 ? "clearly " : "a little ") + W[a][v > 0 ? 0 : 1]); });
+  if (!lean.length && !right.length) return "";
+  if (!lean.length) return "right in the middle: " + andList(right) + " just right.";
+  return andList(lean) + " than just right" + (right.length ? ", with " + andList(right) + " just right." : ".");
+}
+async function shareText(h) {
+  const s = h.stats, lines = [h.name + " on Alto Andino"];
+  if (s) { lines.push(s.brews_30 + " brews in the last 30 days, " + s.brews + " in total, " + kg(s.grams) + " of coffee."); const p = peak(s.hours); if (p) lines.push(p.text); const st = streaks(s); if (st.best > 1) lines.push("Most days in a row: " + st.best + "."); }
+  if (h.favourites && h.favourites[0]) lines.push("Favourite coffee: " + h.favourites[0].name + (h.favourites[0].roaster ? " from " + h.favourites[0].roaster : "") + ".");
+  const text = lines.join("\n");
+  if (navigator.share) { try { await navigator.share({ title: "Our coffee stats", text }); } catch (e) {} }
+  else { try { await navigator.clipboard.writeText(text); say("Copied, ready to paste."); } catch (e) { say(text); } }
+}
+
+window.addEventListener("hashchange", () => { const m = location.hash.match(/^#code=([A-Za-z0-9]+)/); if (m) { store.set("alto.friend", m[1].toUpperCase()); history.replaceState(null, "", location.pathname); } route(); });
+db.auth.onAuthStateChange((_e, session) => setTimeout(async () => {
+  const was = me && me.id; me = session ? session.user : null;
+  $("signedout").hidden = !!me;
+  if (!me) { ["listview", "friendview", "accept"].forEach(i => { $(i).hidden = true; }); if (pending()) $("soText").textContent = "Someone sent you a friend link. Sign in on the Coffee Shelf (or create an account and start your household); you then come right back here to accept."; return; }
+  if (was === me.id) return;
+  if (!(await loadHouseholds())) { $("nosql").hidden = false; return; }
+  route();
+}, 0));
+</script>
+</body>
+</html>
