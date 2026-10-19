@@ -55,6 +55,8 @@ details.add summary{cursor:pointer;font-weight:600}
 .cc img{display:block;width:100%;height:180px;object-fit:cover}
 .cc .in{padding:18px 20px}
 .cc h3{margin:0;font-size:18px}
+.balavg{display:flex;align-items:center;gap:6px;margin:8px 0 0;font-size:14px}
+.balavg svg{color:light-dark(#b07a00,#c98500)}
 .bagm{display:flex;align-items:center;gap:10px;margin-top:8px}
 .bagm svg{flex:none;overflow:visible}
 .bagm p{margin:0}
@@ -307,6 +309,15 @@ details.calcbox summary{font-size:15px}
 .stars button{pointer-events:none}
 .stars button{width:42px;height:42px;padding:0;border:0;background:none;font-size:30px;line-height:1;cursor:pointer;color:var(--accent);display:grid;place-items:center}
 .stars .starval{margin-left:10px;font-size:14px;color:var(--mut)}
+/* Balance, 0 to 5: its own rating, next to (not part of) the taste sliders */
+.bal{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:8px;max-width:420px}
+.bal button{font:inherit;font-size:16px;font-weight:600;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;font-variant-numeric:tabular-nums}
+.bal button[aria-checked=true]{background:var(--ac-bal);border-color:var(--ac-bal);color:#fff}
+.bal button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.bal{--ac-bal:light-dark(#b07a00,#c98500)}
+.balx{display:flex;justify-content:space-between;gap:10px;max-width:420px;margin-top:4px;font-size:12.5px;color:var(--mut)}
+.baldef{margin:6px 0 0;font-size:14px;color:var(--mut);min-height:1.4em;max-width:420px}
+.baldef b{color:var(--ink);font-weight:600}
 .starsum{margin:4px 0 0;font-size:17px;color:var(--accent)}
 .rate .st{font-size:20px}.rate .best .stars-row{font-size:15px}
 </style>
@@ -395,7 +406,7 @@ details.calcbox summary{font-size:15px}
       <fieldset class="sfor adv" id="f-sfor"><legend>Suitable for</legend></fieldset>
       <p class="hint adv">How you would brew it. The log a brew page suggests coffees by this.</p>
       <label>Flavour notes<input id="f-tags" placeholder="chocolaty, nutty, red fruit"></label>
-      <p class="hint">Separate with commas. Sour, sweet, bitter and balance will always be available when logging a brew.</p>
+      <p class="hint">Separate with commas. The sour, sweet and bitter sliders and the Balance rating are always there when logging a brew.</p>
       <label id="rdlab">Roast date<input type="date" id="f-rd"></label>
       <label class="chk"><input type="checkbox" id="f-rdx"> Roast date unknown</label>
       <label id="pdlab" hidden>Purchase date<input type="date" id="f-pd"></label>
@@ -503,6 +514,11 @@ details.calcbox summary{font-size:15px}
         <h3 class="sh">Taste</h3>
         <p class="hint">0 is just right, minus is too little, plus is too much. Sliders you leave alone are not saved. The x clears one.</p>
         <div id="scorebox"></div>
+        <h3 class="sh">Balance</h3>
+        <p class="hint">How well do the tastes work together? Harmony, not strength: a bold cup can be perfectly balanced. Rate it on its own, not from the sliders above. Tap it again to leave it unrated.</p>
+        <div class="bal" id="balbox" role="radiogroup" aria-label="Balance, from 0 (completely unbalanced) to 5 (exceptionally balanced)"></div>
+        <div class="balx" aria-hidden="true"><span>0 · completely unbalanced</span><span>5 · exceptionally balanced</span></div>
+        <p class="baldef" id="baldef" aria-live="polite"></p>
         <div class="adv">
         <h3 class="sh">Tasting notes</h3>
         <p class="hint">Did you find it? None, a little, or clearly there. Flavour or tasting notes you leave alone are not saved.</p>
@@ -1235,9 +1251,9 @@ function brewChanges(old, row) {
   if (!(auto(old) && auto(row)) && (old.recipe || "") !== (row.recipe || "")) out.push(["Recipe name", auto(row) ? "" : row.recipe, auto(old) ? "" : old.recipe]);
   // ratings: per taster, their stars and each taste score; tasters added or removed get one line
   const tkey = t => t.guest ? "g:" + (t.guest_name || "").toLowerCase() : "u:" + t.rater_id;
-  const before = tastersOf(old), after = tasterRows().map(x => ({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name, rating: x.rating, drink: x.drink, milk: x.milk, scores: x.scores }));
+  const before = tastersOf(old), after = tasterRows().map(x => ({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name, rating: x.rating, balance: x.balance, drink: x.drink, milk: x.milk, scores: x.scores }));
   const several = before.length > 1 || after.length > 1;
-  const brief = t => [t.rating == null ? null : Stars.text(t.rating), Object.keys(t.scores || {}).length ? Object.keys(t.scores).length + (Object.keys(t.scores).length === 1 ? " score" : " scores") : null].filter(Boolean).join(", ") || "no rating";
+  const brief = t => [t.rating == null ? null : Stars.text(t.rating), t.balance == null ? null : "balance " + SCALE.balanceText(t.balance), Object.keys(t.scores || {}).length ? Object.keys(t.scores).length + (Object.keys(t.scores).length === 1 ? " score" : " scores") : null].filter(Boolean).join(", ") || "no rating";
   const label = (t, what) => several ? tName(t) + ": " + what : what;
   const used = new Set();
   after.forEach((t, i) => {
@@ -1248,16 +1264,17 @@ function brewChanges(old, row) {
     if (tkey(o) !== tkey(t)) out.push(["Rated by", tName(t), tName(o)]);
     const ns = t.rating == null ? "not rated" : Stars.text(t.rating), os = o.rating == null ? "not rated" : Stars.text(o.rating);
     if (ns !== os) out.push([label(t, "Overall"), ns, os]);
+    if ((t.balance ?? null) !== (o.balance ?? null)) out.push([label(t, "Balance"), t.balance == null ? "not rated" : SCALE.balanceText(t.balance), o.balance == null ? "not rated" : SCALE.balanceText(o.balance)]);
     if ((t.drink || "") !== (o.drink || "")) out.push([label(t, "Drink"), drinkName(t.drink), drinkName(o.drink)]);
     if ((t.milk || "") !== (o.milk || "")) out.push([label(t, "Milk"), milkName(t.milk), milkName(o.milk)]);
     [...new Set(Object.keys(o.scores || {}).concat(Object.keys(t.scores || {})))].forEach(k => {
       const a = (o.scores || {})[k], b = (t.scores || {})[k];
       const nt = b == null ? "" : SCALE.text(k, b), ot = a == null ? "" : SCALE.text(k, a);
       if (nt === ot) return;   // reads the same (an old in-between value of a tasting note, say)
-      out.push([label(t, SCALE.isCore(k) ? k.charAt(0).toUpperCase() + k.slice(1) : "Tasting note: " + k), nt, ot]);
+      out.push([label(t, k === "balance" ? "Balance (old scale)" : SCALE.isCore(k) ? k.charAt(0).toUpperCase() + k.slice(1) : "Tasting note: " + k), nt, ot]);
     });
   });
-  before.forEach((o, k) => { if (!used.has(k) && (o.rating != null || Object.keys(o.scores || {}).length)) out.push(["Removed taster: " + tName(o), "", brief(o)]); });
+  before.forEach((o, k) => { if (!used.has(k) && (o.rating != null || o.balance != null || Object.keys(o.scores || {}).length)) out.push(["Removed taster: " + tName(o), "", brief(o)]); });
   return out;
 }
 // "Simple" shows what you need to log and rate a brew; "All" shows every field. Each phone remembers its choice.
@@ -1372,7 +1389,7 @@ $("cf").onsubmit = async e => {
 // ---------- Brews ----------
 const D = window.DEFAULTS || {};
 const CORE = SCALE.CORE;
-let cur = null, scores = {}, ctl = {}, savingB = false, brewLoadId = 0, editingBrew = null, brewData = [], rating = null;
+let cur = null, scores = {}, ctl = {}, savingB = false, brewLoadId = 0, editingBrew = null, brewData = [], rating = null, balance = null;
 let draftWasRestored = false, touched = new Set(), prof = [], calc = null, edited = false, noteNames = [];
 const BF = ["b-madeby", "b-device", "b-preheat", "b-device-new", "b-grinder", "b-grind", "b-feel", "b-pressure", "b-pibar", "b-pis", "b-dose", "b-water", "b-yield", "b-temp", "b-time", "b-recipe", "b-notes"];
 const store = {
@@ -1561,13 +1578,34 @@ function addNote(a) {
   $("notebox").appendChild(row);
   ctl[a] = { set, clear }; noteNames.push(a);
 }
+// Balance 0..5 (or unrated): six buttons, tap the chosen one again to clear it
+(function () {
+  const box = $("balbox");
+  SCALE.BALANCE.forEach(([v, name]) => {
+    const b = el("button", "", String(v)); b.type = "button"; b.dataset.v = v;
+    b.setAttribute("role", "radio"); b.setAttribute("aria-checked", "false"); b.setAttribute("aria-label", v + ": " + name); b.title = name;
+    b.onclick = () => { setBalance(balance === v ? null : v); userChanged(); };
+    box.appendChild(b);
+  });
+})();
+function setBalance(v) {
+  balance = v === null || v === undefined || v === "" ? null : Math.max(0, Math.min(5, Math.round(Number(v))));
+  $("balbox").querySelectorAll("button").forEach(b => b.setAttribute("aria-checked", String(+b.dataset.v === balance)));
+  const d = $("baldef"); d.textContent = "";
+  if (balance === null) d.textContent = "Not rated";
+  else { const x = SCALE.BALANCE[balance]; d.append(el("b", "", balance + " · " + x[1] + ". "), document.createTextNode(x[2])); }
+}
+setBalance(null);
 function buildScores(c, extra) {
   scores = {}; ctl = {}; noteNames = [];
   $("scorebox").textContent = ""; $("notebox").textContent = "";
-  CORE.forEach(addCore);
+  SCALE.PROFILE.forEach(addCore);
   [...(c.flavour_tags || []), ...(extra || [])].forEach(addNote);
 }
-function setScore(a, v) { if (!ctl[a]) addNote(a); if (ctl[a]) ctl[a].set(v); }
+function setScore(a, v) {
+  if (a === "balance" && !ctl[a]) { scores[a] = v; return; }   // an old balance score (from the slider days): kept as it is, not shown as a slider
+  if (!ctl[a]) addNote(a); if (ctl[a]) ctl[a].set(v);
+}
 function newNote() {
   const t = $("b-newnote").value.trim().toLowerCase();
   if (!t) return;
@@ -1625,7 +1663,7 @@ function hhPeople() {
 }
 function stashTaster() {
   const t = tasters[tAct]; if (!t) return;
-  t.rating = rating; t.scores = { ...scores };
+  t.rating = rating; t.balance = balance; t.scores = { ...scores };
   const dv = $("b-drink").value; t.drink = dv === "__own" ? ($("b-drink-own").value.trim() || null) : (dv || null); t.milk = $("milklab").hidden ? null : ($("b-milk").value || null);
   if (t.guest) t.guest_name = $("b-guest").value.trim() || null;
 }
@@ -1634,6 +1672,7 @@ function showTaster(i) {
   const t = tasters[tAct] || {};
   Object.values(ctl).forEach(c => c.clear()); scores = {};
   setRating(t.rating == null ? null : t.rating);
+  setBalance(t.balance == null ? null : t.balance);
   Object.entries(t.scores || {}).forEach(([a, v]) => setScore(a, v));
   $("guestlab").hidden = !t.guest; $("b-guest").value = t.guest ? (t.guest_name || "") : "";
   const own = !!t.drink && !drinkOf(t.drink);
@@ -1677,9 +1716,14 @@ $("b-guest").addEventListener("input", () => { renderTasters(); $("ovlab").textC
 function tastersOf(b) {
   const sc = b.brew_scores || [], rs = (b.brew_ratings || []).slice().sort((x, y) => String(x.created_at || "").localeCompare(String(y.created_at || "")) || String(x.id).localeCompare(String(y.id)));
   const sco = list => { const o = {}; list.forEach(x => { o[x.attribute] = x.score; }); return o; };
-  if (rs.length) return rs.map(r => ({ id: r.id, rater_id: r.is_guest ? null : r.rater_id, guest: !!r.is_guest, guest_name: r.guest_name || null, rating: r.rating == null ? null : Number(r.rating), drink: r.drink || null, milk: r.milk || null, scores: sco(sc.filter(x => x.rating_id === r.id)) }));
-  if (b.rating != null || sc.length) return [{ rater_id: b.made_by || b.created_by || null, guest: false, guest_name: null, rating: b.rating == null ? null : Number(b.rating), drink: null, milk: null, scores: sco(sc) }];
+  if (rs.length) return rs.map(r => ({ id: r.id, rater_id: r.is_guest ? null : r.rater_id, guest: !!r.is_guest, guest_name: r.guest_name || null, rating: r.rating == null ? null : Number(r.rating), balance: r.balance == null ? null : Number(r.balance), drink: r.drink || null, milk: r.milk || null, scores: sco(sc.filter(x => x.rating_id === r.id)) }));
+  if (b.rating != null || sc.length) return [{ rater_id: b.made_by || b.created_by || null, guest: false, guest_name: null, rating: b.rating == null ? null : Number(b.rating), balance: null, drink: null, milk: null, scores: sco(sc) }];
   return [];
+}
+// Balance of a brew: the average of everyone who rated it (null when nobody did; never 0 by default)
+function brewBalance(b) {
+  const v = (b.brew_ratings || []).map(r => r.balance).filter(x => x != null).map(Number);
+  return v.length ? v.reduce((a, c) => a + c, 0) / v.length : null;
 }
 // average stars of a brew over everyone who rated it
 function brewAvg(b) {
@@ -1690,8 +1734,8 @@ function brewAvg(b) {
 // what will be saved: tasters who gave stars or at least one score
 function tasterRows() {
   stashTaster();
-  return tasters.filter(t => t.rating != null || Object.keys(t.scores || {}).length)
-    .map(t => ({ rater_id: t.guest ? null : t.rater_id, is_guest: !!t.guest, guest_name: t.guest ? (t.guest_name || null) : null, rating: t.rating, drink: t.drink || null, milk: t.drink && (!drinkOf(t.drink) || drinkOf(t.drink).milk) ? (t.milk || null) : null, scores: { ...t.scores } }));
+  return tasters.filter(t => t.rating != null || t.balance != null || Object.keys(t.scores || {}).length)
+    .map(t => ({ rater_id: t.guest ? null : t.rater_id, is_guest: !!t.guest, guest_name: t.guest ? (t.guest_name || null) : null, rating: t.rating, balance: t.balance == null ? null : t.balance, drink: t.drink || null, milk: t.drink && (!drinkOf(t.drink) || drinkOf(t.drink).milk) ? (t.milk || null) : null, scores: { ...t.scores } }));
 }
 
 // One text for the settings of a brew. It is also the automatic recipe name.
@@ -1927,7 +1971,7 @@ async function loadFeed() {
   let brews = [], cups = [];
   if (ids.length) {
     const [rb, rc] = await Promise.all([
-      db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,drink,milk,created_at)").in("coffee_id", ids).order("brewed_at", { ascending: false }).limit(feedN + 1),
+      db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,created_at)").in("coffee_id", ids).order("brewed_at", { ascending: false }).limit(feedN + 1),
       db.from("cuppings").select("session_id,coffee_id,cupped_at,cupper_id,is_guest,guest_name,total").in("coffee_id", ids).order("cupped_at", { ascending: false }).limit(500)
     ]);
     if (my !== feedId) return;
@@ -2001,7 +2045,7 @@ function feedCard(x) {
       ts.forEach(t => {
         const sp = el("span");
         if (t.rating != null) sp.appendChild(Stars.row(t.rating, tName(t) + ": " + Stars.text(t.rating) + " of 5"));
-        sp.append(document.createTextNode(tName(t) + (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.rating == null ? ", taste only" : "")));
+        sp.append(document.createTextNode(tName(t) + (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.balance != null ? ", balance " + SCALE.balanceText(t.balance) : "") + (t.rating == null ? ", taste only" : "")));
         rr.appendChild(sp);
       });
       a.appendChild(rr);
@@ -2173,21 +2217,22 @@ function brewCard(b) {
     const pts = pressurePts(b.preinfusion_bar, b.preinfusion_s, b.pressure_profile, null, null);
     if (pts.length) { const w = el("div", "curve"); w.appendChild(curveSvg(pts)); a.appendChild(w); }
   }
-  const chips = sc => {
+  const chips = (sc, bal) => {
     const list = Object.entries(sc || {}).sort(([x], [y]) => { const i = k => CORE.includes(k) ? CORE.indexOf(k) : 99; return i(x) - i(y); });
-    if (!list.length) return null;
+    if (!list.length && bal == null) return null;
     const t = el("div", "tags");
-    list.forEach(([k, v]) => { const ch = el("span", "chip"); ch.style.setProperty("--ac", attrColor(k)); ch.append(ico(attrIcon(k), 14), document.createTextNode(k + " " + SCALE.text(k, v))); t.appendChild(ch); });
+    if (bal != null) { const ch = el("span", "chip bal"); ch.style.setProperty("--ac", attrColor("balance")); ch.title = SCALE.balanceName(bal); ch.append(ico("balance", 14), document.createTextNode("balance " + SCALE.balanceText(bal))); t.appendChild(ch); }
+    list.forEach(([k, v]) => { const ch = el("span", "chip"); ch.style.setProperty("--ac", attrColor(k)); ch.append(ico(attrIcon(k), 14), document.createTextNode((k === "balance" ? "balance (old scale) " : k + " ") + SCALE.text(k, v))); t.appendChild(ch); });
     return t;
   };
-  if (ts.length === 1) { const t = chips(ts[0].scores); if (t) a.appendChild(t); }
+  if (ts.length === 1) { const t = chips(ts[0].scores, ts[0].balance); if (t) a.appendChild(t); }
   else if (ts.length > 1) {   // several tasters: each with their stars and taste
     const box = el("div", "rts");
     ts.forEach(t => {
       const r = el("div", "rt"), h = el("div", "rh");
       if (t.rating != null) h.appendChild(Stars.row(t.rating, tName(t) + ": " + Stars.text(t.rating) + " of 5"));
       h.appendChild(el("span", "rn", tName(t) + (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.rating == null ? ", taste only" : "")));
-      r.appendChild(h); const c = chips(t.scores); if (c) r.appendChild(c); box.appendChild(r);
+      r.appendChild(h); const c = chips(t.scores, t.balance); if (c) r.appendChild(c); box.appendChild(r);
     });
     a.appendChild(box);
   }
@@ -2205,13 +2250,16 @@ function brewCard(b) {
 
 async function loadBrews() {
   const my = ++brewLoadId;
-  const { data, error } = await db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,drink,milk,created_at), brew_scores(attribute,score,rating_id)").eq("coffee_id", cur.id).order("brewed_at", { ascending: false });
+  const { data, error } = await db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,created_at), brew_scores(attribute,score,rating_id)").eq("coffee_id", cur.id).order("brewed_at", { ascending: false });
   if (my !== brewLoadId) return;
   if (error) { say("Could not load brews: " + error.message); return; }
   brewData = data;
   // tasting notes used on earlier brews of this coffee are offered again
   if (!editingBrew) data.forEach(b => (b.brew_scores || []).forEach(s => { if (!SCALE.isCore(s.attribute)) addNote(s.attribute); }));
   const dr = $("drate"); dr.textContent = ""; const rb = rateBlock(data.slice().reverse().map(b => ({ r: brewAvg(b), d: !!b.is_dialin }))); if (rb) dr.appendChild(rb);
+  // Balance of this coffee: the average over the counted brews (dial-ins left out, as for the stars); unrated brews do not count as 0
+  const bal = data.filter(b => !b.is_dialin).map(brewBalance).filter(v => v != null);
+  if (bal.length) { const v = bal.reduce((a, c) => a + c, 0) / bal.length, p = el("p", "balavg"); p.append(ico("balance", 16), el("b", "", "Balance " + SCALE.balanceText(v)), document.createTextNode(" " + SCALE.balanceName(v).toLowerCase() + ", from " + bal.length + (bal.length === 1 ? " brew" : " brews"))); dr.appendChild(p); }
   const uniq = k => [...new Set(data.map(b => b[k]).filter(Boolean))].sort();
   fillFilter("bflt-device", "Device", uniq("device"));
   fillFilter("bflt-recipe", "Recipe", uniq("recipe"));
@@ -2269,7 +2317,7 @@ $("bf").onsubmit = async e => {
   {
     const dev = chosen("b-device"), esp = isEsp(typeOf(dev)), v = id => $(id).value.trim();
     const t = numOf("b-time"), tr = tasterRows();
-    const rated = tr.map(x => tName({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name }) + " " + (x.rating == null ? "(taste only)" : Stars.text(x.rating)) + (x.drink ? " (" + drinkText(x.drink, x.milk).toLowerCase() + ")" : "")).join(", ");
+    const rated = tr.map(x => tName({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name }) + " " + (x.rating == null ? "(taste only)" : Stars.text(x.rating)) + (x.balance != null ? ", balance " + SCALE.balanceText(x.balance) : "") + (x.drink ? " (" + drinkText(x.drink, x.milk).toLowerCase() + ")" : "")).join(", ");
     const tasted = tr.reduce((a, x) => a + Object.keys(x.scores).length, 0);
     let ok;
     if (editingBrew) {   // editing: show exactly what changed, old next to new
@@ -2307,7 +2355,7 @@ $("bf").onsubmit = async e => {
     }
     try {
       for (const t of tasterRows()) {   // one rating per taster, then that taster's scores
-        const { data: r, error } = await db.from("brew_ratings").insert({ brew_id: id, rater_id: t.rater_id, is_guest: t.is_guest, guest_name: t.guest_name, rating: t.rating, ...(t.drink ? { drink: t.drink } : {}), ...(t.milk ? { milk: t.milk } : {}) }).select("id").single();
+        const { data: r, error } = await db.from("brew_ratings").insert({ brew_id: id, rater_id: t.rater_id, is_guest: t.is_guest, guest_name: t.guest_name, rating: t.rating, ...(t.balance != null ? { balance: t.balance } : {}), ...(t.drink ? { drink: t.drink } : {}), ...(t.milk ? { milk: t.milk } : {}) }).select("id").single();
         if (error) throw error;
         const rows = Object.entries(t.scores).map(([attribute, score]) => ({ brew_id: id, rating_id: r.id, attribute, score }));
         if (rows.length) { const r2 = await db.from("brew_scores").insert(rows); if (r2.error) throw r2.error; }

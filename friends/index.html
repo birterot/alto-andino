@@ -84,6 +84,7 @@ input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .dv .tr::before{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--mut);opacity:.5}
 .dv .fl{position:absolute;top:0;bottom:0;border-radius:6px;background:var(--col)}
 .dv b{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.dv.bv{margin-top:12px}
 .dvax{display:grid;grid-template-columns:64px 1fr 40px;gap:8px;font-size:11.5px;color:var(--mut)}.dvax span{display:flex;justify-content:space-between}
 .notes{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .notes span{font-size:13.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--bg)}
@@ -163,7 +164,7 @@ const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { ret
 const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (e) { return "UTC"; } })();
 const andList = a => a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
 const r1 = n => Math.round(n * 10) / 10;
-const CORE = ["sour", "sweet", "bitter", "balance"], FCOL = { sour: "var(--f-sour)", sweet: "var(--f-sweet)", bitter: "var(--f-bitter)", balance: "var(--f-balance)" };
+const CORE = ["sour", "sweet", "bitter"], FCOL = { sour: "var(--f-sour)", sweet: "var(--f-sweet)", bitter: "var(--f-bitter)", balance: "var(--f-balance)" };
 let me = null, hh = null, hhs = [], mine = null, stats = {};
 
 // a friend link (#code=...) is kept until you are signed in and have a household
@@ -439,11 +440,18 @@ function taste(body, them, you, nm) {
   const b = el("section", "box"); body.appendChild(b);
   b.append(el("h2", "", "Taste Profile"));
   const t = them.taste;
-  b.appendChild(el("p", "hint", "Where the favourite brews (4 stars and up) sit on sour, sweet, bitter and balance, from -5 to +5. 0 is just right."));
+  b.appendChild(el("p", "hint", "Where the favourite brews (4 stars and up) sit on sour, sweet and bitter, from -5 to +5 (0 is just right), and how balanced they are, from 0 to 5."));
   const grid = el("div", "grid2"); b.appendChild(grid);
-  const prof = (title, x, n) => {
+  const prof = (title, x, n, bal, bn) => {
     const cell = el("div"); grid.appendChild(cell); cell.appendChild(el("h3", "", title));
-    if (!x || !Object.keys(x).length) { cell.appendChild(el("p", "off", "Not enough scored favourites yet.")); return; }
+    const balRow = () => {   // Balance, 0 to 5, its own rating
+      if (bal == null) return;
+      const r = el("div", "dv bv"), tr = el("span", "tr"), fl = el("span", "fl");
+      fl.style.setProperty("--col", FCOL.balance); fl.style.left = "0"; fl.style.width = (Math.max(0, Math.min(5, bal)) * 20) + "%"; tr.appendChild(fl);
+      r.title = bn + (bn === 1 ? " rating" : " ratings");
+      r.append(el("span", "", "balance"), tr, el("b", "", r1(bal) + "/5")); cell.appendChild(r);
+    };
+    if (!x || !Object.keys(x).length) { cell.appendChild(el("p", "off", "Not enough scored favourites yet.")); balRow(); return; }
     cell.appendChild(el("p", "hint", n + (n === 1 ? " favourite brew" : " favourite brews")));
     const d = el("div", "div"); cell.appendChild(d);
     CORE.forEach(a => {
@@ -453,9 +461,10 @@ function taste(body, them, you, nm) {
       r.append(el("span", "", a), tr, el("b", "", (v > 0 ? "+" : "") + r1(v))); d.appendChild(r);
     });
     const ax = el("div", "dvax"), sp = el("span"); sp.append(el("i", "", "-5"), el("i", "", "0"), el("i", "", "+5")); ax.append(el("span"), sp, el("span")); cell.appendChild(ax);
+    balRow();
   };
-  prof(them.own ? "Your favourites" : them.name, t.fav, t.n_fav);
-  if (you) prof("You", you.taste.fav, you.taste.n_fav);
+  prof(them.own ? "Your favourites" : them.name, t.fav, t.n_fav, t.bal_fav, t.bal_fav_n);
+  if (you) prof("You", you.taste.fav, you.taste.n_fav, you.taste.bal_fav, you.taste.bal_fav_n);
   const words = profileWords(t.fav);
   if (words) b.appendChild(el("p", "take", (them.own ? "Your" : them.name + "'s") + " favourites are " + words));
   if (t.notes && t.notes.length) {
