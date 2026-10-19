@@ -631,7 +631,7 @@ const sforVals = () => [...document.querySelectorAll("#f-sfor input:checked")].m
 const setSfor = arr => document.querySelectorAll("#f-sfor input").forEach(i => { i.checked = (arr || []).includes(i.value); });
 let logAfter = null, restoredCoffee = false, coffeeTried = false;
 
-function shrink(file, max = 2000) {
+function shrink(file, max = 2000, quality = 0.82) {
   return new Promise((ok, no) => {
     const img = new Image(), url = URL.createObjectURL(file);
     img.onload = () => {
@@ -640,7 +640,7 @@ function shrink(file, max = 2000) {
       const c = document.createElement("canvas");
       c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-      c.toBlob(b => b ? ok(b) : no(new Error("Could not process the photo")), "image/jpeg", 0.82);
+      c.toBlob(b => b ? ok(b) : no(new Error("Could not process the photo")), "image/jpeg", quality);
     };
     img.onerror = () => no(new Error("Could not read the photo"));
     img.src = url;
@@ -820,7 +820,7 @@ const attrColor = a => ATTR[a] ? "light-dark(" + ATTR[a][0] + "," + ATTR[a][1] +
 async function releasePhoto(path) {
   const { data, error } = await db.from("coffees").select("id").eq("photo_path", path).limit(1);
   if (error || (data && data.length)) return null;
-  return db.storage.from("bag-photos").remove([path]);
+  return db.storage.from("bag-photos").remove([path, thumbOf(path)]);
 }
 
 function buyLink(c) {
@@ -857,10 +857,10 @@ function bagMeter(c, left) {
   } else at(frac);
   return w;
 }
-function card(c, photoUrl, nBrews, ratings, bags) {
+function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
   const a = el("article", "cc");
   applyLook(a, c);
-  if (photoUrl) { const i = el("img", "ph"); i.src = photoUrl; i.alt = "Bag of " + c.name; i.loading = "lazy"; a.appendChild(photoBtn(i, photoUrl, c.name)); }
+  if (photoUrl || thumbUrl) { const i = el("img", "ph"); i.src = thumbUrl || photoUrl; i.alt = "Bag of " + c.name; i.loading = "lazy"; i.decoding = "async"; a.appendChild(photoBtn(i, photoUrl || thumbUrl, c.name)); }
   const b = el("div", "in");
   const hd = el("div", "hd"); hd.appendChild(el("h3", "", c.name)); b.appendChild(hd);
   const meta = [c.is_decaf ? "Decaf" : null, c.roaster, c.origin, c.variety, altText(c), c.is_blend ? "Blend" : null].filter(Boolean).join(", ");
@@ -937,17 +937,80 @@ async function load() {
   coffeeCups = {}; cupRows.forEach(r => { if (r.total != null) (coffeeCups[r.coffee_id] = coffeeCups[r.coffee_id] || []).push(Number(r.total)); });
   const uniq = k => [...new Set(data.map(c => c[k]).filter(Boolean))];
   fill("f-process", Object.keys(PAL), uniq("process")); fill("f-roast", window.LISTS.roast, uniq("roast_level"));
-  const paths = data.map(c => c.photo_path).filter(Boolean), urls = {};
-  if (paths.length) {
-    const { data: s } = await db.storage.from("bag-photos").createSignedUrls(paths, 3600);
-    (s || []).forEach(x => { if (x.signedUrl) urls[x.path] = x.signedUrl; });
-    if (my !== loadId) return;
-  }
-  coffeeData = data; coffeeUrls = urls; coffeeCounts = counts; coffeeRates = rates; coffeeUsed = used;
+  coffeeData = data; coffeeCounts = counts; coffeeRates = rates; coffeeUsed = used;
+  const paths = data.map(c => c.photo_path).filter(Boolean);
+  const known = photoLinks(paths, true);   // links still valid from earlier visits: no waiting
+  coffeeUrls = known.full; coffeeThumbs = known.thumb;
   renderVarieties();
   fillFilter("flt-process", "All processes", uniq("process").sort());
   fillFilter("flt-roast", "All roast levels", uniq("roast_level").sort());
   renderCoffees();
+  saveShelf();
+  if (known.missing) {   // new photos: get their links, then show them
+    const got = await photoLinks(paths);
+    if (my !== loadId) return;
+    coffeeUrls = got.full; coffeeThumbs = got.thumb;
+    renderCoffees();
+  }
+  setTimeout(() => makeThumbs(paths), 2500);
+}
+
+// ----- loading faster -----------------------------------------------------------------------------
+// Bag photos: a small copy (about 640 px, "-t.jpg" next to the photo) for the cards, the full photo only when you open it.
+// Photo links are signed for a week and remembered, so the phone can keep the pictures in its cache instead of
+// loading them again on every visit.
+const thumbOf = p => String(p).replace(/\.jpe?g$/i, "") + "-t.jpg";
+const LINKS = "alto.photolinks.v1", WEEK = 7 * 864e5;
+let coffeeThumbs = {};
+function photoLinks(paths, cachedOnly) {
+  let cache = {}; try { cache = JSON.parse(store.get(LINKS) || "{}") || {}; } catch (e) {}
+  const now = Date.now(), want = [...new Set(paths.flatMap(p => [p, thumbOf(p)]))];
+  const pick = () => {
+    const full = {}, thumb = {};
+    paths.forEach(p => { const f = cache[p], t = cache[thumbOf(p)]; if (f && f[0]) full[p] = f[0]; thumb[p] = t && t[0] ? t[0] : full[p]; });
+    return { full, thumb, missing: want.some(p => !cache[p] || cache[p][1] - now < 864e5) };
+  };
+  if (cachedOnly) return pick();
+  const need = want.filter(p => !cache[p] || cache[p][1] - now < 864e5);
+  if (!need.length) return Promise.resolve(pick());
+  return db.storage.from("bag-photos").createSignedUrls(need, 7 * 86400).then(({ data }) => {
+    (data || []).forEach(x => { cache[x.path] = x.signedUrl ? [x.signedUrl, now + WEEK] : ["", now + 6 * 3600e3]; });   // no small copy yet: ask again in a few hours
+    need.forEach(p => { if (!cache[p]) cache[p] = ["", now + 6 * 3600e3]; });
+    Object.keys(cache).forEach(k => { if (cache[k][1] < now) delete cache[k]; });
+    store.set(LINKS, JSON.stringify(cache));
+    return pick();
+  });
+}
+function forgetLink(p) { try { const c = JSON.parse(store.get(LINKS) || "{}"); delete c[p]; store.set(LINKS, JSON.stringify(c)); } catch (e) {} }
+// small copies for photos from before (only your own: everyone can only add files to their own folder)
+let thumbsDone = false;
+async function makeThumbs(paths) {
+  if (thumbsDone || !me) return; thumbsDone = true;
+  for (const p of paths) {
+    if (!p.startsWith(me.id + "/") || !coffeeUrls[p] || coffeeThumbs[p] !== coffeeUrls[p]) continue;   // not yours, or it has one
+    try {
+      const blob = await fetch(coffeeUrls[p]).then(r => { if (!r.ok) throw new Error(r.status); return r.blob(); });
+      const t = await shrink(blob, 640, 0.78);
+      const up = await db.storage.from("bag-photos").upload(thumbOf(p), t, { contentType: "image/jpeg", cacheControl: "31536000" });
+      if (!up.error || /exists/i.test(up.error.message)) forgetLink(thumbOf(p));
+    } catch (e) {}
+  }
+}
+// the shelf as it was last time, shown at once when the app opens (the fresh data replaces it right after)
+const SHELF = "alto.shelf.v1";
+function saveShelf() {
+  try { localStorage.setItem(SHELF, JSON.stringify({ u: me && me.id, hh, t: Date.now(), coffees: coffeeData, counts: coffeeCounts, rates: coffeeRates, used: coffeeUsed, cups: coffeeCups })); } catch (e) {}
+}
+function shelfFromCache() {
+  if (location.hash && location.hash !== "#") return false;
+  let c = null; try { c = JSON.parse(localStorage.getItem(SHELF) || "null"); } catch (e) {}
+  if (!c || !me || c.u !== me.id || Date.now() - c.t > 30 * 864e5 || !Array.isArray(c.coffees)) return false;
+  if (c.hh && store.get("alto.household") && c.hh !== store.get("alto.household")) return false;
+  coffeeData = c.coffees; coffeeCounts = c.counts || {}; coffeeRates = c.rates || {}; coffeeUsed = c.used || {}; coffeeCups = c.cups || {};
+  const known = photoLinks(coffeeData.map(x => x.photo_path).filter(Boolean), true);
+  coffeeUrls = known.full; coffeeThumbs = known.thumb;
+  try { renderCoffees(); } catch (e) { return false; }
+  return true;
 }
 
 function fillFilter(id, label, values) {
@@ -1003,7 +1066,7 @@ function renderCoffees() {
   active.forEach(c => { const k = gk(c); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(c); });
   const shown = [...groups.values()].filter(g => passCoffee(g[0]));
   if (!shown.length) { list.appendChild(el("p", "hint", "No coffees match these filters.")); return; }
-  shown.forEach(g => list.appendChild(card(g[0], coffeeUrls[g[0].photo_path], coffeeCounts[g[0].id] || 0, mergedRates(g), g)));
+  shown.forEach(g => list.appendChild(card(g[0], coffeeUrls[g[0].photo_path], coffeeCounts[g[0].id] || 0, mergedRates(g), g, coffeeThumbs[g[0].photo_path])));
 }
 ["flt-q", "flt-process", "flt-roast", "flt-open"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderCoffees)));
 
@@ -1363,8 +1426,9 @@ $("cf").onsubmit = async e => {
     if (f) {
       const blob = await shrink(f);
       path = me.id + "/" + crypto.randomUUID() + ".jpg";
-      const up = await db.storage.from("bag-photos").upload(path, blob, { contentType: "image/jpeg" });
+      const up = await db.storage.from("bag-photos").upload(path, blob, { contentType: "image/jpeg", cacheControl: "31536000" });
       if (up.error) throw up.error;
+      try { await db.storage.from("bag-photos").upload(thumbOf(path), await shrink(f, 640, 0.78), { contentType: "image/jpeg", cacheControl: "31536000" }); } catch (e) {}   // the small copy for the cards
     }
     if (path) row.photo_path = path; else if (newBagOf) row.photo_path = newBagOf.photo_path || null; else if (!editing) row.photo_path = null;
     if (newBagOf) row.group_id = gk(newBagOf);
@@ -2123,9 +2187,10 @@ async function openCoffee(id, dev, wantForm) {
   const da = $("darch"); da.textContent = ""; da.hidden = !c.archived;
   if (c.archived) { da.append(document.createTextNode("This bag is archived. Its brews still count in Trends.")); da.appendChild(abtn("btn ghost", "Restore", "check", async () => { if (await setArchived(c, false)) openCoffee(c.id); })); }
   $("dname").textContent = c.name;
-  const ph = $("dphoto"), pu = c.photo_path ? coffeeUrls[c.photo_path] : null;
+  if (c.photo_path && !coffeeUrls[c.photo_path]) { const got = await photoLinks([c.photo_path]); coffeeUrls = Object.assign({}, coffeeUrls, got.full); coffeeThumbs = Object.assign({}, coffeeThumbs, got.thumb); }   // opened straight from a link
+  const ph = $("dphoto"), pu = c.photo_path ? coffeeUrls[c.photo_path] : null, pt = c.photo_path ? (coffeeThumbs[c.photo_path] || pu) : null;
   const pb = $("dphotob"); pb.hidden = !pu; if (!pb.querySelector(".zm")) pb.appendChild(zoomBadge());
-  if (pu) { ph.src = pu; ph.alt = "Bag of " + c.name; pb.setAttribute("aria-label", "Show the photo of " + c.name + " bigger"); pb.onclick = () => showPhoto(pu, c.name); } else ph.removeAttribute("src");
+  if (pu) { ph.src = pt; ph.alt = "Bag of " + c.name; pb.setAttribute("aria-label", "Show the photo of " + c.name + " bigger"); pb.onclick = () => showPhoto(pu, c.name); } else ph.removeAttribute("src");
   $("dmeta").textContent = [c.is_decaf ? "Decaf" : null, c.roaster, c.origin, c.variety, altText(c)].filter(Boolean).join(", ") +
     (c.roast_date ? ". Roasted " + fmtD(c.roast_date) : c.purchase_date ? ". Bought " + fmtD(c.purchase_date) + " (roast date unknown)" : "") + (c.open_date ? ", opened " + fmtD(c.open_date) : "") + (c.finished_at ? ", finished " + fmtD(c.finished_at) : "") + ".";
   const bx = $("dbuy"); bx.textContent = ""; const bl = buyLink(c); if (bl) bx.appendChild(bl);
@@ -2383,19 +2448,17 @@ const joinUrl = code => location.origin + cleanPath() + "#join=" + encodeURIComp
 })();
 const pendingJoin = () => { try { return localStorage.getItem("alto.join"); } catch (e) { return null; } };
 async function loadHouseholds() {
-  const { data, error } = await db.from("household_members").select("household_id,role,households(id,name)").eq("user_id", me.id);
+  // one request: everyone in your households (you only see households you are in), with the household names
+  const { data, error } = await db.from("household_members").select("household_id,user_id,role,joined_at,households(id,name)").order("joined_at");
   if (error) { hhOk = false; hhs = []; hh = null; $("hhbox").hidden = true; return; }
   hhOk = true;
   const seen = new Set();
-  hhs = data.filter(r => r.households && !seen.has(r.household_id) && seen.add(r.household_id)).map(r => ({ id: r.household_id, name: r.households.name, role: r.role }));
+  hhs = data.filter(r => r.user_id === me.id && r.households && !seen.has(r.household_id) && seen.add(r.household_id)).map(r => ({ id: r.household_id, name: r.households.name, role: r.role }));
   const saved = store.get("alto.household");
   hh = (hhs.find(x => x.id === saved) || hhs[0] || {}).id || null;
   if (hh) store.set("alto.household", hh);
   hhMembers = {};
-  if (hhs.length) {
-    const { data: mem } = await db.from("household_members").select("household_id,user_id,role,joined_at").in("household_id", hhs.map(x => x.id)).order("joined_at");
-    (mem || []).forEach(m => (hhMembers[m.household_id] = hhMembers[m.household_id] || []).push(m));
-  }
+  data.filter(m => seen.has(m.household_id)).forEach(m => (hhMembers[m.household_id] = hhMembers[m.household_id] || []).push(m));
 }
 async function tryPendingJoin() {
   const code = pendingJoin(); if (!code) return;
@@ -2534,12 +2597,14 @@ async function show(session) {
   if (shownFor === session.user.id) return;   // token refreshes do not reload everything
   shownFor = session.user.id;
   $("who").textContent = "Signed in as " + session.user.email;
+  shelfFromCache();   // what the shelf looked like last time, at once; the fresh list replaces it a moment later
   await loadHouseholds();
   await tryPendingJoin();
-  await loadNames();
-  renderHousehold();
+  const names = loadNames();   // names and the coffees load at the same time
   $("hhview").hidden = !(hhOk && !hhs.length);
   route();
+  await names;
+  renderHousehold();
 }
 // Sign in / create account / forgot password
 let authMode = "in";
@@ -2602,7 +2667,7 @@ $("newpw").onsubmit = async e => {
   recovering = false; say("Your new password is saved.");
   const { data } = await db.auth.getSession(); show(data.session);
 };
-$("out").onclick = () => { shownFor = null; db.auth.signOut(); };
+$("out").onclick = () => { shownFor = null; store.del(SHELF); store.del(LINKS); db.auth.signOut(); };   // signing out also forgets the saved shelf on this phone
 // Run queries outside the callback so the auth client is not blocked.
 db.auth.onAuthStateChange((event, session) => setTimeout(() => {
   if (event === "PASSWORD_RECOVERY") recovering = true;

@@ -146,7 +146,7 @@ $("sf").onsubmit = async e => {
 };
 // the message next to the button, briefly highlighted so it is not missed
 function flash(t) { const m = $("msg"); m.textContent = t; m.classList.remove("on"); void m.offsetWidth; m.classList.add("on"); }
-$("out").onclick = async () => { await db.auth.signOut(); };
+$("out").onclick = async () => { try { localStorage.removeItem("alto.shelf.v1"); localStorage.removeItem("alto.photolinks.v1"); } catch (e) {} await db.auth.signOut(); };
 db.auth.onAuthStateChange((_e, session) => setTimeout(() => {
   me = session ? session.user : null;
   $("signedout").hidden = !!me; $("sf").hidden = !me;
