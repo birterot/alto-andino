@@ -4,7 +4,7 @@ Ideas for after the basics have settled. Nothing here is promised; it is the lis
 
 ## Own domain and email
 Bundled with the Apple Developer account, so the external costs come together.
-- Own domain for the app (instead of birterot.github.io/alto-andino).
+- ~~Own domain for the app~~ done: alto-andino.com.
 - Email service (Brevo or similar) as custom SMTP in Supabase. Then "Confirm email" can go back on and "Forgot password" sends real emails.
 
 ## Friends and households

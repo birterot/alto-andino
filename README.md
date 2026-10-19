@@ -2,7 +2,7 @@
 
 Our coffee app: the "Bean to cup" chapters (notes from The World Atlas of Coffee), a brew journal, a calculator and trends. Plain HTML, CSS and JavaScript, no build step. The journal and trends keep their data in Supabase, shared per household.
 
-Live at https://birterot.github.io/alto-andino/
+Live at https://alto-andino.com (the old address birterot.github.io/alto-andino redirects there). Domain and DNS at Cloudflare, password emails through Resend (Supabase custom SMTP), hello@alto-andino.com forwarded by Cloudflare Email Routing.
 
 ## Structure
 
