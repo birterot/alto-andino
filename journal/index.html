@@ -402,10 +402,10 @@ details.calcbox summary{font-size:15px}
       </label>
       <label>Roast level
         <select id="f-roast"></select>
-        <input id="f-roast-new" placeholder="Name of the new roast level" hidden>
+        <input id="f-roast-new" hidden>
       </label>
       <fieldset class="sfor adv" id="f-sfor"><legend>Suitable for</legend></fieldset>
-      <p class="hint adv">How you would brew it. The log a brew page suggests coffees by this.</p>
+      <p class="hint adv">How you would brew it. The log a brew page suggests coffees by this. An omni roast: tick both Espresso and Filter.</p>
       <label>Flavour notes<input id="f-tags" placeholder="chocolaty, nutty, red fruit"></label>
       <p class="hint">Separate with commas. The sour, sweet and bitter sliders and the Balance rating are always there when logging a brew.</p>
       <label id="rdlab">Roast date<input type="date" id="f-rd"></label>
@@ -602,14 +602,13 @@ function deviceList() {
   (window.LISTS.device || []).forEach(add);
   return out;   // plain names, no sizes: your own ("French press (1 l)") come with "Other (add new)" and stay in the list once used
 }
-function fill(id, base, used) {
+function fill(id, base, used, fixed) {   // fixed: only the base list, no "Other" (roast levels)
   const s = $(id), keep = s.value;
   s.textContent = "";
   const add = (v, t) => { const o = el("option", "", t || v); o.value = v; s.appendChild(o); };
   add("", "Unknown");
   base.forEach(x => add(x));
-  used.filter(x => !base.includes(x)).sort().forEach(x => add(x));
-  add("__other", "Other (add new)...");
+  if (!fixed) { used.filter(x => !base.includes(x)).sort().forEach(x => add(x)); add("__other", "Other (add new)..."); }
   s.value = [...s.options].some(o => o.value === keep) ? keep : "";
 }
 function otherBox(id) {
@@ -623,8 +622,8 @@ function chosen(id) {
   const same = [...s.options].find(o => o.value && o.value !== "__other" && o.text.toLowerCase() === t.toLowerCase());
   return same ? same.value : t;
 }
-fill("f-process", Object.keys(PAL), []); fill("f-roast", window.LISTS.roast, []);
-otherBox("f-process"); otherBox("f-roast");
+fill("f-process", Object.keys(PAL), []); fill("f-roast", window.LISTS.roast, [], true);   // roast level: light to dark only (omni is "Suitable for")
+otherBox("f-process");
 ((window.DEFAULTS && window.DEFAULTS.BREW_TYPES) || []).forEach(t => {
   const l = el("label", "chk"), i = el("input"); i.type = "checkbox"; i.value = t[0]; l.append(i, document.createTextNode(" " + t[1])); $("f-sfor").appendChild(l);
 });
@@ -943,7 +942,7 @@ async function load() {
   if (error) { say("Could not load coffees: " + error.message); return; }
   coffeeCups = {}; cupRows.forEach(r => { if (r.total != null) (coffeeCups[r.coffee_id] = coffeeCups[r.coffee_id] || []).push(Number(r.total)); });
   const uniq = k => [...new Set(data.map(c => c[k]).filter(Boolean))];
-  fill("f-process", Object.keys(PAL), uniq("process")); fill("f-roast", window.LISTS.roast, uniq("roast_level"));
+  fill("f-process", Object.keys(PAL), uniq("process")); fill("f-roast", window.LISTS.roast, [], true);
   coffeeData = data; coffeeCounts = counts; coffeeRates = rates; coffeeUsed = used;
   const paths = data.map(c => c.photo_path).filter(Boolean);
   const known = photoLinks(paths, true);   // links still valid from earlier visits: no waiting
@@ -1077,7 +1076,7 @@ function renderCoffees() {
 let editing = null, newBagOf = null;
 function setSel(id, v) {
   const s = $(id);
-  if (v && ![...s.options].some(o => o.value === v)) { const o = el("option", "", v); o.value = v; s.insertBefore(o, s.lastElementChild); }
+  if (v && ![...s.options].some(o => o.value === v)) { const o = el("option", "", v); o.value = v; const oth = s.querySelector('option[value="__other"]'); s.insertBefore(o, oth); }   // an older value is kept for that coffee
   s.value = v || "";
 }
 function endEdit() {
