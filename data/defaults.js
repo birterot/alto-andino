@@ -52,6 +52,39 @@ window.DEFAULTS = {
     ["Medium-dark",  ["#E6D6C7", "#281D17", "#74492D", "#B88562", "#3F271A", "#DDBFA6"]],
     ["Dark",         ["#E0D0C6", "#241A16", "#4A2E22", "#A57A63", "#2F1C14", "#D8BBA9"]]
   ],
+  // Coffee-growing countries, for the Country field (suggestions) and so the stats group by country.
+  COUNTRIES: ["Bolivia", "Brazil", "Burundi", "China", "Colombia", "Costa Rica", "Cuba", "DR Congo", "Dominican Republic", "Ecuador",
+    "El Salvador", "Ethiopia", "Guatemala", "Haiti", "Honduras", "India", "Indonesia", "Jamaica", "Kenya", "Laos", "Malawi", "Mexico",
+    "Myanmar", "Nepal", "Nicaragua", "Panama", "Papua New Guinea", "Peru", "Philippines", "Puerto Rico", "Rwanda", "Taiwan", "Tanzania",
+    "Thailand", "Timor-Leste", "Uganda", "USA (Hawaii)", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"],
+  // other spellings (German, Spanish, English) and well-known regions that tell the country
+  COUNTRY_ALIASES: {
+    "brasil": "Brazil", "brasilien": "Brazil", "kolumbien": "Colombia", "äthiopien": "Ethiopia", "aethiopien": "Ethiopia", "etiopia": "Ethiopia", "etiopía": "Ethiopia",
+    "kenia": "Kenya", "ruanda": "Rwanda", "indonesien": "Indonesia", "mexiko": "Mexico", "méxico": "Mexico", "jemen": "Yemen", "perú": "Peru",
+    "panamá": "Panama", "honduras": "Honduras", "nikaragua": "Nicaragua", "guatemala": "Guatemala", "tansania": "Tanzania", "sambia": "Zambia",
+    "simbabwe": "Zimbabwe", "kuba": "Cuba", "kongo": "DR Congo", "congo": "DR Congo", "drc": "DR Congo", "dr kongo": "DR Congo", "demokratische republik kongo": "DR Congo",
+    "costa rica": "Costa Rica", "el salvador": "El Salvador", "salvador": "El Salvador", "ost-timor": "Timor-Leste", "osttimor": "Timor-Leste", "east timor": "Timor-Leste",
+    "papua-neuguinea": "Papua New Guinea", "png": "Papua New Guinea", "dominikanische republik": "Dominican Republic", "república dominicana": "Dominican Republic",
+    "philippinen": "Philippines", "filipinas": "Philippines", "vietnam": "Vietnam", "viet nam": "Vietnam", "indien": "India", "usa": "USA (Hawaii)", "hawaii": "USA (Hawaii)", "kona": "USA (Hawaii)",
+    "sumatra": "Indonesia", "java": "Indonesia", "sulawesi": "Indonesia", "flores": "Indonesia", "bali": "Indonesia", "yunnan": "China"
+  },
+  // "Huila, Colombia", "Colombia - Huila" or "Kolumbien" -> { country: "Colombia", region: "Huila", countries: [...] }.
+  // The first part that is a country (or tells the country) is the country, the rest is the region. Nothing known: the first part.
+  splitOrigin: function (text) {
+    var t = String(text || "").trim(); if (!t) return { country: null, region: null, countries: [] };
+    var parts = t.split(/\s*[,;\/|]\s*|\s+[-–]\s+/).map(function (x) { return x.trim(); }).filter(Boolean);
+    var list = this.COUNTRIES, al = this.COUNTRY_ALIASES, found = [], at = -1;
+    var known = function (p) {
+      var l = p.toLowerCase();
+      for (var i = 0; i < list.length; i++) if (list[i].toLowerCase() === l) return list[i];
+      return al[l] || null;
+    };
+    var REGIONAL = ["sumatra", "java", "sulawesi", "flores", "bali", "kona", "yunnan"];   // a region that tells the country: it stays the region
+    parts.forEach(function (p, i) { var k = known(p); if (k) { if (found.indexOf(k) < 0) found.push(k); if (at < 0) at = i; } });
+    if (at < 0) return { country: parts[0], region: parts.slice(1).join(", ") || null, countries: [] };
+    var rest = parts.filter(function (p) { return !known(p) || REGIONAL.indexOf(p.toLowerCase()) >= 0; });
+    return { country: found[0], region: rest.join(", ") || null, countries: found };
+  },
   // Captcha on sign-in and sign-up (Cloudflare Turnstile). Put the site key here (it is public, not secret).
   // Empty = no captcha. Only switch the captcha on in Supabase after this key is published.
   TURNSTILE_SITE_KEY: "0x4AAAAAAFYgW7mYfXFgAt5K",

@@ -176,6 +176,7 @@ const timeText = b => b.time == null ? null : (isEsp(b.device) && b.time < 90 ? 
 const ratioOf = b => !b.dose ? null : isEsp(b.device) ? (b.yld ? b.yld / b.dose : null) : (b.water ? b.water / b.dose : b.yld ? b.yld / b.dose : null);
 const numGrind = g => { const m = String(g || "").replace(",", ".").match(/-?\d+(\.\d+)?/); return m ? Number(m[0]) : null; };
 const stars = n => Stars.text(n);
+const splitOrigin = t => window.DEFAULTS && DEFAULTS.splitOrigin ? DEFAULTS.splitOrigin(t) : { country: t ? String(t).split(",")[0].trim() : null, region: null, countries: [] };
 const andList = arr => arr.length < 2 ? arr.join("") : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1];
 const coffeeOf = id => state.coffees.find(c => c.id === id) || null;
 const nameOf = id => (id && state.names[id]) || null;
@@ -337,7 +338,8 @@ function viewTaste() {
   const groups = [
     ["Process", c => c.process],
     ["Roast level", c => c.roast_level],
-    ["Origin", c => c.origin ? c.origin.split(",")[0].trim() : null],
+    ["Origin", c => { const o = splitOrigin(c.origin); return o.countries.length > 1 ? "Several countries" : o.countries[0] || o.country; }],   // by country, however the origin was written
+    ["Region", c => { const o = splitOrigin(c.origin); return o.region && o.countries.length < 2 ? o.region.split(",")[0].trim() + " (" + (o.countries[0] || o.country) + ")" : null; }],
     ["Altitude", c => { const a = c.altitude_max_m != null ? (c.altitude_min_m + c.altitude_max_m) / 2 : c.altitude_min_m; if (a == null) return null; return a < 1200 ? "Below 1,200 m" : a < 1500 ? "1,200 to 1,500 m" : a < 1800 ? "1,500 to 1,800 m" : a < 2100 ? "1,800 to 2,100 m" : "2,100 m and up"; }]
   ];
   if (!list.length) empty(m, "Rate a few brews (outside dial-ins) to see what you like.");
@@ -351,7 +353,7 @@ function viewTaste() {
       const cell = el("div"); grid.appendChild(cell); cell.appendChild(el("h3", "", title));
       if (!rows.length) { cell.appendChild(el("p", "small", "Not filled in on your coffees yet.")); return; }
       const box = chartBox(cell);
-      Charts.hbars({ box, labelWidth: 112, domain: [0, 5], xTicks: [0, 1, 2, 3, 4, 5], color: "var(--one)", fmt: v => r1(v).toFixed(1) + "★",
+      Charts.hbars({ box, labelWidth: title === "Region" ? 150 : 112, domain: [0, 5], xTicks: [0, 1, 2, 3, 4, 5], color: "var(--one)", fmt: v => r1(v).toFixed(1) + "★",
         rows: rows.map(r => ({ label: r.label, value: r.value, sub: "(" + r.n + ")", tip: () => ({ title: title, rows: [{ value: r1(r.value).toFixed(1) + "★", label: r.label }, { value: String(r.n), label: r.n === 1 ? "rated brew" : "rated brews" }] }) })) });
       rows.forEach(r => tbl.push([title, r.label, r1(r.value).toFixed(1), r.n]));
     });
