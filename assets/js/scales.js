@@ -6,7 +6,7 @@
 window.SCALE = (function () {
   var CORE = ["sour", "sweet", "bitter", "balance"];   // everything stored on the -5..+5 slider scale (balance: old brews only)
   var PROFILE = ["sour", "sweet", "bitter"];           // the taste sliders
-  // Balance: how well the tastes work together (harmony, not intensity), rated on its own from 0 to 5, or not at all.
+  // Balance: how well the flavours come together (harmony, not intensity), rated on its own from 0 to 5, or not at all.
   // Not worked out from sour, sweet or bitter. Saved per taster with their stars (brew_ratings.balance).
   var BALANCE = [
     [0, "Completely unbalanced", "The flavours feel disconnected, clash, or one characteristic overwhelmingly dominates."],
