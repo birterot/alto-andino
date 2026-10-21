@@ -293,6 +293,7 @@ details.calcbox summary{font-size:15px}
 .pick{display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:12px;border-radius:10px;border:1px solid var(--line);border-top:3px solid var(--s);background:var(--f);color:var(--t);font:inherit;cursor:pointer}
 .pick small{display:block;margin-top:2px;opacity:.85}
 .older{margin-top:12px;font-size:13px}
+.lastbag{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--mut)}
 .older summary{cursor:pointer}
 .older .lnk{display:block;margin-top:6px;text-align:left}
 .rate{margin-top:10px}
@@ -749,7 +750,7 @@ function safeUrl(u) {
 }
 // list: [{r: stars or null, d: dial-in?}], oldest first.
 // Dial-in brews are not counted. Headline = average of all counted brews, below it the best counted brew.
-function rateBlock(list) {
+function rateBlock(list, ofBag) {
   const rated = (list || []).filter(x => x.r != null);
   if (!rated.length) return null;
   const counted = rated.filter(x => !x.d), dial = rated.length - counted.length;
@@ -762,7 +763,7 @@ function rateBlock(list) {
   const top = el("div", "avg");
   top.appendChild(el("span", "num", avg.toFixed(1)));
   const st = Stars.row(avg, avg.toFixed(1) + " of 5 stars"); st.classList.add("st"); top.appendChild(st);
-  top.appendChild(el("span", "lbl", counted.length === 1 ? "from 1 counted brew" : "average of all " + counted.length + " counted brews"));
+  top.appendChild(el("span", "lbl", (counted.length === 1 ? "from 1 counted brew" : "average of all " + counted.length + " counted brews") + (ofBag ? " of this bag" : "")));
   box.appendChild(top);
   if (counted.length > 1) {
     const best = Math.max(...counted.map(x => x.r));
@@ -870,7 +871,12 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
   if (c.flavour_tags && c.flavour_tags.length) {
     const t = el("div", "tags"); c.flavour_tags.forEach(x => t.appendChild(el("span", "chip", x))); b.appendChild(t);
   }
-  const rt = rateBlock(ratings); if (rt) b.appendChild(rt);
+  const rt = rateBlock(ratings, bags && bags.length > 1); if (rt) b.appendChild(rt);
+  else if (bags && bags.length > 1) {   // a new bag without rated brews yet: the bag before as a hint
+    const bagAvg = o => { const c = (coffeeRates[o.id] || []).filter(x => x.r != null && !x.d); return c.length ? c.reduce((a, x) => a + x.r, 0) / c.length : null; };
+    const k = bags.slice(1).findIndex(o => bagAvg(o) != null);
+    if (k >= 0) { const v = bagAvg(bags[k + 1]), p = el("p", "lastbag", "Not rated yet. The bag before: "); p.append(Stars.row(v, v.toFixed(1) + " of 5 stars"), document.createTextNode(" " + v.toFixed(1))); b.appendChild(p); }
+  }
   if (c.roast_date) b.appendChild(el("p", "", "Roasted " + ago(c.roast_date) + " (" + fmtD(c.roast_date) + ")"));
   else if (c.purchase_date) b.appendChild(el("p", "", "Bought " + ago(c.purchase_date) + " (" + fmtD(c.purchase_date) + "), roast date unknown"));
   if (c.open_date) b.appendChild(el("p", "", "Opened " + ago(c.open_date) + " (" + fmtD(c.open_date) + ")"));
@@ -911,7 +917,8 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
   if (bags && bags.length > 1) {
     const d = el("details", "older"); d.appendChild(el("summary", "", "Earlier bags (" + (bags.length - 1) + ")"));
     bags.slice(1).forEach((o, i) => {
-      const r = el("button", "lnk", "Bag " + (bags.length - 1 - i) + (o.roast_date ? ", roasted " + fmtD(o.roast_date) : "") + (o.finished_at ? ", finished" : "") + ", " + (coffeeCounts[o.id] || 0) + " brews");
+      const cnt = (coffeeRates[o.id] || []).filter(x => x.r != null && !x.d), av = cnt.length ? cnt.reduce((a, x) => a + x.r, 0) / cnt.length : null;   // each bag its own stars
+      const r = el("button", "lnk", "Bag " + (bags.length - 1 - i) + (o.roast_date ? ", roasted " + fmtD(o.roast_date) : "") + (o.finished_at ? ", finished" : "") + ", " + (coffeeCounts[o.id] || 0) + " brews" + (av != null ? ", " + av.toFixed(1) + "★" : ""));
       r.type = "button"; r.onclick = () => { location.hash = "c=" + o.id; };
       d.appendChild(r);
     });
@@ -1032,9 +1039,6 @@ function passCoffee(c) {
   return true;
 }
 
-function mergedRates(bags) {
-  return bags.flatMap(b => coffeeRates[b.id] || []).sort((x, y) => (x.t < y.t ? -1 : x.t > y.t ? 1 : 0));
-}
 function renderArchived(arch) {
   const box = $("archived"); box.textContent = "";
   if (!arch.length) return;
@@ -1066,7 +1070,7 @@ function renderCoffees() {
   active.forEach(c => { const k = gk(c); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(c); });
   const shown = [...groups.values()].filter(g => passCoffee(g[0]));
   if (!shown.length) { list.appendChild(el("p", "hint", "No coffees match these filters.")); return; }
-  shown.forEach(g => list.appendChild(card(g[0], coffeeUrls[g[0].photo_path], coffeeCounts[g[0].id] || 0, mergedRates(g), g, coffeeThumbs[g[0].photo_path])));
+  shown.forEach(g => list.appendChild(card(g[0], coffeeUrls[g[0].photo_path], coffeeCounts[g[0].id] || 0, coffeeRates[g[0].id] || [], g, coffeeThumbs[g[0].photo_path])));   // the stars of the current bag
 }
 ["flt-q", "flt-process", "flt-roast", "flt-open"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderCoffees)));
 
