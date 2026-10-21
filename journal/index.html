@@ -240,7 +240,16 @@ details.calcbox summary{font-size:15px}
 .dvrow button.on,.modes button.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
 .modes{display:flex;gap:8px;margin:8px 0 4px}
 /* Coffees | Recent activity, at the top of the Coffee Shelf */
-.vtabs{margin:10px 0 22px}
+.vtabs{margin:10px 0 22px;flex-wrap:wrap}
+/* My brews: everything you made or rated, with your Balance to change right there */
+#mlist .fi{cursor:default}
+.mine-bal{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.mine-bal .lb{font-size:13.5px;color:var(--mut);min-width:92px}
+.mine-bal .bal{margin:0;gap:5px;max-width:300px;flex:1}
+.mine-bal .bal button{min-height:38px;font-size:15px}
+.mine-bal .ok{font-size:13px;color:var(--mut)}
+.fi .old{font-size:12.5px;color:var(--mut);margin-top:4px}
+.fi .open{display:inline-block;margin-top:8px;font-size:13.5px;color:var(--ink)}
 .modes a{display:inline-flex;align-items:center;font-size:14px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none}
 .modes a.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
 /* Recent activity: one day after the other, newest first */
@@ -375,7 +384,7 @@ details.calcbox summary{font-size:15px}
     <h2>New coffee</h2>
     <div id="addhost"></div>
   </div>
-  <nav class="modes vtabs" id="vtabs" aria-label="Coffee Shelf" hidden><a href="#" data-v="list">Coffees</a><a href="#recent" data-v="recent">Recent activity</a></nav>
+  <nav class="modes vtabs" id="vtabs" aria-label="Coffee Shelf" hidden><a href="#" data-v="list">Coffees</a><a href="#recent" data-v="recent">Recent activity</a><a href="#mine" data-v="mine">My brews</a></nav>
   <div id="listview">
   <div id="listhost">
   <details class="add" id="addbox">
@@ -454,6 +463,17 @@ details.calcbox summary{font-size:15px}
     </div>
     <div id="feed"></div>
     <button type="button" class="btn ghost" id="rmore" hidden>Show older</button>
+  </div>
+
+  <div id="mineview" hidden>
+    <p class="hint" style="margin-top:0">Every brew you made or rated, newest first. Your Balance can be changed right here (tap it again to leave it unrated); for anything else, open the brew.</p>
+    <div class="filters" id="mfilters">
+      <select id="mflt-who" aria-label="Which brews"><option value="">Made or rated</option><option value="rated">Rated by me</option><option value="made">Made by me</option></select>
+      <select id="mflt-bal" aria-label="Balance"><option value="">Any Balance</option><option value="none">Balance not rated</option><option value="old">From the old slider</option></select>
+    </div>
+    <p class="hint" id="mcount"></p>
+    <div id="mlist"></div>
+    <button type="button" class="btn ghost" id="mmore" hidden>Show more</button>
   </div>
 
   <div id="detail" hidden>
@@ -2033,14 +2053,15 @@ function route() {
   if (!me) return;
   const noHH = hhOk && !hhs.length;   // signed in, but not in a household yet: start or join one first
   $("hhview").hidden = !noHH;
-  if (noHH) { ["listview", "recentview", "vtabs", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); return; }
+  if (noHH) { ["listview", "recentview", "mineview", "vtabs", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); return; }
   if (store.get("alto.friend")) { location.href = "../friends/index.html"; return; }   // came with a friend link: back to it, now signed in
-  const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)((?:&[^&]*)*)$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/), isRecent = hash === "#recent";
-  $("listview").hidden = !!m || isLog || !!add || isRecent;
+  const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)((?:&[^&]*)*)$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/), isRecent = hash === "#recent", isMine = hash === "#mine";
+  $("listview").hidden = !!m || isLog || !!add || isRecent || isMine;
   $("recentview").hidden = !isRecent;
+  $("mineview").hidden = !isMine;
   $("vtabs").hidden = !!m || isLog || !!add;
-  $("vtabs").querySelectorAll("a").forEach(a => { const on = a.dataset.v === (isRecent ? "recent" : "list"); a.classList.toggle("on", on); if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
-  if (!m) { const fromRecent = isRecent; $("dback").href = fromRecent ? "#recent" : "#"; $("dback").textContent = fromRecent ? "Recent activity" : "All coffees"; }
+  $("vtabs").querySelectorAll("a").forEach(a => { const on = a.dataset.v === (isRecent ? "recent" : isMine ? "mine" : "list"); a.classList.toggle("on", on); if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  if (!m) { $("dback").href = isRecent ? "#recent" : isMine ? "#mine" : "#"; $("dback").textContent = isRecent ? "Recent activity" : isMine ? "My brews" : "All coffees"; }
   $("detail").hidden = !m;
   $("pickview").hidden = !isLog;
   $("addview").hidden = !add;
@@ -2057,6 +2078,7 @@ function route() {
   }
   else if (isLog) pickList();
   else if (isRecent) loadFeed();
+  else if (isMine) loadMine();
   else { tryRestoreCoffee(); load(); }
 }
 
@@ -2175,6 +2197,72 @@ function feedCard(x) {
   return line("../cupping/#s=" + x.sid, "cup", parts, hhmm(x.t), cs[0]);
 }
 ["rflt-kind", "rflt-who"].forEach(id => $(id).addEventListener("change", renderFeed));
+
+// ---------- My brews: every brew you made or rated, to go through them (and change your Balance on the spot) ----------
+let mineData = [], mineCoffees = {}, mineShow = 30, mineId = 0;
+async function loadMine() {
+  const my = ++mineId;
+  const { data: cs, error } = await inHH(db.from("coffees").select("id,name,roaster,roast_level,process,group_id"));
+  if (my !== mineId) return;
+  if (error) { say("Could not load your brews: " + error.message); return; }
+  mineCoffees = {}; cs.forEach(c => { mineCoffees[c.id] = c; });
+  const ids = cs.map(c => c.id);
+  if (!ids.length) { mineData = []; renderMine(); return; }
+  const { data, error: e2 } = await db.from("brews").select("id,coffee_id,brewed_at,device,dose_g,yield_g,water_g,time_s,is_dialin,made_by,created_by,recipe, brew_ratings(id,rater_id,is_guest,rating,balance,drink,milk), brew_scores(attribute,score,rating_id)")
+    .in("coffee_id", ids).order("brewed_at", { ascending: false }).limit(1000);
+  if (my !== mineId) return;
+  if (e2) { say("Could not load your brews: " + e2.message); return; }
+  mineData = (data || []).map(b => {
+    const r = (b.brew_ratings || []).find(x => !x.is_guest && x.rater_id === me.id) || null;
+    const old = r ? (b.brew_scores || []).find(x => x.rating_id === r.id && x.attribute === "balance") : null;
+    return { b, r, old: old ? old.score - 5 : null, made: (b.made_by || b.created_by) === me.id };
+  }).filter(x => x.made || x.r);
+  renderMine();
+}
+function renderMine() {
+  const who = $("mflt-who").value, bal = $("mflt-bal").value;
+  const list = mineData.filter(x => (!who || (who === "rated" ? !!x.r : x.made)) && (!bal || (bal === "none" ? x.r && x.r.balance == null : x.old != null)));
+  const box = $("mlist"); box.textContent = "";
+  $("mcount").textContent = mineData.length ? list.length + (list.length === 1 ? " brew" : " brews") + (list.length !== mineData.length ? " of " + mineData.length : "") : "";
+  if (!mineData.length) { box.appendChild(el("p", "hint", "No brews of yours yet. Brews you make or rate show up here.")); $("mmore").hidden = true; return; }
+  if (!list.length) { box.appendChild(el("p", "hint", "No brews match these filters.")); $("mmore").hidden = true; return; }
+  list.slice(0, mineShow).forEach(x => box.appendChild(mineCard(x)));
+  $("mmore").hidden = list.length <= mineShow;
+}
+function mineCard(x) {
+  const b = x.b, c = mineCoffees[b.coffee_id], a = el("article", "fi");
+  if (c) applyLook(a, c);
+  const top = el("div", "ft"); top.append(el("strong", "", c ? c.name : "A coffee"), el("time", "", fmtDT(new Date(b.brewed_at)))); a.appendChild(top);
+  const maker = b.made_by || b.created_by, dv = DEV_OLD[b.device] || b.device, dev = dv && /^(Manual|Semi-automatic|Moka|French|Pour|Cold|Turkish|Drip|Filter|Fully)\b/.test(dv) ? dv[0].toLowerCase() + dv.slice(1) : dv;
+  a.appendChild(el("p", "", [(maker === me.id ? "Brewed by you" : "Brewed by " + (nameOf(maker) || "someone")) + (dev ? " on the " + dev : ""), b.is_dialin ? "dial-in" : null].filter(Boolean).join(" \u00B7 ")));
+  if (!x.r) { a.appendChild(el("p", "", "You did not rate this one.")); }
+  else {
+    if (x.r.rating != null) { const s = el("div", "rr"), sp = el("span"); sp.append(Stars.row(Number(x.r.rating), "Your stars: " + Stars.text(Number(x.r.rating))), document.createTextNode("Your stars" + (x.r.drink ? ", " + drinkText(x.r.drink, x.r.milk).toLowerCase() : ""))); s.appendChild(sp); a.appendChild(s); }
+    const row = el("div", "mine-bal"), seg = el("div", "bal"), ok = el("span", "ok");
+    row.append(el("span", "lb", "Your Balance"), seg, ok);
+    const draw = () => seg.querySelectorAll("button").forEach(btn => btn.setAttribute("aria-checked", String(x.r.balance != null && +btn.dataset.v === Number(x.r.balance))));
+    SCALE.BALANCE.forEach(([v, name]) => {
+      const btn = el("button", "", String(v)); btn.type = "button"; btn.dataset.v = v; btn.title = name;
+      btn.setAttribute("role", "radio"); btn.setAttribute("aria-label", v + ": " + name);
+      btn.onclick = async () => {
+        const nv = x.r.balance != null && Number(x.r.balance) === v ? null : v, was = x.r.balance;
+        x.r.balance = nv; draw(); ok.textContent = "Saving...";
+        const { data, error } = await db.from("brew_ratings").update({ balance: nv }).eq("id", x.r.id).select("id");
+        if (error || !data || !data.length) { x.r.balance = was; draw(); ok.textContent = "Not saved" + (error ? ": " + error.message : ""); return; }
+        ok.textContent = nv == null ? "Saved: not rated" : "Saved: " + SCALE.balanceName(nv).toLowerCase();
+        if ($("mflt-bal").value === "none" && nv != null) setTimeout(() => { if ($("mflt-bal").value === "none") renderMine(); }, 1200);   // done: it leaves the "not rated" list
+      };
+      seg.appendChild(btn);
+    });
+    seg.setAttribute("role", "radiogroup"); seg.setAttribute("aria-label", "Your Balance, from 0 to 5"); draw();
+    a.appendChild(row);
+    if (x.old != null) a.appendChild(el("p", "old", "Before the switch: " + (x.old > 0 ? "+" : "") + x.old + " on the old slider"));
+  }
+  const op = el("a", "open", "Open the brew \u2192"); op.href = "#c=" + b.coffee_id + "&b=" + b.id; a.appendChild(op);
+  return a;
+}
+["mflt-who", "mflt-bal"].forEach(id => $(id).addEventListener("change", () => { mineShow = 30; renderMine(); }));
+$("mmore").onclick = () => { mineShow += 30; renderMine(); };
 $("rmore").onclick = () => { feedN += 40; loadFeed(); };
 
 // "Log a brew": choose the device first (or the coffee first). Coffees suitable for the device come first.
