@@ -14,7 +14,7 @@
      K6 numbers are clicks counted from zero (manufacturer's table). Add a grinder by copying a block; leave feel out for no suggestion.
    PREHEAT: the Flair 58 preheat settings: id, label, about how hot in Celsius.
    FLAIR_BY_ROAST / SEMI_BY_ROAST: which manual / semi-automatic espresso recipe (and so which preheat setting or temperature) fits each roast level.
-   BREW_TYPES: the kinds of brewing a coffee can be suitable for.
+   BREW_TYPES: the kinds of brewing a coffee can be suitable for, with the devices each one means.
    ROAST_COLOURS: the colours of a coffee card, by roast level, light to dark (list order = the little roast scale).
      [fill light, fill dark, line light, line dark, text light, text dark]. Unknown roast levels use the process colours. */
 window.DEFAULTS = {
@@ -40,7 +40,11 @@ window.DEFAULTS = {
   PREHEAT: [["low", "Low", 85], ["medium", "Medium", 90], ["high", "High", 95]],
   FLAIR_BY_ROAST: { "light": "flair-light", "medium-light": "flair-light", "medium": "flair-med", "medium-dark": "flair-dark", "dark": "flair-dark" },
   SEMI_BY_ROAST: { "light": "semi-light", "medium-light": "semi-light", "medium": "semi-med", "medium-dark": "semi-dark", "dark": "semi-dark" },
-  BREW_TYPES: [["espresso", "Espresso"], ["filter", "Filter"], ["immersion", "Immersion"], ["moka", "Moka"]],
+  // [id, name, which devices that means]
+  BREW_TYPES: [["espresso", "Espresso", "espresso machines, manual or with a pump"],
+               ["filter", "Filter", "water poured through: V60, Chemex, Kalita, filter machine"],
+               ["immersion", "Immersion", "the coffee steeps in the water: French press, AeroPress, Clever Dripper, cold brew"],
+               ["moka", "Moka", "the moka pot on the stove"]],
   ROAST_COLOURS: [
     ["Light",        ["#F7EFDC", "#2E2618", "#C9A15A", "#D9B878", "#5E4720", "#EAD7AE"]],
     ["Medium-light", ["#F2E5CD", "#2F2416", "#B5853F", "#D2A866", "#56401C", "#E6CDA0"]],

@@ -269,6 +269,11 @@ details.calcbox summary{font-size:15px}
 .sfor label.chk:has(input:checked){border-color:var(--act);background:var(--act);color:var(--on-act)}
 .sfor label.chk input{width:16px;height:16px;accent-color:var(--bg)}
 .sfor legend{margin-bottom:2px}
+.sfordef{margin:8px 0 0;font-size:13px;color:var(--mut)}
+.sfordef summary{cursor:pointer;padding:4px 0}
+.sfordef dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:4px 0 0}
+.sfordef dt{font-weight:600;color:var(--ink)}
+.sfordef dd{margin:0}
 .curve{max-width:420px;margin-top:12px;color:var(--mut)}
 .curve svg{display:block;width:100%;height:auto;color:var(--mut)}
 .curve .ln{stroke:var(--accent)}
@@ -405,7 +410,8 @@ details.calcbox summary{font-size:15px}
         <input id="f-roast-new" hidden>
       </label>
       <fieldset class="sfor adv" id="f-sfor"><legend>Suitable for</legend></fieldset>
-      <p class="hint adv">How you would brew it. The log a brew page suggests coffees by this. An omni roast: tick both Espresso and Filter.</p>
+      <details class="sfordef adv"><summary>What do these mean?</summary><dl id="f-sfordef"></dl></details>
+      <p class="hint adv">How you would brew it. The log a brew page suggests coffees by this. An omni roast suits them all: tick all four.</p>
       <label>Flavour notes<input id="f-tags" placeholder="chocolaty, nutty, red fruit"></label>
       <p class="hint">Separate with commas. The sour, sweet and bitter sliders and the Balance rating are always there when logging a brew.</p>
       <label id="rdlab">Roast date<input type="date" id="f-rd"></label>
@@ -625,7 +631,8 @@ function chosen(id) {
 fill("f-process", Object.keys(PAL), []); fill("f-roast", window.LISTS.roast, [], true);   // roast level: light to dark only (omni is "Suitable for")
 otherBox("f-process");
 ((window.DEFAULTS && window.DEFAULTS.BREW_TYPES) || []).forEach(t => {
-  const l = el("label", "chk"), i = el("input"); i.type = "checkbox"; i.value = t[0]; l.append(i, document.createTextNode(" " + t[1])); $("f-sfor").appendChild(l);
+  const l = el("label", "chk"), i = el("input"); i.type = "checkbox"; i.value = t[0]; l.append(i, document.createTextNode(" " + t[1])); if (t[2]) l.title = t[2]; $("f-sfor").appendChild(l);
+  if (t[2]) { const d = $("f-sfordef"); d.append(el("dt", "", t[1]), el("dd", "", t[2])); }   // what each one means, e.g. the AeroPress is immersion
 });
 const sforVals = () => [...document.querySelectorAll("#f-sfor input:checked")].map(i => i.value);
 const setSfor = arr => document.querySelectorAll("#f-sfor input").forEach(i => { i.checked = (arr || []).includes(i.value); });
