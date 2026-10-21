@@ -748,7 +748,7 @@ function safeUrl(u) {
   try { const x = new URL(u); return x.protocol === "https:" || x.protocol === "http:" ? x.href : null; } catch (e) { return null; }
 }
 // list: [{r: stars or null, d: dial-in?}], oldest first.
-// Dial-in brews are not counted. Headline = average of the last three counted brews, below it the best counted brew.
+// Dial-in brews are not counted. Headline = average of all counted brews, below it the best counted brew.
 function rateBlock(list) {
   const rated = (list || []).filter(x => x.r != null);
   if (!rated.length) return null;
@@ -758,11 +758,11 @@ function rateBlock(list) {
     box.appendChild(el("p", "lbl", "Only dial-in brews rated so far (" + dial + "). They do not count toward the rating."));
     return box;
   }
-  const last = counted.slice(-3), avg = last.reduce((a, b) => a + b.r, 0) / last.length;
+  const avg = counted.reduce((a, b) => a + b.r, 0) / counted.length;   // all counted brews (dial-ins left out)
   const top = el("div", "avg");
   top.appendChild(el("span", "num", avg.toFixed(1)));
   const st = Stars.row(avg, avg.toFixed(1) + " of 5 stars"); st.classList.add("st"); top.appendChild(st);
-  top.appendChild(el("span", "lbl", last.length === 1 ? "from 1 counted brew" : "average of the last " + last.length + " counted brews"));
+  top.appendChild(el("span", "lbl", counted.length === 1 ? "from 1 counted brew" : "average of all " + counted.length + " counted brews"));
   box.appendChild(top);
   if (counted.length > 1) {
     const best = Math.max(...counted.map(x => x.r));
