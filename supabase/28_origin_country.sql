@@ -5,8 +5,7 @@
 
 begin;
 
-create temporary table origin_names (name text primary key, country text not null, regional boolean not null) on commit drop;
-insert into origin_names values
+with origin_names (name, country, regional) as (values
   ('bolivia', 'Bolivia', false),
   ('brazil', 'Brazil', false),
   ('burundi', 'Burundi', false),
@@ -100,9 +99,7 @@ insert into origin_names values
   ('flores', 'Indonesia', true),
   ('bali', 'Indonesia', true),
   ('yunnan', 'China', true)
-on conflict do nothing;
-
-with p as (
+), p as (
   select c.id, x.part, x.n
   from public.coffees c, regexp_split_to_table(btrim(c.origin), '\s*[,;/|]\s*|\s+[-–]\s+') with ordinality as x(part, n)
   where nullif(btrim(c.origin), '') is not null and btrim(x.part) <> ''
