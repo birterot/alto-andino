@@ -1497,7 +1497,7 @@ $("stars").appendChild(el("span", "starval")).id = "starval";
   };
   let drag = null;
   box.addEventListener("pointerdown", e => {
-    if (e.button > 0) return;
+    if (e.button > 0 || e.pointerType === "touch") return;   // touch: handled by the touch events below
     drag = { id: e.pointerId, x: e.clientX, start: rating, moved: false };
     try { box.setPointerCapture(e.pointerId); } catch (err) {}
     setRating(at(e.clientX)); e.preventDefault();
@@ -1516,6 +1516,27 @@ $("stars").appendChild(el("span", "starval")).id = "starval";
   };
   box.addEventListener("pointerup", end);
   box.addEventListener("pointercancel", e => { if (drag && e.pointerId === drag.id) { setRating(drag.start); drag = null; } });
+  // On the iPhone, sliding is done with touch events: they keep following the finger even when it leaves the stars,
+  // and stop the page from scrolling while you slide. (The pointer events above then stay out of the way.)
+  let tdrag = null;
+  box.addEventListener("touchstart", e => {
+    if (e.touches.length !== 1) return;
+    const x = e.touches[0].clientX; tdrag = { x, start: rating, moved: false, last: x }; drag = null;
+    setRating(at(x)); e.preventDefault();
+  }, { passive: false });
+  box.addEventListener("touchmove", e => {
+    if (!tdrag) return;
+    const x = e.touches[0].clientX; tdrag.last = x;
+    if (Math.abs(x - tdrag.x) > 6) tdrag.moved = true;
+    setRating(at(x)); e.preventDefault();
+  }, { passive: false });
+  box.addEventListener("touchend", e => {
+    if (!tdrag) return;
+    const v = at(tdrag.last);
+    if (!tdrag.moved && v !== null && v === tdrag.start) setRating(null); else setRating(v);
+    tdrag = null; e.preventDefault(); renderTasters(); userChanged();
+  }, { passive: false });
+  box.addEventListener("touchcancel", () => { if (tdrag) { setRating(tdrag.start); tdrag = null; } });
   box.addEventListener("keydown", e => {
     const k = e.key; let v = rating == null ? 0 : rating;
     if (k === "ArrowRight" || k === "ArrowUp") v = Math.min(5, v + 0.5); else if (k === "ArrowLeft" || k === "ArrowDown") v = Math.max(0, v - 0.5);
