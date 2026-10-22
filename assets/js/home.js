@@ -20,20 +20,20 @@
   var hi = h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : h < 22 ? "Good evening" : "Good night";
   var top = el("div", "hi"); top.appendChild(el("p", "greet", hi + (name ? ", " + name : "")));
 
-  // days in a row and this month, from the times of your household's brews
-  if (shelf && shelf.rates) {
-    var days = {}, month = 0, now = new Date(), key = function (d) { return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate(); };
-    Object.keys(shelf.rates).forEach(function (id) { (shelf.rates[id] || []).forEach(function (x) {
-      if (!x.t) return; var d = new Date(x.t); days[key(d)] = 1;
-      if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) month++;
-    }); });
+  // only you: days in a row you had coffee, and this month what you brewed and what you drank (= rated)
+  if (shelf && Array.isArray(shelf.my)) {
+    var days = {}, made = 0, drank = 0, now = new Date(), key = function (d) { return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate(); };
+    shelf.my.forEach(function (x) {
+      var d = new Date(x[0]); if (x[2]) days[key(d)] = 1;
+      if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) { made += x[1]; drank += x[2]; }
+    });
     var run = 0, d = new Date(now);
     if (!days[key(d)]) d.setDate(d.getDate() - 1);   // no coffee yet today: the streak counts until yesterday
     while (days[key(d)]) { run++; d.setDate(d.getDate() - 1); }
     var bits = [];
     if (run >= 2) bits.push(run + " days in a row with coffee");
-    if (month) bits.push(month + (month === 1 ? " brew" : " brews") + " this month");
-    if (bits.length) top.appendChild(el("p", "stat", bits.join(" · ")));
+    if (made || drank) bits.push("this month you brewed " + made + " and drank " + drank);
+    if (bits.length) { var st = bits.join(" · "); top.appendChild(el("p", "stat", st[0].toUpperCase() + st.slice(1))); }
   }
   box.appendChild(top);
 

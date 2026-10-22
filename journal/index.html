@@ -1011,6 +1011,14 @@ async function load() {
   coffeeData = data; coffeeCounts = counts; coffeeRates = rates; coffeeUsed = used;
   // the brews of the last day and a half, for the caffeine on Home (who rated them drank them)
   const byId = {}, since = Date.now() - 36 * 3600e3; data.forEach(c => { byId[c.id] = c; });
+  // and your own brews of the last two months, for "you brewed ... and drank ..." on Home: [time, made it, drank it]
+  // (drank = rated it, or made it and nobody rated it, as for the caffeine; dial-ins nobody rated are not drunk)
+  const since2 = Date.now() - 62 * 864e5;
+  myBrews = !me ? null : (bs || []).filter(b => b.brewed_at && Date.parse(b.brewed_at) >= since2).map(b => {
+    const rs = b.brew_ratings || [], made = (b.made_by || b.created_by) === me.id;
+    const drank = rs.length ? rs.some(r => !r.is_guest && r.rater_id === me.id) : made && !b.is_dialin;
+    return made || drank ? [Date.parse(b.brewed_at), made ? 1 : 0, drank ? 1 : 0] : null;
+  }).filter(Boolean);
   recentBrews = (bs || []).filter(b => b.brewed_at && Date.parse(b.brewed_at) >= since && Number(b.dose_g) > 0).map(b => cafRow(b, byId[b.coffee_id]));
   const paths = data.map(c => c.photo_path).filter(Boolean);
   const known = photoLinks(paths, true);   // links still valid from earlier visits: no waiting
@@ -1072,7 +1080,7 @@ async function makeThumbs(paths) {
 }
 // the shelf as it was last time, shown at once when the app opens (the fresh data replaces it right after)
 const SHELF = "alto.shelf.v1";
-let recentBrews = null;
+let recentBrews = null, myBrews = null;
 // one brew, as Home's caffeine needs it: when, grams, dial-in, who made it, who rated it (g = a guest), and the kind of coffee
 function cafRow(b, c) {
   const v = String((c && c.variety) || "").toLowerCase();
@@ -1083,7 +1091,8 @@ function saveShelf() {
   try {
     const old = recentBrews ? null : JSON.parse(localStorage.getItem(SHELF) || "null");
     localStorage.setItem(SHELF, JSON.stringify({ u: me && me.id, hh, t: Date.now(), coffees: coffeeData, counts: coffeeCounts, rates: coffeeRates, used: coffeeUsed, cups: coffeeCups, dose: coffeeDose, nob: noBalance,
-      cb: recentBrews || (old && old.u === (me && me.id) ? old.cb : null), cbt: recentBrews ? Date.now() : old && old.cbt }));
+      cb: recentBrews || (old && old.u === (me && me.id) ? old.cb : null), cbt: recentBrews ? Date.now() : old && old.cbt,
+      my: myBrews || (old && old.u === (me && me.id) ? old.my : null) }));
   } catch (e) {}
 }
 function shelfFromCache() {
