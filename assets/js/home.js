@@ -40,6 +40,35 @@
   if (shelf) showStat(shelf.my);
   box.appendChild(top);
 
+  // a short tour, once per phone (Settings can show it again): the five things that matter, each with a way there
+  var TOUR = [
+    ["Add a coffee", "Put your bag on the Coffee Shelf: name, roaster, a photo, the bag size and the roast date. Home then shows how many cups are left.", "journal/index.html#addcoffee", "Add a coffee"],
+    ["Log a brew", "At the machine: pick the coffee and device, note grind, dose and time. Under \u201CFor\u201D, choose who drinks it.", "journal/index.html#log", "Log a brew"],
+    ["Rate the cup", "Later, on your own phone: stars, taste, body and Balance. Cups waiting for you show up here on Home as \u201CTo rate\u201D.", "journal/index.html#torate", "My cups to rate"],
+    ["Notifications", "Turn them on in Settings (in the app opened from the Home Screen), and you hear when someone made you a coffee.", "settings/index.html#pushset", "Turn them on"],
+    ["Trends and Friends", "Trends shows your sweet spot, freshness and the brewing chart. With Friends you compare fun stats with other households.", "trends/index.html", "See Trends"]
+  ];
+  var tourOff = false; try { tourOff = !!localStorage.getItem("alto.tour.done"); } catch (e) { tourOff = true; }
+  if (session && !tourOff) {
+    var tc = el("div", "tour"), ti = 0; tc.setAttribute("role", "region"); tc.setAttribute("aria-label", "A quick tour");
+    var done = function () { try { localStorage.setItem("alto.tour.done", "1"); } catch (e) {} tc.remove(); };
+    var tdraw = function () {
+      var s = TOUR[ti]; tc.textContent = "";
+      var hd = el("div", "nh"); hd.appendChild(el("span", "nk", "Quick tour \u00B7 " + (ti + 1) + " of " + TOUR.length));
+      var sk = el("button", "tskip", "Skip"); sk.type = "button"; sk.onclick = done; hd.appendChild(sk);
+      tc.append(hd, el("p", "tt", s[0]), el("p", "nt", s[1]));
+      var row = el("div", "trow"), go = el("a", "go", s[3] + " \u2192"); go.href = s[2];
+      go.addEventListener("click", function () { if (ti === TOUR.length - 1) done(); else { try { sessionStorage.setItem("alto.tour.at", String(ti + 1)); } catch (e) {} } });
+      row.appendChild(go);
+      var nav = el("span", "tnav");
+      if (ti > 0) { var bk = el("button", "", "Back"); bk.type = "button"; bk.onclick = function () { ti--; tdraw(); }; nav.appendChild(bk); }
+      var nx = el("button", "next", ti === TOUR.length - 1 ? "Done" : "Next"); nx.type = "button"; nx.onclick = function () { if (ti === TOUR.length - 1) done(); else { ti++; tdraw(); } };
+      nav.appendChild(nx); row.appendChild(nav); tc.appendChild(row);
+    };
+    try { var at = +sessionStorage.getItem("alto.tour.at"); if (at > 0 && at < TOUR.length) ti = at; } catch (e) {}   // back from "Show me": the next step
+    tdraw(); box.appendChild(tc);
+  }
+
   if (!session) {   // signed out (for example after clearing the browser's data): say so here, not only on the next page
     var so = el("div", "note out");
     so.appendChild(el("div", "nh")).appendChild(el("span", "nk", "Signed out"));

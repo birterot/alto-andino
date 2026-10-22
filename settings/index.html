@@ -94,7 +94,7 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
   </section>
 
   <div class="bar"><button class="go" id="save" type="submit">Save settings</button><p id="msg" role="status"></p></div>
-  <p class="foot"><span id="who"></span> <a class="lnk" href="../journal/index.html">Household</a> <button class="lnk" id="out" type="button">Sign out</button></p>
+  <p class="foot"><span id="who"></span> <a class="lnk" href="../journal/index.html">Household</a> <button class="lnk" id="tour" type="button">Show the tour again</button> <button class="lnk" id="out" type="button">Sign out</button></p>
 </form>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
@@ -187,6 +187,7 @@ $("sf").onsubmit = async e => {
 };
 // the message next to the button, briefly highlighted so it is not missed
 function flash(t) { const m = $("msg"); m.textContent = t; m.classList.remove("on"); void m.offsetWidth; m.classList.add("on"); }
+$("tour").onclick = () => { try { localStorage.removeItem("alto.tour.done"); sessionStorage.removeItem("alto.tour.at"); } catch (e) {} location.href = "../index.html"; };
 $("out").onclick = async () => { try { localStorage.removeItem("alto.shelf.v1"); localStorage.removeItem("alto.photolinks.v1"); localStorage.removeItem("alto.myname"); localStorage.removeItem("alto.friendline"); } catch (e) {} await db.auth.signOut(); };
 // ----- notifications on this phone (web push; on an iPhone only in the app opened from the Home Screen) -----
 const PUSH = {
