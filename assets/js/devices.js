@@ -113,5 +113,8 @@
     var t = el("button", "tab " + m.id, m.tab || m.name); t.type = "button"; t.setAttribute("role", "tab"); t.setAttribute("data-t", m.tab || m.name);
     t.onclick = function () { cur = i; vi = 0; ri = 0; di = 0; render(); }; tb.appendChild(t);
   });
+  // a link straight to one device: devices.html#aero (from the brew form and the search)
+  var go = function () { var h = location.hash.slice(1), k = D.findIndex(function (m) { return m.id === h; }); if (k >= 0) { cur = k; vi = 0; ri = 0; di = 0; } };
+  go(); window.addEventListener("hashchange", function () { go(); render(); });
   render();
 })();

@@ -240,6 +240,17 @@ details.calcbox summary{font-size:15px}
 .dvrow button,.modes button{font:inherit;font-size:14px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
 .dvrow button.on,.modes button.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
 .modes{display:flex;gap:8px;margin:8px 0 4px}
+.how{margin-top:10px}
+.how summary{font-weight:600}
+.how .howt{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:10px 0 0;font-size:14px}
+.how .howt dt{color:var(--mut)}.how .howt dd{margin:0}
+.how .hows{margin:10px 0 6px;padding-left:20px;font-size:14px}
+.how .hows li{margin:4px 0}
+.how .lnk{margin-top:4px}
+.calcuse{margin:0 0 12px;padding:12px 14px;border-radius:12px;border:1px solid var(--act);background:var(--card);font-size:14px}
+.calcuse .acts{display:flex;gap:8px;margin-top:8px;align-items:center}
+.draftc{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px;padding:12px 14px;border-radius:12px;border:1px solid var(--act);background:var(--card);color:var(--ink);text-decoration:none}
+.draftc strong{font-size:14.5px}.draftc span{font-size:13.5px;color:var(--mut)}
 /* Coffees | Recent activity, at the top of the Coffee Shelf */
 .vtabs{margin:10px 0 22px;flex-wrap:wrap}
 /* My brews: everything you made or rated, with your Balance to change right there */
@@ -343,8 +354,8 @@ details.calcbox summary{font-size:15px}
 <h1>Coffee Shelf</h1>
 
 <form id="login" hidden>
-  <div class="modes" id="authmodes"><button type="button" data-m="in">Sign in</button><button type="button" data-m="up">Create account</button></div>
-  <p class="sub" id="authsub"></p>
+  <div class="modes" id="authmodes"><button type="button" data-m="in" class="on">Sign in</button><button type="button" data-m="up">Create account</button></div>
+  <p class="sub" id="authsub">Sign in to your Coffee Shelf.</p>
   <p class="invited" id="invited" hidden>You have been invited to a household. Sign in or create an account, and you join it right away.</p>
   <label id="nmlab" hidden>Your name<input id="nm" maxlength="40" autocomplete="nickname" placeholder="Shown on the brews you make"></label>
   <label>Email<input id="em" type="email" autocomplete="username" required></label>
@@ -354,6 +365,10 @@ details.calcbox summary{font-size:15px}
   <button class="go" id="authgo">Sign in</button>
   <p><button class="lnk" type="button" id="forgot">Forgot your password?</button></p>
 </form>
+<script>
+// Not signed in on this phone: show the sign-in form straight away, instead of waiting for the login check (no jump)
+try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-token$/.test(k); })) { document.getElementById("login").hidden = false; document.getElementById("captcha").hidden = false; } } catch (e) {}   // the check box keeps its place, so nothing moves when it appears
+</script>
 <form id="newpw" hidden>
   <p class="sub">Choose a new password.</p>
   <label>New password<input id="pw2" type="password" autocomplete="new-password" minlength="8" required></label>
@@ -483,6 +498,7 @@ details.calcbox summary{font-size:15px}
     <details class="add" id="brewbox" open>
       <summary id="brewsum">Log a brew</summary>
       <form id="bf">
+        <div class="calcuse" id="calcuse" hidden></div>
         <label id="cofflab">Coffee<select id="b-coffee"></select></label>
         <label id="mblab" class="adv" hidden>Made by<select id="b-madeby"></select></label>
         <p class="hint adv" id="mbhint" hidden></p>
@@ -490,6 +506,7 @@ details.calcbox summary{font-size:15px}
           <select id="b-device"></select>
           <input id="b-device-new" placeholder="Name of the new device" hidden>
         </label>
+        <details class="add how" id="howbox" hidden><summary id="howsum">How to brew</summary><div id="howbody"></div></details>
         <details class="add calcbox adv" id="calcbox">
           <summary>Plan with the calculator</summary>
           <div class="calc"><div id="calc"></div></div>
@@ -572,6 +589,7 @@ details.calcbox summary{font-size:15px}
 
   <div id="pickview" hidden>
     <h2>Log a brew</h2>
+    <div id="drafts"></div>
     <div class="modes" id="logmodes"><button type="button" data-m="device">By device</button><button type="button" data-m="coffee">By coffee</button></div>
     <div id="devpick"><p class="hint">Which device are you using?</p><div class="dvrow" id="devrow"></div></div>
     <div id="picklist"></div>
@@ -1913,7 +1931,30 @@ function partsToTime() {
 ["b-tmin", "b-tsec"].forEach(id => $(id).addEventListener("input", () => { partsToTime(); touched.add("b-time"); }));
 
 // ----- the form follows the device: espresso fields grey out for other devices, defaults and calculator follow
+// "How to brew": the method from Bean to Cup for the device you picked, right in the form (no need to leave it)
+function deviceGuide(name) {
+  const D = (window.DEVICES && DEVICES.D) || [], n = String(name || "").trim().toLowerCase();
+  if (!n) return null;
+  const names = d => [d.name, ...(d.logAs || [])].map(x => x.toLowerCase());
+  let d = D.find(x => names(x).includes(n)) || D.find(x => names(x).some(y => n.indexOf(y + " ") === 0));
+  if (!d) { const t = typeOf(name); d = D.find(x => x.id === ({ filter: "pour", immersion: /aero/.test(n) ? "aero" : "press", moka: "moka", espresso: "semi" }[t])); }
+  if (!d) return null;
+  const v = d.variants.find(x => x.n && n.indexOf(x.n.toLowerCase()) >= 0) || d.variants.find(x => x.n && x.n.toLowerCase() === n) || d.variants[0];
+  return { d, v };
+}
+function renderHow() {
+  const g = deviceGuide(chosen("b-device")), box = $("howbox");
+  box.hidden = !g; if (!g) return;
+  $("howsum").textContent = "How to brew: " + (g.v.n && !/method/i.test(g.v.n) ? g.v.n : g.d.name);
+  const b = $("howbody"); b.textContent = "";
+  if (g.v.tiles && g.v.tiles.length) { const t = el("dl", "howt"); g.v.tiles.forEach(([k, v]) => t.append(el("dt", "", k), el("dd", "", v))); b.appendChild(t); }
+  if (g.v.steps && g.v.steps.length) { const o = el("ol", "hows"); g.v.steps.forEach(x => o.appendChild(el("li", "", x))); b.appendChild(o); }
+  if (g.d.variants.length > 1) b.appendChild(el("p", "hint", "Other ways to do it: " + g.d.variants.filter(x => x !== g.v).map(x => x.n).join(", ") + ", in the chapter."));
+  const a = el("a", "lnk", "The whole chapter \u2192"); a.href = "../chapters/devices.html#" + g.d.id; b.appendChild(a);
+}
+$("howbox").addEventListener("toggle", () => store.set("alto.howopen", $("howbox").open ? "1" : ""));
 function applyType() {
+  renderHow(); if (store.get("alto.howopen") === "1" && !$("howbox").hidden) $("howbox").open = true;
   const esp = isEsp(typeOf(chosen("b-device")));
   ["b-pressure", "b-pibar", "b-pis"].forEach(id => {
     const i = $(id); i.disabled = !esp; i.closest("label").classList.toggle("off", !esp);
@@ -2022,9 +2063,25 @@ document.addEventListener("visibilitychange", () => { if (document.hidden) { sav
 window.addEventListener("pagehide", () => { saveDraft(); saveCoffeeDraft(); });
 
 // ----- start a fresh form / edit an old brew
+function peekHandoff() { try { const h = JSON.parse(localStorage.getItem("alto.handoff")); return h && h.t && Date.now() - h.t <= 3 * 3600e3 ? h : null; } catch (e) { return null; } }
+// unsaved brews you started (on any coffee), so they are easy to get back to
+function renderDrafts() {
+  const box = $("drafts"); box.textContent = "";
+  const list = [];
+  try { Object.keys(localStorage).filter(k => k.indexOf("alto.draft.brew.") === 0).forEach(k => {
+    const d = JSON.parse(localStorage.getItem(k) || "null"), id = k.slice("alto.draft.brew.".length), c = logCoffees.find(x => x.id === id) || coffeeData.find(x => x.id === id);
+    if (d && d.f && Date.now() - d.t <= 7 * 864e5 && c) list.push({ c, d });
+  }); } catch (e) {}
+  list.sort((x, y) => y.d.t - x.d.t).slice(0, 3).forEach(({ c, d }) => {
+    const a = el("a", "draftc"); a.href = "#c=" + c.id + "&new";
+    const what = [d.f["b-device"] && d.f["b-device"] !== "__other" ? d.f["b-device"] : null, d.f["b-dose"] ? d.f["b-dose"] + "\u00A0g" : null].filter(Boolean).join(", ");
+    a.append(el("strong", "", "Continue your unsaved brew"), el("span", "", c.name + (what ? " \u00B7 " + what : "")));
+    box.appendChild(a);
+  });
+}
 function readHandoff() {
   let h = null;
-  try { h = JSON.parse(localStorage.getItem("alto.handoff")); localStorage.removeItem("alto.handoff"); } catch (e) {}
+  try { h = JSON.parse(localStorage.getItem("alto.handoff")); localStorage.removeItem("alto.handoff"); if (h) localStorage.removeItem("alto.calc.last"); } catch (e) {}
   return h && h.t && Date.now() - h.t <= 3 * 3600e3 ? h : null;
 }
 function newBrewSetup(dev) {
@@ -2047,8 +2104,30 @@ function newBrewSetup(dev) {
     const hp = (id, v) => { if (v !== null && v !== undefined) { $(id).value = v; touched.add(id); } };
     hp("b-dose", h.dose_g); if (!isEsp(typeOf(chosen("b-device")))) hp("b-water", h.water_g); hp("b-yield", h.yield_g); hp("b-temp", h.temp_c); if (isFlair(chosen("b-device"))) hp("b-preheat", h.preheat);
     say("Numbers filled in from the calculator.");
+    edited = true; saveDraft();
   }
   $("calcbox").open = !restored && !h;
+  offerCalc(h || restored);
+}
+// You used the Calculator a little while ago but came here another way: offer its numbers (one tap), instead of typing them again
+function offerCalc(skip) {
+  const box = $("calcuse"); box.hidden = true; box.textContent = "";
+  if (skip || editingBrew) return;
+  let c = null; try { c = JSON.parse(localStorage.getItem("alto.calc.last") || "null"); } catch (e) {}
+  if (!c || !c.t || Date.now() - c.t > 45 * 60e3 || !c.dose_g) return;
+  const mins = Math.max(1, Math.round((Date.now() - c.t) / 60e3));
+  const what = [c.device, c.dose_g + "\u00A0g coffee", c.water_g && !isEsp(typeOf(c.device)) ? Math.round(c.water_g) + "\u00A0g water" : null, c.yield_g ? Math.round(c.yield_g) + "\u00A0g out" : null].filter(Boolean).join(", ");
+  box.append(el("span", "", "From the Calculator, " + mins + " min ago: "), el("b", "", what));
+  const use = el("button", "btn", "Use these"); use.type = "button";
+  use.onclick = () => {
+    if (c.device) { setSel("b-device", c.device); applyType(); }
+    const hp = (id, v) => { if (v !== null && v !== undefined) { $(id).value = v; touched.add(id); } };
+    hp("b-dose", c.dose_g); if (!isEsp(typeOf(chosen("b-device")))) hp("b-water", c.water_g && Math.round(c.water_g * 10) / 10); hp("b-yield", c.yield_g && Math.round(c.yield_g * 10) / 10); hp("b-temp", c.temp_c); if (isFlair(chosen("b-device"))) hp("b-preheat", c.preheat);
+    box.hidden = true; say("Numbers filled in from the calculator."); edited = true; saveDraft(); refreshAutoDrinks();
+  };
+  const no = el("button", "lnk", "No thanks"); no.type = "button"; no.onclick = () => { box.hidden = true; try { localStorage.removeItem("alto.calc.last"); } catch (e) {} };
+  const row = el("div", "acts"); row.append(use, no); box.appendChild(row);
+  box.hidden = false;
 }
 function startBrewEdit(b) {
   editingBrew = b; touched = new Set(BF); edited = false;
@@ -2298,6 +2377,9 @@ async function pickList() {
   logCoffees = data.filter(c => !c.archived).filter(c => { const k = gk(c); if (seen.has(k)) return false; seen.add(k); return true; });   // data is newest first
   const rank = c => c.finished_at ? 2 : c.open_date ? 0 : 1;   // open bags first, finished ones last
   logCoffees.sort((a, b) => rank(a) - rank(b));
+  const h = peekHandoff(); if (h && h.device) logDev = h.device;   // coming from the calculator: its device is chosen
+  else { try { const c = JSON.parse(localStorage.getItem("alto.calc.last") || "null"); if (c && c.device && c.t && Date.now() - c.t <= 45 * 60e3) logDev = c.device; } catch (e) {} }   // or you used it a little while ago
+  renderDrafts();
   renderPick();
 }
 function renderPick() {
@@ -2585,7 +2667,7 @@ $("bf").onsubmit = async e => {
         if (rows.length) { const r2 = await db.from("brew_scores").insert(rows); if (r2.error) throw r2.error; }
       }
     } catch (err) { if (!editingBrew) await db.from("brews").delete().eq("id", id); throw err; }
-    store.del(draftKey());
+    store.del(draftKey()); store.del("alto.calc.last");   // used up
     if (device) store.set("alto.device", device);
     if (row.grinder) store.set("alto.grinder", row.grinder);
     openCoffee(cur.id, device);   // resets the form and reloads the list

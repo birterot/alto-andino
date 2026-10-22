@@ -33,7 +33,7 @@
     return s;
   }
   function card(d) {
-    var c = el("article", "dcard"), left = el("div", "dcup"), total = d.layers.reduce(function (a, l) { return a + l[1]; }, 0);
+    var c = el("article", "dcard"), left = el("div", "dcup"); c.id = "drink-" + d.id; var total = d.layers.reduce(function (a, l) { return a + l[1]; }, 0);
     left.appendChild(cup(d)); left.appendChild(el("small", "", "~" + total + " ml"));
     var r = el("div");
     r.appendChild(el("h3", "", d.name)); r.appendChild(el("p", "shot", d.shot)); r.appendChild(el("p", "", d.what));
@@ -52,6 +52,9 @@
   }
   var TABS = C.groups.map(function (g) { return g[0]; }).concat(["milkinfo"]), cur = 0;
   try { var saved = localStorage.getItem("alto.drinks.tab"); if (TABS.indexOf(saved) >= 0) cur = TABS.indexOf(saved); } catch (e) {}
+  // a link to one group or one drink: drinks.html#dessert, drinks.html#flat_white (from the search)
+  var want = location.hash.slice(1), wantDrink = null;
+  if (want) { var dk = C.D.find(function (d) { return d.id === want; }); if (dk) { wantDrink = dk.id; want = dk.group; } if (TABS.indexOf(want) >= 0) cur = TABS.indexOf(want); }
   TABS.forEach(function (id, i) {
     var g = C.groups.find(function (x) { return x[0] === id; }), lbl = g ? g[1] : "Milk";
     var b = el("button", "tab", lbl); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("data-t", lbl);
@@ -77,4 +80,5 @@
     var grid = el("div", "dgrid"); list.forEach(function (d) { grid.appendChild(card(d)); }); p.appendChild(grid);
   }
   render();
+  if (wantDrink) setTimeout(function () { var e = document.getElementById("drink-" + wantDrink); if (e) { e.scrollIntoView({ block: "center" }); e.classList.add("hl"); } }, 50);
 })();

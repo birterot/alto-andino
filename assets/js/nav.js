@@ -73,6 +73,18 @@
     ".topnav nav .mtog{width:44px;height:44px;flex:none;display:grid;place-items:center;border:0;background:none;color:var(--mut,#666);border-radius:10px;cursor:pointer}" +
     ".topnav nav .mtog svg{transition:transform .15s}.topnav nav .mtog.open svg{transform:rotate(180deg)}" +
     ".topnav nav .subs[hidden]{display:none}" +
+    ".srch{position:fixed;inset:0;z-index:120;background:rgba(20,14,10,.35);padding:calc(env(safe-area-inset-top,0px) + 8px) 10px 10px}" +
+    ".srch[hidden]{display:none}" +
+    ".srch .sbox{max-width:640px;margin:0 auto;background:var(--bg,#fff);border-radius:16px;box-shadow:0 18px 50px rgba(20,14,10,.3);max-height:calc(100dvh - 40px);display:flex;flex-direction:column;overflow:hidden}" +
+    ".srch .srow{display:flex;gap:8px;padding:10px;border-bottom:1px solid var(--line,#ddd)}" +
+    ".srch input{flex:1;min-width:0;height:46px;padding:0 14px;font:inherit;font-size:16px;border-radius:12px;border:1px solid var(--line,#ccc);background:var(--card,#fff);color:var(--ink,#000)}" +
+    ".srch .sx{font:inherit;font-size:15px;border:0;background:none;color:var(--mut,#666);padding:0 8px;cursor:pointer}" +
+    ".srch .slist{overflow:auto;padding:4px 10px 12px;-webkit-overflow-scrolling:touch}" +
+    ".srch .sg{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent,#8A6A4A);margin:14px 6px 4px}" +
+    ".srch .sr{display:flex;flex-direction:column;padding:9px 10px;border-radius:10px;color:var(--ink,#000);text-decoration:none}" +
+    ".srch .sr:hover,.srch .sr:focus-visible{background:var(--card,#f5f5f5);outline:none}" +
+    ".srch .st{font-size:15.5px}.srch .su{font-size:13px;color:var(--mut,#666);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +
+    ".srch .sh{color:var(--mut,#666);font-size:14px;margin:14px 6px}" +
     ".ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 62px);z-index:60;width:38px;height:38px;margin-left:-19px;border-radius:999px;background:var(--card,#fff);border:1px solid var(--line,#ccc);box-shadow:0 4px 14px rgba(20,14,10,.15);display:grid;place-items:center;color:var(--accent,#8A6A4A);opacity:0;transform:translateY(-50px);pointer-events:none}" +
     ".ptr.go svg{animation:ptrspin .8s linear infinite}@keyframes ptrspin{to{transform:rotate(360deg)}}" +
     ".topnav nav a:hover{background:var(--bg,#f5f5f5)}" +
@@ -147,6 +159,12 @@
     cb.className = "iconbtn"; cb.href = root + "calc/index.html"; cb.setAttribute("aria-label", "Calculator"); cb.title = "Calculator";
     cb.appendChild(icon("calc", 24)); right.appendChild(cb);
   }
+  // Search, on every page: pages, your coffees, devices, drinks, processes and calculator recipes
+  var sb = document.createElement("button");
+  sb.className = "iconbtn"; sb.type = "button"; sb.setAttribute("aria-label", "Search"); sb.title = "Search";
+  sb.appendChild(svgEl(23, function (s) { s.appendChild(pathEl("M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z M16 16l5 5")); }));
+  right.insertBefore(sb, right.firstChild);
+  sb.addEventListener("click", function () { openSearch(); });
   // no separate home button: the logo in the middle takes you home
 
   var menu = document.createElement("nav");
@@ -249,6 +267,87 @@
     });
   }
   caseIn(document.body);
+
+  // ---------- search ----------
+  var srch = null, sIndex = null, sLoading = false;
+  function norm(t) { return String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+  function needData(cb) {   // the chapter data, loaded once when you first search (it is already there on some pages)
+    var want = [["DEVICES", "data/devices.js"], ["DRINKS", "data/drinks.js"], ["CHAPTER", "data/processing.js"], ["DEFAULTS", "data/defaults.js"]].filter(function (x) { return !window[x[0]]; });
+    if (!want.length) return cb();
+    var left = want.length;
+    want.forEach(function (x) { var sc = document.createElement("script"); sc.src = root + x[1]; sc.onload = sc.onerror = function () { if (--left === 0) cb(); }; document.head.appendChild(sc); });
+  }
+  function buildIndex() {
+    var L = [], add = function (kind, title, sub, href, words) { L.push({ kind: kind, title: title, sub: sub || "", href: root + href, hay: norm([title, sub, words].join(" ")), name: norm(title) }); };
+    add("Page", "Home", "Your open bags and today", "index.html", "start");
+    add("Page", "Log a brew", "Pick a coffee, set the dial-in, rate the cup", "journal/index.html#log", "new brew add brew make coffee rate");
+    add("Page", "Coffee Shelf", "Your coffees and bags", "journal/index.html", "coffees bags shelf journal add coffee");
+    add("Page", "Recent activity", "What happened lately", "journal/index.html#recent", "activity feed latest history");
+    add("Page", "My brews", "Everything you made or rated", "journal/index.html#mine", "my ratings balance stars rate again");
+    add("Page", "Calculator", "Grams, water, yield and ratio", "calc/index.html", "ratio grams dose water yield recipe");
+    add("Page", "Trends", "Dial-in, freshness, taste, who brews", "trends/index.html", "stats charts dial-in freshness taste sweet spot fingerprint compass");
+    add("Page", "Cupping", "Taste coffees side by side", "cupping/index.html", "sca score cup cupping session");
+    add("Page", "Friends", "Fun stats with friends", "friends/index.html", "friend link invite share stats");
+    add("Page", "Settings", "Your name, defaults, usual drink", "settings/index.html", "name default device grinder drink milk simple all");
+    add("Page", "Feedback", "Tell us what is broken or what you wish for", "feedback/index.html", "bug idea problem help contact");
+    CHAPTERS.forEach(function (c) { add("Bean to Cup", c[1], "Chapter", "chapters/" + c[0] + ".html", "book chapter"); });
+    ((window.DEVICES && DEVICES.D) || []).forEach(function (d) { add("Brewing device", d.name, d.tag || d.kind || "", "chapters/devices.html#" + d.id, [(d.logAs || []).join(" "), d.kind, (d.variants || []).map(function (v) { return v.n; }).join(" "), "how to brew method recipe"].join(" ")); });
+    ((window.DRINKS && DRINKS.D) || []).forEach(function (d) { add("Drink", d.name.replace(/ \((traditional|common), \d shots?\)$/, ""), d.shot || "", "chapters/drinks.html#" + d.id, d.what + " " + d.cup); });
+    ((window.CHAPTER && CHAPTER.D) || []).forEach(function (d) { if (d.n) add("Process", d.n, d.tag && !/still to add/i.test(d.tag) ? d.tag : "", "chapters/processing.html", (d.fl || []).join(" ")); });
+    ((window.DEFAULTS && DEFAULTS.PRESETS) || []).forEach(function (x) { add("Recipe", x.name, "in the Calculator", "calc/index.html#preset=" + x.id, x.device); });
+    // your coffees, as the Coffee Shelf remembered them on this phone (only while you are signed in)
+    var shelf = null; try { shelf = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); } catch (e) {}
+    var signed = false; try { signed = Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-token$/.test(k); }); } catch (e) {}
+    if (shelf && signed && Array.isArray(shelf.coffees)) {
+      var seen = {};
+      shelf.coffees.forEach(function (c) { var k = c.group_id || c.id; if (seen[k] || c.archived) return; seen[k] = 1; add("Your coffee", c.name, [c.roaster, c.origin].filter(Boolean).join(", "), "journal/index.html#c=" + c.id, [c.process, c.roast_level, c.variety, (c.flavour_tags || []).join(" ")].join(" ")); });
+    }
+    return L;
+  }
+  var ORDER = ["Your coffee", "Page", "Brewing device", "Drink", "Recipe", "Process", "Bean to Cup"];
+  function runSearch() {
+    var q = norm(srch.input.value).trim(), out = srch.list; out.textContent = "";
+    if (!q) { out.appendChild(srchHint("Search your coffees, pages, brewing devices, drinks and recipes.")); return; }
+    var words = q.split(/\s+/), hits = (sIndex || []).filter(function (x) { return words.every(function (w) { return x.hay.indexOf(w) >= 0; }); });
+    hits.forEach(function (x) { x.score = (x.name.indexOf(q) === 0 ? 0 : x.name.indexOf(q) >= 0 ? 1 : words.every(function (w) { return x.name.indexOf(w) >= 0; }) ? 2 : 3); });
+    hits.sort(function (a, b) { return ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind) || a.score - b.score || a.title.localeCompare(b.title); });
+    if (!hits.length) { out.appendChild(srchHint(sLoading ? "Searching..." : "Nothing found for \u201C" + srch.input.value.trim() + "\u201D.")); return; }
+    var last = null, n = {};
+    hits.forEach(function (x) {
+      n[x.kind] = (n[x.kind] || 0) + 1; if (n[x.kind] > 6) return;
+      if (x.kind !== last) { last = x.kind; var g = document.createElement("div"); g.className = "sg"; g.textContent = x.kind === "Your coffee" ? "Your coffees" : x.kind === "Page" ? "In the app" : x.kind === "Bean to Cup" ? "Bean to Cup" : x.kind === "Process" ? "Processing" : x.kind + "s"; out.appendChild(g); }
+      var a = document.createElement("a"); a.className = "sr"; a.href = x.href;
+      var t = document.createElement("span"); t.className = "st"; t.textContent = x.title; a.appendChild(t);
+      if (x.sub) { var u = document.createElement("span"); u.className = "su"; u.textContent = x.sub; a.appendChild(u); }
+      a.addEventListener("click", function () { closeSearch(); });
+      out.appendChild(a);
+    });
+  }
+  function srchHint(t) { var p = document.createElement("p"); p.className = "sh"; p.textContent = t; return p; }
+  function openSearch() {
+    setOpen(false);
+    if (!srch) {
+      var o = document.createElement("div"); o.className = "srch"; o.setAttribute("role", "dialog"); o.setAttribute("aria-label", "Search"); o.setAttribute("data-noptr", "");
+      var box = document.createElement("div"); box.className = "sbox";
+      var row = document.createElement("div"); row.className = "srow";
+      var inp = document.createElement("input"); inp.type = "search"; inp.placeholder = "Search coffees, devices, drinks..."; inp.setAttribute("aria-label", "Search"); inp.autocomplete = "off"; inp.setAttribute("enterkeyhint", "search");
+      var x = document.createElement("button"); x.type = "button"; x.className = "sx"; x.textContent = "Close";
+      row.appendChild(inp); row.appendChild(x); box.appendChild(row);
+      var list = document.createElement("div"); list.className = "slist"; box.appendChild(list);
+      o.appendChild(box); document.body.appendChild(o);
+      srch = { o: o, input: inp, list: list };
+      inp.addEventListener("input", runSearch);
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { var f = list.querySelector("a.sr"); if (f) { e.preventDefault(); location.href = f.href; closeSearch(); } } });
+      x.addEventListener("click", closeSearch);
+      o.addEventListener("click", function (e) { if (e.target === o) closeSearch(); });
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && srch && !srch.o.hidden) closeSearch(); });
+    }
+    srch.o.hidden = false; document.documentElement.style.overflow = "hidden";
+    sIndex = buildIndex(); runSearch();
+    srch.input.focus();
+    if (!sLoading) { sLoading = true; needData(function () { sLoading = false; sIndex = buildIndex(); if (!srch.o.hidden) runSearch(); }); }
+  }
+  function closeSearch() { if (!srch) return; srch.o.hidden = true; document.documentElement.style.overflow = ""; }
 
   // Decimal numbers with a comma or a dot: many phones (German, Spanish, ...) only offer a comma, and number fields
   // then refuse it. So number fields become text fields with the decimal keyboard, and a comma turns into a dot as
