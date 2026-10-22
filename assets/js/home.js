@@ -131,9 +131,9 @@
     var my = session.user.id, MG = { decaf: 0.3, robusta: 18, blend: 13 }, KE = Math.LN2 / 5, KA = 4.5, now = Date.now();
     var doses = [];
     rows.forEach(function (b) {
-      var t = Date.parse(b.t); if (!(b.g > 0) || !isFinite(t) || t > now + 60e3) return;
-      var share = b.r && b.r.indexOf(my) >= 0 ? b.g / b.r.length : 0;   // only the brews you rated; shared with the others who rated it
-      if (share > 0) doses.push({ t: t, mg: share * (MG[b.k] || 9) });
+      var k = b.r ? b.r.indexOf(my) : -1; if (!(b.g > 0) || k < 0) return;   // only the brews you rated; shared with the others who rated it
+      var t = Date.parse((b.rt && b.rt[k]) || b.t); if (!isFinite(t) || t > now + 60e3) return;   // when you drank it (if you said), else the brew
+      doses.push({ t: t, mg: b.g / b.r.length * (MG[b.k] || 9) });
     });
     var level = function (at) { return doses.reduce(function (s, d) { var hh = (at - d.t) / 36e5; return hh <= 0 ? s : s + d.mg * KA / (KA - KE) * (Math.exp(-KE * hh) - Math.exp(-KA * hh)); }, 0); };
     var mid = new Date(); mid.setHours(0, 0, 0, 0);
@@ -170,12 +170,12 @@
   function refreshBrews(cb) {
     var S = window.SUPA; if (!S || !session.access_token || !(session.expires_at * 1000 > Date.now() + 60e3) || !window.fetch) return;
     var since = new Date(Date.now() - 36 * 36e5).toISOString();
-    var url = S.url + "/rest/v1/brews?select=brewed_at,dose_g,is_dialin,made_by,created_by,coffees(is_decaf,variety),brew_ratings(rater_id,is_guest)&brewed_at=gte." + encodeURIComponent(since) + "&order=brewed_at";
+    var url = S.url + "/rest/v1/brews?select=brewed_at,dose_g,is_dialin,made_by,created_by,coffees(is_decaf,variety),brew_ratings(rater_id,is_guest,drank_at)&brewed_at=gte." + encodeURIComponent(new Date(Date.now() - 4 * 864e5).toISOString()) + "&order=brewed_at";
     fetch(url, { headers: { apikey: S.key, Authorization: "Bearer " + session.access_token } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (list) {
       if (!Array.isArray(list)) return;
-      var rows = list.filter(function (b) { return Number(b.dose_g) > 0; }).map(function (b) {
+      var cut = Date.parse(since), rows = list.filter(function (b) { return Number(b.dose_g) > 0 && (Date.parse(b.brewed_at) >= cut || (b.brew_ratings || []).some(function (x) { return x.drank_at && Date.parse(x.drank_at) >= cut; })); }).map(function (b) {
         var c = b.coffees || {}, v = String(c.variety || "").toLowerCase();
-        return { t: b.brewed_at, g: Number(b.dose_g), d: !!b.is_dialin, m: b.made_by || b.created_by || null, r: (b.brew_ratings || []).map(function (x) { return x.is_guest ? "g" : x.rater_id; }),
+        return { t: b.brewed_at, g: Number(b.dose_g), d: !!b.is_dialin, m: b.made_by || b.created_by || null, r: (b.brew_ratings || []).map(function (x) { return x.is_guest ? "g" : x.rater_id; }), rt: (b.brew_ratings || []).map(function (x) { return x.drank_at || null; }),
           k: c.is_decaf ? "decaf" : /robusta/.test(v) ? (/arabica|,/.test(v) ? "blend" : "robusta") : "" };
       });
       try { var sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === session.user.id) { sh.cb = rows; sh.cbt = Date.now(); localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } } catch (e) {}

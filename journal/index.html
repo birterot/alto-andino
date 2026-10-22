@@ -575,6 +575,10 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
         <div class="tpanel" id="tpanel" role="tabpanel">
         <label id="guestlab" hidden>Guest's name (optional)<input id="b-guest" placeholder="e.g. Lena" autocomplete="off" maxlength="60"></label>
         <div class="row2 dmrow"><label>Drink<select id="b-drink"></select></label><label id="milklab">Milk<select id="b-milk"></select></label></div>
+        <div class="when drank" role="group" aria-labelledby="drankl"><span class="wl" id="drankl">Drank it</span>
+          <div class="wchips" id="dchips"></div>
+          <input type="datetime-local" id="b-drank" aria-label="When this person drank it" hidden>
+        </div>
         <label id="ownlab" hidden>Your name for the drink<input id="b-drink-own" maxlength="40" placeholder="e.g. Espresso tonic" autocomplete="off"></label>
         <label id="ovlab">Overall</label>
         <div class="stars" id="stars" role="group" aria-label="Overall rating"></div>
@@ -722,6 +726,8 @@ function ago(iso) {
 }
 // Dates are shown the European way: dd-mm-yyyy (saved as yyyy-mm-dd, as before).
 const fmtD = iso => { if (!iso) return ""; const [y, m, d] = String(iso).slice(0, 10).split("-"); return d + "-" + m + "-" + y; };
+// a date for a datetime-local field (local time, to the minute)
+const localDT = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 const fmtDT = d => fmtD(d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0")) + ", " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 function todayIso() {
   const d = new Date();
@@ -1005,7 +1011,7 @@ async function load() {
   const my = ++loadId;   // only the newest load may draw, so parallel loads cannot add cards twice
   const [{ data, error }, { data: bs }] = await Promise.all([
     inHH(db.from("coffees").select("*")).order("created_at", { ascending: false }),
-    db.from("brews").select("coffee_id,rating,is_dialin,brewed_at,dose_g,made_by,created_by,brew_ratings(rating,balance,rater_id,is_guest)").order("brewed_at"),
+    db.from("brews").select("coffee_id,rating,is_dialin,brewed_at,dose_g,made_by,created_by,brew_ratings(rating,balance,rater_id,is_guest,drank_at)").order("brewed_at"),
     db.from("cuppings").select("coffee_id,total")   // cupping (supabase/21_sca_cupping.sql); before that it just fails and is left out
   ]).then(r => [r[0], r[1], r[2] && !r[2].error ? r[2] : { data: [] }]).then(r => { cupRows = r[2].data || []; return r; });
   const counts = {}, rates = {}, used = {};
@@ -1031,7 +1037,7 @@ async function load() {
     const drank = rs.some(r => !r.is_guest && r.rater_id === me.id);
     return made || drank ? [Date.parse(b.brewed_at), made ? 1 : 0, drank ? 1 : 0] : null;
   }).filter(Boolean);
-  recentBrews = (bs || []).filter(b => b.brewed_at && Date.parse(b.brewed_at) >= since && Number(b.dose_g) > 0).map(b => cafRow(b, byId[b.coffee_id]));
+  recentBrews = (bs || []).filter(b => b.brewed_at && (Date.parse(b.brewed_at) >= since || (b.brew_ratings || []).some(r => r.drank_at && Date.parse(r.drank_at) >= since)) && Number(b.dose_g) > 0).map(b => cafRow(b, byId[b.coffee_id]));
   const paths = data.map(c => c.photo_path).filter(Boolean);
   const known = photoLinks(paths, true);   // links still valid from earlier visits: no waiting
   coffeeUrls = known.full; coffeeThumbs = known.thumb;
@@ -1097,7 +1103,7 @@ let recentBrews = null, myBrews = null;
 function cafRow(b, c) {
   const v = String((c && c.variety) || "").toLowerCase();
   return { t: b.brewed_at, g: Number(b.dose_g), d: !!b.is_dialin, m: b.made_by || b.created_by || null,
-    r: (b.brew_ratings || []).map(r => r.is_guest ? "g" : r.rater_id), k: c && c.is_decaf ? "decaf" : /robusta/.test(v) ? (/arabica|,/.test(v) ? "blend" : "robusta") : "" };
+    r: (b.brew_ratings || []).map(r => r.is_guest ? "g" : r.rater_id), rt: (b.brew_ratings || []).map(r => r.drank_at || null), k: c && c.is_decaf ? "decaf" : /robusta/.test(v) ? (/arabica|,/.test(v) ? "blend" : "robusta") : "" };
 }
 function saveShelf() {
   try {
@@ -1446,7 +1452,7 @@ function brewChanges(old, row) {
   if (!(auto(old) && auto(row)) && (old.recipe || "") !== (row.recipe || "")) out.push(["Recipe name", auto(row) ? "" : row.recipe, auto(old) ? "" : old.recipe]);
   // ratings: per taster, their stars and each taste score; tasters added or removed get one line
   const tkey = t => t.guest ? "g:" + (t.guest_name || "").toLowerCase() : "u:" + t.rater_id;
-  const before = tastersOf(old), after = tasterRows().map(x => ({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name, rating: x.rating, balance: x.balance, drink: x.drink, milk: x.milk, scores: x.scores }));
+  const before = tastersOf(old), after = tasterRows().map(x => ({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name, rating: x.rating, balance: x.balance, drink: x.drink, milk: x.milk, drank: x.drank_at, scores: x.scores }));
   const several = before.length > 1 || after.length > 1;
   const brief = t => [t.rating == null ? null : Stars.text(t.rating), t.balance == null ? null : "balance " + SCALE.balanceText(t.balance), Object.keys(t.scores || {}).length ? Object.keys(t.scores).length + (Object.keys(t.scores).length === 1 ? " score" : " scores") : null].filter(Boolean).join(", ") || "no rating";
   const label = (t, what) => several ? tName(t) + ": " + what : what;
@@ -1462,6 +1468,8 @@ function brewChanges(old, row) {
     if ((t.balance ?? null) !== (o.balance ?? null)) out.push([label(t, "Balance"), t.balance == null ? "not rated" : SCALE.balanceText(t.balance), o.balance == null ? "not rated" : SCALE.balanceText(o.balance)]);
     if ((t.drink || "") !== (o.drink || "")) out.push([label(t, "Drink"), drinkName(t.drink), drinkName(o.drink)]);
     if ((t.milk || "") !== (o.milk || "")) out.push([label(t, "Milk"), milkName(t.milk), milkName(o.milk)]);
+    const dk = x => x ? Math.round(Date.parse(x) / 60e3) : null;
+    if (dk(t.drank) !== dk(o.drank)) out.push([label(t, "Drank it"), t.drank ? fmtDT(new Date(t.drank)) : "with the brew", o.drank ? fmtDT(new Date(o.drank)) : "with the brew"]);
     [...new Set(Object.keys(o.scores || {}).concat(Object.keys(t.scores || {})))].forEach(k => {
       const a = (o.scores || {})[k], b = (t.scores || {})[k];
       const nt = b == null ? "" : SCALE.text(k, b), ot = a == null ? "" : SCALE.text(k, a);
@@ -1883,7 +1891,26 @@ function stashTaster() {
   t.rating = rating; t.balance = balance; t.scores = { ...scores };
   const dv = $("b-drink").value; t.drink = dv === "__own" ? ($("b-drink-own").value.trim() || null) : (dv || null); t.milk = $("milklab").hidden ? null : ($("b-milk").value || null);
   if (t.guest) t.guest_name = $("b-guest").value.trim() || null;
+  const dv2 = $("b-drank").value, dd = dv2 ? new Date(dv2) : null; t.drank = dd && isFinite(dd) ? dd.toISOString() : null;
 }
+// When this person drank it: with the brew (empty), now, or another time. For iced coffee made the night before.
+function renderDrank() {
+  const box = $("dchips"), inp = $("b-drank"), v = inp.value; box.textContent = "";
+  inp.max = localDT(new Date(Date.now() + 5 * 60e3));
+  [["With the brew", ""], ["Now", "now"], ["Other time", "other"]].forEach(([label, k]) => {
+    const b = el("button", "", label); b.type = "button";
+    b.classList.toggle("on", k === "" ? !v : k === "now" ? !!v && inp.dataset.q === "now" : !!v && inp.dataset.q !== "now");
+    b.onclick = () => {
+      if (k === "") { inp.value = ""; delete inp.dataset.q; }
+      else if (k === "now") { inp.value = localDT(new Date()); inp.dataset.q = "now"; }
+      else { if (!inp.value) inp.value = localDT(new Date()); delete inp.dataset.q; setTimeout(() => { try { inp.focus(); inp.showPicker && inp.showPicker(); } catch (e) {} }, 0); }
+      stashTaster(); userChanged(); renderDrank();
+    };
+    box.appendChild(b);
+  });
+  inp.hidden = !v;
+}
+$("b-drank").addEventListener("change", () => { delete $("b-drank").dataset.q; stashTaster(); userChanged(); renderDrank(); });
 function showTaster(i) {
   tAct = Math.max(0, Math.min(i, tasters.length - 1));
   const t = tasters[tAct] || {};
@@ -1894,6 +1921,7 @@ function showTaster(i) {
   $("guestlab").hidden = !t.guest; $("b-guest").value = t.guest ? (t.guest_name || "") : "";
   const own = !!t.drink && !drinkOf(t.drink);
   $("b-drink").value = own ? "__own" : (t.drink || ""); $("b-drink-own").value = own ? t.drink : ""; $("b-milk").value = t.milk || ""; syncMilk();
+  delete $("b-drank").dataset.q; $("b-drank").value = t.drank ? localDT(new Date(t.drank)) : ""; renderDrank();
   $("ovlab").textContent = tasters.length > 1 ? "Overall, for " + tName(t) : "Overall";
   renderTasters();
 }
@@ -1933,7 +1961,7 @@ $("b-guest").addEventListener("input", () => { renderTasters(); $("ovlab").textC
 function tastersOf(b) {
   const sc = b.brew_scores || [], rs = (b.brew_ratings || []).slice().sort((x, y) => String(x.created_at || "").localeCompare(String(y.created_at || "")) || String(x.id).localeCompare(String(y.id)));
   const sco = list => { const o = {}; list.forEach(x => { o[x.attribute] = x.score; }); return o; };
-  if (rs.length) return rs.map(r => ({ id: r.id, rater_id: r.is_guest ? null : r.rater_id, guest: !!r.is_guest, guest_name: r.guest_name || null, rating: r.rating == null ? null : Number(r.rating), balance: r.balance == null ? null : Number(r.balance), drink: r.drink || null, milk: r.milk || null, scores: sco(sc.filter(x => x.rating_id === r.id)) }));
+  if (rs.length) return rs.map(r => ({ id: r.id, rater_id: r.is_guest ? null : r.rater_id, guest: !!r.is_guest, guest_name: r.guest_name || null, rating: r.rating == null ? null : Number(r.rating), balance: r.balance == null ? null : Number(r.balance), drink: r.drink || null, milk: r.milk || null, drank: r.drank_at || null, scores: sco(sc.filter(x => x.rating_id === r.id)) }));
   if (b.rating != null || sc.length) return [{ rater_id: b.made_by || b.created_by || null, guest: false, guest_name: null, rating: b.rating == null ? null : Number(b.rating), balance: null, drink: null, milk: null, scores: sco(sc) }];
   return [];
 }
@@ -1952,7 +1980,7 @@ function brewAvg(b) {
 function tasterRows() {
   stashTaster();
   return tasters.filter(t => t.rating != null || t.balance != null || Object.keys(t.scores || {}).length)
-    .map(t => ({ rater_id: t.guest ? null : t.rater_id, is_guest: !!t.guest, guest_name: t.guest ? (t.guest_name || null) : null, rating: t.rating, balance: t.balance == null ? null : t.balance, drink: t.drink || null, milk: t.drink && (!drinkOf(t.drink) || drinkOf(t.drink).milk) ? (t.milk || null) : null, scores: { ...t.scores } }));
+    .map(t => ({ rater_id: t.guest ? null : t.rater_id, is_guest: !!t.guest, guest_name: t.guest ? (t.guest_name || null) : null, rating: t.rating, balance: t.balance == null ? null : t.balance, drink: t.drink || null, milk: t.drink && (!drinkOf(t.drink) || drinkOf(t.drink).milk) ? (t.milk || null) : null, drank_at: t.drank || null, scores: { ...t.scores } }));
 }
 
 // One text for the settings of a brew. It is also the automatic recipe name.
@@ -2137,7 +2165,6 @@ function readHandoff() {
   return h && h.t && Date.now() - h.t <= 3 * 3600e3 ? h : null;
 }
 // When you had it: empty = now (the moment you save). Logged later? Pick "1 h ago" or a time; it counts for the caffeine on Home.
-const localDT = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 const WHEN = [["Now", 0], ["30 min ago", 30], ["1 h ago", 60], ["Earlier\u2026", null]];
 function renderWhen() {
   const box = $("wchips"), inp = $("b-when"), v = inp.value; box.textContent = "";
@@ -2644,7 +2671,7 @@ function brewCard(b) {
 
 async function loadBrews() {
   const my = ++brewLoadId;
-  const { data, error } = await db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,created_at), brew_scores(attribute,score,rating_id)").eq("coffee_id", cur.id).order("brewed_at", { ascending: false });
+  const { data, error } = await db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,created_at,drank_at), brew_scores(attribute,score,rating_id)").eq("coffee_id", cur.id).order("brewed_at", { ascending: false });
   if (my !== brewLoadId) return;
   if (error) { say("Could not load brews: " + error.message); return; }
   brewData = data;
@@ -2698,6 +2725,7 @@ function brewRow() {
   row.rating = rs.length ? Math.round(rs.reduce((a, c) => a + c, 0) / rs.length * 2) / 2 : null;
   if (!$("mblab").hidden) { const mb = $("b-madeby").value || null; row.made_by = mb && mb !== (editingBrew ? editingBrew.created_by : me.id) ? mb : null; }
   // when: new brews without a time are "now" (the database fills it in); an edited brew keeps its time unless you changed it
+  if (tasterRows().some(t => t.drank_at && Date.parse(t.drank_at) > Date.now() + 10 * 60e3)) throw new Error("the time you drank it is in the future");
   const w = whenISO();
   if (w) { if (Date.parse(w) > Date.now() + 10 * 60e3) throw new Error("the time is in the future"); if (!editingBrew || Math.abs(Date.parse(w) - Date.parse(editingBrew.brewed_at)) >= 60e3) row.brewed_at = w; }
   else if (editingBrew && touched.has("b-when") && $("b-when").value === "" && editingBrew.brewed_at && Date.now() - Date.parse(editingBrew.brewed_at) > 60e3) row.brewed_at = new Date().toISOString();
@@ -2715,7 +2743,7 @@ $("bf").onsubmit = async e => {
   {
     const dev = chosen("b-device"), esp = isEsp(typeOf(dev)), v = id => $(id).value.trim();
     const t = numOf("b-time"), tr = tasterRows();
-    const rated = tr.map(x => tName({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name }) + " " + (x.rating == null ? "(taste only)" : Stars.text(x.rating)) + (x.balance != null ? ", balance " + SCALE.balanceText(x.balance) : "") + (x.drink ? " (" + drinkText(x.drink, x.milk).toLowerCase() + ")" : "")).join(", ");
+    const rated = tr.map(x => tName({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name }) + " " + (x.rating == null ? "(taste only)" : Stars.text(x.rating)) + (x.balance != null ? ", balance " + SCALE.balanceText(x.balance) : "") + (x.drink ? " (" + drinkText(x.drink, x.milk).toLowerCase() + ")" : "") + (x.drank_at ? ", drank it " + fmtDT(new Date(x.drank_at)) : "")).join(", ");
     const tasted = tr.reduce((a, x) => a + Object.keys(x.scores).length, 0);
     let ok;
     if (editingBrew) {   // editing: show exactly what changed, old next to new
@@ -2753,7 +2781,7 @@ $("bf").onsubmit = async e => {
     }
     try {
       for (const t of tasterRows()) {   // one rating per taster, then that taster's scores
-        const { data: r, error } = await db.from("brew_ratings").insert({ brew_id: id, rater_id: t.rater_id, is_guest: t.is_guest, guest_name: t.guest_name, rating: t.rating, ...(t.balance != null ? { balance: t.balance } : {}), ...(t.drink ? { drink: t.drink } : {}), ...(t.milk ? { milk: t.milk } : {}) }).select("id").single();
+        const { data: r, error } = await db.from("brew_ratings").insert({ brew_id: id, rater_id: t.rater_id, is_guest: t.is_guest, guest_name: t.guest_name, rating: t.rating, ...(t.balance != null ? { balance: t.balance } : {}), ...(t.drink ? { drink: t.drink } : {}), ...(t.milk ? { milk: t.milk } : {}), ...(t.drank_at ? { drank_at: t.drank_at } : {}) }).select("id").single();
         if (error) throw error;
         const rows = Object.entries(t.scores).map(([attribute, score]) => ({ brew_id: id, rating_id: r.id, attribute, score }));
         if (rows.length) { const r2 = await db.from("brew_scores").insert(rows); if (r2.error) throw r2.error; }
