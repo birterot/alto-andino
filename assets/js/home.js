@@ -21,9 +21,11 @@
   var top = el("div", "hi"); top.appendChild(el("p", "greet", hi + (name ? ", " + name : "")));
 
   // only you: days in a row you had coffee, and this month what you brewed and what you drank (= rated)
-  if (shelf && Array.isArray(shelf.my)) {
+  var stat = el("p", "stat"); stat.hidden = true; top.appendChild(stat);
+  function showStat(my) {
+    if (!Array.isArray(my)) return;
     var days = {}, made = 0, drank = 0, now = new Date(), key = function (d) { return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate(); };
-    shelf.my.forEach(function (x) {
+    my.forEach(function (x) {
       var d = new Date(x[0]); if (x[2]) days[key(d)] = 1;
       if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) { made += x[1]; drank += x[2]; }
     });
@@ -33,8 +35,9 @@
     var bits = [];
     if (run >= 2) bits.push(run + " days in a row with coffee");
     if (made || drank) bits.push("this month you brewed " + made + " and drank " + drank);
-    if (bits.length) { var st = bits.join(" · "); top.appendChild(el("p", "stat", st[0].toUpperCase() + st.slice(1))); }
+    var st = bits.join(" \u00B7 "); stat.textContent = st ? st[0].toUpperCase() + st.slice(1) : ""; stat.hidden = !st;
   }
+  if (shelf) showStat(shelf.my);
   box.appendChild(top);
 
   if (!session) {   // signed out (for example after clearing the browser's data): say so here, not only on the next page
@@ -112,14 +115,46 @@
     }
     draw(); box.appendChild(card);
   }
-  // newer brews (also the ones someone else logged and you rated), fetched quietly; the note is updated if they change it
-  if (session) refreshBrews(function (rows) {
-    var c = caffeine(rows); if (!c) return;
+  // Then, quietly: your brews of the last two months straight from the database, for the line under the greeting and the
+  // caffeine (also brews someone else logged and you rated). Supabase's own library renews the login if it ran out.
+  if (session) setTimeout(freshen, 900);
+  function freshen() {
+    var S = window.SUPA; if (!S) return;
+    var go = function () {
+      if (!window.supabase || !window.supabase.createClient) return;
+      var db = window.supabase.createClient(S.url, S.key);
+      db.auth.getSession().then(function (r) {
+        var ses = r && r.data && r.data.session; if (!ses || ses.user.id !== session.user.id) return;
+        var my = ses.user.id, since2 = new Date(Date.now() - 62 * 864e5).toISOString();
+        return db.from("brews").select("brewed_at,dose_g,is_dialin,made_by,created_by,coffees(is_decaf,variety),brew_ratings(rater_id,is_guest,drank_at)").gte("brewed_at", since2).order("brewed_at").then(function (q) {
+          if (q.error || !Array.isArray(q.data)) return;
+          var cut = Date.now() - 36 * 36e5, mine = [], rows = [];
+          q.data.forEach(function (b) {
+            var rs = b.brew_ratings || [], made = (b.made_by || b.created_by) === my, drank = rs.some(function (x) { return !x.is_guest && x.rater_id === my; });
+            if (made || drank) mine.push([Date.parse(b.brewed_at), made ? 1 : 0, drank ? 1 : 0]);
+            if (!(Number(b.dose_g) > 0) || !(Date.parse(b.brewed_at) >= cut || rs.some(function (x) { return x.drank_at && Date.parse(x.drank_at) >= cut; }))) return;
+            var c = b.coffees || {}, v = String(c.variety || "").toLowerCase();
+            rows.push({ t: b.brewed_at, g: Number(b.dose_g), d: !!b.is_dialin, m: b.made_by || b.created_by || null,
+              r: rs.map(function (x) { return x.is_guest ? "g" : x.rater_id; }), rt: rs.map(function (x) { return x.drank_at || null; }),
+              k: c.is_decaf ? "decaf" : /robusta/.test(v) ? (/arabica|,/.test(v) ? "blend" : "robusta") : "" });
+          });
+          try { var sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === my) { sh.cb = rows; sh.cbt = Date.now(); sh.my = mine; localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } } catch (e) {}
+          showStat(mine); showCaffeine(rows);
+        });
+      }).catch(function () {});
+    };
+    if (window.supabase) return go();
+    var sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"; sc.onload = go; document.head.appendChild(sc);
+  }
+  function showCaffeine(rows) {
+    var c = caffeine(rows);
+    if (!c) { if (cafNote && card) { notes.splice(notes.indexOf(cafNote), 1); cafNote = null; i = 0; if (notes.length) draw(); } return; }
     if (cafNote) { cafNote.text = c.text; cafNote.curve = c.curve; cafNote.small = c.small; }
     else if (card) { notes.unshift(cafNote = c); i = 0; }
     else return;   // no note card at all: rare, leave Home as it is
-    if (card) { if (notes.length > 1 && !card.hasAttribute("role")) { card.setAttribute("role", "button"); card.tabIndex = 0; card.setAttribute("aria-label", "Next note"); var nx = function () { i = (i + 1) % notes.length; draw(); }; card.addEventListener("click", nx); } draw(); }
-  });
+    if (notes.length > 1 && !card.hasAttribute("role")) { card.setAttribute("role", "button"); card.tabIndex = 0; card.setAttribute("aria-label", "Next note"); card.addEventListener("click", function () { i = (i + 1) % notes.length; draw(); }); }
+    draw();
+  }
 
   // ---------- caffeine: an estimate from the brews you rated ----------
   // About 9 mg of caffeine per gram of arabica coffee ends up in the cup (beans are about 1.2 % caffeine, most of it is
@@ -147,40 +182,36 @@
     var text = (nowL >= 5 ? "About " + r10(nowL) + " mg in you right now" : "Almost none left") +
       (today.length ? ", from " + (today.length === 1 ? "1 coffee" : today.length + " coffees") + " today (about " + r10(total) + " mg)." : ".") + " " + under;
     if (total > 400) text += " That is more than the 400 mg a day usually given as the limit for healthy adults.";
-    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now), small: "An estimate: about 9 mg per gram of coffee, halving about every 5 hours. Counts the brews you rated." };
+    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Under the dashed line there is little left. An estimate: about 9 mg per gram of coffee, halving about every 5 hours, from the brews you rated." };
   }
-  function curveOf(level, mid, now) {   // today from 6:00 (or the first coffee) until midnight, with the 50 mg line and "now"
+  // today from 6:00 (or the first coffee) until midnight: solid up to now, lighter for what is still to come,
+  // the dashed 50 mg line, a mark for now with the amount, and the hours underneath
+  function curveOf(level, mid, now) {
     var NS = "http://www.w3.org/2000/svg", mk = function (t, a) { var e = document.createElementNS(NS, t); for (var k in a) e.setAttribute(k, a[k]); return e; };
     var t0 = mid + 6 * 36e5, t1 = mid + 24 * 36e5; if (now < t0) t0 = mid; if (now > t1 - 36e5) t1 = now + 3 * 36e5;
-    var pts = [], top = 100; for (var k = 0; k <= 96; k++) { var at = t0 + (t1 - t0) * k / 96, v = level(at); pts.push(v); if (v > top) top = v; }
-    var W = 300, H = 46, y = function (v) { return (H - 3 - (H - 6) * v / top).toFixed(1); }, x = function (at) { return (W * (at - t0) / (t1 - t0)).toFixed(1); };
-    var wrap = el("div", "cafc"), s = mk("svg", { viewBox: "0 0 " + W + " " + H, preserveAspectRatio: "none", "aria-hidden": "true" });
-    var d = pts.map(function (v, k) { return (k ? "L" : "M") + (W * k / 96).toFixed(1) + " " + y(v); }).join(" ");
-    s.appendChild(mk("path", { d: d + " L" + W + " " + (H - 3) + " L0 " + (H - 3) + "Z", class: "ca" }));
-    s.appendChild(mk("path", { d: d, class: "cl" }));
+    var N = 120, pts = [], top = 100; for (var k = 0; k <= N; k++) { var at = t0 + (t1 - t0) * k / N, v = level(at); pts.push([at, v]); if (v > top) top = v; }
+    top *= 1.08;
+    var W = 300, H = 64, y = function (v) { return (H - 2 - (H - 4) * v / top).toFixed(1); }, x = function (at) { return (W * (at - t0) / (t1 - t0)).toFixed(1); };
+    var pct = function (at) { return Math.max(0, Math.min(100, 100 * (at - t0) / (t1 - t0))); };
+    var wrap = el("div", "cafc"), plot = el("div", "cplot"), s = mk("svg", { viewBox: "0 0 " + W + " " + H, preserveAspectRatio: "none", "aria-hidden": "true" });
+    var line = function (list) { return list.map(function (p, k) { return (k ? "L" : "M") + x(p[0]) + " " + y(p[1]); }).join(" "); };
+    var past = pts.filter(function (p) { return p[0] <= now; }), next = pts.filter(function (p) { return p[0] >= now; });
+    if (past.length && past[past.length - 1][0] < now) past.push([now, level(now)]);
+    if (next.length && next[0][0] > now) next.unshift([now, level(now)]);
+    if (past.length > 1) { s.appendChild(mk("path", { d: line(past) + " L" + x(now) + " " + (H - 2) + " L" + x(t0) + " " + (H - 2) + "Z", class: "ca" })); s.appendChild(mk("path", { d: line(past), class: "cl" })); }
+    if (next.length > 1) s.appendChild(mk("path", { d: line(next), class: "cl fut" }));
     s.appendChild(mk("path", { d: "M0 " + y(50) + " H" + W, class: "c50" }));
+    s.appendChild(mk("path", { d: "M0 " + (H - 1) + " H" + W, class: "cbase" }));
     if (now >= t0 && now <= t1) s.appendChild(mk("path", { d: "M" + x(now) + " 0 V" + H, class: "cn" }));
-    wrap.appendChild(s);
-    var ax = el("div", "cax"), lab = function (at) { var dd = new Date(at); return dd.getHours() + ":" + String(dd.getMinutes()).padStart(2, "0"); };
-    ax.appendChild(el("span", "", lab(t0))); ax.appendChild(el("span", "", t1 - mid === 24 * 36e5 ? "24:00" : lab(t1)));
+    plot.appendChild(s);
+    // labels in HTML (the drawing stretches to the width, text must not)
+    var l50 = el("span", "l50", "50 mg"); l50.style.bottom = (100 * 50 / top) + "%"; plot.appendChild(l50);
+    if (now >= t0 && now <= t1) { var ln = el("span", "lnow", "now " + Math.round(level(now) / 10) * 10 + " mg"), q = pct(now); ln.style.left = q + "%"; if (q > 75) ln.classList.add("r"); else if (q < 25) ln.classList.add("l"); plot.appendChild(ln); }
+    wrap.appendChild(plot);
+    var ax = el("div", "cax");
+    for (var hh = Math.ceil((t0 - mid) / 36e5 / 6) * 6; mid + hh * 36e5 <= t1; hh += 6) { var tk = el("span", "", (hh % 24) + ":00"); if (hh === 24) tk.textContent = "24:00"; tk.style.left = pct(mid + hh * 36e5) + "%"; ax.appendChild(tk); }
     wrap.appendChild(ax);
     return wrap;
-  }
-  // the brews of the last 36 hours straight from the database, with the login this phone already has (no extra library)
-  function refreshBrews(cb) {
-    var S = window.SUPA; if (!S || !session.access_token || !(session.expires_at * 1000 > Date.now() + 60e3) || !window.fetch) return;
-    var since = new Date(Date.now() - 36 * 36e5).toISOString();
-    var url = S.url + "/rest/v1/brews?select=brewed_at,dose_g,is_dialin,made_by,created_by,coffees(is_decaf,variety),brew_ratings(rater_id,is_guest,drank_at)&brewed_at=gte." + encodeURIComponent(new Date(Date.now() - 4 * 864e5).toISOString()) + "&order=brewed_at";
-    fetch(url, { headers: { apikey: S.key, Authorization: "Bearer " + session.access_token } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (list) {
-      if (!Array.isArray(list)) return;
-      var cut = Date.parse(since), rows = list.filter(function (b) { return Number(b.dose_g) > 0 && (Date.parse(b.brewed_at) >= cut || (b.brew_ratings || []).some(function (x) { return x.drank_at && Date.parse(x.drank_at) >= cut; })); }).map(function (b) {
-        var c = b.coffees || {}, v = String(c.variety || "").toLowerCase();
-        return { t: b.brewed_at, g: Number(b.dose_g), d: !!b.is_dialin, m: b.made_by || b.created_by || null, r: (b.brew_ratings || []).map(function (x) { return x.is_guest ? "g" : x.rater_id; }), rt: (b.brew_ratings || []).map(function (x) { return x.drank_at || null; }),
-          k: c.is_decaf ? "decaf" : /robusta/.test(v) ? (/arabica|,/.test(v) ? "blend" : "robusta") : "" };
-      });
-      try { var sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === session.user.id) { sh.cb = rows; sh.cbt = Date.now(); localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } } catch (e) {}
-      cb(rows);
-    }).catch(function () {});
   }
 
   // the little bag from the Coffee Shelf, filled as far as there is coffee left
