@@ -36,6 +36,9 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .out{max-width:560px}
 .lab{margin:18px 0 0;font-size:13.5px;color:var(--mut)}
 #colorhint{margin-top:12px}
+.own{max-width:220px}
+.ownrow{display:flex;align-items:center;gap:8px;margin-top:6px}
+.ownrow input{margin:0;width:110px}
 .pstate{margin:12px 0 0;font-size:15px;max-width:52ch}
 .pbtns{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}
 .pbtns .lnk{min-height:40px}
@@ -97,6 +100,7 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
     <p class="hint">“Carry over” counts last night's coffee as it wears off. “Reset at midnight” starts every day at zero.</p>
     <p class="lab">Your sleep line</p>
     <div class="seg" id="s-cafline"><button type="button" data-m="25">Sensitive</button><button type="button" data-m="">Normal</button><button type="button" data-m="100">Tolerant</button></div>
+    <label class="own">Or your own<span class="ownrow"><input id="s-cafline-n" inputmode="numeric" placeholder="50" autocomplete="off" aria-label="Your sleep line in mg"><span>mg</span></span></label>
     <p class="hint" id="cafline-h"></p>
     <p><a class="lnk" href="caffeine.html">How it is worked out &rarr;</a></p>
   </section>
@@ -132,10 +136,21 @@ const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls)
 const opt = (s, v, t) => { const o = el("option", "", t); o.value = v; s.appendChild(o); return o; };
 let me = null, profile = null, fm = "", color = "", others = [], cafMode = "", cafDay = "", cafLine = "";
 const LINE_H = { "25": "The dashed line on Home sits at 25 mg: for people who sleep badly after an afternoon coffee.", "": "The dashed line on Home sits at 50 mg, about half an espresso.", "100": "The dashed line on Home sits at 100 mg: for people who can have an espresso in the evening and still sleep." };
+// your sleep line: one of the three, or any number from 5 to 400 mg ("" = 50, the normal one)
+function showLine(typing) {
+  setSeg("s-cafline", ["25", "", "100"].includes(cafLine) ? cafLine : "-");   // a preset lights up, your own number lights none
+  if (!typing) $("s-cafline-n").value = ["25", "", "100"].includes(cafLine) ? "" : cafLine;
+  $("cafline-h").textContent = LINE_H[cafLine] || "The dashed line on Home sits at " + cafLine + " mg, your own line.";
+}
 function setSeg(id, v) { document.querySelectorAll("#" + id + " button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.m === v))); }
 document.querySelectorAll("#s-cafmode button").forEach(b => { b.onclick = () => { cafMode = b.dataset.m; setSeg("s-cafmode", cafMode); }; });
 document.querySelectorAll("#s-cafday button").forEach(b => { b.onclick = () => { cafDay = b.dataset.m; setSeg("s-cafday", cafDay); }; });
-document.querySelectorAll("#s-cafline button").forEach(b => { b.onclick = () => { cafLine = b.dataset.m; setSeg("s-cafline", cafLine); $("cafline-h").textContent = LINE_H[cafLine]; }; });
+document.querySelectorAll("#s-cafline button").forEach(b => { b.onclick = () => { cafLine = b.dataset.m; showLine(); }; });
+$("s-cafline-n").addEventListener("input", () => {
+  const raw = $("s-cafline-n").value.trim(), v = Math.round(Number(raw.replace(",", ".")));
+  if (raw && !(v >= 5 && v <= 400)) { $("cafline-h").textContent = "Somewhere between 5 and 400 mg, please."; return; }
+  cafLine = !raw || v === 50 ? "" : String(v); showLine(true);
+});
 // your colour: tap one; tap it again for "automatic". The initials of the others show which colours they use.
 function renderColors() {
   const box = $("s-color"); box.textContent = "";
@@ -188,7 +203,7 @@ async function load() {
   setFm(p.formmode || "");
   color = (DEFAULTS.COLORS || []).some(c => c[0] === p.color) ? p.color : ""; renderColors();
   cafMode = p.caf_mode === "high" ? "high" : ""; cafDay = p.caf_day === "midnight" ? "midnight" : ""; setSeg("s-cafmode", cafMode); setSeg("s-cafday", cafDay);
-  cafLine = p.caf_line === 25 || p.caf_line === 100 ? String(p.caf_line) : ""; setSeg("s-cafline", cafLine); $("cafline-h").textContent = LINE_H[cafLine];
+  cafLine = Number(p.caf_line) >= 5 && Number(p.caf_line) <= 400 && Number(p.caf_line) !== 50 ? String(Math.round(p.caf_line)) : ""; showLine();
   // the others in your household (the profiles you can see), for the little letters on the colours
   const { data: ps } = await db.from("profiles").select("id,display_name,prefs");
   others = (ps || []).filter(x => x.id !== me.id).map(x => ({ name: x.display_name || "Someone", color: x.prefs && x.prefs.color })); renderColors();

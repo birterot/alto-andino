@@ -226,13 +226,13 @@
   // ---------- caffeine: the note and its curve (the numbers come from assets/js/caffeine.js) ----------
   // A brew counts for everyone it was for (split between them, rated or not yet), at the time they drank it if they said,
   // else at the time of the brew. Settings > Caffeine (kept on this phone too, so Home has it at once):
-  // "high" counts the upper end of the range, "midnight" starts every day at zero, "line" is your sleep line (25, 50 or 100 mg).
+  // "high" counts the upper end of the range, "midnight" starts every day at zero, "line" is your sleep line (5 to 400 mg, 50 unless you changed it).
   function cafPref() { try { return JSON.parse(localStorage.getItem("alto.cafpref") || "{}") || {}; } catch (e) { return {}; } }
   function savePref(p) { try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "", line: p.caf_line || null })); } catch (e) {} }
   function caffeine(rows) {
     if (!Array.isArray(rows) || !session || !window.CAFFEINE) return null;
     var my = session.user.id, now = Date.now(), pref = cafPref(), high = pref.mode === "high";
-    var line = [25, 50, 100].indexOf(Number(pref.line)) >= 0 ? Number(pref.line) : 50;   // your sleep line (Settings: more or less sensitive)
+    var line = Number(pref.line) >= 5 && Number(pref.line) <= 400 ? Math.round(Number(pref.line)) : 50;   // your sleep line (Settings: 25, 50, 100 or your own)
     var mid = new Date(); mid.setHours(0, 0, 0, 0);
     var doses = [];
     rows.forEach(function (b) {
@@ -254,7 +254,7 @@
     var text = (nowL >= 5 ? (high ? "Up to about " + r10(nowL) + " mg in you right now" : "About " + r10(nowL) + " mg in you right now" + (hi - lo >= 20 ? " (likely " + r10(lo) + "\u2013" + r10(hi) + ")" : "")) : "Almost none left") +
       (today.length ? ", from " + (today.length === 1 ? "1 coffee" : today.length + " coffees") + " today (about " + r10(total) + " mg)." : ".") + " " + under;
     if (total > 400) text += " That is more than the 400 mg a day usually given as the limit for healthy adults.";
-    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now, line), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Below the dashed line (" + line + " mg" + (line === 50 ? ", about half an espresso" : line === 25 ? ", your line for sensitive sleepers" : ", your line for tolerant sleepers") + ") there is little left to keep you awake: a rough guide for a sleep-friendly evening, not a medical limit. A rough average with a range: everyone is affected differently" + (high ? " (you count the upper end)." : "."), more: "settings/index.html#cafset" };
+    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now, line), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Below the dashed line (" + line + " mg" + (line === 50 ? ", about half an espresso" : line === 25 ? ", your line for sensitive sleepers" : line === 100 ? ", your line for tolerant sleepers" : ", your own line") + ") there is little left to keep you awake: a rough guide for a sleep-friendly evening, not a medical limit. A rough average with a range: everyone is affected differently" + (high ? " (you count the upper end)." : "."), more: "settings/index.html#cafset" };
   }
   // today from 6:00 (or the first coffee) until midnight: solid up to now, lighter for what is still to come,
   // the dashed line (your sleep line, 50 mg unless you changed it), a mark for now with the amount, and the hours underneath
