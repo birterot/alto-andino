@@ -92,6 +92,8 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 
   <section class="set" id="cafset">
     <h2>Caffeine on Home</h2>
+    <div class="seg" id="s-cafshow"><button type="button" data-m="">Show</button><button type="button" data-m="off">Hide</button></div>
+    <div id="cafmore">
     <p class="hint">Home estimates the caffeine in you from the cups that were for you. It is a rough average with a range: coffee varies a lot (espresso most), and everyone is affected differently.</p>
     <p class="lab">What to count</p>
     <div class="seg" id="s-cafmode"><button type="button" data-m="">Estimate</button><button type="button" data-m="high">Upper end</button></div>
@@ -106,6 +108,14 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
     <label class="own">Your usual bedtime<span class="ownrow"><input id="s-bed" type="time" aria-label="Your usual bedtime"><button type="button" class="lnk" id="s-bed-x">Clear</button></span></label>
     <p class="hint">With a bedtime, Home shows how much caffeine will be left when you go to bed, and by when your last coffee should be, so it is under your sleep line by then.</p>
     <p><a class="lnk" href="caffeine.html">How it is worked out &rarr;</a></p>
+    </div>
+    <p class="hint" id="cafoff" hidden>The caffeine note is hidden on Home. Your cups are still logged as usual.</p>
+  </section>
+
+  <section class="set" id="sleepset">
+    <h2>Sleep check</h2>
+    <div class="seg" id="s-sleep"><button type="button" data-m="">Off</button><button type="button" data-m="on">On</button></div>
+    <p class="hint">On: in the morning, Home asks how you slept (badly, okay or well), one tap. After a few good and a few bad nights, it compares them with your coffee and gives a tip, for example to have your last coffee earlier. Only you see your answers.</p>
   </section>
 
   <section class="set" id="pushset">
@@ -137,7 +147,8 @@ const db = supabase.createClient(SUPA.url, SUPA.key);
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
 const opt = (s, v, t) => { const o = el("option", "", t); o.value = v; s.appendChild(o); return o; };
-let me = null, profile = null, fm = "", color = "", others = [], cafMode = "", cafDay = "", cafLine = "";
+let me = null, profile = null, fm = "", color = "", others = [], cafMode = "", cafDay = "", cafLine = "", cafShow = "", sleepOn = "";
+function showCafShow() { setSeg("s-cafshow", cafShow); $("cafmore").hidden = cafShow === "off"; $("cafoff").hidden = cafShow !== "off"; }
 const LINE_H = { "25": "The dashed line on Home sits at 25 mg: for people who sleep badly after an afternoon coffee.", "": "The dashed line on Home sits at 50 mg, about half an espresso.", "100": "The dashed line on Home sits at 100 mg: for people who can have an espresso in the evening and still sleep." };
 // your sleep line: one of the three, or any number from 0 to 400 mg ("" = 50, the normal one)
 function showLine(typing) {
@@ -149,6 +160,8 @@ function setSeg(id, v) { document.querySelectorAll("#" + id + " button").forEach
 document.querySelectorAll("#s-cafmode button").forEach(b => { b.onclick = () => { cafMode = b.dataset.m; setSeg("s-cafmode", cafMode); }; });
 document.querySelectorAll("#s-cafday button").forEach(b => { b.onclick = () => { cafDay = b.dataset.m; setSeg("s-cafday", cafDay); }; });
 $("s-bed-x").onclick = () => { $("s-bed").value = ""; };
+document.querySelectorAll("#s-cafshow button").forEach(b => { b.onclick = () => { cafShow = b.dataset.m; showCafShow(); }; });
+document.querySelectorAll("#s-sleep button").forEach(b => { b.onclick = () => { sleepOn = b.dataset.m; setSeg("s-sleep", sleepOn); }; });
 document.querySelectorAll("#s-cafline button").forEach(b => { b.onclick = () => { cafLine = b.dataset.m; showLine(); }; });
 $("s-cafline-n").addEventListener("input", () => {
   const raw = $("s-cafline-n").value.trim(), v = Math.round(Number(raw.replace(",", ".")));
@@ -209,6 +222,7 @@ async function load() {
   cafMode = p.caf_mode === "high" ? "high" : ""; cafDay = p.caf_day === "midnight" ? "midnight" : ""; setSeg("s-cafmode", cafMode); setSeg("s-cafday", cafDay);
   cafLine = p.caf_line != null && Number(p.caf_line) >= 0 && Number(p.caf_line) <= 400 && Number(p.caf_line) !== 50 ? String(Math.round(p.caf_line)) : ""; showLine();
   $("s-bed").value = /^\d\d:\d\d$/.test(p.caf_bed || "") ? p.caf_bed : "";
+  cafShow = p.caf_show === "off" ? "off" : ""; showCafShow(); sleepOn = p.sleep === "on" ? "on" : ""; setSeg("s-sleep", sleepOn);
   // the others in your household (the profiles you can see), for the little letters on the colours
   const { data: ps } = await db.from("profiles").select("id,display_name,prefs");
   others = (ps || []).filter(x => x.id !== me.id).map(x => ({ name: x.display_name || "Someone", color: x.prefs && x.prefs.color })); renderColors();
@@ -226,6 +240,8 @@ $("sf").onsubmit = async e => {
   if (cafDay) prefs.caf_day = cafDay; else delete prefs.caf_day;
   if (cafLine) prefs.caf_line = Number(cafLine); else delete prefs.caf_line;
   if ($("s-bed").value) prefs.caf_bed = $("s-bed").value; else delete prefs.caf_bed;
+  if (cafShow) prefs.caf_show = cafShow; else delete prefs.caf_show;
+  if (sleepOn) prefs.sleep = sleepOn; else delete prefs.sleep;
   const same = (x, y) => JSON.stringify(Object.keys(x).sort().map(k => [k, x[k]])) === JSON.stringify(Object.keys(y).sort().map(k => [k, y[k]]));
   if (profile && profile.display_name === name && same(prefs, profile.prefs || {})) { flash("Nothing changed, your settings are as they were."); return; }
   $("save").disabled = true; $("msg").textContent = "Saving...";
@@ -234,7 +250,7 @@ $("sf").onsubmit = async e => {
   if (error) { $("msg").textContent = "Could not save: " + error.message; return; }
   profile = { id: me.id, display_name: name, prefs };
   if (fm) try { localStorage.setItem("alto.formmode", fm); } catch (e2) {}
-  try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: cafMode, day: cafDay, line: cafLine ? Number(cafLine) : null, bed: $("s-bed").value || "" })); } catch (e2) {}   // Home uses it at once
+  try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: cafMode, day: cafDay, line: cafLine ? Number(cafLine) : null, bed: $("s-bed").value || "", show: cafShow, sleep: sleepOn })); } catch (e2) {}   // Home uses it at once
   flash("Saved. New brews start with these settings.");
 };
 // the message next to the button, briefly highlighted so it is not missed

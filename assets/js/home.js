@@ -107,12 +107,18 @@
   }
   if (shelf) drawBags(shelf);
 
+  // the sleep check (Settings > Sleep check, off unless you turned it on): in the morning, one tap for last night
+  var ask = el("div", "ask"); ask.hidden = true; box.appendChild(ask);
+  var sleepLogs = shelf && Array.isArray(shelf.sl) ? shelf.sl : null;
+
   // one note at a time: your caffeine first (when there was coffee today), then to do, Friends, the fact of the day
-  var notes = [], cafNote = null, rateNote = null;
+  var notes = [], cafNote = null, rateNote = null, tipNote = null;
   var tr = session && shelf ? toRate(shelf.tr, shelf.nm) : null;
   if (tr) notes.push(rateNote = tr);
   var caf = session ? caffeine(shelf && shelf.cb) : null;
   if (caf) notes.push(cafNote = caf);
+  var tip0 = session && cafPref().sleep === "on" && shelf && shelf.stip ? tipToNote(shelf.stip) : null;
+  if (tip0) notes.push(tipNote = tip0);
   if (shelf) {
     if (shelf.nob > 0) notes.push({ k: "To do", text: shelf.nob + (shelf.nob === 1 ? " of your brews still needs" : " of your brews still need") + " a Balance rating.", href: "journal/index.html#mine", go: "Rate them" });
     shelf.coffees.forEach(function (c) {
@@ -158,15 +164,24 @@
     }
     draw(); box.appendChild(card);
   }
+  drawAsk();
   // Then, quietly: your brews of the last two months straight from the database, for the line under the greeting and the
   // caffeine (also brews someone else logged and you rated). Supabase's own library renews the login if it ran out.
   if (session && window.CAFFEINE) setTimeout(freshen, 900);
+  var dbP = null;   // Supabase's library, loaded once when Home needs it (after the opening animation)
+  function getDb() {
+    if (dbP) return dbP;
+    dbP = new Promise(function (ok, no) {
+      var S = window.SUPA; if (!S) return no(new Error("no config"));
+      var make = function () { if (window.supabase && window.supabase.createClient) ok(window.supabase.createClient(S.url, S.key)); else no(new Error("no library")); };
+      if (window.supabase) return make();
+      var sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"; sc.onload = make; sc.onerror = function () { no(new Error("offline")); }; document.head.appendChild(sc);
+    });
+    return dbP;
+  }
   function freshen() {
-    var S = window.SUPA; if (!S) return;
-    var go = function () {
-      if (!window.supabase || !window.supabase.createClient) return;
-      var db = window.supabase.createClient(S.url, S.key);
-      db.auth.getSession().then(function (r) {
+    getDb().then(function (db) {
+      return db.auth.getSession().then(function (r) {
         var ses = r && r.data && r.data.session; if (!ses || ses.user.id !== session.user.id) return;
         var my = ses.user.id, since2 = new Date(Date.now() - 62 * 864e5).toISOString();
         return Promise.all([
@@ -175,11 +190,12 @@
           (function () {   // all brews of the open bags (for the cups left), however old
             var ids = ((shelf && shelf.coffees) || []).filter(function (c) { return c.open_date && !c.finished_at && !c.archived; }).map(function (c) { return c.id; });
             return ids.length ? db.from("brews").select("coffee_id,dose_g").in("coffee_id", ids) : Promise.resolve({ data: [] });
-          })()
+          })(),
+          db.from("sleep_logs").select("night,quality").gte("night", since2.slice(0, 10))   // the sleep check (supabase/31_sleep.sql; before that: an error, left out)
         ]).then(function (res) {
           var q = res[0]; if (q.error || !Array.isArray(q.data)) return;
           var nm = {}; ((res[1] && res[1].data) || []).forEach(function (p) { nm[p.id] = p.display_name; if (p.id === my && p.prefs) savePref(p.prefs); });
-          var cut = Date.now() - 36 * 36e5, mine = [], rows = [], pend = [], week = Date.now() - 7 * 864e5;
+          var cut = Date.now() - 36 * 36e5, mine = [], rows = [], pend = [], week = Date.now() - 7 * 864e5, all = [];
           q.data.forEach(function (b) {
             // your cup, not rated yet (the last 7 days)
             var me1 = (b.brew_ratings || []).filter(function (x) { return !x.is_guest && x.rater_id === my; })[0];
@@ -188,16 +204,18 @@
             var rs = b.brew_ratings || [], made = (b.made_by || b.created_by) === my, drank = rs.some(function (x) { return !x.is_guest && x.rater_id === my; });
             if (made || drank) mine.push([Date.parse(b.brewed_at), made ? 1 : 0, drank ? 1 : 0]);
             if (CAFFEINE.recent(b, cut)) rows.push(CAFFEINE.row(b, b.coffees || {}));
+            if (Number(b.dose_g) > 0 && rs.some(function (x) { return !x.is_guest && x.rater_id === my; })) all.push(CAFFEINE.row(b, b.coffees || {}));   // your cups, for the sleep tip
           });
+          var logs = res[3] && !res[3].error && Array.isArray(res[3].data) ? res[3].data.map(function (x) { return { n: x.night, q: x.quality }; }) : null;
           var used = null; if (res[2] && Array.isArray(res[2].data)) { used = {}; res[2].data.forEach(function (x) { used[x.coffee_id] = (used[x.coffee_id] || 0) + (Number(x.dose_g) || 0); }); }
-          var sh = null; try { sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === my) { sh.cb = rows; sh.cbt = Date.now(); sh.my = mine; sh.tr = pend; sh.nm = nm; if (used) sh.used = Object.assign({}, sh.used || {}, used); localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } else sh = null; } catch (e) { sh = null; }
+          var tip = logs ? sleepTip(logs, all) : null;
+          var sh = null; try { sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === my) { sh.cb = rows; sh.cbt = Date.now(); sh.my = mine; sh.tr = pend; sh.nm = nm; if (used) sh.used = Object.assign({}, sh.used || {}, used); if (logs) { sh.sl = logs; sh.stip = tip; } localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } else sh = null; } catch (e) { sh = null; }
           if (sh) drawBags(sh);
           showStat(mine); showRate(pend, nm); showCaffeine(rows);
+          if (logs) { sleepLogs = logs; drawAsk(); showTip(tip); }
         });
-      }).catch(function () {});
-    };
-    if (window.supabase) return go();
-    var sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"; sc.onload = go; document.head.appendChild(sc);
+      });
+    }).catch(function () {});
   }
   // a note that comes, changes or goes when the fresh brews arrive (first = it goes to the top)
   function swapNote(old, nu, first) {
@@ -223,14 +241,77 @@
   }
   function showCaffeine(rows) { cafNote = swapNote(cafNote, caffeine(rows), false); }
 
+  // ---------- sleep check: how did you sleep, and what your coffee may have to do with it ----------
+  function ymd(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function lastNight() { var d = new Date(); d.setDate(d.getDate() - 1); return ymd(d); }
+  function drawAsk() {   // mornings (4:00 to 14:00), until you answered for last night
+    ask.textContent = ""; ask.hidden = true;
+    var h = new Date().getHours();
+    if (!session || cafPref().sleep !== "on" || !sleepLogs || h < 4 || h >= 14 || sleepLogs.some(function (x) { return x.n === lastNight(); })) return;
+    var hd = el("div", "nh"); hd.appendChild(el("span", "nk", "Sleep check")); ask.appendChild(hd);
+    ask.appendChild(el("p", "nt", "How did you sleep last night?"));
+    var row = el("div", "faces");
+    [[1, "\uD83D\uDE1E", "Badly"], [2, "\uD83D\uDE10", "Okay"], [3, "\uD83D\uDE0A", "Well"]].forEach(function (f) {
+      var b = el("button", "face"); b.type = "button"; b.setAttribute("aria-label", f[2]);
+      b.append(el("span", "fe", f[1]), el("span", "fl", f[2]));
+      b.onclick = function () { saveSleep(f[0]); };
+      row.appendChild(b);
+    });
+    ask.appendChild(row); ask.hidden = false;
+  }
+  function saveSleep(q) {
+    var night = lastNight();
+    ask.textContent = ""; ask.appendChild(el("p", "nt", "Saving..."));
+    getDb().then(function (db) {
+      return db.from("sleep_logs").upsert({ user_id: session.user.id, night: night, quality: q }, { onConflict: "user_id,night" }).then(function (r) {
+        if (r.error) throw r.error;
+        sleepLogs = (sleepLogs || []).filter(function (x) { return x.n !== night; }).concat([{ n: night, q: q }]);
+        try { var sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh) { sh.sl = sleepLogs; localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } } catch (e) {}
+        ask.textContent = ""; ask.appendChild(el("p", "nt", q === 3 ? "Good to hear. Saved." : q === 2 ? "Saved." : "Sorry to hear. Saved."));
+        setTimeout(function () { ask.hidden = true; }, 2500);
+      });
+    }).catch(function (e) { ask.textContent = ""; ask.appendChild(el("p", "nt", "Could not save: " + (e && e.message ? e.message : "no connection") + ".")); setTimeout(drawAsk, 3000); });
+  }
+  // Compares the nights you slept well with those you slept badly: when was your last coffee, how much was left at bedtime.
+  // Needs a few of each; until then it says how far along it is.
+  function sleepTip(logs, rows) {
+    if (!logs.length) return null;
+    var my = session.user.id, pref = cafPref(), bm = /^(\d\d):(\d\d)$/.exec(pref.bed || "") || [0, "23", "00"];
+    var doses = [];
+    rows.forEach(function (b) { var k = b.r.indexOf(my); if (k < 0) return; var t = Date.parse((b.rt && b.rt[k]) || b.t); if (isFinite(t)) doses.push({ t: t, mg: CAFFEINE.mg(b).mg / b.r.length }); });
+    var nights = logs.map(function (x) {
+      var p = x.n.split("-").map(Number), bed = new Date(p[0], p[1] - 1, p[2], +bm[1], +bm[2]).getTime(); if (+bm[1] < 12) bed += 864e5;   // a bedtime after midnight
+      var day0 = new Date(p[0], p[1] - 1, p[2], 4).getTime(), cups = doses.filter(function (d) { return d.t >= day0 && d.t < bed; });
+      var last = cups.length ? Math.max.apply(null, cups.map(function (d) { return d.t; })) : null;
+      return { q: x.q, last: last === null ? null : (last - new Date(p[0], p[1] - 1, p[2]).getTime()) / 36e5, atBed: CAFFEINE.level(doses, bed) };
+    });
+    var good = nights.filter(function (n) { return n.q === 3; }), bad = nights.filter(function (n) { return n.q === 1; });
+    if (good.length < 2 || bad.length < 2) return { k: "wait", n: logs.length };
+    var avg = function (a, f) { var v = a.map(function (n) { return n[f]; }).filter(function (x) { return x !== null; }); return v.length ? v.reduce(function (s, x) { return s + x; }, 0) / v.length : null; };
+    var gl = avg(good, "last"), bl = avg(bad, "last"), gb = avg(good, "atBed"), bb = avg(bad, "atBed");
+    if (gl !== null && bl !== null && bl - gl >= 1) return { k: "time", good: gl, bad: bl, cut: Math.floor((gl + 0.5) * 2) / 2, n: logs.length };
+    if (bb - gb >= 20) return { k: "mg", good: gb, bad: bb, n: logs.length };
+    return { k: "none", n: logs.length };
+  }
+  function tipToNote(t) {
+    if (!t) return null;
+    var hm = function (h) { var m = Math.round(h * 60) % 1440; return Math.floor(m / 60) + ":" + String(m % 60).padStart(2, "0"); }, r10 = function (x) { return Math.round(x / 10) * 10; };
+    var text = t.k === "wait" ? "Sleep check: " + t.n + (t.n === 1 ? " night" : " nights") + " so far. After a few good and a few bad ones, Home shows what your coffee may have to do with it."
+      : t.k === "time" ? "On nights you slept well, your last coffee was around " + hm(t.good) + "; before bad nights around " + hm(t.bad) + ". Maybe try no coffee after " + hm(t.cut) + "."
+      : t.k === "mg" ? "Before bad nights you still had about " + r10(t.bad) + " mg in you at bedtime, before good ones about " + r10(t.good) + " mg. A lower sleep line (Settings) may help."
+      : "From " + t.n + " nights so far, your sleep does not seem to depend on your coffee: good and bad nights had about the same.";
+    return { k: "Sleep", text: text, href: t.k === "mg" ? "settings/index.html#cafset" : null, go: "Sleep line" };
+  }
+  function showTip(t) { tipNote = swapNote(tipNote, cafPref().sleep === "on" ? tipToNote(t) : null, false); }
+
   // ---------- caffeine: the note and its curve (the numbers come from assets/js/caffeine.js) ----------
   // A brew counts for everyone it was for (split between them, rated or not yet), at the time they drank it if they said,
   // else at the time of the brew. Settings > Caffeine (kept on this phone too, so Home has it at once):
   // "high" counts the upper end of the range, "midnight" starts every day at zero, "line" is your sleep line (5 to 400 mg, 50 unless you changed it).
   function cafPref() { try { return JSON.parse(localStorage.getItem("alto.cafpref") || "{}") || {}; } catch (e) { return {}; } }
-  function savePref(p) { try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "", line: p.caf_line != null ? p.caf_line : null, bed: p.caf_bed || "" })); } catch (e) {} }
+  function savePref(p) { try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "", line: p.caf_line != null ? p.caf_line : null, bed: p.caf_bed || "", show: p.caf_show || "", sleep: p.sleep || "" })); } catch (e) {} }
   function caffeine(rows) {
-    if (!Array.isArray(rows) || !session || !window.CAFFEINE) return null;
+    if (!Array.isArray(rows) || !session || !window.CAFFEINE || cafPref().show === "off") return null;   // turned off in Settings
     var my = session.user.id, now = Date.now(), pref = cafPref(), high = pref.mode === "high";
     var line = pref.line != null && pref.line !== "" && Number(pref.line) >= 0 && Number(pref.line) <= 400 ? Math.round(Number(pref.line)) : 50;   // your sleep line (Settings: 25, 50, 100 or your own)
     var eff = Math.max(line, 1);   // 0 mg is never quite reached: under 1 mg counts as none left
