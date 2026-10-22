@@ -36,6 +36,9 @@
   if (shelf) {
     var open = shelf.coffees.filter(function (c) { return c.open_date && !c.finished_at && !c.archived; });
     var seen = {}; open = open.filter(function (c) { var k = c.group_id || c.id; if (seen[k]) return false; seen[k] = 1; return true; });
+    // the emptiest first (fewest cups left); bags without a size at the end
+    var cupsLeft = function (c) { return c.bag_size_g ? (c.bag_size_g - ((shelf.used || {})[c.id] || 0)) / ((shelf.dose || {})[c.id] || 18) : Infinity; };
+    open.sort(function (x, y) { return cupsLeft(x) - cupsLeft(y); });
     if (open.length) {
       var strip = el("div", "bags"); strip.setAttribute("aria-label", "Your open bags");
       open.slice(0, 8).forEach(function (c) {
