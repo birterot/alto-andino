@@ -95,6 +95,9 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
     <p class="lab">Each day</p>
     <div class="seg" id="s-cafday"><button type="button" data-m="">Carry over</button><button type="button" data-m="midnight">Reset at midnight</button></div>
     <p class="hint">“Carry over” counts last night's coffee as it wears off. “Reset at midnight” starts every day at zero.</p>
+    <p class="lab">Your sleep line</p>
+    <div class="seg" id="s-cafline"><button type="button" data-m="25">Sensitive</button><button type="button" data-m="">Normal</button><button type="button" data-m="100">Less sensitive</button></div>
+    <p class="hint" id="cafline-h"></p>
     <p><a class="lnk" href="caffeine.html">How it is worked out &rarr;</a></p>
   </section>
 
@@ -127,10 +130,12 @@ const db = supabase.createClient(SUPA.url, SUPA.key);
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
 const opt = (s, v, t) => { const o = el("option", "", t); o.value = v; s.appendChild(o); return o; };
-let me = null, profile = null, fm = "", color = "", others = [], cafMode = "", cafDay = "";
+let me = null, profile = null, fm = "", color = "", others = [], cafMode = "", cafDay = "", cafLine = "";
+const LINE_H = { "25": "The dashed line on Home sits at 25 mg: for people who sleep badly after an afternoon coffee.", "": "The dashed line on Home sits at 50 mg, about half an espresso.", "100": "The dashed line on Home sits at 100 mg: for people who can have an espresso in the evening and still sleep." };
 function setSeg(id, v) { document.querySelectorAll("#" + id + " button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.m === v))); }
 document.querySelectorAll("#s-cafmode button").forEach(b => { b.onclick = () => { cafMode = b.dataset.m; setSeg("s-cafmode", cafMode); }; });
 document.querySelectorAll("#s-cafday button").forEach(b => { b.onclick = () => { cafDay = b.dataset.m; setSeg("s-cafday", cafDay); }; });
+document.querySelectorAll("#s-cafline button").forEach(b => { b.onclick = () => { cafLine = b.dataset.m; setSeg("s-cafline", cafLine); $("cafline-h").textContent = LINE_H[cafLine]; }; });
 // your colour: tap one; tap it again for "automatic". The initials of the others show which colours they use.
 function renderColors() {
   const box = $("s-color"); box.textContent = "";
@@ -183,6 +188,7 @@ async function load() {
   setFm(p.formmode || "");
   color = (DEFAULTS.COLORS || []).some(c => c[0] === p.color) ? p.color : ""; renderColors();
   cafMode = p.caf_mode === "high" ? "high" : ""; cafDay = p.caf_day === "midnight" ? "midnight" : ""; setSeg("s-cafmode", cafMode); setSeg("s-cafday", cafDay);
+  cafLine = p.caf_line === 25 || p.caf_line === 100 ? String(p.caf_line) : ""; setSeg("s-cafline", cafLine); $("cafline-h").textContent = LINE_H[cafLine];
   // the others in your household (the profiles you can see), for the little letters on the colours
   const { data: ps } = await db.from("profiles").select("id,display_name,prefs");
   others = (ps || []).filter(x => x.id !== me.id).map(x => ({ name: x.display_name || "Someone", color: x.prefs && x.prefs.color })); renderColors();
@@ -198,6 +204,7 @@ $("sf").onsubmit = async e => {
   if (color) prefs.color = color; else delete prefs.color;
   if (cafMode) prefs.caf_mode = cafMode; else delete prefs.caf_mode;
   if (cafDay) prefs.caf_day = cafDay; else delete prefs.caf_day;
+  if (cafLine) prefs.caf_line = Number(cafLine); else delete prefs.caf_line;
   const same = (x, y) => JSON.stringify(Object.keys(x).sort().map(k => [k, x[k]])) === JSON.stringify(Object.keys(y).sort().map(k => [k, y[k]]));
   if (profile && profile.display_name === name && same(prefs, profile.prefs || {})) { flash("Nothing changed, your settings are as they were."); return; }
   $("save").disabled = true; $("msg").textContent = "Saving...";
@@ -206,7 +213,7 @@ $("sf").onsubmit = async e => {
   if (error) { $("msg").textContent = "Could not save: " + error.message; return; }
   profile = { id: me.id, display_name: name, prefs };
   if (fm) try { localStorage.setItem("alto.formmode", fm); } catch (e2) {}
-  try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: cafMode, day: cafDay })); } catch (e2) {}   // Home uses it at once
+  try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: cafMode, day: cafDay, line: cafLine ? Number(cafLine) : null })); } catch (e2) {}   // Home uses it at once
   flash("Saved. New brews start with these settings.");
 };
 // the message next to the button, briefly highlighted so it is not missed

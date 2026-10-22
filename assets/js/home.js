@@ -228,10 +228,11 @@
   // else at the time of the brew. Settings > Caffeine (kept on this phone too, so Home has it at once):
   // "high" counts the upper end of the range, "midnight" starts every day at zero.
   function cafPref() { try { return JSON.parse(localStorage.getItem("alto.cafpref") || "{}") || {}; } catch (e) { return {}; } }
-  function savePref(p) { try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "" })); } catch (e) {} }
+  function savePref(p) { try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "", line: p.caf_line || null })); } catch (e) {} }
   function caffeine(rows) {
     if (!Array.isArray(rows) || !session || !window.CAFFEINE) return null;
     var my = session.user.id, now = Date.now(), pref = cafPref(), high = pref.mode === "high";
+    var line = [25, 50, 100].indexOf(Number(pref.line)) >= 0 ? Number(pref.line) : 50;   // your sleep line (Settings: more or less sensitive)
     var mid = new Date(); mid.setHours(0, 0, 0, 0);
     var doses = [];
     rows.forEach(function (b) {
@@ -248,16 +249,16 @@
     if (!today.length && nowL < 10) return null;
     var r10 = function (x) { return Math.round(x / 10) * 10; }, hm = function (ms) { var d = new Date(ms); d.setMinutes(Math.round(d.getMinutes() / 10) * 10, 0, 0); return d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0"); };
     // when it is under 50 mg (and stays there)
-    var last = null; for (var at = now; at < now + 36 * 36e5; at += 5 * 6e4) if (level(at) >= 50) last = at;
-    var under = last === null ? "Already under 50 mg." : "Under 50 mg from about " + hm(last + 5 * 6e4) + (new Date(last).getDate() !== new Date(now).getDate() ? " tomorrow." : ".");
+    var last = null; for (var at = now; at < now + 36 * 36e5; at += 5 * 6e4) if (level(at) >= line) last = at;
+    var under = last === null ? "Already under " + line + " mg." : "Under " + line + " mg from about " + hm(last + 5 * 6e4) + (new Date(last).getDate() !== new Date(now).getDate() ? " tomorrow." : ".");
     var text = (nowL >= 5 ? (high ? "Up to about " + r10(nowL) + " mg in you right now" : "About " + r10(nowL) + " mg in you right now" + (hi - lo >= 20 ? " (likely " + r10(lo) + "\u2013" + r10(hi) + ")" : "")) : "Almost none left") +
       (today.length ? ", from " + (today.length === 1 ? "1 coffee" : today.length + " coffees") + " today (about " + r10(total) + " mg)." : ".") + " " + under;
     if (total > 400) text += " That is more than the 400 mg a day usually given as the limit for healthy adults.";
-    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Below the dashed line (50 mg, about half an espresso) there is little left to keep most people awake: a rough guide for a sleep-friendly evening, not a medical limit. A rough average with a range: everyone is affected differently" + (high ? " (you count the upper end)." : "."), more: "settings/index.html#cafset" };
+    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now, line), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Below the dashed line (" + line + " mg" + (line === 50 ? ", about half an espresso" : line === 25 ? ", for the sensitive" : ", for the less sensitive") + ") there is little left to keep you awake: a rough guide for a sleep-friendly evening, not a medical limit. A rough average with a range: everyone is affected differently" + (high ? " (you count the upper end)." : "."), more: "settings/index.html#cafset" };
   }
   // today from 6:00 (or the first coffee) until midnight: solid up to now, lighter for what is still to come,
-  // the dashed 50 mg line, a mark for now with the amount, and the hours underneath
-  function curveOf(level, mid, now) {
+  // the dashed line (your sleep line, 50 mg unless you changed it), a mark for now with the amount, and the hours underneath
+  function curveOf(level, mid, now, line) {
     var NS = "http://www.w3.org/2000/svg", mk = function (t, a) { var e = document.createElementNS(NS, t); for (var k in a) e.setAttribute(k, a[k]); return e; };
     var t0 = mid + 6 * 36e5, t1 = mid + 24 * 36e5; if (now < t0) t0 = mid; if (now > t1 - 36e5) t1 = now + 3 * 36e5;
     var N = 120, pts = [], top = 100; for (var k = 0; k <= N; k++) { var at = t0 + (t1 - t0) * k / N, v = level(at); pts.push([at, v]); if (v > top) top = v; }
@@ -271,12 +272,12 @@
     if (next.length && next[0][0] > now) next.unshift([now, level(now)]);
     if (past.length > 1) { s.appendChild(mk("path", { d: line(past) + " L" + x(now) + " " + (H - 2) + " L" + x(t0) + " " + (H - 2) + "Z", class: "ca" })); s.appendChild(mk("path", { d: line(past), class: "cl" })); }
     if (next.length > 1) s.appendChild(mk("path", { d: line(next), class: "cl fut" }));
-    s.appendChild(mk("path", { d: "M0 " + y(50) + " H" + W, class: "c50" }));
+    s.appendChild(mk("path", { d: "M0 " + y(line) + " H" + W, class: "c50" }));
     s.appendChild(mk("path", { d: "M0 " + (H - 1) + " H" + W, class: "cbase" }));
     if (now >= t0 && now <= t1) s.appendChild(mk("path", { d: "M" + x(now) + " 0 V" + H, class: "cn" }));
     plot.appendChild(s);
     // labels in HTML (the drawing stretches to the width, text must not)
-    var l50 = el("span", "l50", "50 mg"); l50.style.bottom = (100 * 50 / top) + "%"; plot.appendChild(l50);
+    var l50 = el("span", "l50", line + " mg"); l50.style.bottom = (100 * line / top) + "%"; plot.appendChild(l50);
     if (now >= t0 && now <= t1) { var ln = el("span", "lnow", "now " + Math.round(level(now) / 10) * 10 + " mg"), q = pct(now); ln.style.left = q + "%"; if (q > 75) ln.classList.add("r"); else if (q < 25) ln.classList.add("l"); plot.appendChild(ln); }
     wrap.appendChild(plot);
     var ax = el("div", "cax");
