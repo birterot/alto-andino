@@ -125,16 +125,14 @@
   // About 9 mg of caffeine per gram of arabica coffee ends up in the cup (beans are about 1.2 % caffeine, most of it is
   // extracted); robusta about twice that, decaf almost none. In the body it rises for about 45 minutes and then halves
   // roughly every 5 hours (Bateman curve, absorption 4.5 per hour). A brew counts for everyone who rated it (split
-  // between them); a brew nobody rated counts for whoever made it, unless it was a dial-in.
+  // between them), at the time of the brew; a brew nobody rated yet counts for nobody until someone rates it.
   function caffeine(rows) {
     if (!Array.isArray(rows) || !session) return null;
     var my = session.user.id, MG = { decaf: 0.3, robusta: 18, blend: 13 }, KE = Math.LN2 / 5, KA = 4.5, now = Date.now();
     var doses = [];
     rows.forEach(function (b) {
       var t = Date.parse(b.t); if (!(b.g > 0) || !isFinite(t) || t > now + 60e3) return;
-      var share = 0;
-      if (b.r && b.r.length) share = b.r.indexOf(my) >= 0 ? b.g / b.r.length : 0;
-      else if (!b.d && b.m === my) share = b.g;
+      var share = b.r && b.r.indexOf(my) >= 0 ? b.g / b.r.length : 0;   // only the brews you rated; shared with the others who rated it
       if (share > 0) doses.push({ t: t, mg: share * (MG[b.k] || 9) });
     });
     var level = function (at) { return doses.reduce(function (s, d) { var hh = (at - d.t) / 36e5; return hh <= 0 ? s : s + d.mg * KA / (KA - KE) * (Math.exp(-KE * hh) - Math.exp(-KA * hh)); }, 0); };

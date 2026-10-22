@@ -1024,11 +1024,11 @@ async function load() {
   // the brews of the last day and a half, for the caffeine on Home (who rated them drank them)
   const byId = {}, since = Date.now() - 36 * 3600e3; data.forEach(c => { byId[c.id] = c; });
   // and your own brews of the last two months, for "you brewed ... and drank ..." on Home: [time, made it, drank it]
-  // (drank = rated it, or made it and nobody rated it, as for the caffeine; dial-ins nobody rated are not drunk)
+  // (drank = you rated it, as for the caffeine)
   const since2 = Date.now() - 62 * 864e5;
   myBrews = !me ? null : (bs || []).filter(b => b.brewed_at && Date.parse(b.brewed_at) >= since2).map(b => {
     const rs = b.brew_ratings || [], made = (b.made_by || b.created_by) === me.id;
-    const drank = rs.length ? rs.some(r => !r.is_guest && r.rater_id === me.id) : made && !b.is_dialin;
+    const drank = rs.some(r => !r.is_guest && r.rater_id === me.id);
     return made || drank ? [Date.parse(b.brewed_at), made ? 1 : 0, drank ? 1 : 0] : null;
   }).filter(Boolean);
   recentBrews = (bs || []).filter(b => b.brewed_at && Date.parse(b.brewed_at) >= since && Number(b.dose_g) > 0).map(b => cafRow(b, byId[b.coffee_id]));
