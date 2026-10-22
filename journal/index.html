@@ -2905,7 +2905,7 @@ $("bf").onsubmit = async e => {
   savingB = true; $("bsave").disabled = true;
   say("Saving...");
   try {
-    const device = row.device;
+    const device = row.device, told = [];
     let id;
     if (editingBrew) {
       const { data: done, error } = await db.from("brews").update(row).eq("id", editingBrew.id).select();
@@ -2927,8 +2927,11 @@ $("bf").onsubmit = async e => {
         if (error) throw error;
         const rows = Object.entries(t.scores).map(([attribute, score]) => ({ brew_id: id, rating_id: r.id, attribute, score }));
         if (rows.length) { const r2 = await db.from("brew_scores").insert(rows); if (r2.error) throw r2.error; }
+        if (!t.is_guest && t.rater_id && me && t.rater_id !== me.id && t.rating == null) told.push(r.id);
       }
     } catch (err) { if (!editingBrew) await db.from("brews").delete().eq("id", id); throw err; }
+    // the others it is for get a notification on their phones (if they turned them on); never in the way of saving
+    if (told.length) try { db.functions.invoke("notify", { body: { action: "brew", brew_id: id, ratings: told } }).catch(() => {}); } catch (e) {}
     store.del(draftKey()); store.del("alto.calc.last");   // used up
     if (device) store.set("alto.device", device);
     if (row.grinder) store.set("alto.grinder", row.grinder);

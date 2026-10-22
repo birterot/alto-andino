@@ -36,6 +36,9 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .out{max-width:560px}
 .lab{margin:18px 0 0;font-size:13.5px;color:var(--mut)}
 #colorhint{margin-top:12px}
+.pstate{margin:12px 0 0;font-size:15px;max-width:52ch}
+.pbtns{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}
+.pbtns .lnk{min-height:40px}
 .sw{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;max-width:420px}
 .sw button{position:relative;width:42px;height:42px;border-radius:50%;border:0;color:#fff;font:inherit;font-size:16px;font-weight:600;cursor:pointer;padding:0}
 .sw button[aria-checked=true]{box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--ink)}
@@ -81,6 +84,13 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
     <label>With espresso (espresso machine, moka pot)<select id="s-drink-esp"></select></label>
     <label>With filter coffee<select id="s-drink-filter"></select></label>
     <label>Milk<select id="s-milk"></select></label>
+  </section>
+
+  <section class="set" id="pushset">
+    <h2>Notifications</h2>
+    <p class="hint">On this phone: a notification when someone logs a brew for you, so you can rate your cup. Each phone is turned on by itself.</p>
+    <p class="pstate" id="pstate" role="status">Checking...</p>
+    <div class="pbtns"><button type="button" class="go" id="pon" hidden>Turn on notifications</button><button type="button" class="lnk" id="ptest" hidden>Send a test</button><button type="button" class="lnk" id="poff" hidden>Turn off</button></div>
   </section>
 
   <div class="bar"><button class="go" id="save" type="submit">Save settings</button><p id="msg" role="status"></p></div>
@@ -178,10 +188,61 @@ $("sf").onsubmit = async e => {
 // the message next to the button, briefly highlighted so it is not missed
 function flash(t) { const m = $("msg"); m.textContent = t; m.classList.remove("on"); void m.offsetWidth; m.classList.add("on"); }
 $("out").onclick = async () => { try { localStorage.removeItem("alto.shelf.v1"); localStorage.removeItem("alto.photolinks.v1"); localStorage.removeItem("alto.myname"); localStorage.removeItem("alto.friendline"); } catch (e) {} await db.auth.signOut(); };
+// ----- notifications on this phone (web push; on an iPhone only in the app opened from the Home Screen) -----
+const PUSH = {
+  ok: "serviceWorker" in navigator && "PushManager" in window && "Notification" in window,
+  home: matchMedia("(display-mode: standalone)").matches || navigator.standalone === true,
+  ios: /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+};
+let pushKey = null, pushReg = null;
+const keyBytes = s => { const t = s.replace(/-/g, "+").replace(/_/g, "/"), b = atob(t + "===".slice((t.length + 3) % 4)); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+function pushUI(text, on) {
+  $("pstate").textContent = text;
+  $("pon").hidden = on !== false; $("ptest").hidden = on !== true; $("poff").hidden = on !== true;
+}
+async function pushNotify(body) {   // the sender in Supabase (Edge Function "notify")
+  const { data, error } = await db.functions.invoke("notify", { body });
+  if (error) { let m = error.message; try { const j = await error.context.json(); if (j && j.error) m = j.error; } catch (e) {} throw new Error(m); }
+  return data;
+}
+async function pushCheck() {
+  if (!PUSH.ok) { pushUI(PUSH.ios && !PUSH.home ? "On the iPhone this only works in the app: open Alto Andino from your Home Screen, then come back here." : "This browser cannot show notifications.", null); return; }
+  try { pushReg = await navigator.serviceWorker.register("../sw.js", { scope: "../" }); } catch (e) { pushUI("Could not get ready for notifications: " + e.message, null); return; }
+  const sub = await pushReg.pushManager.getSubscription();
+  if (Notification.permission === "denied") { pushUI("Notifications are blocked for Alto Andino. Allow them in the phone's settings (Notifications, Alto Andino), then come back here.", null); return; }
+  if (sub) pushUI("On for this phone.", true); else pushUI("Off on this phone.", false);
+  if (!pushKey) pushNotify({ action: "key" }).then(d => { pushKey = d && d.key; }).catch(() => {});   // ready before you tap (the iPhone wants the question right away)
+}
+$("pon").onclick = async () => {
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") { pushUI(perm === "denied" ? "Not allowed. You can change that in the phone's settings (Notifications, Alto Andino)." : "Not turned on.", perm === "denied" ? null : false); return; }
+    pushUI("Turning on...", null);
+    if (!pushKey) pushKey = (await pushNotify({ action: "key" })).key;
+    const sub = await pushReg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(pushKey) });
+    const j = sub.toJSON();
+    const { error } = await db.rpc("push_save", { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth });
+    if (error) throw error;
+    pushUI("On for this phone. Try \u201CSend a test\u201D.", true);
+  } catch (e) { pushUI("Could not turn them on: " + e.message, false); }
+};
+$("ptest").onclick = async () => {
+  $("pstate").textContent = "Sending...";
+  try { const r = await pushNotify({ action: "test" }); $("pstate").textContent = r && r.sent ? "Sent. It should show up in a moment." : "Nothing was sent: this phone is not on the list. Turn it off and on again."; }
+  catch (e) { $("pstate").textContent = "Could not send: " + e.message; }
+};
+$("poff").onclick = async () => {
+  try {
+    const sub = await pushReg.pushManager.getSubscription();
+    if (sub) { await db.rpc("push_remove", { p_endpoint: sub.endpoint }); await sub.unsubscribe(); }
+    pushUI("Off on this phone.", false);
+  } catch (e) { pushUI("Could not turn them off: " + e.message, true); }
+};
+
 db.auth.onAuthStateChange((_e, session) => setTimeout(() => {
   me = session ? session.user : null;
   $("signedout").hidden = !!me; $("sf").hidden = !me;
-  if (me) load();
+  if (me) { load(); pushCheck(); }
 }, 0));
 </script>
 </body>

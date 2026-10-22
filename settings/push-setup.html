@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Notification Setup | Alto Andino</title>
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+.step{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:6px 18px 18px;margin:0 0 16px;max-width:720px}
+.step h2{font-size:19px;margin:14px 0 4px}
+.step p,.step li{font-size:15px;line-height:1.5;max-width:62ch}
+.step ol{padding-left:22px;margin:8px 0}
+.kv{display:grid;grid-template-columns:1fr;gap:4px;margin:12px 0}
+.kv b{font-size:13.5px;color:var(--mut);font-weight:600;letter-spacing:.02em}
+.kv code,.code{display:block;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;word-break:break-all;white-space:pre-wrap;color:var(--ink)}
+.code{max-height:280px;overflow:auto;word-break:normal}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:8px}
+.go{font:inherit;cursor:pointer;height:44px;padding:0 20px;border-radius:12px;border:1px solid var(--act);background:var(--act);color:var(--on-act);font-size:15px}
+.lnk{font:inherit;cursor:pointer;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--ink);font-size:14px}
+.warn{color:var(--mut);font-size:14px}
+.ok{color:var(--accent);font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>Notification setup</h1>
+<p class="sub">Once, for the whole app. After this, each of you turns notifications on in Settings, on your own phone.</p>
+
+<section class="step">
+  <h2>1. Run the SQL</h2>
+  <p>Supabase, <b>SQL Editor</b>, <b>New query</b>: paste the SQL below and press <b>Run</b>. It is safe to run again.</p>
+  <div class="row"><button type="button" class="go" data-copy="sql">Copy the SQL</button></div>
+  <pre class="code" id="sql">Loading...</pre>
+</section>
+
+<section class="step">
+  <h2>2. Make the keys</h2>
+  <p>The keys are made here, in this browser, and are not sent anywhere. Make them once: new keys later mean that every phone has to turn notifications on again.</p>
+  <div class="row"><button type="button" class="go" id="make">Make the keys</button></div>
+  <div id="keys" hidden>
+    <div class="kv"><b>Name: VAPID_PUBLIC_KEY</b><code id="kpub"></code><div class="row"><button type="button" class="lnk" data-copy="kpub">Copy</button></div></div>
+    <div class="kv"><b>Name: VAPID_PRIVATE_KEY</b><code id="kpriv"></code><div class="row"><button type="button" class="lnk" data-copy="kpriv">Copy</button></div></div>
+    <div class="kv"><b>Name: VAPID_SUBJECT</b><code id="ksub">mailto:hello@alto-andino.com</code><div class="row"><button type="button" class="lnk" data-copy="ksub">Copy</button></div></div>
+    <p class="warn">Keep this page open until all three are saved in Supabase. The private key is shown only now.</p>
+  </div>
+  <p>In Supabase: <b>Edge Functions</b>, then <b>Secrets</b> (sometimes under Settings). Add the three, each with its name and value as above, then save.</p>
+</section>
+
+<section class="step">
+  <h2>3. Add the sender</h2>
+  <ol>
+    <li>Supabase, <b>Edge Functions</b>, <b>Deploy a new function</b>, <b>Via Editor</b>.</li>
+    <li>Name it exactly <b>notify</b>.</li>
+    <li>Delete what is in the editor, paste the code below, and press <b>Deploy</b>.</li>
+  </ol>
+  <div class="row"><button type="button" class="go" data-copy="code">Copy the code</button><span class="ok" id="copied" aria-live="polite"></span></div>
+  <pre class="code" id="code">Loading...</pre>
+</section>
+
+<section class="step">
+  <h2>4. On each phone</h2>
+  <p>Open Alto Andino from the Home Screen, go to Settings, Notifications, and tap <b>Turn on notifications</b>. Allow them, then tap <b>Send a test</b>.</p>
+</section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+$("make").onclick = async () => {
+  if (!$("keys").hidden && !confirm("Make new keys? Phones that already turned notifications on would have to do it again.")) return;
+  const kp = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+  const jwk = await crypto.subtle.exportKey("jwk", kp.privateKey), raw = await crypto.subtle.exportKey("raw", kp.publicKey);
+  $("kpub").textContent = b64u(raw); $("kpriv").textContent = jwk.d; $("keys").hidden = false;
+};
+document.addEventListener("click", async e => {
+  const b = e.target.closest("[data-copy]"); if (!b) return;
+  try { await navigator.clipboard.writeText($(b.dataset.copy).textContent); const was = b.textContent; b.textContent = "Copied"; setTimeout(() => { b.textContent = was; }, 1500); }
+  catch (x) { const r = document.createRange(); r.selectNodeContents($(b.dataset.copy)); getSelection().removeAllRanges(); getSelection().addRange(r); }
+});
+fetch("../supabase/30_push.sql", { cache: "no-store" }).then(r => r.ok ? r.text() : Promise.reject(r.status))
+  .then(t => { $("sql").textContent = t; }).catch(() => { $("sql").textContent = "Could not load the SQL here. It is in the repository: supabase/30_push.sql"; });
+fetch("../supabase/functions/notify/index.ts", { cache: "no-store" }).then(r => r.ok ? r.text() : Promise.reject(r.status))
+  .then(t => { $("code").textContent = t; }).catch(() => { $("code").textContent = "Could not load the code here. It is in the repository: supabase/functions/notify/index.ts"; });
+</script>
+</body>
+</html>
