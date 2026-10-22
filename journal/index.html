@@ -225,6 +225,7 @@ input:disabled{background:var(--bg);cursor:not-allowed}
 .calc input{margin:0;height:auto;max-width:none}.calc label{margin-top:0}.calc .fl{margin-top:4px}
 .calc .kgrid input{margin-top:4px;height:44px}
 details.calcbox{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:var(--bg)}
+.signingin{margin:28px 0;color:var(--mut);font-size:16px}
 details.calcbox summary{font-size:15px}
 details.calcbox summary small{display:block;margin:2px 0 0 18px;font-size:13px;font-weight:400;color:var(--mut)}
 details.calcbox[open] summary small{display:none}
@@ -384,6 +385,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
   <button class="go">Save password</button>
 </form>
 
+<p id="signingin" class="signingin" role="status" hidden>Signing in&hellip;</p>
 <section id="app" hidden>
   <div id="hhview" hidden>
     <h2>Welcome</h2>
@@ -2884,22 +2886,26 @@ let recovering = false, shownFor = null, toHome = false;
 async function show(session) {
   $("newpw").hidden = !recovering;
   $("login").hidden = !!session || recovering;
-  $("app").hidden = !session || recovering;
+  // just signed in from the sign-in page: Home comes next, so the shelf stays out of sight while it gets ready
+  const quiet = !!session && !recovering && toHome && shownFor !== session.user.id;
+  $("app").hidden = !session || recovering || quiet;
+  $("signingin").hidden = !quiet;
   $("invited").hidden = !pendingJoin();
   me = session ? session.user : null;
   if (!session || recovering) return;
   if (shownFor === session.user.id) return;   // token refreshes do not reload everything
   shownFor = session.user.id;
   $("who").textContent = "Signed in as " + session.user.email;
-  shelfFromCache();   // what the shelf looked like last time, at once; the fresh list replaces it a moment later
+  if (!quiet) shelfFromCache();   // what the shelf looked like last time, at once; the fresh list replaces it a moment later
   await loadHouseholds();
   await tryPendingJoin();
   if (toHome && (hhs.length || !hhOk) && !store.get("alto.friend") && !pendingJoin()) {   // just signed in: get the shelf ready for Home, then go there
-    toHome = false; say("Signed in.");
+    toHome = false;
     await Promise.all([loadNames(), load()]).catch(() => {});
     location.replace("../index.html"); return;
   }
   toHome = false;
+  if (quiet) { $("signingin").hidden = true; $("app").hidden = false; shelfFromCache(); }   // staying here after all (no household yet, a friend link, a join)
   const names = loadNames();   // names and the coffees load at the same time
   $("hhview").hidden = !(hhOk && !hhs.length);
   route();
