@@ -225,6 +225,12 @@ input:disabled{background:var(--bg);cursor:not-allowed}
 .calc input{margin:0;height:auto;max-width:none}.calc label{margin-top:0}.calc .fl{margin-top:4px}
 .calc .kgrid input{margin-top:4px;height:44px}
 details.calcbox{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:var(--bg)}
+.when{margin:14px 0 4px}
+.when .wl{display:block;font-size:13.5px;color:var(--mut)}
+.wchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.wchips button{font:inherit;font-size:14px;min-height:36px;padding:0 13px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.wchips button.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
+#b-when{max-width:260px;margin-top:8px}
 .signingin{margin:28px 0;color:var(--mut);font-size:16px}
 details.calcbox summary{font-size:15px}
 details.calcbox summary small{display:block;margin:2px 0 0 18px;font-size:13px;font-weight:400;color:var(--mut)}
@@ -513,6 +519,10 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
         <label id="cofflab">Coffee<select id="b-coffee"></select></label>
         <label id="mblab" class="adv" hidden>Made by<select id="b-madeby"></select></label>
         <p class="hint adv" id="mbhint" hidden></p>
+        <div class="when" role="group" aria-labelledby="whenl"><span class="wl" id="whenl">When</span>
+          <div class="wchips" id="wchips"></div>
+          <input type="datetime-local" id="b-when" aria-label="When you had the coffee" hidden>
+        </div>
         <label>Device
           <select id="b-device"></select>
           <input id="b-device-new" placeholder="Name of the new device" hidden>
@@ -1429,6 +1439,7 @@ function brewChanges(old, row) {
     const ow = old.made_by || old.created_by, nw = row.made_by || old.created_by;
     if (ow !== nw) out.push(["Made by", nameOf(nw) || "not set", nameOf(ow) || "not set"]);
   }
+  if (row.brewed_at && old.brewed_at && Math.abs(Date.parse(row.brewed_at) - Date.parse(old.brewed_at)) >= 60e3) out.push(["When", fmtDT(new Date(row.brewed_at)), fmtDT(new Date(old.brewed_at))]);
   out.push(...changes(old, row, BREW_FIELDS));
   // a recipe name typed by hand (the automatic one follows the settings and is not worth a line)
   const auto = b => !b.recipe || b.recipe === settingsLabel(b);
@@ -1576,7 +1587,7 @@ const D = window.DEFAULTS || {};
 const CORE = SCALE.CORE;
 let cur = null, scores = {}, ctl = {}, savingB = false, brewLoadId = 0, editingBrew = null, brewData = [], rating = null, balance = null;
 let draftWasRestored = false, touched = new Set(), prof = [], calc = null, edited = false, noteNames = [];
-const BF = ["b-madeby", "b-device", "b-preheat", "b-device-new", "b-grinder", "b-grind", "b-feel", "b-pressure", "b-pibar", "b-pis", "b-dose", "b-water", "b-yield", "b-temp", "b-time", "b-recipe", "b-notes"];
+const BF = ["b-when", "b-madeby", "b-device", "b-preheat", "b-device-new", "b-grinder", "b-grind", "b-feel", "b-pressure", "b-pibar", "b-pis", "b-dose", "b-water", "b-yield", "b-temp", "b-time", "b-recipe", "b-notes"];
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
@@ -2077,7 +2088,7 @@ function restoreDraft() {
   $("b-device-new").hidden = $("b-device").value !== "__other";
   $("b-dialin").checked = !!d.dial;
   prof = Array.isArray(d.prof) ? d.prof : []; renderProf();
-  touched = new Set(d.touched || []); edited = true;
+  touched = new Set(d.touched || []); edited = true; delete $("b-when").dataset.q; renderWhen();
   applyType();
   const ts = Array.isArray(d.tasters) ? d.tasters : [{ ...meTaster(), rating: d.rating == null ? null : d.rating, scores: d.scores || {} }];   // older drafts: one taster
   ts.forEach(t => Object.keys(t.scores || {}).forEach(addNote));
@@ -2125,9 +2136,30 @@ function readHandoff() {
   try { h = JSON.parse(localStorage.getItem("alto.handoff")); localStorage.removeItem("alto.handoff"); if (h) localStorage.removeItem("alto.calc.last"); } catch (e) {}
   return h && h.t && Date.now() - h.t <= 3 * 3600e3 ? h : null;
 }
+// When you had it: empty = now (the moment you save). Logged later? Pick "1 h ago" or a time; it counts for the caffeine on Home.
+const localDT = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") + "T" + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+const WHEN = [["Now", 0], ["30 min ago", 30], ["1 h ago", 60], ["Earlier\u2026", null]];
+function renderWhen() {
+  const box = $("wchips"), inp = $("b-when"), v = inp.value; box.textContent = "";
+  inp.max = localDT(new Date(Date.now() + 5 * 60e3));
+  WHEN.forEach(([label, mins]) => {
+    const b = el("button", "", label); b.type = "button";
+    b.classList.toggle("on", mins === 0 ? !v : mins === null ? !!v && !inp.dataset.q : !!v && inp.dataset.q === String(mins));
+    b.onclick = () => {
+      if (mins === 0) { inp.value = ""; delete inp.dataset.q; }
+      else if (mins === null) { if (!inp.value) inp.value = localDT(new Date()); delete inp.dataset.q; setTimeout(() => { try { inp.focus(); inp.showPicker && inp.showPicker(); } catch (e) {} }, 0); }
+      else { inp.value = localDT(new Date(Date.now() - mins * 60e3)); inp.dataset.q = String(mins); }
+      touched.add("b-when"); userChanged(); renderWhen();
+    };
+    box.appendChild(b);
+  });
+  inp.hidden = !v;
+}
+$("b-when").addEventListener("change", () => { delete $("b-when").dataset.q; touched.add("b-when"); renderWhen(); });
+function whenISO() { const v = $("b-when").value; if (!v) return null; const d = new Date(v); return isFinite(d) ? d.toISOString() : null; }
 function newBrewSetup(dev) {
   editingBrew = null; touched = new Set(); prof = []; edited = false; renderProf();
-  $("bf").reset(); setRating(null);
+  $("bf").reset(); setRating(null); delete $("b-when").dataset.q; renderWhen();
   $("b-device-new").hidden = true; $("b-device-new").required = false;
   $("brewsum").textContent = "Log a brew"; $("bsave").textContent = "Save brew"; $("bcancel").hidden = true; syncNewBrew();
   $("cofflab").hidden = false; if (cur) $("b-coffee").value = cur.id;
@@ -2175,6 +2207,7 @@ function offerCalc(skip) {
 function startBrewEdit(b) {
   editingBrew = b; touched = new Set(BF); edited = false;
   $("bf").reset(); $("cofflab").hidden = true;
+  delete $("b-when").dataset.q; $("b-when").value = b.brewed_at ? localDT(new Date(b.brewed_at)) : ""; renderWhen();
   prof = Array.isArray(b.pressure_profile) ? b.pressure_profile.map(x => ({ s: x.s, bar: x.bar })) : []; renderProf();
   buildScores(cur, (b.brew_scores || []).map(s => s.attribute));
   $("b-dialin").checked = !!b.is_dialin;
@@ -2664,6 +2697,10 @@ function brewRow() {
   const rs = tasterRows().map(t => t.rating).filter(v => v != null);
   row.rating = rs.length ? Math.round(rs.reduce((a, c) => a + c, 0) / rs.length * 2) / 2 : null;
   if (!$("mblab").hidden) { const mb = $("b-madeby").value || null; row.made_by = mb && mb !== (editingBrew ? editingBrew.created_by : me.id) ? mb : null; }
+  // when: new brews without a time are "now" (the database fills it in); an edited brew keeps its time unless you changed it
+  const w = whenISO();
+  if (w) { if (Date.parse(w) > Date.now() + 10 * 60e3) throw new Error("the time is in the future"); if (!editingBrew || Math.abs(Date.parse(w) - Date.parse(editingBrew.brewed_at)) >= 60e3) row.brewed_at = w; }
+  else if (editingBrew && touched.has("b-when") && $("b-when").value === "" && editingBrew.brewed_at && Date.now() - Date.parse(editingBrew.brewed_at) > 60e3) row.brewed_at = new Date().toISOString();
   if (stages.length && row.pressure_bar === null) row.pressure_bar = Math.max(...stages.map(s => s.bar));
   for (const k of ["pressure_bar", "preinfusion_bar", "preinfusion_s", "dose_g", "water_g", "yield_g", "temp_c", "time_s"]) if (row[k] !== null && !isFinite(row[k])) throw new Error("check the numbers");
   row.recipe = $("b-recipe").value.trim() || settingsLabel(row) || null;
@@ -2686,7 +2723,7 @@ $("bf").onsubmit = async e => {
       if (!ch.length) { nothingChanged(() => { store.del(draftKey()); newBrewSetup(); $("brewbox").open = false; say("Closed, nothing was changed."); }); return; }
       ok = await confirmSave("Save these changes?", ch, "Save changes", ch.length === 1 ? "You changed one thing:" : "You changed " + ch.length + " things:");
     } else ok = await confirmSave("Save this brew?", [
-      ["Coffee", cur && cur.name], ["Device", dev], ["Made by", !$("mblab").hidden && $("b-madeby").value ? names[$("b-madeby").value] : null],
+      ["Coffee", cur && cur.name], ["When", row.brewed_at ? fmtDT(new Date(row.brewed_at)) : null], ["Device", dev], ["Made by", !$("mblab").hidden && $("b-madeby").value ? names[$("b-madeby").value] : null],
       ["Grind", v("b-grind") ? v("b-grind") + (v("b-feel") ? " (" + v("b-feel") + ")" : "") : null],
       ["Dose", v("b-dose") ? v("b-dose") + " g" : null], [esp ? "Yield" : "Water", esp ? (v("b-yield") ? v("b-yield") + " g" : null) : (v("b-water") ? v("b-water") + " g" : null)],
       ["Time", t === null ? null : esp && t < 90 ? t + " s" : mmss(t) + " min"],
