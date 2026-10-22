@@ -879,6 +879,7 @@ const ICONS = {
   cup: "M5 9h11v5a5 5 0 01-5 5h-1a5 5 0 01-5-5V9z M16 10h2a2 2 0 010 4h-2 M8 3v3 M12 3v3",
   cart: "M3 4h2.5l2 11h10.5l2-8H6.8 M9.5 19.5h.01 M17 19.5h.01",
   close: "M7 7l10 10 M17 7L7 17",
+  body: "M5 9h11v5a5 5 0 01-5 5h-1a5 5 0 01-5-5V9z M16 10h2a2 2 0 010 4h-2 M6.5 12.5h8 M7 15.5h7",
   star: "M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z",
   sour: "M4 12a8 8 0 1016 0 8 8 0 10-16 0 M12 4v16 M5.1 8l13.8 8 M5.1 16l13.8-8",
   sweet: "M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z M12 12l8-4.5 M12 12v9 M12 12L4 7.5",
@@ -910,7 +911,7 @@ function ibtn(label, icon, onclick, cls) {
 }
 // Colour and icon for a flavour score (core flavours get their own, your own flavour notes get a leaf).
 // The same colours as the Trends charts (checked for colour blindness): sour, sweet, bitter, balance.
-const ATTR = { sour: ["#2a78d6", "#3987e5"], sweet: ["#eb6834", "#d95926"], bitter: ["#1baf7a", "#199e70"], balance: ["#eda100", "#c98500"], chocolaty: ["#5A3A24", "#C09670"] };
+const ATTR = { sour: ["#2a78d6", "#3987e5"], sweet: ["#eb6834", "#d95926"], bitter: ["#1baf7a", "#199e70"], balance: ["#eda100", "#c98500"], body: ["#8a5a9e", "#b58bc7"], chocolaty: ["#5A3A24", "#C09670"] };
 const attrIcon = a => ICONS[a] && ATTR[a] ? a : "leaf";
 const attrColor = a => ATTR[a] ? "light-dark(" + ATTR[a][0] + "," + ATTR[a][1] + ")" : "var(--accent)";
 
@@ -1794,7 +1795,7 @@ $("b-addnote").append(ico("plus", 16), el("span", "", "Add"));
 // ----- taste sliders (-5..+5) and tasting notes (none / light / present)
 const progress = r => { const p = (+r.value + 5) * 10; r.style.setProperty("--a", Math.min(50, p) + "%"); r.style.setProperty("--b", Math.max(50, p) + "%"); };
 function userChanged() { edited = true; saveDraft(); }
-function addCore(a) {
+function addCore(a, hint) {
   const row = el("div", "sc"), val = el("span", "scv", "-");
   row.style.setProperty("--ac", attrColor(a));
   const r = el("input"); r.type = "range"; r.min = -5; r.max = 5; r.step = 1; r.value = 0; progress(r);
@@ -1808,6 +1809,7 @@ function addCore(a) {
   const ic = ico(attrIcon(a), 22); ic.classList.add("si");
   row.append(ic, el("span", "slb", a), val, x, r);
   $("scorebox").appendChild(row);
+  if (hint) $("scorebox").appendChild(el("p", "hint schint", hint));
   ctl[a] = { set, clear };
 }
 function addNote(a) {
@@ -1849,7 +1851,8 @@ setBalance(null);
 function buildScores(c, extra) {
   scores = {}; ctl = {}; noteNames = [];
   $("scorebox").textContent = ""; $("notebox").textContent = "";
-  SCALE.PROFILE.forEach(addCore);
+  SCALE.PROFILE.forEach(a => addCore(a));
+  addCore("body", "Body: minus is watery or thin, plus is heavy or too strong. With sour and bitter it places the cup on the brewing chart in Trends.");
   [...(c.flavour_tags || []), ...(extra || [])].forEach(addNote);
 }
 function setScore(a, v) {

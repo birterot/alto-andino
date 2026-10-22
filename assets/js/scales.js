@@ -1,10 +1,11 @@
 /* How flavour scores are stored and shown.
    Sour, sweet and bitter are shown from -5 to +5 (0 = just right) and stored as 0 to 10 (5 = just right),
+   and so is body (minus = watery or thin, plus = heavy or too strong), for the brewing chart in Trends,
    so nothing already saved changes. (Balance used to be a fourth slider like these; old balance scores keep
    that meaning and are still read, but new brews rate Balance on its own 0 to 5 scale, see BALANCE below.)
    Tasting notes are none / light / present. Stored as nothing / 3 / 7, shown as none / light / present. */
 window.SCALE = (function () {
-  var CORE = ["sour", "sweet", "bitter", "balance"];   // everything stored on the -5..+5 slider scale (balance: old brews only)
+  var CORE = ["sour", "sweet", "bitter", "body", "balance"];   // everything stored on the -5..+5 slider scale (balance: old brews only)
   var PROFILE = ["sour", "sweet", "bitter"];           // the taste sliders
   // Balance: how well the flavours come together (harmony, not intensity), rated on its own from 0 to 5, or not at all.
   // Not worked out from sour, sweet or bitter. Saved per taster with their stars (brew_ratings.balance).
@@ -19,7 +20,7 @@ window.SCALE = (function () {
   var LEVELS = [["none", 0], ["light", 3], ["present", 7]];   // [label, stored value]
   var isCore = function (a) { return CORE.indexOf(a) >= 0; };
   return {
-    CORE: CORE, PROFILE: PROFILE, BALANCE: BALANCE, LEVELS: LEVELS, isCore: isCore,
+    CORE: CORE, PROFILE: PROFILE, BODY: "body", BALANCE: BALANCE, LEVELS: LEVELS, isCore: isCore,
     balanceText: function (v) { return v === null || v === undefined || v === "" ? "" : (Math.round(v * 10) / 10) + "/5"; },
     balanceName: function (v) { var b = BALANCE[Math.round(v)]; return b ? b[1] : ""; },
     // stored -> the number shown on the -5..+5 slider (core only)

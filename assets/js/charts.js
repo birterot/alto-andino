@@ -107,7 +107,7 @@ window.Charts = (function () {
 
   // ---------- scatter ----------
   // o: { box, height, points: [{ x, y, color, hollow, r, tip }], xLabel, yLabel, xDomain, yDomain, xFmt, yFmt,
-  //      path: true (connect in order), last: true (ring the last point), yInvert, xBase, yBase, zones: [{x0,x1,label}] , corner: [tl,tr,bl,br] }
+  //      path: true (connect in order), last: true (ring the last point), yInvert, xBase, yBase, zones: [{x0,x1,y0?,y1?,label}] , corner: [tl,tr,bl,br] }
   function scatter(o) {
     var f = frame(o.box, o.height || 300, [o.yLabel ? 26 : 12, 14, o.xLabel ? 42 : 26, 40]);
     var pts = o.points;
@@ -115,7 +115,8 @@ window.Charts = (function () {
     var yd = o.yDomain || niceDomain(Math.min.apply(null, pts.map(function (p) { return p.y; })), Math.max.apply(null, pts.map(function (p) { return p.y; })), 5);
     var x = scale(xd[0], xd[1], f.L + 6, f.R - 6), y = o.yInvert ? scale(yd[0], yd[1], f.T + 6, f.B - 6) : scale(yd[0], yd[1], f.B - 6, f.T + 6);
     (o.zones || []).forEach(function (z) {
-      f.svg.appendChild(s("rect", { x: x(z.x0), y: f.T, width: x(z.x1) - x(z.x0), height: f.B - f.T, class: "zone" }));
+      var zt = z.y0 != null ? Math.min(y(z.y0), y(z.y1)) : f.T, zb = z.y0 != null ? Math.max(y(z.y0), y(z.y1)) : f.B;   // y0, y1: a box instead of a band
+      f.svg.appendChild(s("rect", { x: x(z.x0), y: zt, width: x(z.x1) - x(z.x0), height: zb - zt, class: "zone" }));
       if (z.label) f.svg.appendChild(s("text", { x: (x(z.x0) + x(z.x1)) / 2, y: f.T + 14, "text-anchor": "middle", class: "zlab" }, z.label));
     });
     axes(f, { x: x, y: y, xTicks: o.xTicks || ticks(xd[0], xd[1], 5, o.xStep), yTicks: o.yTicks || ticks(yd[0], yd[1], 4), xFmt: o.xFmt, yFmt: o.yFmt, xLabel: o.xLabel, yLabel: o.yLabel, xGrid: o.xGrid, xBase: o.xBase, yBase: o.yBase, noBaseline: o.noBaseline });
