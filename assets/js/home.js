@@ -144,7 +144,7 @@
       if (n.small) {   // the explanation stays folded behind a small (i), so the note stays short
         var ib = el("button", "info", "i"); ib.type = "button"; ib.setAttribute("aria-label", "How to read this"); ib.setAttribute("aria-expanded", String(!!infoOpen));
         var ip = el("p", "ns", n.small); ip.hidden = !infoOpen;
-        if (n.more) { ip.appendChild(document.createTextNode(" ")); var ml = el("a", "", "How it is calculated \u2192"); ml.href = n.more; ml.addEventListener("click", function (e) { e.stopPropagation(); }); ip.appendChild(ml); }
+        if (n.more) { ip.appendChild(document.createTextNode(" ")); var ml = el("a", "", "Estimate or upper end, and how it is worked out: Settings \u2192"); ml.href = n.more; ml.addEventListener("click", function (e) { e.stopPropagation(); }); ip.appendChild(ml); }
         ib.addEventListener("click", function (e) { e.stopPropagation(); infoOpen = !infoOpen; ip.hidden = !infoOpen; ib.setAttribute("aria-expanded", String(infoOpen)); });
         head.insertBefore(ib, head.children[1] || null); card.appendChild(ip);
       }
@@ -260,7 +260,7 @@
     var text = (nowL >= 5 ? (high ? "Up to about " + r10(nowL) + " mg in you right now" : "About " + r10(nowL) + " mg in you right now" + (hi - lo >= 20 ? " (likely " + r10(lo) + "\u2013" + r10(hi) + ")" : "")) : "Almost none left") +
       (today.length ? ", from " + (today.length === 1 ? "1 coffee" : today.length + " coffees") + " today (about " + r10(total) + " mg)." : ".") + " " + under;
     if (total > 400) text += " That is more than the 400 mg a day usually given as the limit for healthy adults.";
-    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Below the dashed line (50 mg, about half an espresso) there is little left to keep most people awake: a rough guide for a sleep-friendly evening, not a medical limit. It is an estimate with a range" + (high ? "; you count its upper end (Settings)." : "."), more: "chapters/caffeine.html" };
+    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Below the dashed line (50 mg, about half an espresso) there is little left to keep most people awake: a rough guide for a sleep-friendly evening, not a medical limit. It is an estimate with a range" + (high ? "; you count its upper end (Settings)." : "."), more: "settings/index.html#cafset" };
   }
   // today from 6:00 (or the first coffee) until midnight: solid up to now, lighter for what is still to come,
   // the dashed 50 mg line, a mark for now with the amount, and the hours underneath
