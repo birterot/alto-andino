@@ -228,11 +228,14 @@
   // else at the time of the brew. Settings > Caffeine (kept on this phone too, so Home has it at once):
   // "high" counts the upper end of the range, "midnight" starts every day at zero, "line" is your sleep line (5 to 400 mg, 50 unless you changed it).
   function cafPref() { try { return JSON.parse(localStorage.getItem("alto.cafpref") || "{}") || {}; } catch (e) { return {}; } }
-  function savePref(p) { try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "", line: p.caf_line || null })); } catch (e) {} }
+  function savePref(p) { try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "", line: p.caf_line != null ? p.caf_line : null, bed: p.caf_bed || "" })); } catch (e) {} }
   function caffeine(rows) {
     if (!Array.isArray(rows) || !session || !window.CAFFEINE) return null;
     var my = session.user.id, now = Date.now(), pref = cafPref(), high = pref.mode === "high";
-    var line = Number(pref.line) >= 5 && Number(pref.line) <= 400 ? Math.round(Number(pref.line)) : 50;   // your sleep line (Settings: 25, 50, 100 or your own)
+    var line = pref.line != null && pref.line !== "" && Number(pref.line) >= 0 && Number(pref.line) <= 400 ? Math.round(Number(pref.line)) : 50;   // your sleep line (Settings: 25, 50, 100 or your own)
+    var eff = Math.max(line, 1);   // 0 mg is never quite reached: under 1 mg counts as none left
+    var bed = null, bm = /^(\d\d):(\d\d)$/.exec(pref.bed || "");   // your usual bedtime, the next one from now
+    if (bm) { var bd = new Date(); bd.setHours(+bm[1], +bm[2], 0, 0); if (bd.getTime() <= now) bd.setDate(bd.getDate() + 1); bed = bd.getTime(); }
     var mid = new Date(); mid.setHours(0, 0, 0, 0);
     var doses = [];
     rows.forEach(function (b) {
@@ -246,21 +249,33 @@
     var today = doses.filter(function (d) { return d.t >= mid.getTime(); }), total = today.reduce(function (s, d) { return s + d.mg; }, 0);
     var nowL = level(now), span = doses.reduce(function (s, d) { return s + d.mg; }, 0), ratio = function (f) { return span ? doses.reduce(function (s, d) { return s + d[f]; }, 0) / span : 1; };
     var lo = nowL * ratio("lo"), hi = nowL * ratio("hi");
-    if (!today.length && nowL < 10) return null;
+    if (!today.length && nowL < 10 && !bed) return null;
+    // a cup like your usual one (the middle of your last five), for "last coffee by"
+    var cups = doses.slice(-5).map(function (d) { return d.mg; }).sort(function (a, b) { return a - b; }), usual = cups.length ? cups[Math.floor(cups.length / 2)] : 160;
     var r10 = function (x) { return Math.round(x / 10) * 10; }, hm = function (ms) { var d = new Date(ms); d.setMinutes(Math.round(d.getMinutes() / 10) * 10, 0, 0); return d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0"); };
     // when it is under your sleep line (and stays there)
-    var last = null; for (var at = now; at < now + 36 * 36e5; at += 5 * 6e4) if (level(at) >= line) last = at;
-    var under = last === null ? "Already under " + line + " mg." : "Under " + line + " mg from about " + hm(last + 5 * 6e4) + (new Date(last).getDate() !== new Date(now).getDate() ? " tomorrow." : ".");
-    var text = (nowL >= 5 ? (high ? "Up to about " + r10(nowL) + " mg in you right now" : "About " + r10(nowL) + " mg in you right now" + (hi - lo >= 20 ? " (likely " + r10(lo) + "\u2013" + r10(hi) + ")" : "")) : "Almost none left") +
+    var last = null; for (var at = now; at < now + 36 * 36e5; at += 5 * 6e4) if (level(at) >= eff) last = at;
+    var lineTxt = line === 0 ? "none left" : "under " + line + " mg", day = function (ms) { return new Date(ms).toDateString() !== new Date(now).toDateString() ? " tomorrow" : ""; };
+    var under = last === null ? (line === 0 ? "Practically none left." : "Already under " + line + " mg.") : (line === 0 ? "Practically none left from about " : "Under " + line + " mg from about ") + hm(last + 5 * 6e4) + day(last) + ".";
+    if (bed) {   // with a bedtime: what is left then, and by when the last coffee should be
+      var atBed = level(bed), lastBy = null, bedTxt = "At bedtime (" + hm(bed) + ")";
+      if (atBed < eff) for (var tt = bed - 30 * 6e4; tt >= now; tt -= 10 * 6e4) if (atBed + CAFFEINE.level([{ t: tt, mg: usual }], bed) < eff) { lastBy = tt; break; }
+      under = atBed >= eff ? bedTxt + " still about " + Math.max(1, r10(atBed)) + " mg, above your " + line + " mg line" + (last !== null ? " (" + lineTxt + " from about " + hm(last + 5 * 6e4) + day(last) + ")." : ".")
+        : lastBy !== null && lastBy > now + 10 * 6e4 ? bedTxt + (atBed >= 5 ? " about " + r10(atBed) + " mg." : " practically none.") + " Last coffee of the day: by about " + hm(lastBy) + day(lastBy) + "."
+        : bedTxt + (atBed >= 5 ? " about " + r10(atBed) + " mg, " : " practically none, ") + "so better no more coffee today.";
+    }
+    var none = !today.length && nowL < 5;
+    var text = none ? "No caffeine in you yet today. " + under : (nowL >= 5 ? (high ? "Up to about " + r10(nowL) + " mg in you right now" : "About " + r10(nowL) + " mg in you right now" + (hi - lo >= 20 ? " (likely " + r10(lo) + "\u2013" + r10(hi) + ")" : "")) : "Almost none left") +
       (today.length ? ", from " + (today.length === 1 ? "1 coffee" : today.length + " coffees") + " today (about " + r10(total) + " mg)." : ".") + " " + under;
     if (total > 400) text += " That is more than the 400 mg a day usually given as the limit for healthy adults.";
-    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now, line), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Below the dashed line (" + line + " mg" + (line === 50 ? ", about half an espresso" : line === 25 ? ", your line for sensitive sleepers" : line === 100 ? ", your line for tolerant sleepers" : ", your own line") + ") there is little left to keep you awake: a rough guide for a sleep-friendly evening, not a medical limit. A rough average with a range: everyone is affected differently" + (high ? " (you count the upper end)." : "."), more: "settings/index.html#cafset" };
+    return { k: "Caffeine", text: text, curve: none ? null : curveOf(level, mid.getTime(), now, line, bed), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Below the dashed line (" + line + " mg" + (line === 50 ? ", about half an espresso" : line === 25 ? ", your line for sensitive sleepers" : line === 100 ? ", your line for tolerant sleepers" : ", your own line") + ") there is little left to keep you awake: a rough guide for a sleep-friendly evening, not a medical limit. A rough average with a range: everyone is affected differently" + (high ? " (you count the upper end)." : ".") + (bed ? " \u201CLast coffee\u201D assumes a cup like your usual one (about " + r10(usual) + " mg)." : ""), more: "settings/index.html#cafset" };
   }
   // today from 6:00 (or the first coffee) until midnight: solid up to now, lighter for what is still to come,
   // the dashed line (your sleep line, 50 mg unless you changed it), a mark for now with the amount, and the hours underneath
-  function curveOf(level, mid, now, line) {
+  function curveOf(level, mid, now, line, bed) {
     var NS = "http://www.w3.org/2000/svg", mk = function (t, a) { var e = document.createElementNS(NS, t); for (var k in a) e.setAttribute(k, a[k]); return e; };
     var t0 = mid + 6 * 36e5, t1 = mid + 24 * 36e5; if (now < t0) t0 = mid; if (now > t1 - 36e5) t1 = now + 3 * 36e5;
+    if (bed && bed > t1 && bed < t1 + 6 * 36e5) t1 = bed + 36e5;   // a bedtime after midnight: shown too
     var N = 120, pts = [], top = 100; for (var k = 0; k <= N; k++) { var at = t0 + (t1 - t0) * k / N, v = level(at); pts.push([at, v]); if (v > top) top = v; }
     top *= 1.08;
     var W = 300, H = 64, y = function (v) { return (H - 2 - (H - 4) * v / top).toFixed(1); }, x = function (at) { return (W * (at - t0) / (t1 - t0)).toFixed(1); };
@@ -272,12 +287,15 @@
     if (next.length && next[0][0] > now) next.unshift([now, level(now)]);
     if (past.length > 1) { s.appendChild(mk("path", { d: pathOf(past) + " L" + x(now) + " " + (H - 2) + " L" + x(t0) + " " + (H - 2) + "Z", class: "ca" })); s.appendChild(mk("path", { d: pathOf(past), class: "cl" })); }
     if (next.length > 1) s.appendChild(mk("path", { d: pathOf(next), class: "cl fut" }));
-    s.appendChild(mk("path", { d: "M0 " + y(line) + " H" + W, class: "c50" }));
+    s.appendChild(mk("path", { d: "M0 " + y(Math.max(line, 1)) + " H" + W, class: "c50" }));
+    var showBed = bed && bed >= t0 && bed <= t1;
+    if (showBed) s.appendChild(mk("path", { d: "M" + x(bed) + " 0 V" + H, class: "cbed" }));
     s.appendChild(mk("path", { d: "M0 " + (H - 1) + " H" + W, class: "cbase" }));
     if (now >= t0 && now <= t1) s.appendChild(mk("path", { d: "M" + x(now) + " 0 V" + H, class: "cn" }));
     plot.appendChild(s);
     // labels in HTML (the drawing stretches to the width, text must not)
-    var l50 = el("span", "l50", line + " mg"); l50.style.bottom = (2 + (H - 4) * line / top) + "px"; plot.appendChild(l50);   // just above the dashed line
+    var l50 = el("span", "l50", line + " mg"); l50.style.bottom = (2 + (H - 4) * Math.max(line, 1) / top) + "px"; plot.appendChild(l50);   // just above the dashed line
+    if (showBed) { var lb = el("span", "lbed", "bed"), qb = pct(bed); lb.style.left = qb + "%"; if (qb > 88) lb.classList.add("r"); plot.appendChild(lb); }
     if (now >= t0 && now <= t1) { var ln = el("span", "lnow", "now " + Math.round(level(now) / 10) * 10 + " mg"), q = pct(now); ln.style.left = q + "%"; if (q > 75) ln.classList.add("r"); else if (q < 25) ln.classList.add("l"); plot.appendChild(ln); }
     wrap.appendChild(plot);
     var ax = el("div", "cax");
