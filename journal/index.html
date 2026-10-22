@@ -2745,7 +2745,7 @@ $("namego").onclick = () => saveName($("namein").value);
 $("namein").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveName($("namein").value); } });
 $("rename").onclick = () => { const v = prompt("Your name, shown on the brews you make", names[me.id] || ""); if (v !== null) saveName(v); };
 
-let recovering = false, shownFor = null;
+let recovering = false, shownFor = null, toHome = false;
 async function show(session) {
   $("newpw").hidden = !recovering;
   $("login").hidden = !!session || recovering;
@@ -2759,6 +2759,12 @@ async function show(session) {
   shelfFromCache();   // what the shelf looked like last time, at once; the fresh list replaces it a moment later
   await loadHouseholds();
   await tryPendingJoin();
+  if (toHome && (hhs.length || !hhOk) && !store.get("alto.friend") && !pendingJoin()) {   // just signed in: get the shelf ready for Home, then go there
+    toHome = false; say("Signed in.");
+    await Promise.all([loadNames(), load()]).catch(() => {});
+    location.replace("../index.html"); return;
+  }
+  toHome = false;
   const names = loadNames();   // names and the coffees load at the same time
   $("hhview").hidden = !(hhOk && !hhs.length);
   route();
@@ -2803,7 +2809,9 @@ $("login").onsubmit = async e => {
   if (CAPTCHA_KEY && !captchaToken) { say("Please wait a moment for the check above the button, then try again."); return; }
   if (authMode === "in") {
     say("Signing in...");
+    toHome = !location.hash || location.hash === "#";   // signed in from the plain sign-in page: Home comes first
     const { error } = await db.auth.signInWithPassword({ email, password: $("pw").value, options: withCaptcha({}) }); captchaReset();
+    if (error) toHome = false;
     say(error ? (/confirm/i.test(error.message) ? "Please confirm your email first: open the link we sent you." : error.message) : "");
   } else if (authMode === "up") {
     say("Creating your account...");
