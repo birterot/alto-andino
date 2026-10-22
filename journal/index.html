@@ -273,6 +273,13 @@ details.calcbox[open] summary small{display:none}
 .fi:hover{border-color:var(--ink);border-left-color:var(--s,var(--ink))}
 .fi .ft{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .fi strong{font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi.who{padding-left:12px}
+.fi.who .ft{align-items:center;justify-content:flex-start}
+.fi.who .fh{flex:1;min-width:0;font-size:15.5px;line-height:1.3}
+.fi.who .fh b{font-weight:650}
+.fi.who .fc{font-weight:500}
+.fi.who > p,.fi.who > .rr{margin-left:44px}
+.av{flex:none;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;color:#fff;font-size:15px;font-weight:600;letter-spacing:0}
 .fi time,.fe time{flex:none;font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}
 .fi p{margin:3px 0 0;font-size:14px;color:var(--mut)}
 .fi .rr{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:7px;font-size:14px}
@@ -2269,6 +2276,15 @@ function renderFeed() {
     box.appendChild(feedCard(x));
   });
 }
+// a person's initial in a circle, always in the same colour for the same person
+const AV = ["#8A5A3C", "#4F7A64", "#5C6F99", "#A0644F", "#7A6A3A", "#7D5C8A"];
+function avatar(id, name) {
+  const s = el("span", "av", ((name && name !== "You" ? name : (me && id === me.id && names[me.id]) || name || "?").trim()[0] || "?").toUpperCase());
+  // the people of the household each get their own colour (in a fixed order, so it never changes); anyone else by their id
+  const ids = Object.keys(names || {}).sort(); let i = id ? ids.indexOf(id) : -1;
+  if (i < 0) { i = 0; String(id || name || "").split("").forEach(ch => { i = (i * 31 + ch.charCodeAt(0)) >>> 0; }); }
+  s.style.background = AV[i % AV.length]; s.setAttribute("aria-hidden", "true"); return s;
+}
 function feedCard(x) {
   const line = (href, icon, parts, time, c) => {   // a short line: added, opened, finished, cupped
     const a = el("a", "fe"); a.href = href; if (c) applyLook(a, c);
@@ -2277,13 +2293,16 @@ function feedCard(x) {
   };
   const cname = c => el("b", "", c ? c.name : "a coffee");
   if (x.k === "brew") {
-    const b = x.b, c = x.c, a = el("a", "fi"); a.href = "#c=" + b.coffee_id + "&b=" + b.id; if (c) applyLook(a, c);
-    const top = el("div", "ft"); top.append(el("strong", "", c ? c.name : "A coffee"), el("time", "", hhmm(x.t))); a.appendChild(top);
+    const b = x.b, c = x.c, a = el("a", "fi who"); a.href = "#c=" + b.coffee_id + "&b=" + b.id; if (c) applyLook(a, c);
     const maker = b.made_by || b.created_by, by = maker ? tName({ rater_id: maker }) : null;
+    // who brewed it comes first: their initial in a circle, then "Andrés brewed <coffee>"
+    const top = el("div", "ft"), hd = el("span", "fh");
+    hd.append(el("b", "", by || "Someone"), document.createTextNode(" brewed "), el("span", "fc", c ? c.name : "a coffee"));
+    top.append(avatar(maker, by), hd, el("time", "", hhmm(x.t))); a.appendChild(top);
     const nums = [b.dose_g != null ? b.dose_g + "\u00A0g in" : null, b.yield_g != null ? b.yield_g + "\u00A0g out" : b.water_g != null ? b.water_g + "\u00A0g water" : null,
       b.time_s != null ? (isEsp(typeOf(b.device)) && b.time_s < 90 ? b.time_s + "\u00A0s" : mmss(b.time_s) + "\u00A0min") : null].filter(Boolean).join(", ");
     const dev = DEV_OLD[b.device] || b.device, devT = dev && /^(Manual|Semi-automatic|Moka|French|Pour|Cold|Turkish|Drip)\b/.test(dev) ? dev[0].toLowerCase() + dev.slice(1) : dev;
-    const what = ["Brewed" + (by ? " by " + (by === "You" ? "you" : by) : "") + (devT ? " on the " + devT : ""), nums, b.is_dialin ? "dial-in" : null].filter(Boolean).join(" · ");
+    const what = [devT ? (devT[0].toUpperCase() + devT.slice(1)) : null, nums, b.is_dialin ? "dial-in" : null].filter(Boolean).join(" · ");
     a.appendChild(el("p", "", what));
     const ts = tastersOf(b);
     if (ts.length) {

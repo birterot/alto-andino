@@ -17,7 +17,7 @@
   var name = session ? get("alto.myname") : null, h = new Date().getHours();
 
   // greeting
-  var hi = h < 5 ? "Good night" : h < 11 ? "Good morning" : h < 17 ? "Good afternoon" : h < 22 ? "Good evening" : "Good night";
+  var hi = h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : h < 22 ? "Good evening" : "Good night";
   var top = el("div", "hi"); top.appendChild(el("p", "greet", hi + (name ? ", " + name : "")));
 
   // days in a row and this month, from the times of your household's brews
