@@ -190,7 +190,6 @@ dialog.dlg p{margin:0 0 4px;font-size:14.5px;color:var(--mut)}
 .invlink .btn{min-height:44px}
 .row{display:flex;gap:8px;max-width:460px}.row input{margin:0;flex:1}.row .go{margin:0;flex:none}
 .lnk.danger{color:light-dark(#9A4A32,#E0A08A);border-color:light-dark(#9A4A32,#E0A08A)}
-.bc .by{font-weight:600;color:var(--ink)}
 .addnote{display:flex;gap:8px;max-width:420px;margin-top:14px}
 .addnote input{margin:0;flex:1;border-radius:999px;padding:10px 16px}
 .addnote .btn{height:48px;border-radius:999px;padding:0 18px}
@@ -288,7 +287,6 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .draftc{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px;padding:12px 14px;border-radius:12px;border:1px solid var(--act);background:var(--card);color:var(--ink);text-decoration:none}
 .draftc strong{font-size:14.5px}.draftc span{font-size:13.5px;color:var(--mut)}
 /* Coffees | Recent activity, at the top of the Coffee Shelf */
-.vtabs{margin:10px 0 22px;flex-wrap:wrap}
 /* the header of Recent activity and My brews: a few numbers about the week or the month, and one fun line */
 .lhead{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:16px 18px 14px;margin:14px 0 20px}
 .lhead .lk{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);font-weight:600;display:flex;align-items:center;gap:8px}
@@ -480,7 +478,6 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
     <h2>New coffee</h2>
     <div id="addhost"></div>
   </div>
-  <nav class="modes vtabs" id="vtabs" aria-label="Coffee Shelf" hidden><a href="#" data-v="list">Coffees</a><a href="#recent" data-v="recent">Recent activity</a><a href="#mine" data-v="mine">My brews</a></nav>
   <div id="listview">
   <div id="listhost">
   <details class="add" id="addbox">
@@ -2420,7 +2417,7 @@ function route() {
   if (!me) return;
   const noHH = hhOk && !hhs.length;   // signed in, but not in a household yet: start or join one first
   $("hhview").hidden = !noHH;
-  if (noHH) { ["listview", "recentview", "mineview", "vtabs", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); return; }
+  if (noHH) { ["listview", "recentview", "mineview", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); return; }
   if (store.get("alto.friend")) { location.href = "../friends/index.html"; return; }   // came with a friend link: back to it, now signed in
   const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)((?:&[^&]*)*)$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/), isRecent = hash === "#recent", isMine = hash === "#mine" || hash === "#torate" || hash === "#nobal", isHH = hash === "#household";
   if (hash === "#torate") { $("mflt-person").value = "me"; $("mflt-who").value = "torate"; $("mflt-bal").value = ""; history.replaceState(null, "", location.pathname + location.search + "#mine"); }
@@ -2432,8 +2429,7 @@ function route() {
   if (isHH) { renderHousehold(); $("hhbox").open = true; }
   $("recentview").hidden = !isRecent;
   $("mineview").hidden = !isMine;
-  $("vtabs").hidden = true;   // the section tabs under the top bar (nav.js) switch between Coffee Shelf, Recent activity and My brews
-  $("vtabs").querySelectorAll("a").forEach(a => { const on = a.dataset.v === (isRecent ? "recent" : isMine ? "mine" : "list"); a.classList.toggle("on", on); if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  // switching between Coffee Shelf, Recent activity and My brews: the section tabs under the top bar (nav.js)
   if (!m) { $("dback").href = isRecent ? "#recent" : isMine ? "#mine" : "#"; $("dback").textContent = isRecent ? "Recent activity" : isMine ? "My brews" : "All coffees"; }
   $("detail").hidden = !m;
   $("pickview").hidden = !isLog;
@@ -2659,7 +2655,6 @@ function renderMine() {
 // ---------- the headers: this week (Recent activity) and this month (My brews) ----------
 const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], WDL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const dayStart = (d, back) => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - (back || 0)); return x; };
-const hm = d => d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0");
 // one fun line at a time; tap it for the next (a different first one every day)
 function funLine(box, lines) {
   if (!lines.length) return;
@@ -2708,9 +2703,9 @@ async function drawWeek(ids, byId, my) {
   if (topC && topC[1] >= 2) lines.push("Most brewed: " + topC[0] + ", " + topC[1] + " times.");
   if (week.length) {
     const early = week.slice().sort((a, b) => { const x = new Date(a.brewed_at), y = new Date(b.brewed_at); return (x.getHours() * 60 + x.getMinutes()) - (y.getHours() * 60 + y.getMinutes()); })[0], t = new Date(early.brewed_at);
-    lines.push("Earliest brew: " + (who(early) ? tName({ rater_id: who(early) }) : "someone") + ", " + WDL[t.getDay()] + " at " + hm(t) + ".");
+    lines.push("Earliest brew: " + (who(early) ? tName({ rater_id: who(early) }) : "someone") + ", " + WDL[t.getDay()] + " at " + hhmm(t) + ".");
     const late = week.slice().sort((a, b) => { const x = new Date(a.brewed_at), y = new Date(b.brewed_at); return (y.getHours() * 60 + y.getMinutes()) - (x.getHours() * 60 + x.getMinutes()); })[0], tl = new Date(late.brewed_at);
-    if (tl.getHours() >= 15) lines.push("Latest brew: " + WDL[tl.getDay()] + " at " + hm(tl) + (who(late) ? ", by " + tName({ rater_id: who(late) }) : "") + ".");
+    if (tl.getHours() >= 15) lines.push("Latest brew: " + WDL[tl.getDay()] + " at " + hhmm(tl) + (who(late) ? ", by " + tName({ rater_id: who(late) }) : "") + ".");
   }
   const busy = days.slice().sort((a, b) => b.list.length - a.list.length)[0];
   if (busy && busy.list.length >= 2) lines.push("Busiest day: " + (busy === days[6] ? "today" : WDL[busy.d.getDay()]) + ", with " + busy.list.length + " brews.");
@@ -2739,8 +2734,8 @@ function drawMonth() {
   while (days.has(dk(d))) { streak++; d.setDate(d.getDate() - 1); }
   const t = el("div", "stt");
   const tile = (v, lab, extra) => { const x = el("div"); x.append(el("b", "", v), el("span", "", lab)); if (extra) x.appendChild(extra); t.appendChild(x); };
-  tile(String(cups), all ? (cups === 1 ? "cup drunk" : "cups drunk") : (cups === 1 ? "cup drunk" : "cups drunk"));
-  tile(String(made.length), all ? (made.length === 1 ? "brew made" : "brews made") : (made.length === 1 ? "brew made" : "brews made"));
+  tile(String(cups), cups === 1 ? "cup drunk" : "cups drunk");
+  tile(String(made.length), made.length === 1 ? "brew made" : "brews made");
   if (stars.length) { const a = stars.reduce((x, y) => x + y, 0) / stars.length; tile(a.toFixed(1) + "\u2605", "average stars", Stars.row(a, a.toFixed(1) + " of 5")); }
   tile(String(streak), streak === 1 ? "day in a row" : "days in a row");
   box.appendChild(t);
@@ -2757,7 +2752,7 @@ function drawMonth() {
   const topD = Object.entries(dv).sort((a, b) => b[1] - a[1])[0];
   if (topD && made.length >= 3) lines.push("Most used: the " + (/^(Manual|Semi-automatic|Moka|French|Pour|Cold|Turkish|Drip|Filter|Fully)\b/.test(topD[0]) ? topD[0][0].toLowerCase() + topD[0].slice(1) : topD[0]) + ", " + topD[1] + " of " + made.length + " brews.");
   const g = made.reduce((x, b) => x + (Number(b.dose_g) || 0), 0);
-  if (g >= 30) lines.push("About " + Math.round(g) + " g of beans " + (all ? "brewed" : p === "me" ? "you brewed" : "brewed") + " this month.");
+  if (g >= 30) lines.push("About " + Math.round(g) + " g of beans " + (p === "me" ? "you brewed" : "brewed") + " this month.");
   funLine(box, lines);
 }
 function mineCard(x) {

@@ -1,6 +1,6 @@
 /* Renders a chapter page from window.CHAPTER (see data/*.js). */
 (function(){
-var C=window.CHAPTER,D=C.D,G=C.G,GN=C.GN,R=C.R,cup=window.cupSvg,KEY="coffee-atlas."+C.slug+".";
+var C=window.CHAPTER,D=C.D,G=C.G,GN=C.GN,R=C.R,cup=window.cupSvg;
 document.title=C.pageTitle;
 document.getElementById("ct").textContent=C.title;
 document.getElementById("cs").textContent=C.sub;
@@ -34,7 +34,7 @@ pa.className="path "+id;af.className="path "+id;
 var an=[];
 R.forEach(function(r){if(r[1].charAt(cur)!=="1")return;if(r[2])pa.appendChild(stepLi(r,cur));else{af.appendChild(stepLi(r,cur));an.push(r[0])}});
 document.getElementById("aftersum").textContent="Then, the same for every method: "+an.map(function(x){return x.toLowerCase()}).join(", ");
-var h='<div class="sb '+id+'"><div class="sbh">'+cup()+'<div><small>Steckbrief</small><h3>'+m.n+'</h3><p>'+m.tag+'</p></div></div><div class="sbb">'+(GN.some(function(g){return (G[id]||{})[g[0]]})?'<div><h4>In the cup, from the Atlas</h4><div id="gg"></div></div>':'')+'';
+var h='<div class="sb '+id+'"><div class="sbh">'+cup()+'<div><small>Steckbrief</small><h3>'+m.n+'</h3><p>'+m.tag+'</p></div></div><div class="sbb">'+(GN.some(function(g){return (G[id]||{})[g[0]]})?'<div><h4>In the cup, from the Atlas</h4><div id="gg"></div></div>':'');
 h+='<div><h4>Flavour notes</h4><div class="chips">'+(m.fl.length?m.fl.map(function(x){return '<span class="chip">'+x+'</span>'}).join(""):'<span class="chip todo">to add from the Atlas</span>')+'</div>';
 if(m.bad.length)h+='<h4 style="margin-top:10px">When it goes wrong</h4><div class="chips">'+m.bad.map(function(x){return '<span class="chip bad">'+x+'</span>'}).join("")+'</div>';
 h+='</div><div><h4>Good to know</h4><div class="facts">'+m.f.map(function(x){return '<span class="fact">'+ico(x[0])+x[1]+'</span>'}).join("")+'</div></div>';

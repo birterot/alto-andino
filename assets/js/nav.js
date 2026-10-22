@@ -446,12 +446,11 @@
     ["calc", "Calculator", "calc/index.html"],
     ["cupping", "Cupping", "cupping/index.html"],
     ["friends", "Friends", "friends/index.html"],
-    ["book", BOOK.charAt(0).toUpperCase() + BOOK.slice(1), "chapters/index.html"]
+    ["book", "Bean to Cup", "chapters/index.html"]
   ];
-  window.ALTO_SECTIONS = SECTIONS;   // Settings and Home use the same list
   function section() {
     if (inBook) return "book";
-    if (/\/journal\//.test(path)) { var h = location.hash; return /^#(recent)$/.test(h) ? "recent" : /^#(mine|torate|nobal)$/.test(h) ? "mine" : /^#(log|addcoffee)/.test(h) ? null : "shelf"; }
+    if (/\/journal\//.test(path)) { var h = location.hash; return h === "#recent" ? "recent" : /^#(mine|torate|nobal)$/.test(h) ? "mine" : /^#(log|addcoffee)/.test(h) ? null : "shelf"; }
     if (/\/trends\//.test(path)) return "trends";
     if (isCalc) return "calc";
     if (/\/cupping\//.test(path)) return "cupping";
@@ -486,7 +485,6 @@
     document.body.classList.add("hastabs");
     window.addEventListener("hashchange", drawTabs);
     window.addEventListener("storage", function (e) { if (e.key === "alto.homeorder" || e.key === "alto.homehide") drawTabs(); });
-    window.ALTO_TABS = { redraw: drawTabs };
     var tcss = document.createElement("style");
     tcss.textContent = "body.hastabs main{padding-top:0}" +
       // tabs with a line under the one you are on, so they do not look like the filter buttons on the pages

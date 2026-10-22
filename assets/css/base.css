@@ -48,8 +48,6 @@ details.after summary{cursor:pointer;padding:10px 0 10px 28px;color:var(--mut);f
 .sbb h4{margin:0 0 6px;font-size:14px;font-weight:600;color:var(--mut)}
 .g{display:grid;grid-template-columns:84px 1fr 52px;align-items:center;gap:8px;margin-bottom:4px}
 .seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
-.seg button{height:14px;padding:0;border-radius:2px;border:1px dashed var(--line);background:none;cursor:pointer}
-.seg button.on{border:1px solid var(--s);background:var(--s)}
 .seg.ro span{height:14px;border-radius:2px;border:1px dashed var(--line)}
 .seg.ro span.on{border:1px solid var(--s);background:var(--s)}
 .gv{font-size:13px;color:var(--mut);text-align:right}

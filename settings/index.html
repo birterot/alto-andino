@@ -186,7 +186,8 @@ const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
 const opt = (s, v, t) => { const o = el("option", "", t); o.value = v; s.appendChild(o); return o; };
 let me = null, profile = null, fm = "", color = "", others = [], cafMode = "", cafDay = "", cafLine = "", cafShow = "", sleepOn = "";
-const TILES = [["shelf", "Coffee Shelf"], ["recent", "Recent activity"], ["mine", "My brews"], ["trends", "Trends"], ["calc", "Calculator"], ["cupping", "Cupping"], ["friends", "Friends"], ["book", "Bean to Cup"]];
+const TILES = [   // the same keys and names as on Home (index.html, data-k) and in the section tabs (nav.js, SECTIONS)
+  ["shelf", "Coffee Shelf"], ["recent", "Recent activity"], ["mine", "My brews"], ["trends", "Trends"], ["calc", "Calculator"], ["cupping", "Cupping"], ["friends", "Friends"], ["book", "Bean to Cup"]];
 let homeHide = [], homeOrder = TILES.map(t => t[0]);
 const fullOrder = o => { const keys = TILES.map(t => t[0]), l = (o || []).filter((k, i, a) => keys.includes(k) && a.indexOf(k) === i); keys.forEach(k => { if (!l.includes(k)) l.push(k); }); return l; };
 // one row per shortcut: on or off, and up or down
