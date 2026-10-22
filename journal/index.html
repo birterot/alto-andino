@@ -1051,7 +1051,7 @@ async function load() {
   const my = ++loadId;   // only the newest load may draw, so parallel loads cannot add cards twice
   const [{ data, error }, { data: bs }] = await Promise.all([
     inHH(db.from("coffees").select("*")).order("created_at", { ascending: false }),
-    db.from("brews").select("coffee_id,rating,is_dialin,brewed_at,dose_g,made_by,created_by,brew_ratings(rating,balance,rater_id,is_guest,drank_at)").order("brewed_at"),
+    db.from("brews").select("coffee_id,rating,is_dialin,brewed_at,device,dose_g,yield_g,water_g,made_by,created_by,brew_ratings(rating,balance,rater_id,is_guest,drank_at)").order("brewed_at"),
     db.from("cuppings").select("coffee_id,total")   // cupping (supabase/21_sca_cupping.sql); before that it just fails and is left out
   ]).then(r => [r[0], r[1], r[2] && !r[2].error ? r[2] : { data: [] }]).then(r => { cupRows = r[2].data || []; return r; });
   const counts = {}, rates = {}, used = {};
@@ -1143,7 +1143,7 @@ let recentBrews = null, myBrews = null;
 function cafRow(b, c) {
   const v = String((c && c.variety) || "").toLowerCase();
   return { t: b.brewed_at, g: Number(b.dose_g), d: !!b.is_dialin, m: b.made_by || b.created_by || null,
-    r: (b.brew_ratings || []).map(r => r.is_guest ? "g" : r.rater_id), rt: (b.brew_ratings || []).map(r => r.drank_at || null), k: c && c.is_decaf ? "decaf" : /robusta/.test(v) ? (/arabica|,/.test(v) ? "blend" : "robusta") : "" };
+    r: (b.brew_ratings || []).map(r => r.is_guest ? "g" : r.rater_id), rt: (b.brew_ratings || []).map(r => r.drank_at || null), y: b.yield_g == null ? null : Number(b.yield_g), w: b.water_g == null ? null : Number(b.water_g), dv: b.device || "", rl: (c && c.roast_level) || "", k: c && c.is_decaf ? "decaf" : /robusta/.test(v) ? (/arabica|,/.test(v) ? "blend" : "robusta") : "" };
 }
 function saveShelf() {
   try {

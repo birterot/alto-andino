@@ -86,6 +86,17 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
     <label>Milk<select id="s-milk"></select></label>
   </section>
 
+  <section class="set">
+    <h2>Caffeine on Home</h2>
+    <p class="hint">Home estimates the caffeine in you from the cups that were for you. Coffee varies a lot (espresso most), so it is an estimate with a range.</p>
+    <p class="lab">What to count</p>
+    <div class="seg" id="s-cafmode"><button type="button" data-m="">Estimate</button><button type="button" data-m="high">Upper end</button></div>
+    <p class="hint">“Upper end” is the safety net: it counts the top of the range, so you rather overestimate.</p>
+    <p class="lab">Each day</p>
+    <div class="seg" id="s-cafday"><button type="button" data-m="">Carry over</button><button type="button" data-m="midnight">Reset at midnight</button></div>
+    <p class="hint">“Carry over” counts last night's coffee as it wears off. “Reset at midnight” starts every day at zero.</p>
+  </section>
+
   <section class="set" id="pushset">
     <h2>Notifications</h2>
     <p class="hint">On this phone: a notification when someone logs a brew for you, so you can rate your cup. Each phone is turned on by itself.</p>
@@ -115,7 +126,10 @@ const db = supabase.createClient(SUPA.url, SUPA.key);
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
 const opt = (s, v, t) => { const o = el("option", "", t); o.value = v; s.appendChild(o); return o; };
-let me = null, profile = null, fm = "", color = "", others = [];
+let me = null, profile = null, fm = "", color = "", others = [], cafMode = "", cafDay = "";
+function setSeg(id, v) { document.querySelectorAll("#" + id + " button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.m === v))); }
+document.querySelectorAll("#s-cafmode button").forEach(b => { b.onclick = () => { cafMode = b.dataset.m; setSeg("s-cafmode", cafMode); }; });
+document.querySelectorAll("#s-cafday button").forEach(b => { b.onclick = () => { cafDay = b.dataset.m; setSeg("s-cafday", cafDay); }; });
 // your colour: tap one; tap it again for "automatic". The initials of the others show which colours they use.
 function renderColors() {
   const box = $("s-color"); box.textContent = "";
@@ -167,6 +181,7 @@ async function load() {
   pick("s-device", p.device); pick("s-grinder", p.grinder); pick("s-drink-esp", p.drink_esp); pick("s-drink-filter", p.drink_filter); pick("s-milk", p.milk);
   setFm(p.formmode || "");
   color = (DEFAULTS.COLORS || []).some(c => c[0] === p.color) ? p.color : ""; renderColors();
+  cafMode = p.caf_mode === "high" ? "high" : ""; cafDay = p.caf_day === "midnight" ? "midnight" : ""; setSeg("s-cafmode", cafMode); setSeg("s-cafday", cafDay);
   // the others in your household (the profiles you can see), for the little letters on the colours
   const { data: ps } = await db.from("profiles").select("id,display_name,prefs");
   others = (ps || []).filter(x => x.id !== me.id).map(x => ({ name: x.display_name || "Someone", color: x.prefs && x.prefs.color })); renderColors();
@@ -180,6 +195,8 @@ $("sf").onsubmit = async e => {
   [["device", "s-device"], ["grinder", "s-grinder"], ["drink_esp", "s-drink-esp"], ["drink_filter", "s-drink-filter"], ["milk", "s-milk"]].forEach(([k, id]) => { if ($(id).value) prefs[k] = $(id).value; else delete prefs[k]; });
   if (fm) prefs.formmode = fm; else delete prefs.formmode;
   if (color) prefs.color = color; else delete prefs.color;
+  if (cafMode) prefs.caf_mode = cafMode; else delete prefs.caf_mode;
+  if (cafDay) prefs.caf_day = cafDay; else delete prefs.caf_day;
   const same = (x, y) => JSON.stringify(Object.keys(x).sort().map(k => [k, x[k]])) === JSON.stringify(Object.keys(y).sort().map(k => [k, y[k]]));
   if (profile && profile.display_name === name && same(prefs, profile.prefs || {})) { flash("Nothing changed, your settings are as they were."); return; }
   $("save").disabled = true; $("msg").textContent = "Saving...";
@@ -188,6 +205,7 @@ $("sf").onsubmit = async e => {
   if (error) { $("msg").textContent = "Could not save: " + error.message; return; }
   profile = { id: me.id, display_name: name, prefs };
   if (fm) try { localStorage.setItem("alto.formmode", fm); } catch (e2) {}
+  try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: cafMode, day: cafDay })); } catch (e2) {}   // Home uses it at once
   flash("Saved. New brews start with these settings.");
 };
 // the message next to the button, briefly highlighted so it is not missed

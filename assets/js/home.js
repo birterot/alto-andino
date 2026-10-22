@@ -169,15 +169,15 @@
         var ses = r && r.data && r.data.session; if (!ses || ses.user.id !== session.user.id) return;
         var my = ses.user.id, since2 = new Date(Date.now() - 62 * 864e5).toISOString();
         return Promise.all([
-          db.from("brews").select("id,coffee_id,brewed_at,device,dose_g,is_dialin,made_by,created_by,coffees(name,is_decaf,variety),brew_ratings(id,rater_id,is_guest,rating,balance,drank_at),brew_scores(rating_id)").gte("brewed_at", since2).order("brewed_at"),
-          db.from("profiles").select("id,display_name"),
+          db.from("brews").select("id,coffee_id,brewed_at,device,dose_g,yield_g,water_g,is_dialin,made_by,created_by,coffees(name,is_decaf,variety,roast_level),brew_ratings(id,rater_id,is_guest,rating,balance,drank_at),brew_scores(rating_id)").gte("brewed_at", since2).order("brewed_at"),
+          db.from("profiles").select("id,display_name,prefs"),
           (function () {   // all brews of the open bags (for the cups left), however old
             var ids = ((shelf && shelf.coffees) || []).filter(function (c) { return c.open_date && !c.finished_at && !c.archived; }).map(function (c) { return c.id; });
             return ids.length ? db.from("brews").select("coffee_id,dose_g").in("coffee_id", ids) : Promise.resolve({ data: [] });
           })()
         ]).then(function (res) {
           var q = res[0]; if (q.error || !Array.isArray(q.data)) return;
-          var nm = {}; ((res[1] && res[1].data) || []).forEach(function (p) { nm[p.id] = p.display_name; });
+          var nm = {}; ((res[1] && res[1].data) || []).forEach(function (p) { nm[p.id] = p.display_name; if (p.id === my && p.prefs) savePref(p.prefs); });
           var cut = Date.now() - 36 * 36e5, mine = [], rows = [], pend = [], week = Date.now() - 7 * 864e5;
           q.data.forEach(function (b) {
             // your cup, not rated yet (the last 7 days)
@@ -190,7 +190,7 @@
             var c = b.coffees || {}, v = String(c.variety || "").toLowerCase();
             rows.push({ t: b.brewed_at, g: Number(b.dose_g), d: !!b.is_dialin, m: b.made_by || b.created_by || null,
               r: rs.map(function (x) { return x.is_guest ? "g" : x.rater_id; }), rt: rs.map(function (x) { return x.drank_at || null; }),
-              k: c.is_decaf ? "decaf" : /robusta/.test(v) ? (/arabica|,/.test(v) ? "blend" : "robusta") : "" });
+              k: c.is_decaf ? "decaf" : /robusta/.test(v) ? (/arabica|,/.test(v) ? "blend" : "robusta") : "", y: b.yield_g == null ? null : Number(b.yield_g), w: b.water_g == null ? null : Number(b.water_g), dv: b.device || "", rl: c.roast_level || "" });
           });
           var used = null; if (res[2] && Array.isArray(res[2].data)) { used = {}; res[2].data.forEach(function (x) { used[x.coffee_id] = (used[x.coffee_id] || 0) + (Number(x.dose_g) || 0); }); }
           var sh = null; try { sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === my) { sh.cb = rows; sh.cbt = Date.now(); sh.my = mine; sh.tr = pend; sh.nm = nm; if (used) sh.used = Object.assign({}, sh.used || {}, used); localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } else sh = null; } catch (e) { sh = null; }
@@ -231,28 +231,35 @@
   // extracted); robusta about twice that, decaf almost none. In the body it rises for about 45 minutes and then halves
   // roughly every 5 hours (Bateman curve, absorption 4.5 per hour). A brew counts for everyone it was for (split
   // between them, rated or not yet), at the time they drank it if they said, else at the time of the brew.
+  // Settings > Caffeine (kept on this phone too, so Home has it at once): "high" counts the upper end of the range,
+  // "midnight" starts every day at zero
+  function cafPref() { try { return JSON.parse(localStorage.getItem("alto.cafpref") || "{}") || {}; } catch (e) { return {}; } }
+  function savePref(p) { try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "" })); } catch (e) {} }
   function caffeine(rows) {
-    if (!Array.isArray(rows) || !session) return null;
-    var my = session.user.id, MG = { decaf: 0.3, robusta: 18, blend: 13 }, KE = Math.LN2 / 5, KA = 4.5, now = Date.now();
+    if (!Array.isArray(rows) || !session || !window.CAFFEINE) return null;
+    var my = session.user.id, KE = Math.LN2 / 5, KA = 4.5, now = Date.now(), pref = cafPref(), high = pref.mode === "high";
+    var mid = new Date(); mid.setHours(0, 0, 0, 0);
     var doses = [];
     rows.forEach(function (b) {
       var k = b.r ? b.r.indexOf(my) : -1; if (!(b.g > 0) || k < 0) return;   // only the cups that were for you; shared with the others it was for
       var t = Date.parse((b.rt && b.rt[k]) || b.t); if (!isFinite(t) || t > now + 60e3) return;   // when you drank it (if you said), else the brew
-      doses.push({ t: t, mg: b.g / b.r.length * (MG[b.k] || 9) });
+      if (pref.day === "midnight" && t < mid.getTime()) return;   // a fresh start every day
+      var c = CAFFEINE.mg(b), n = b.r.length;
+      doses.push({ t: t, mg: (high ? c.hi : c.mg) / n, lo: c.lo / n, hi: c.hi / n });
     });
     var level = function (at) { return doses.reduce(function (s, d) { var hh = (at - d.t) / 36e5; return hh <= 0 ? s : s + d.mg * KA / (KA - KE) * (Math.exp(-KE * hh) - Math.exp(-KA * hh)); }, 0); };
-    var mid = new Date(); mid.setHours(0, 0, 0, 0);
     var today = doses.filter(function (d) { return d.t >= mid.getTime(); }), total = today.reduce(function (s, d) { return s + d.mg; }, 0);
-    var nowL = level(now);
+    var nowL = level(now), span = doses.reduce(function (s, d) { return s + d.mg; }, 0), ratio = function (f) { return span ? doses.reduce(function (s, d) { return s + d[f]; }, 0) / span : 1; };
+    var lo = nowL * ratio("lo"), hi = nowL * ratio("hi");
     if (!today.length && nowL < 10) return null;
     var r10 = function (x) { return Math.round(x / 10) * 10; }, hm = function (ms) { var d = new Date(ms); d.setMinutes(Math.round(d.getMinutes() / 10) * 10, 0, 0); return d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0"); };
     // when it is under 50 mg (and stays there)
     var last = null; for (var at = now; at < now + 36 * 36e5; at += 5 * 6e4) if (level(at) >= 50) last = at;
     var under = last === null ? "Already under 50 mg." : "Under 50 mg from about " + hm(last + 5 * 6e4) + (new Date(last).getDate() !== new Date(now).getDate() ? " tomorrow." : ".");
-    var text = (nowL >= 5 ? "About " + r10(nowL) + " mg in you right now" : "Almost none left") +
+    var text = (nowL >= 5 ? (high ? "Up to about " + r10(nowL) + " mg in you right now" : "About " + r10(nowL) + " mg in you right now" + (hi - lo >= 20 ? " (likely " + r10(lo) + "\u2013" + r10(hi) + ")" : "")) : "Almost none left") +
       (today.length ? ", from " + (today.length === 1 ? "1 coffee" : today.length + " coffees") + " today (about " + r10(total) + " mg)." : ".") + " " + under;
     if (total > 400) text += " That is more than the 400 mg a day usually given as the limit for healthy adults.";
-    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Why 50 mg: that is about half an espresso, and below it the caffeine left is unlikely to keep most people awake, so it is a rough guide for when an evening is sleep-friendly (not a medical limit; if you are sensitive, aim lower). An estimate: about 9 mg per gram of coffee, halving about every 5 hours, from the cups that were for you." };
+    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Why 50 mg: that is about half an espresso, and below it the caffeine left is unlikely to keep most people awake, so it is a rough guide for when an evening is sleep-friendly (not a medical limit; if you are sensitive, aim lower). How it is worked out: the grams of coffee, the beans (arabica about 1.2 % caffeine, robusta about 2.2 %, decaf almost none, darker roasts a little more), and how much the method pulls out (filter about 95 %, espresso 65 to 85 % depending on the yield). It halves about every 5 hours. Coffee varies a lot, espresso most, so it is an estimate with a range" + (high ? "; you chose to count its upper end (Settings)." : ". Settings can count its upper end instead.") };
   }
   // today from 6:00 (or the first coffee) until midnight: solid up to now, lighter for what is still to come,
   // the dashed 50 mg line, a mark for now with the amount, and the hours underneath
