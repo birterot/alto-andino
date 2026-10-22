@@ -7,9 +7,14 @@
   var box = document.getElementById("today"); if (!box) return;
   var get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
   var el = function (tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  // Signed in? The login is kept in the browser (Supabase's "sb-...-auth-token"). Without it, or for another person,
+  // Home shows nothing personal, and says right away that you are signed out.
+  var session = null;
+  try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (/^sb-.+-auth-token$/.test(k)) { var v = JSON.parse(localStorage.getItem(k) || "null"); if (v && (v.refresh_token || v.access_token) && v.user) session = v; } } } catch (e) {}
   var shelf = null; try { shelf = JSON.parse(get("alto.shelf.v1") || "null"); } catch (e) {}
   if (shelf && (!Array.isArray(shelf.coffees) || Date.now() - shelf.t > 60 * 864e5)) shelf = null;
-  var name = get("alto.myname"), h = new Date().getHours();
+  if (!session || (shelf && shelf.u && shelf.u !== session.user.id)) shelf = null;
+  var name = session ? get("alto.myname") : null, h = new Date().getHours();
 
   // greeting
   var hi = h < 5 ? "Good night" : h < 11 ? "Good morning" : h < 17 ? "Good afternoon" : h < 22 ? "Good evening" : "Good night";
@@ -31,6 +36,14 @@
     if (bits.length) top.appendChild(el("p", "stat", bits.join(" · ")));
   }
   box.appendChild(top);
+
+  if (!session) {   // signed out (for example after clearing the browser's data): say so here, not only on the next page
+    var so = el("div", "note out");
+    so.appendChild(el("div", "nh")).appendChild(el("span", "nk", "Signed out"));
+    so.appendChild(el("p", "nt", "Sign in to see your coffees, open bags and brews here."));
+    var sa = el("a", "go", "Sign in \u2192"); sa.href = "journal/index.html"; so.appendChild(sa);
+    box.appendChild(so);
+  }
 
   // open bags, with the cups left
   if (shelf) {
@@ -67,7 +80,7 @@
     });
   }
   var fl = null; try { fl = JSON.parse(get("alto.friendline") || "null"); } catch (e) {}
-  if (fl && fl.text && Date.now() - fl.t < 7 * 864e5) notes.push({ k: "From Friends", text: fl.text, href: "friends/index.html#f=" + fl.id, go: "See more" });
+  if (session && fl && fl.text && Date.now() - fl.t < 7 * 864e5) notes.push({ k: "From Friends", text: fl.text, href: "friends/index.html#f=" + fl.id, go: "See more" });
   var F = window.FACTS || [];
   if (F.length) {
     var day = Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / 864e5), f = F[day % F.length];
