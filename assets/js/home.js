@@ -122,7 +122,7 @@
     var day = Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / 864e5), f = F[day % F.length];
     notes.push({ k: "Did you know?", text: f[0], href: f[1] ? "chapters/" + f[1] + ".html" : null, go: "Read more" });
   }
-  var card = null, i = 0, draw = null;
+  var card = null, i = 0, draw = null, infoOpen = false;
   if (notes.length) {
     card = el("div", "note");
     draw = function () {
@@ -135,7 +135,12 @@
       }
       card.appendChild(head); card.appendChild(el("p", "nt", n.text));
       if (n.curve) card.appendChild(n.curve);
-      if (n.small) card.appendChild(el("p", "ns", n.small));
+      if (n.small) {   // the explanation stays folded behind a small (i), so the note stays short
+        var ib = el("button", "info", "i"); ib.type = "button"; ib.setAttribute("aria-label", "How to read this"); ib.setAttribute("aria-expanded", String(!!infoOpen));
+        var ip = el("p", "ns", n.small); ip.hidden = !infoOpen;
+        ib.addEventListener("click", function (e) { e.stopPropagation(); infoOpen = !infoOpen; ip.hidden = !infoOpen; ib.setAttribute("aria-expanded", String(infoOpen)); });
+        head.insertBefore(ib, head.children[1] || null); card.appendChild(ip);
+      }
       if (n.href) { var a = el("a", "go", n.go + " →"); a.href = n.href; if (n.ext) { a.target = "_blank"; a.rel = "noopener"; } a.addEventListener("click", function (e) { e.stopPropagation(); }); card.appendChild(a); }
     };
     if (notes.length > 1) {
