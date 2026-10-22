@@ -144,7 +144,7 @@
       if (n.small) {   // the explanation stays folded behind a small (i), so the note stays short
         var ib = el("button", "info", "i"); ib.type = "button"; ib.setAttribute("aria-label", "How to read this"); ib.setAttribute("aria-expanded", String(!!infoOpen));
         var ip = el("p", "ns", n.small); ip.hidden = !infoOpen;
-        if (n.more) { ip.appendChild(document.createTextNode(" ")); var ml = el("a", "", "Estimate or upper end, and how it is worked out: Settings \u2192"); ml.href = n.more; ml.addEventListener("click", function (e) { e.stopPropagation(); }); ip.appendChild(ml); }
+        if (n.more) { ip.appendChild(document.createTextNode(" ")); var ml = el("a", "", "Your caffeine settings, and how it is worked out \u2192"); ml.href = n.more; ml.addEventListener("click", function (e) { e.stopPropagation(); }); ip.appendChild(ml); }
         ib.addEventListener("click", function (e) { e.stopPropagation(); infoOpen = !infoOpen; ip.hidden = !infoOpen; ib.setAttribute("aria-expanded", String(infoOpen)); });
         head.insertBefore(ib, head.children[1] || null); card.appendChild(ip);
       }
@@ -226,7 +226,7 @@
   // ---------- caffeine: the note and its curve (the numbers come from assets/js/caffeine.js) ----------
   // A brew counts for everyone it was for (split between them, rated or not yet), at the time they drank it if they said,
   // else at the time of the brew. Settings > Caffeine (kept on this phone too, so Home has it at once):
-  // "high" counts the upper end of the range, "midnight" starts every day at zero.
+  // "high" counts the upper end of the range, "midnight" starts every day at zero, "line" is your sleep line (25, 50 or 100 mg).
   function cafPref() { try { return JSON.parse(localStorage.getItem("alto.cafpref") || "{}") || {}; } catch (e) { return {}; } }
   function savePref(p) { try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "", line: p.caf_line || null })); } catch (e) {} }
   function caffeine(rows) {
@@ -248,13 +248,13 @@
     var lo = nowL * ratio("lo"), hi = nowL * ratio("hi");
     if (!today.length && nowL < 10) return null;
     var r10 = function (x) { return Math.round(x / 10) * 10; }, hm = function (ms) { var d = new Date(ms); d.setMinutes(Math.round(d.getMinutes() / 10) * 10, 0, 0); return d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0"); };
-    // when it is under 50 mg (and stays there)
+    // when it is under your sleep line (and stays there)
     var last = null; for (var at = now; at < now + 36 * 36e5; at += 5 * 6e4) if (level(at) >= line) last = at;
     var under = last === null ? "Already under " + line + " mg." : "Under " + line + " mg from about " + hm(last + 5 * 6e4) + (new Date(last).getDate() !== new Date(now).getDate() ? " tomorrow." : ".");
     var text = (nowL >= 5 ? (high ? "Up to about " + r10(nowL) + " mg in you right now" : "About " + r10(nowL) + " mg in you right now" + (hi - lo >= 20 ? " (likely " + r10(lo) + "\u2013" + r10(hi) + ")" : "")) : "Almost none left") +
       (today.length ? ", from " + (today.length === 1 ? "1 coffee" : today.length + " coffees") + " today (about " + r10(total) + " mg)." : ".") + " " + under;
     if (total > 400) text += " That is more than the 400 mg a day usually given as the limit for healthy adults.";
-    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now, line), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Below the dashed line (" + line + " mg" + (line === 50 ? ", about half an espresso" : line === 25 ? ", for the sensitive" : ", for the less sensitive") + ") there is little left to keep you awake: a rough guide for a sleep-friendly evening, not a medical limit. A rough average with a range: everyone is affected differently" + (high ? " (you count the upper end)." : "."), more: "settings/index.html#cafset" };
+    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now, line), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Below the dashed line (" + line + " mg" + (line === 50 ? ", about half an espresso" : line === 25 ? ", your line for sensitive sleepers" : ", your line for tolerant sleepers") + ") there is little left to keep you awake: a rough guide for a sleep-friendly evening, not a medical limit. A rough average with a range: everyone is affected differently" + (high ? " (you count the upper end)." : "."), more: "settings/index.html#cafset" };
   }
   // today from 6:00 (or the first coffee) until midnight: solid up to now, lighter for what is still to come,
   // the dashed line (your sleep line, 50 mg unless you changed it), a mark for now with the amount, and the hours underneath
@@ -266,18 +266,18 @@
     var W = 300, H = 64, y = function (v) { return (H - 2 - (H - 4) * v / top).toFixed(1); }, x = function (at) { return (W * (at - t0) / (t1 - t0)).toFixed(1); };
     var pct = function (at) { return Math.max(0, Math.min(100, 100 * (at - t0) / (t1 - t0))); };
     var wrap = el("div", "cafc"), plot = el("div", "cplot"), s = mk("svg", { viewBox: "0 0 " + W + " " + H, preserveAspectRatio: "none", "aria-hidden": "true" });
-    var line = function (list) { return list.map(function (p, k) { return (k ? "L" : "M") + x(p[0]) + " " + y(p[1]); }).join(" "); };
+    var pathOf = function (list) { return list.map(function (p, k) { return (k ? "L" : "M") + x(p[0]) + " " + y(p[1]); }).join(" "); };
     var past = pts.filter(function (p) { return p[0] <= now; }), next = pts.filter(function (p) { return p[0] >= now; });
     if (past.length && past[past.length - 1][0] < now) past.push([now, level(now)]);
     if (next.length && next[0][0] > now) next.unshift([now, level(now)]);
-    if (past.length > 1) { s.appendChild(mk("path", { d: line(past) + " L" + x(now) + " " + (H - 2) + " L" + x(t0) + " " + (H - 2) + "Z", class: "ca" })); s.appendChild(mk("path", { d: line(past), class: "cl" })); }
-    if (next.length > 1) s.appendChild(mk("path", { d: line(next), class: "cl fut" }));
+    if (past.length > 1) { s.appendChild(mk("path", { d: pathOf(past) + " L" + x(now) + " " + (H - 2) + " L" + x(t0) + " " + (H - 2) + "Z", class: "ca" })); s.appendChild(mk("path", { d: pathOf(past), class: "cl" })); }
+    if (next.length > 1) s.appendChild(mk("path", { d: pathOf(next), class: "cl fut" }));
     s.appendChild(mk("path", { d: "M0 " + y(line) + " H" + W, class: "c50" }));
     s.appendChild(mk("path", { d: "M0 " + (H - 1) + " H" + W, class: "cbase" }));
     if (now >= t0 && now <= t1) s.appendChild(mk("path", { d: "M" + x(now) + " 0 V" + H, class: "cn" }));
     plot.appendChild(s);
     // labels in HTML (the drawing stretches to the width, text must not)
-    var l50 = el("span", "l50", line + " mg"); l50.style.bottom = (100 * line / top) + "%"; plot.appendChild(l50);
+    var l50 = el("span", "l50", line + " mg"); l50.style.bottom = (2 + (H - 4) * line / top) + "px"; plot.appendChild(l50);   // just above the dashed line
     if (now >= t0 && now <= t1) { var ln = el("span", "lnow", "now " + Math.round(level(now) / 10) * 10 + " mg"), q = pct(now); ln.style.left = q + "%"; if (q > 75) ln.classList.add("r"); else if (q < 25) ln.classList.add("l"); plot.appendChild(ln); }
     wrap.appendChild(plot);
     var ax = el("div", "cax");
