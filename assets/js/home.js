@@ -2,7 +2,7 @@
    from your last visit (alto.shelf.v1), so it is there at once and the opening animation stays smooth.
    - a greeting, and how many days in a row there was coffee / brews this month
    - your open bags, each with the cups left, tap to log a brew with it
-   - one note at a time (tap for the next): things to do, news from Friends, a coffee fact of the day */
+   - one note at a time (tap for the next): your caffeine today, things to do, news from Friends, a coffee fact of the day */
 (function () {
   var box = document.getElementById("today"); if (!box) return;
   var get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -69,8 +69,10 @@
     }
   }
 
-  // one note at a time: to do first, then Friends, then the fact of the day
-  var notes = [];
+  // one note at a time: your caffeine first (when there was coffee today), then to do, Friends, the fact of the day
+  var notes = [], cafNote = null;
+  var caf = session ? caffeine(shelf && shelf.cb) : null;
+  if (caf) notes.push(cafNote = caf);
   if (shelf) {
     if (shelf.nob > 0) notes.push({ k: "To do", text: shelf.nob + (shelf.nob === 1 ? " of your brews still needs" : " of your brews still need") + " a Balance rating.", href: "journal/index.html#mine", go: "Rate them" });
     shelf.coffees.forEach(function (c) {
@@ -86,9 +88,10 @@
     var day = Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / 864e5), f = F[day % F.length];
     notes.push({ k: "Did you know?", text: f[0], href: f[1] ? "chapters/" + f[1] + ".html" : null, go: "Read more" });
   }
+  var card = null, i = 0, draw = null;
   if (notes.length) {
-    var card = el("div", "note"), i = 0;
-    var draw = function () {
+    card = el("div", "note");
+    draw = function () {
       var n = notes[i]; card.textContent = "";
       var head = el("div", "nh"); head.appendChild(el("span", "nk", n.k));
       if (notes.length > 1) {
@@ -97,6 +100,8 @@
         head.appendChild(dots);
       }
       card.appendChild(head); card.appendChild(el("p", "nt", n.text));
+      if (n.curve) card.appendChild(n.curve);
+      if (n.small) card.appendChild(el("p", "ns", n.small));
       if (n.href) { var a = el("a", "go", n.go + " →"); a.href = n.href; if (n.ext) { a.target = "_blank"; a.rel = "noopener"; } a.addEventListener("click", function (e) { e.stopPropagation(); }); card.appendChild(a); }
     };
     if (notes.length > 1) {
@@ -106,6 +111,78 @@
       card.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); next(); } });
     }
     draw(); box.appendChild(card);
+  }
+  // newer brews (also the ones someone else logged and you rated), fetched quietly; the note is updated if they change it
+  if (session) refreshBrews(function (rows) {
+    var c = caffeine(rows); if (!c) return;
+    if (cafNote) { cafNote.text = c.text; cafNote.curve = c.curve; cafNote.small = c.small; }
+    else if (card) { notes.unshift(cafNote = c); i = 0; }
+    else return;   // no note card at all: rare, leave Home as it is
+    if (card) { if (notes.length > 1 && !card.hasAttribute("role")) { card.setAttribute("role", "button"); card.tabIndex = 0; card.setAttribute("aria-label", "Next note"); var nx = function () { i = (i + 1) % notes.length; draw(); }; card.addEventListener("click", nx); } draw(); }
+  });
+
+  // ---------- caffeine: an estimate from the brews you rated ----------
+  // About 9 mg of caffeine per gram of arabica coffee ends up in the cup (beans are about 1.2 % caffeine, most of it is
+  // extracted); robusta about twice that, decaf almost none. In the body it rises for about 45 minutes and then halves
+  // roughly every 5 hours (Bateman curve, absorption 4.5 per hour). A brew counts for everyone who rated it (split
+  // between them); a brew nobody rated counts for whoever made it, unless it was a dial-in.
+  function caffeine(rows) {
+    if (!Array.isArray(rows) || !session) return null;
+    var my = session.user.id, MG = { decaf: 0.3, robusta: 18, blend: 13 }, KE = Math.LN2 / 5, KA = 4.5, now = Date.now();
+    var doses = [];
+    rows.forEach(function (b) {
+      var t = Date.parse(b.t); if (!(b.g > 0) || !isFinite(t) || t > now + 60e3) return;
+      var share = 0;
+      if (b.r && b.r.length) share = b.r.indexOf(my) >= 0 ? b.g / b.r.length : 0;
+      else if (!b.d && b.m === my) share = b.g;
+      if (share > 0) doses.push({ t: t, mg: share * (MG[b.k] || 9) });
+    });
+    var level = function (at) { return doses.reduce(function (s, d) { var hh = (at - d.t) / 36e5; return hh <= 0 ? s : s + d.mg * KA / (KA - KE) * (Math.exp(-KE * hh) - Math.exp(-KA * hh)); }, 0); };
+    var mid = new Date(); mid.setHours(0, 0, 0, 0);
+    var today = doses.filter(function (d) { return d.t >= mid.getTime(); }), total = today.reduce(function (s, d) { return s + d.mg; }, 0);
+    var nowL = level(now);
+    if (!today.length && nowL < 10) return null;
+    var r10 = function (x) { return Math.round(x / 10) * 10; }, hm = function (ms) { var d = new Date(ms); d.setMinutes(Math.round(d.getMinutes() / 10) * 10, 0, 0); return d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0"); };
+    // when it is under 50 mg (and stays there)
+    var last = null; for (var at = now; at < now + 36 * 36e5; at += 5 * 6e4) if (level(at) >= 50) last = at;
+    var under = last === null ? "Already under 50 mg." : "Under 50 mg from about " + hm(last + 5 * 6e4) + (new Date(last).getDate() !== new Date(now).getDate() ? " tomorrow." : ".");
+    var text = (nowL >= 5 ? "About " + r10(nowL) + " mg in you right now" : "Almost none left") +
+      (today.length ? ", from " + (today.length === 1 ? "1 coffee" : today.length + " coffees") + " today (about " + r10(total) + " mg)." : ".") + " " + under;
+    if (total > 400) text += " That is more than the 400 mg a day usually given as the limit for healthy adults.";
+    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now), small: "An estimate: about 9 mg per gram of coffee, halving about every 5 hours. Counts the brews you rated." };
+  }
+  function curveOf(level, mid, now) {   // today from 6:00 (or the first coffee) until midnight, with the 50 mg line and "now"
+    var NS = "http://www.w3.org/2000/svg", mk = function (t, a) { var e = document.createElementNS(NS, t); for (var k in a) e.setAttribute(k, a[k]); return e; };
+    var t0 = mid + 6 * 36e5, t1 = mid + 24 * 36e5; if (now < t0) t0 = mid; if (now > t1 - 36e5) t1 = now + 3 * 36e5;
+    var pts = [], top = 100; for (var k = 0; k <= 96; k++) { var at = t0 + (t1 - t0) * k / 96, v = level(at); pts.push(v); if (v > top) top = v; }
+    var W = 300, H = 46, y = function (v) { return (H - 3 - (H - 6) * v / top).toFixed(1); }, x = function (at) { return (W * (at - t0) / (t1 - t0)).toFixed(1); };
+    var wrap = el("div", "cafc"), s = mk("svg", { viewBox: "0 0 " + W + " " + H, preserveAspectRatio: "none", "aria-hidden": "true" });
+    var d = pts.map(function (v, k) { return (k ? "L" : "M") + (W * k / 96).toFixed(1) + " " + y(v); }).join(" ");
+    s.appendChild(mk("path", { d: d + " L" + W + " " + (H - 3) + " L0 " + (H - 3) + "Z", class: "ca" }));
+    s.appendChild(mk("path", { d: d, class: "cl" }));
+    s.appendChild(mk("path", { d: "M0 " + y(50) + " H" + W, class: "c50" }));
+    if (now >= t0 && now <= t1) s.appendChild(mk("path", { d: "M" + x(now) + " 0 V" + H, class: "cn" }));
+    wrap.appendChild(s);
+    var ax = el("div", "cax"), lab = function (at) { var dd = new Date(at); return dd.getHours() + ":" + String(dd.getMinutes()).padStart(2, "0"); };
+    ax.appendChild(el("span", "", lab(t0))); ax.appendChild(el("span", "", t1 - mid === 24 * 36e5 ? "24:00" : lab(t1)));
+    wrap.appendChild(ax);
+    return wrap;
+  }
+  // the brews of the last 36 hours straight from the database, with the login this phone already has (no extra library)
+  function refreshBrews(cb) {
+    var S = window.SUPA; if (!S || !session.access_token || !(session.expires_at * 1000 > Date.now() + 60e3) || !window.fetch) return;
+    var since = new Date(Date.now() - 36 * 36e5).toISOString();
+    var url = S.url + "/rest/v1/brews?select=brewed_at,dose_g,is_dialin,made_by,created_by,coffees(is_decaf,variety),brew_ratings(rater_id,is_guest)&brewed_at=gte." + encodeURIComponent(since) + "&order=brewed_at";
+    fetch(url, { headers: { apikey: S.key, Authorization: "Bearer " + session.access_token } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (list) {
+      if (!Array.isArray(list)) return;
+      var rows = list.filter(function (b) { return Number(b.dose_g) > 0; }).map(function (b) {
+        var c = b.coffees || {}, v = String(c.variety || "").toLowerCase();
+        return { t: b.brewed_at, g: Number(b.dose_g), d: !!b.is_dialin, m: b.made_by || b.created_by || null, r: (b.brew_ratings || []).map(function (x) { return x.is_guest ? "g" : x.rater_id; }),
+          k: c.is_decaf ? "decaf" : /robusta/.test(v) ? (/arabica|,/.test(v) ? "blend" : "robusta") : "" };
+      });
+      try { var sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === session.user.id) { sh.cb = rows; sh.cbt = Date.now(); localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } } catch (e) {}
+      cb(rows);
+    }).catch(function () {});
   }
 
   // the little bag from the Coffee Shelf, filled as far as there is coffee left

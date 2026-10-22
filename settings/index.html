@@ -34,6 +34,13 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 @keyframes fl{0%,40%{background:var(--line);color:var(--ink)}100%{background:none}}
 .foot{display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--mut);font-size:14px;max-width:560px}
 .out{max-width:560px}
+.lab{margin:18px 0 0;font-size:13.5px;color:var(--mut)}
+#colorhint{margin-top:12px}
+.sw{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;max-width:420px}
+.sw button{position:relative;width:42px;height:42px;border-radius:50%;border:0;color:#fff;font:inherit;font-size:16px;font-weight:600;cursor:pointer;padding:0}
+.sw button[aria-checked=true]{box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--ink)}
+.sw button:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.sw button small{position:absolute;right:-4px;bottom:-4px;min-width:18px;height:18px;padding:0 3px;border-radius:9px;background:var(--card);color:var(--ink);border:1px solid var(--line);font-size:11px;font-weight:600;line-height:16px}
 </style>
 </head>
 <body>
@@ -51,6 +58,9 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
   <section class="set">
     <h2>You</h2>
     <label>Your name, shown on the brews you make and rate<input id="s-name" maxlength="40" autocomplete="nickname" placeholder="e.g. Birte"></label>
+    <p class="lab" id="colorlab">Your colour, for your initial in Recent activity</p>
+    <div class="sw" id="s-color" role="radiogroup" aria-labelledby="colorlab"></div>
+    <p class="hint" id="colorhint"></p>
   </section>
 
   <section class="set">
@@ -90,7 +100,23 @@ const db = supabase.createClient(SUPA.url, SUPA.key);
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
 const opt = (s, v, t) => { const o = el("option", "", t); o.value = v; s.appendChild(o); return o; };
-let me = null, profile = null, fm = "";
+let me = null, profile = null, fm = "", color = "", others = [];
+// your colour: tap one; tap it again for "automatic". The initials of the others show which colours they use.
+function renderColors() {
+  const box = $("s-color"); box.textContent = "";
+  const ini = (($("s-name").value || (profile && profile.display_name) || "?").trim()[0] || "?").toUpperCase();
+  (DEFAULTS.COLORS || []).forEach(([k, hex, label]) => {
+    const b = el("button", "", ini); b.type = "button"; b.style.background = hex; b.setAttribute("role", "radio"); b.setAttribute("aria-checked", String(color === k));
+    const by = others.filter(o => o.color === k);
+    b.setAttribute("aria-label", label + (by.length ? ", used by " + by.map(o => o.name).join(" and ") : ""));
+    if (by.length) b.appendChild(el("small", "", by.map(o => (o.name || "?")[0].toUpperCase()).join("")));
+    b.onclick = () => { color = color === k ? "" : k; renderColors(); };
+    box.appendChild(b);
+  });
+  const c = (DEFAULTS.COLORS || []).find(x => x[0] === color);
+  $("colorhint").textContent = (c ? c[2] + ". Tap it again to go back to automatic." : "Automatic: the app picks one for you.") + (others.some(o => o.color) ? " A small letter shows who else uses a colour." : "");
+}
+$("s-name").addEventListener("input", renderColors);
 
 // the same device list as the Journal
 (function () {
@@ -125,6 +151,10 @@ async function load() {
   const pick = (id, v) => { const s = $(id); s.value = v || ""; if (s.value !== (v || "")) s.value = ""; };
   pick("s-device", p.device); pick("s-grinder", p.grinder); pick("s-drink-esp", p.drink_esp); pick("s-drink-filter", p.drink_filter); pick("s-milk", p.milk);
   setFm(p.formmode || "");
+  color = (DEFAULTS.COLORS || []).some(c => c[0] === p.color) ? p.color : ""; renderColors();
+  // the others in your household (the profiles you can see), for the little letters on the colours
+  const { data: ps } = await db.from("profiles").select("id,display_name,prefs");
+  others = (ps || []).filter(x => x.id !== me.id).map(x => ({ name: x.display_name || "Someone", color: x.prefs && x.prefs.color })); renderColors();
   $("who").textContent = "Signed in as " + me.email + ".";
 }
 $("sf").onsubmit = async e => {
@@ -134,6 +164,7 @@ $("sf").onsubmit = async e => {
   const prefs = Object.assign({}, (profile && profile.prefs) || {});
   [["device", "s-device"], ["grinder", "s-grinder"], ["drink_esp", "s-drink-esp"], ["drink_filter", "s-drink-filter"], ["milk", "s-milk"]].forEach(([k, id]) => { if ($(id).value) prefs[k] = $(id).value; else delete prefs[k]; });
   if (fm) prefs.formmode = fm; else delete prefs.formmode;
+  if (color) prefs.color = color; else delete prefs.color;
   const same = (x, y) => JSON.stringify(Object.keys(x).sort().map(k => [k, x[k]])) === JSON.stringify(Object.keys(y).sort().map(k => [k, y[k]]));
   if (profile && profile.display_name === name && same(prefs, profile.prefs || {})) { flash("Nothing changed, your settings are as they were."); return; }
   $("save").disabled = true; $("msg").textContent = "Saving...";

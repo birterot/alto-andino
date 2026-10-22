@@ -88,5 +88,9 @@ window.DEFAULTS = {
   // Captcha on sign-in and sign-up (Cloudflare Turnstile). Put the site key here (it is public, not secret).
   // Empty = no captcha. Only switch the captcha on in Supabase after this key is published.
   TURNSTILE_SITE_KEY: "0x4AAAAAAFYgW7mYfXFgAt5K",
-  START_PRESET: "flair-med"
+  START_PRESET: "flair-med",
+  // Colours for people (their initial in a circle, e.g. in Recent activity). Chosen in Settings, kept as the key.
+  // All dark enough for white letters, in light and dark mode.
+  COLORS: [["brown", "#8A5A3C", "Coffee brown"], ["green", "#4F7A64", "Sage"], ["blue", "#5C6F99", "Blue"], ["terra", "#A0644F", "Terracotta"],
+    ["olive", "#7A6A3A", "Olive"], ["plum", "#7D5C8A", "Plum"], ["teal", "#3F7480", "Teal"], ["rose", "#A65A6E", "Rose"], ["ochre", "#9A7428", "Ochre"], ["slate", "#5E6670", "Slate"]]
 };
