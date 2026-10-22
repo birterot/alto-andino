@@ -1,5 +1,5 @@
 /* The brew calculator, as a part that can be put on any page.
-     altoCalc.mount(container, { presets, start, storageKey, onChange, compact })   compact = short labels, three fields in a row  ->  { numbers(), setPreset(id), preset() }
+     altoCalc.mount(container, { presets, start, storageKey, onChange, compact })   compact = short labels, three fields in a row  ->  { numbers(), setPreset(id), load(state), preset() }
    The presets come from data/defaults.js. The maths is in solve(), kept in one place so it is easy to check. */
 window.altoCalc = (function () {
   function el(t, c, x) { var e = document.createElement(t); if (c) e.className = c; if (x) e.textContent = x; return e; }
@@ -79,7 +79,8 @@ window.altoCalc = (function () {
     function numbers() {
       var r = solve(st.basis, st.known, st.value, st.R, st.a, st.f), p = byId(st.id);
       if (!r || !(r.dose > 0)) return null;
-      return { preset: p, dose_g: r1(r.dose), water_g: r1(r.water), yield_g: r1(r.yield), ratio: r1(st.R), basis: st.basis, temp_c: p.temp || null, preheat: p.preheat || null, device: p.device };
+      return { preset: p, dose_g: r1(r.dose), water_g: r1(r.water), yield_g: r1(r.yield), ratio: r1(st.R), basis: st.basis, temp_c: p.temp || null, preheat: p.preheat || null, device: p.device,
+        state: { id: st.id, basis: st.basis, R: st.R, a: st.a, f: st.f, known: st.known, value: st.value } };
     }
     function render(skip) {
       var r = solve(st.basis, st.known, st.value, st.R, st.a, st.f);
@@ -111,7 +112,9 @@ window.altoCalc = (function () {
 
     st = (o.start && byId(o.start) && fresh(byId(o.start))) || load() || fresh(byId(presets[0].id));
     sel.value = st.id; tempLine(); render();
-    return { numbers: numbers, setPreset: setPreset, preset: function () { return byId(st.id); } };
+    // take over what you worked out elsewhere (the Calculator page), so both show the same numbers
+    function load(s) { if (!s || !byId(s.id)) return; st = { id: s.id, basis: s.basis, R: +s.R, a: +s.a, f: +s.f, known: s.known, value: +s.value }; sel.value = st.id; tempLine(); render(); }
+    return { numbers: numbers, setPreset: setPreset, load: load, preset: function () { return byId(st.id); } };
   }
   return { mount: mount, solve: solve };
 })();

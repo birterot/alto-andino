@@ -226,6 +226,8 @@ input:disabled{background:var(--bg);cursor:not-allowed}
 .calc .kgrid input{margin-top:4px;height:44px}
 details.calcbox{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:var(--bg)}
 details.calcbox summary{font-size:15px}
+details.calcbox summary small{display:block;margin:2px 0 0 18px;font-size:13px;font-weight:400;color:var(--mut)}
+details.calcbox[open] summary small{display:none}
 .compact .fields{grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
 .compact .fld{padding:10px 10px 8px;border-radius:12px;grid-template-columns:1fr;grid-template-areas:"l" "i"}
 .compact .fld .u{display:none}
@@ -508,7 +510,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
         </label>
         <details class="add how" id="howbox" hidden><summary id="howsum">How to brew</summary><div id="howbody"></div></details>
         <details class="add calcbox adv" id="calcbox">
-          <summary>Plan with the calculator</summary>
+          <summary>Plan with the calculator <small id="calcsum"></small></summary>
           <div class="calc"><div id="calc"></div></div>
           <button type="button" class="btn" id="usecalc">Use these numbers</button>
         </details>
@@ -2009,11 +2011,18 @@ function autoFill() {
   feelAuto(); drawCurve();
 }
 function onCalc() {   // the calculator moved: non-espresso devices follow it until you type a number yourself
+  calcSum();
   if (!calc || editingBrew) return;
   if (!isEsp(typeOf(chosen("b-device")))) fillFromCalc(calc.numbers(), false);
 }
 calc = window.altoCalc && D.PRESETS ? altoCalc.mount($("calc"), { presets: D.PRESETS, start: D.START_PRESET, compact: true, onChange: () => onCalc() }) : null;
 if (calc) { const rs = $("calc").querySelector(".reset"), row = el("div", "calcacts"); rs.replaceWith(row); row.append($("usecalc"), rs); }
+// folded, the calculator still says in one line what it would give
+function calcSum() {
+  const n = calc && calc.numbers(), s = $("calcsum"); if (!s) return;
+  s.textContent = n ? [n.preset && n.preset.name, "1:" + n.ratio, n.dose_g + "\u00A0g coffee"].filter(Boolean).join(" \u00B7 ") : "";
+}
+calcSum();
 $("usecalc").onclick = () => { fillFromCalc(calc && calc.numbers(), true); drawCurve(); userChanged(); say("Numbers copied into the form."); };
 // tasters still on their automatic drink follow the device (espresso or filter drink)
 function refreshAutoDrinks() { if (!tasters.length) return; stashTaster(); tasters.forEach(t => { if (t.auto) Object.assign(t, defDrink(t.guest ? null : t.rater_id)); }); showTaster(tAct); }
@@ -2103,10 +2112,11 @@ function newBrewSetup(dev) {
   if (h) {
     const hp = (id, v) => { if (v !== null && v !== undefined) { $(id).value = v; touched.add(id); } };
     hp("b-dose", h.dose_g); if (!isEsp(typeOf(chosen("b-device")))) hp("b-water", h.water_g); hp("b-yield", h.yield_g); hp("b-temp", h.temp_c); if (isFlair(chosen("b-device"))) hp("b-preheat", h.preheat);
+    if (calc && h.state) calc.load(h.state);   // the calculator in the form shows the same numbers
     say("Numbers filled in from the calculator.");
     edited = true; saveDraft();
   }
-  $("calcbox").open = !restored && !h;
+  $("calcbox").open = false;   // folded: it is there when you want to plan, out of the way when you don't
   offerCalc(h || restored);
 }
 // You used the Calculator a little while ago but came here another way: offer its numbers (one tap), instead of typing them again
@@ -2120,7 +2130,8 @@ function offerCalc(skip) {
   box.append(el("span", "", "From the Calculator, " + mins + " min ago: "), el("b", "", what));
   const use = el("button", "btn", "Use these"); use.type = "button";
   use.onclick = () => {
-    if (c.device) { setSel("b-device", c.device); applyType(); }
+    if (c.device) { setSel("b-device", c.device); applyType(); autoFill(); }
+    if (calc && c.state) calc.load(c.state);
     const hp = (id, v) => { if (v !== null && v !== undefined) { $(id).value = v; touched.add(id); } };
     hp("b-dose", c.dose_g); if (!isEsp(typeOf(chosen("b-device")))) hp("b-water", c.water_g && Math.round(c.water_g * 10) / 10); hp("b-yield", c.yield_g && Math.round(c.yield_g * 10) / 10); hp("b-temp", c.temp_c); if (isFlair(chosen("b-device"))) hp("b-preheat", c.preheat);
     box.hidden = true; say("Numbers filled in from the calculator."); edited = true; saveDraft(); refreshAutoDrinks();
@@ -2371,14 +2382,14 @@ $("rmore").onclick = () => { feedN += 40; loadFeed(); };
 // "Log a brew": choose the device first (or the coffee first). Coffees suitable for the device come first.
 let logMode = store.get("alto.logmode") === "coffee" ? "coffee" : "device", logDev = null, logCoffees = [];
 async function pickList() {
+  const h = peekHandoff(); if (h && h.device) logDev = h.device;   // coming from the calculator: its device is chosen
+  else { try { const c = JSON.parse(localStorage.getItem("alto.calc.last") || "null"); if (c && c.device && c.t && Date.now() - c.t <= 45 * 60e3) logDev = c.device; } catch (e) {} }   // or you used it a little while ago
   const { data, error } = await inHH(db.from("coffees").select("*")).order("created_at", { ascending: false });
   if (error) { say("Could not load coffees: " + error.message); return; }
   const seen = new Set();
   logCoffees = data.filter(c => !c.archived).filter(c => { const k = gk(c); if (seen.has(k)) return false; seen.add(k); return true; });   // data is newest first
   const rank = c => c.finished_at ? 2 : c.open_date ? 0 : 1;   // open bags first, finished ones last
   logCoffees.sort((a, b) => rank(a) - rank(b));
-  const h = peekHandoff(); if (h && h.device) logDev = h.device;   // coming from the calculator: its device is chosen
-  else { try { const c = JSON.parse(localStorage.getItem("alto.calc.last") || "null"); if (c && c.device && c.t && Date.now() - c.t <= 45 * 60e3) logDev = c.device; } catch (e) {} }   // or you used it a little while ago
   renderDrafts();
   renderPick();
 }
