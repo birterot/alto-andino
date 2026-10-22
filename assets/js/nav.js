@@ -43,7 +43,8 @@
     ["roasting", "Roasting"],
     ["freshness", "Freshness and storage"],
     ["devices", "Brewing devices"],
-    ["drinks", "Coffee drinks"]
+    ["drinks", "Coffee drinks"],
+    ["caffeine", "Caffeine"]
   ];
 
   var path = location.pathname, file = (path.split("/").pop() || "index.html").replace(/\.html$/, "");

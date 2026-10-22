@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icons/icon-180.png?v=2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Alto Andino">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Caffeine | Alto Andino</title>
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/chapter2.css">
+<style>
+.cafp p,.cafp li{max-width:62ch;line-height:1.55}
+.formula{margin:14px 0;padding:14px 16px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:16px;line-height:1.5}
+.formula b{color:var(--accent)}
+table.ft{width:100%;max-width:620px;border-collapse:collapse;margin:10px 0 4px;font-size:15px}
+table.ft th,table.ft td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+table.ft th{font-size:13px;font-weight:600;color:var(--mut)}
+table.ft td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.try{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 12px;max-width:520px;margin-top:10px;padding:14px 16px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+.try label{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:13.5px;color:var(--mut)}
+.try label[hidden]{display:none}
+.try input,.try select{width:100%;min-width:0;box-sizing:border-box;margin:0;height:44px;padding:0 12px;font:inherit;font-size:16px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.try .out{grid-column:1/-1;margin:4px 0 0;font-size:17px;color:var(--ink)}
+.try .out small{display:block;margin-top:2px;font-size:13.5px;color:var(--mut)}
+</style>
+</head>
+<body>
+<main class="fresh cafp">
+<h1>Caffeine</h1>
+<p class="sub">How the caffeine on Home is worked out, and how sure it can be.</p>
+
+<h2>The idea</h2>
+<div class="formula"><b>Caffeine in the cup</b> = grams of coffee &times; caffeine in the beans &times; how much of it the method pulls out</div>
+<p>Then, in your body, it rises for about 45 minutes and halves roughly every 5 hours. That is the curve on Home. A cup counts for everyone it was for (shared, if several), at the time they drank it (or the time of the brew).</p>
+
+<h2>Caffeine in the beans</h2>
+<table class="ft"><thead><tr><th>Beans (roasted)</th><th>Caffeine</th><th class="n">per gram</th></tr></thead><tbody>
+<tr><td>Arabica</td><td>about 1.2 % (usually 1.0 to 1.5 %)</td><td class="n">12 mg</td></tr>
+<tr><td>Blend with robusta</td><td>about 1.6 %</td><td class="n">16 mg</td></tr>
+<tr><td>Robusta</td><td>about 2.2 % (usually 1.7 to 2.7 %)</td><td class="n">22 mg</td></tr>
+<tr><td>Decaf</td><td>at most 0.1 %, we count 0.05 %</td><td class="n">0.5 mg</td></tr>
+</tbody></table>
+<p class="mut">Taken from the coffee on your shelf: the Decaf box, and Robusta in the variety (with another variety too, it counts as a blend). Roasting changes little: darker beans lost more water and mass, so a gram of them has a few per cent more caffeine (we count light 0.98, medium 1, dark 1.04).</p>
+
+<h2>How much the method pulls out</h2>
+<p>Caffeine dissolves easily, much more easily than most of the flavour, so the methods differ less than you might think.</p>
+<table class="ft"><thead><tr><th>Method</th><th class="n">Pulled out</th></tr></thead><tbody>
+<tr><td>Filter (V60, Chemex, Kalita, drip machine)</td><td class="n">about 95 %</td></tr>
+<tr><td>Immersion (French press, AeroPress, Clever)</td><td class="n">about 90 %</td></tr>
+<tr><td>Moka pot, cold brew</td><td class="n">about 85 %</td></tr>
+<tr><td>Espresso, ristretto (1:1)</td><td class="n">about 65 %</td></tr>
+<tr><td>Espresso, normal (1:2)</td><td class="n">about 75 %</td></tr>
+<tr><td>Espresso, lungo (1:3)</td><td class="n">about 85 %</td></tr>
+</tbody></table>
+<p class="mut">For espresso the yield you logged decides it (between 60 and 90 %). The method comes from the device's name.</p>
+
+<h2>Some cups</h2>
+<table class="ft" id="ex"><thead><tr><th>Brew</th><th class="n">Estimate</th><th class="n">Likely</th></tr></thead><tbody></tbody></table>
+
+<h2>Try it</h2>
+<div class="try">
+  <label>Coffee (g)<input id="t-g" inputmode="decimal" value="18"></label>
+  <label>Method<select id="t-dv"><option value="Semi-automatic espresso machine">Espresso</option><option value="Hario V60">Filter</option><option value="French press">French press, AeroPress</option><option value="Moka pot">Moka pot</option><option value="Cold brew">Cold brew</option></select></label>
+  <label id="t-yl">Yield (g)<input id="t-y" inputmode="decimal" value="36"></label>
+  <label>Beans<select id="t-k"><option value="">Arabica</option><option value="blend">Blend with robusta</option><option value="robusta">Robusta</option><option value="decaf">Decaf</option></select></label>
+  <p class="out" id="t-out" aria-live="polite"></p>
+</div>
+
+<h2>How sure is it?</h2>
+<p>Not very, and that is normal. Beans of the same kind differ by about a quarter either way, and espresso differs most: in a study of espressos bought in cafes in Glasgow (2012), one cup had anything from about 50 to over 300 mg. So Home shows an estimate with a range: 25 % either way, 30 % for espresso. In Settings you can count the upper end instead, as a safety net.</p>
+
+<h2>Why the 50 mg line</h2>
+<p>50 mg is about half an espresso. Below it, the caffeine left is unlikely to keep most people awake, so on the curve it is a rough guide for when an evening is sleep-friendly. It is not a medical limit: people break caffeine down at very different speeds (the 5 hours can be anything from about 2 to 10), and if you are sensitive, aim lower.</p>
+
+<h2>How much is a lot?</h2>
+<p>For healthy adults, the European Food Safety Authority considers up to about 400 mg a day, and up to about 200 mg at once, not a concern. During pregnancy the advice is up to about 200 mg a day. Home mentions it when a day goes over 400 mg.</p>
+</main>
+<script src="../assets/js/caffeine.js"></script>
+<script>
+(function () {
+  var C = window.CAFFEINE, $ = function (id) { return document.getElementById(id); }, r = function (x) { return Math.round(x / 5) * 5; };
+  var EX = [["Doppio, 18 g, 1:2", { g: 18, y: 36, dv: "Semi-automatic espresso machine" }], ["Ristretto, 18 g, 1:1", { g: 18, y: 18, dv: "Semi-automatic espresso machine" }],
+    ["Lungo, 18 g, 1:3", { g: 18, y: 54, dv: "Semi-automatic espresso machine" }], ["Doppio with robusta, dark roast", { g: 18, y: 36, dv: "Semi-automatic espresso machine", k: "blend", rl: "Dark" }],
+    ["V60, 15 g", { g: 15, dv: "Hario V60" }], ["French press, 30 g", { g: 30, dv: "French press" }], ["Moka pot, 15 g", { g: 15, dv: "Moka pot" }], ["Decaf V60, 15 g", { g: 15, dv: "Hario V60", k: "decaf" }]];
+  var tb = $("ex").querySelector("tbody");
+  EX.forEach(function (e) { var c = C.mg(e[1]), tr = document.createElement("tr"); [e[0], r(c.mg) + " mg", r(c.lo) + "–" + r(c.hi)].forEach(function (t, i) { var td = document.createElement("td"); td.textContent = t; if (i) td.className = "n"; tr.appendChild(td); }); tb.appendChild(tr); });
+  function calc() {
+    var g = Number(String($("t-g").value).replace(",", ".")), dv = $("t-dv").value, esp = C.kind(dv) === "espresso";
+    $("t-yl").hidden = !esp;
+    if (!(g > 0)) { $("t-out").textContent = "Put in the grams of coffee."; return; }
+    var c = C.mg({ g: g, y: Number(String($("t-y").value).replace(",", ".")) || null, dv: dv, k: $("t-k").value });
+    $("t-out").textContent = "About " + r(c.mg) + " mg";
+    var s = document.createElement("small"); s.textContent = "likely " + r(c.lo) + " to " + r(c.hi) + " mg (" + Math.round(C.pulled(c.kind, { g: g, y: Number($("t-y").value) || null }) * 100) + " % pulled out)"; $("t-out").appendChild(s);
+  }
+  ["t-g", "t-dv", "t-y", "t-k"].forEach(function (id) { $(id).addEventListener("input", calc); $(id).addEventListener("change", calc); });
+  calc();
+})();
+</script>
+<script src="../assets/js/nav.js" defer></script>
+</body>
+</html>
