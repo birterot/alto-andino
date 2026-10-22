@@ -82,6 +82,8 @@
     play(lay, [{ opacity: 1 }, { opacity: 0 }], 3950, 250);
     if (wm) play(wm, [{ opacity: 0.001, transform: "translate3d(0,10px,0)" }, { opacity: 1, transform: "translate3d(0,0,0)" }], 3950, 600, OUT);
     if (tiles) play(tiles, [{ opacity: 0.001, transform: "translate3d(0,12px,0)" }, { opacity: 1, transform: "translate3d(0,0,0)" }], 4200, 700, OUT);
+    var today = document.getElementById("today");
+    if (today) play(today, [{ opacity: 0.001, transform: "translate3d(0,10px,0)" }, { opacity: 1, transform: "translate3d(0,0,0)" }], 4100, 700, OUT);
     if (more) play(more, [{ opacity: 0.001 }, { opacity: 1 }], 4400, 600, OUT);
     if (bar) play(bar, [{ opacity: 0.001 }, { opacity: 1 }], 4350, 600, OUT);
     setTimeout(function () { if (!window.__introPaused) finish(); }, END);

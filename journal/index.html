@@ -959,19 +959,21 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
   return a;
 }
 
-let coffeeDose = {};
+let coffeeDose = {}, noBalance = 0;
 let loadId = 0, coffeeData = [], coffeeUrls = {}, coffeeCounts = {}, coffeeRates = {}, coffeeUsed = {}, coffeeCups = {};
 let cupRows = [];
 async function load() {
   const my = ++loadId;   // only the newest load may draw, so parallel loads cannot add cards twice
   const [{ data, error }, { data: bs }] = await Promise.all([
     inHH(db.from("coffees").select("*")).order("created_at", { ascending: false }),
-    db.from("brews").select("coffee_id,rating,is_dialin,brewed_at,dose_g,brew_ratings(rating)").order("brewed_at"),
+    db.from("brews").select("coffee_id,rating,is_dialin,brewed_at,dose_g,brew_ratings(rating,balance,rater_id,is_guest)").order("brewed_at"),
     db.from("cuppings").select("coffee_id,total")   // cupping (supabase/21_sca_cupping.sql); before that it just fails and is left out
   ]).then(r => [r[0], r[1], r[2] && !r[2].error ? r[2] : { data: [] }]).then(r => { cupRows = r[2].data || []; return r; });
   const counts = {}, rates = {}, used = {};
   const doses = {};
   (bs || []).forEach(b => { if (Number(b.dose_g) > 0) (doses[b.coffee_id] = doses[b.coffee_id] || []).push(Number(b.dose_g)); });
+  // for Home: how many of your ratings still have no Balance
+  noBalance = (bs || []).reduce((n, b) => n + (b.brew_ratings || []).filter(r => !r.is_guest && me && r.rater_id === me.id && r.balance == null).length, 0);
   coffeeDose = {}; Object.keys(doses).forEach(id => { const d = doses[id].slice(-5).sort((x, y) => x - y); coffeeDose[id] = d[Math.floor(d.length / 2)]; });   // your usual dose: the middle of the last five
   (bs || []).forEach(b => { used[b.coffee_id] = (used[b.coffee_id] || 0) + (Number(b.dose_g) || 0); counts[b.coffee_id] = (counts[b.coffee_id] || 0) + 1; (rates[b.coffee_id] = rates[b.coffee_id] || []).push({ r: brewAvg(b), d: !!b.is_dialin, t: b.brewed_at }); });
   if (my !== loadId) return;
@@ -1041,7 +1043,7 @@ async function makeThumbs(paths) {
 // the shelf as it was last time, shown at once when the app opens (the fresh data replaces it right after)
 const SHELF = "alto.shelf.v1";
 function saveShelf() {
-  try { localStorage.setItem(SHELF, JSON.stringify({ u: me && me.id, hh, t: Date.now(), coffees: coffeeData, counts: coffeeCounts, rates: coffeeRates, used: coffeeUsed, cups: coffeeCups, dose: coffeeDose })); } catch (e) {}
+  try { localStorage.setItem(SHELF, JSON.stringify({ u: me && me.id, hh, t: Date.now(), coffees: coffeeData, counts: coffeeCounts, rates: coffeeRates, used: coffeeUsed, cups: coffeeCups, dose: coffeeDose, nob: noBalance })); } catch (e) {}
 }
 function shelfFromCache() {
   if (location.hash && location.hash !== "#") return false;
@@ -2714,6 +2716,7 @@ async function loadNames() {
   if (error) ({ data, error } = await db.from("profiles").select("id,display_name"));   // before supabase/20_drinks_settings.sql
   namesOk = !error; names = {}; prefsOf = {};
   (data || []).forEach(p => { names[p.id] = p.display_name; prefsOf[p.id] = p.prefs || {}; });
+  if (me && names[me.id]) store.set("alto.myname", names[me.id]);   // for the greeting on Home
   // Settings: the form mode once per visit (the toggle in the form still works for now)
   if (!prefsApplied) { prefsApplied = true; const fm = myPrefs().formmode; if (fm === "simple" || fm === "all") setFormMode(fm); }
   showName();
@@ -2823,7 +2826,7 @@ $("newpw").onsubmit = async e => {
   recovering = false; say("Your new password is saved.");
   const { data } = await db.auth.getSession(); show(data.session);
 };
-$("out").onclick = () => { shownFor = null; store.del(SHELF); store.del(LINKS); db.auth.signOut(); };   // signing out also forgets the saved shelf on this phone
+$("out").onclick = () => { shownFor = null; store.del(SHELF); store.del(LINKS); store.del("alto.myname"); store.del("alto.friendline"); db.auth.signOut(); };   // signing out also forgets the saved shelf on this phone
 // Run queries outside the callback so the auth client is not blocked.
 db.auth.onAuthStateChange((event, session) => setTimeout(() => {
   if (event === "PASSWORD_RECOVERY") recovering = true;

@@ -304,6 +304,8 @@ async function showFriend(id) {
   if (them.favourites && them.favourites.length) { const f = them.favourites[0]; H("Their favourite: " + f.name + (f.roaster ? " from " + f.roaster : "") + " (" + r1(f.stars) + "★)."); }
   if (self) heads.querySelectorAll("li").forEach(li => { li.textContent = li.textContent.replace(/^Their favourite/, "Your favourite"); });
   heads.hidden = !heads.children.length;
+  // the first headline about a friend, for Home ("From Friends: ...")
+  if (!self && heads.firstChild) { try { localStorage.setItem("alto.friendline", JSON.stringify({ t: Date.now(), id, text: heads.firstChild.textContent })); } catch (e) {} }
 
   if (them.stats) funStats(body, them, Y && you.stats ? you : null, nm);
   else body.appendChild(offBox("Fun Stats", tn + " keep their fun stats to themselves."));
