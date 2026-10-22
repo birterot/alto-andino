@@ -52,6 +52,9 @@ details.cup .in{padding:0 18px 16px}
 .res a{color:inherit}
 .acts{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0}
 .note{font-size:14px;color:var(--mut);margin:6px 0 0}
+.who{display:inline-flex;align-items:center;gap:5px;vertical-align:middle}
+.who .av{flex:none;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:600}
+th .who{justify-content:flex-end}
 .words{font-size:13px;color:var(--mut)}
 </style>
 </head>
@@ -65,6 +68,8 @@ details.cup .in{padding:0 18px 16px}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script src="../assets/js/config.js"></script>
 <script src="../assets/js/theme.js"></script>
+<script src="../data/defaults.js"></script>
+<script src="../assets/js/people.js"></script>
 <script src="../assets/js/nav.js" defer></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
@@ -87,11 +92,13 @@ function totalOf(sc, defects) {
   return Math.max(0, Math.round((t - (Number(defects) || 0)) * 100) / 100);
 }
 
-let me = null, hh = null, coffees = [], names = {}, members = [], cups = [];
+let me = null, hh = null, coffees = [], names = {}, prefsOf = {}, members = [], cups = [];
 const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } } };
 const coffee = id => coffees.find(c => c.id === id) || null;
 const cName = c => c ? c.name + (c.roaster ? " · " + c.roaster : "") : "A coffee";
 const whoKey = r => r.is_guest ? "g:" + (r.guest_name || "") : "u:" + r.cupper_id;
+// a cupper: their initial in their colour (the same as everywhere else), then the name
+const whoTag = r => { const s = el("span", "who"); s.append(PEOPLE.avatar(r.is_guest ? null : r.cupper_id, r.is_guest ? (r.guest_name || "Guest") : whoName(r), PEOPLE.color(r.is_guest ? null : r.cupper_id, r.guest_name, prefsOf, Object.keys(names))), el("span", "", whoName(r))); return s; };
 const whoName = r => r.is_guest ? (r.guest_name ? r.guest_name + " (guest)" : "Guest") : (r.cupper_id === (me && me.id) ? (names[me.id] || "You") : names[r.cupper_id] || "Someone");
 
 async function loadAll() {
@@ -102,13 +109,13 @@ async function loadAll() {
   const [cs, cp, ps, mm] = await Promise.all([
     (hh ? cq.eq("household_id", hh) : cq).order("created_at", { ascending: false }),
     db.from("cuppings").select("*").order("cupped_at", { ascending: false }),
-    db.from("profiles").select("id,display_name"),
+    db.from("profiles").select("id,display_name,prefs"),
     hh ? db.from("household_members").select("user_id").eq("household_id", hh) : Promise.resolve({ data: [] })
   ]);
   say("");
   if (cs.error) { say("Could not load the coffees: " + cs.error.message); return false; }
   if (cp.error) { say(/cuppings/.test(cp.error.message) ? "Cupping needs a small database update first (supabase/21_sca_cupping.sql)." : "Could not load cuppings: " + cp.error.message); return false; }
-  coffees = cs.data; names = {}; (ps.data || []).forEach(p => { names[p.id] = p.display_name; });
+  coffees = cs.data; names = {}; prefsOf = {}; (ps.data || []).forEach(p => { names[p.id] = p.display_name; prefsOf[p.id] = p.prefs || {}; });
   members = [...new Set([me.id, ...((mm.data || []).map(m => m.user_id))])];
   const ids = new Set(coffees.map(c => c.id)); cups = cp.data.filter(r => ids.has(r.coffee_id));
   return true;
@@ -133,8 +140,8 @@ function viewList(onlyCoffee) {
   if (!ss.length) { v.appendChild(el("p", "hint", onlyCoffee ? "This coffee has not been cupped yet." : "No cuppings yet. Pick one or a few coffees and score them side by side.")); return; }
   ss.forEach(s => {
     const l = el("a", "sess"); l.href = "#s=" + s.id;
-    const ppl = [...new Set(s.rows.map(whoName))];
-    l.appendChild(el("small", "", fmtD(s.at) + " · " + ppl.join(", ")));
+    const ppl = s.rows.filter((r, i) => s.rows.findIndex(x => whoKey(x) === whoKey(r)) === i);
+    const sm = el("small", "", fmtD(s.at) + " · "); ppl.forEach((r, i) => { if (i) sm.append(", "); sm.appendChild(whoTag(r)); }); l.appendChild(sm);
     const cids = [...new Set(s.rows.map(r => r.coffee_id))];
     cids.map(id => ({ id, t: avg(s.rows.filter(r => r.coffee_id === id && r.total != null).map(r => Number(r.total))) })).sort((x, y) => (y.t || 0) - (x.t || 0)).forEach(x => {
       const r = el("div", "row"); r.append(el("span", "", cName(coffee(x.id))), el("b", "", x.t == null ? "-" : fmt(x.t))); l.appendChild(r);
@@ -150,13 +157,13 @@ function viewSession(sid) {
   if (!s) { v.appendChild(el("p", "hint", "This cupping was not found.")); const b = el("a", "lnk", "All cuppings"); b.href = "#"; v.appendChild(b); return; }
   const box = el("section", "box"); v.appendChild(box);
   box.appendChild(el("h2", "", "Cupping on " + fmtD(s.at)));
-  const ppl = []; s.rows.forEach(r => { if (!ppl.some(p => p.k === whoKey(r))) ppl.push({ k: whoKey(r), name: whoName(r) }); });
+  const ppl = []; s.rows.forEach(r => { if (!ppl.some(p => p.k === whoKey(r))) ppl.push({ k: whoKey(r), name: whoName(r), r }); });
   const cids = [...new Set(s.rows.map(r => r.coffee_id))];
   const rows = cids.map(id => ({ id, by: ppl.map(p => s.rows.find(r => r.coffee_id === id && whoKey(r) === p.k) || null) }))
     .map(x => Object.assign(x, { t: avg(x.by.filter(Boolean).filter(r => r.total != null).map(r => Number(r.total))) })).sort((a, b) => (b.t || 0) - (a.t || 0));
   const wrap = el("div"); wrap.style.overflowX = "auto";
   const t = el("table", "res"), hr = el("tr");
-  hr.appendChild(el("th", "", "Coffee")); ppl.forEach(p => hr.appendChild(el("th", "n", p.name))); if (ppl.length > 1) hr.appendChild(el("th", "n", "Average"));
+  hr.appendChild(el("th", "", "Coffee")); ppl.forEach(p => { const h = el("th", "n"); h.appendChild(whoTag(p.r)); hr.appendChild(h); }); if (ppl.length > 1) hr.appendChild(el("th", "n", "Average"));
   const th = el("thead"); th.appendChild(hr); t.appendChild(th); const tb = el("tbody");
   rows.forEach(x => {
     const tr = el("tr"), td = el("td"), a = el("a", "", cName(coffee(x.id))); a.href = "../journal/#c=" + x.id; td.appendChild(a); tr.appendChild(td);
@@ -167,7 +174,7 @@ function viewSession(sid) {
   t.appendChild(tb); wrap.appendChild(t); box.appendChild(wrap);
   if (rows[0] && rows[0].t != null) box.appendChild(el("p", "note", "Top of this cupping: " + cName(coffee(rows[0].id)) + ", " + fmt(rows[0].t) + " (" + words(rows[0].t) + ")."));
   // notes per coffee
-  s.rows.filter(r => r.notes).forEach(r => box.appendChild(el("p", "note", whoName(r) + " on " + (coffee(r.coffee_id) || {}).name + ": " + r.notes)));
+  s.rows.filter(r => r.notes).forEach(r => { const p = el("p", "note"); p.append(whoTag(r), " on " + (coffee(r.coffee_id) || {}).name + ": " + r.notes); box.appendChild(p); });
   const acts = el("div", "acts");
   const mine = ppl.find(p => p.k === "u:" + me.id);
   const add = el("a", "go", mine ? "Edit my scores" : "Add my scores"); add.href = "#s=" + sid + "&who=" + encodeURIComponent("u:" + me.id); acts.appendChild(add);

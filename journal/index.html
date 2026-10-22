@@ -244,6 +244,7 @@ details.calcbox{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .forchips .fc{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:15px;min-height:40px;padding:0 15px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
 .forchips .fc.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
 .forchips .fc small{font-size:12.5px;opacity:.85}
+.forchips .fc .av,.tasters .tst .av{width:22px;height:22px;font-size:11.5px;margin-left:-7px;box-shadow:0 0 0 1.5px var(--card)}
 .forchips .fc.add{color:var(--mut);border-style:dashed}
 .forchips .fc.fr:not(.on){border-style:dotted}
 .forchips .frhint{flex-basis:100%;margin:2px 0 0;font-size:13px;color:var(--mut)}
@@ -724,6 +725,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
 <script src="../data/devices.js"></script>
 <script src="../data/processing.js"></script>
 <script src="../data/defaults.js"></script>
+<script src="../assets/js/people.js"></script>
 <script src="../data/drinks.js"></script>
 <script src="../assets/js/calcui.js"></script>
 <script src="../assets/js/photoview.js"></script>
@@ -2009,7 +2011,7 @@ function renderTasters() {
     const on = i === tAct, shown = on ? { ...t, guest_name: t.guest ? ($("b-guest").value.trim() || null) : null } : t, r = on ? rating : t.rating;
     const b = el("button", "tst" + (on ? " on" : "")); b.type = "button";
     b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(on)); b.setAttribute("aria-controls", "tpanel");
-    b.append(el("span", "", tName(shown)));
+    b.append(avatar(shown.guest ? null : shown.rater_id, shown.guest ? (shown.guest_name || "Guest") : tName(shown)), el("span", "", tName(shown)));
     if (r != null) b.append(el("small", "", Stars.text(r)));
     b.onclick = () => { if (on) return; stashTaster(); showTaster(i); };
     box.appendChild(b);
@@ -2256,7 +2258,8 @@ function renderFor() {
   const box = $("forchips"); box.textContent = "";
   hhPeople().forEach(id => {
     const i = tasters.findIndex(t => !t.guest && t.rater_id === id), t = tasters[i];
-    const b = el("button", "fc" + (t ? " on" : ""), tName({ rater_id: id })); b.type = "button"; b.setAttribute("aria-pressed", String(!!t));
+    const b = el("button", "fc" + (t ? " on" : "")); b.type = "button"; b.setAttribute("aria-pressed", String(!!t));
+    b.append(avatar(id, tName({ rater_id: id })), document.createTextNode(tName({ rater_id: id })));
     if (t && t.rating != null) b.appendChild(el("small", "", Stars.text(t.rating)));
     b.onclick = () => {
       stashTaster();
@@ -2277,7 +2280,8 @@ function renderFor() {
   const frOn = id => tasters.some(t => !t.guest && t.rater_id === id);
   friends.filter(f => showFr || frOn(f.user_id)).forEach(f => {
     const id = f.user_id, i = tasters.findIndex(t => !t.guest && t.rater_id === id), t = tasters[i];
-    const b = el("button", "fc fr" + (t ? " on" : ""), f.name); b.type = "button"; b.setAttribute("aria-pressed", String(!!t));
+    const b = el("button", "fc fr" + (t ? " on" : "")); b.type = "button"; b.setAttribute("aria-pressed", String(!!t));
+    b.append(avatar(id, f.name), document.createTextNode(f.name));
     b.title = f.name + ", " + f.household + ": they rate it on their own phone";
     if (t && t.rating != null) b.appendChild(el("small", "", Stars.text(t.rating)));
     b.onclick = () => {
@@ -2503,8 +2507,8 @@ async function loadFeed() {
     const s = ses[r.session_id] = ses[r.session_id] || { k: "cup", sid: r.session_id, t: new Date(r.cupped_at), coffees: [], people: [], who: [], best: null };
     const t = new Date(r.cupped_at); if (t < s.t) s.t = t;
     if (!s.coffees.includes(r.coffee_id)) s.coffees.push(r.coffee_id);
-    const p = r.is_guest ? (r.guest_name ? r.guest_name + " (guest)" : "a guest") : tName({ rater_id: r.cupper_id });
-    if (!s.people.includes(p)) s.people.push(p);
+    const p = { rater_id: r.is_guest ? null : r.cupper_id, guest: !!r.is_guest, guest_name: r.guest_name || null }, pk = p.guest ? "g:" + (p.guest_name || "") : p.rater_id;
+    if (!s.people.some(q => (q.guest ? "g:" + (q.guest_name || "") : q.rater_id) === pk)) s.people.push(p);
     if (!r.is_guest && r.cupper_id) s.who.push(r.cupper_id);
     if (r.total != null && (s.best == null || Number(r.total) > s.best)) s.best = Number(r.total);
   });
@@ -2533,16 +2537,8 @@ function renderFeed() {
 }
 // a person's initial in a circle, always in the same colour for the same person: the one they chose in Settings,
 // otherwise one of their own (the people of the household in a fixed order, so it never changes)
-function personColor(id, name) {
-  const C = D.COLORS || [["x", "#8A5A3C"]], own = id && prefsOf[id] && C.find(c => c[0] === prefsOf[id].color);
-  const ids = Object.keys(names || {}).sort(); let i = id ? ids.indexOf(id) : -1;
-  if (i < 0) { i = 0; String(id || name || "").split("").forEach(ch => { i = (i * 31 + ch.charCodeAt(0)) >>> 0; }); }
-  return own ? own[1] : C[i % C.length][1];
-}
-function avatar(id, name) {
-  const s = el("span", "av", ((name && name !== "You" ? name : (me && id === me.id && names[me.id]) || name || "?").trim()[0] || "?").toUpperCase());
-  s.style.background = personColor(id, name); s.setAttribute("aria-hidden", "true"); return s;
-}
+const personColor = (id, name) => PEOPLE.color(id, name, prefsOf, Object.keys(names || {}));
+const avatar = (id, name) => PEOPLE.avatar(id, name && name !== "You" ? name : (me && id === me.id && names[me.id]) || name, personColor(id, name));
 // a person (a household member, a friend or a guest) as their initial in their colour plus the name
 function personTag(t, bold) {
   const n = tName(t), s = el("span", "pt"); s.append(avatar(t.guest ? null : t.rater_id, t.guest ? (t.guest_name || "Guest") : n), el(bold ? "b" : "span", "", n)); return s;
@@ -2589,7 +2585,9 @@ function feedCard(x) {
   const cs = x.cs, shown = cs.slice(0, 2), parts = ["Cupping: "];
   shown.forEach((c, i) => { if (i) parts.push(cs.length === 2 ? " and " : ", "); parts.push(cname(c)); });
   if (cs.length > 2) parts.push(" and " + (cs.length - 2) + " more");
-  parts.push(", by " + andList(x.people) + (x.best != null ? ", best " + (Math.round(x.best * 4) / 4) : ""));
+  parts.push(", by ");
+  x.people.forEach((p, i) => { if (i) parts.push(i === x.people.length - 1 ? " and " : ", "); parts.push(personTag(p)); });
+  if (x.best != null) parts.push(", best " + (Math.round(x.best * 4) / 4));
   return line("../cupping/#s=" + x.sid, "cup", parts, hhmm(x.t), cs[0]);
 }
 ["rflt-kind", "rflt-who"].forEach(id => $(id).addEventListener("change", renderFeed));
