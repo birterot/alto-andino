@@ -206,7 +206,7 @@
     var text = (nowL >= 5 ? "About " + r10(nowL) + " mg in you right now" : "Almost none left") +
       (today.length ? ", from " + (today.length === 1 ? "1 coffee" : today.length + " coffees") + " today (about " + r10(total) + " mg)." : ".") + " " + under;
     if (total > 400) text += " That is more than the 400 mg a day usually given as the limit for healthy adults.";
-    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Under the dashed line there is little left. An estimate: about 9 mg per gram of coffee, halving about every 5 hours, from the cups that were for you." };
+    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Why 50 mg: that is about half an espresso, and below it the caffeine left is unlikely to keep most people awake, so it is a rough guide for when an evening is sleep-friendly (not a medical limit; if you are sensitive, aim lower). An estimate: about 9 mg per gram of coffee, halving about every 5 hours, from the cups that were for you." };
   }
   // today from 6:00 (or the first coffee) until midnight: solid up to now, lighter for what is still to come,
   // the dashed 50 mg line, a mark for now with the amount, and the hours underneath
