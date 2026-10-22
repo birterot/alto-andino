@@ -16,6 +16,7 @@
     recent: "M12 7.5V12l3 2 M4.2 13.5A8 8 0 104.6 9 M4 4.5V9h4.5",   // a clock with an arrow going back: what happened lately
     feedback: "M4.5 5h15a1.5 1.5 0 011.5 1.5v9a1.5 1.5 0 01-1.5 1.5H10l-4.5 3.5V17h-1A1.5 1.5 0 013 15.5v-9A1.5 1.5 0 014.5 5z M7.5 9.5h9 M7.5 12.5h6",   // a speech bubble
     friends: "M9 11a3.5 3.5 0 100-7 3.5 3.5 0 000 7z M2.5 20a6.5 6.5 0 0113 0 M16 4.3a3.5 3.5 0 010 6.4 M17.5 14a6.5 6.5 0 014 6",   // two people
+    mine: "M12 12a4 4 0 100-8 4 4 0 000 8z M4.5 20.5a7.5 7.5 0 0115 0",   // you
     journal: "M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3V4zM5 17a3 3 0 013-3h11",
     trends: "M4 19V5M4 19h16M8 15l4-5 3 3 4-6",
     calc: "M7 3h10a1 1 0 011 1v16a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zM8.5 7h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01",
@@ -29,6 +30,7 @@
     ["calc", "Calculator", "calc/index.html"],
     ["journal", "Coffee Shelf", "journal/index.html"],
     ["recent", "Recent activity", "journal/index.html#recent"],
+    ["mine", "My brews", "journal/index.html#mine"],
     ["trends", "Trends", "trends/index.html"],
     ["cupping", "Cupping", "cupping/index.html"],
     ["friends", "Friends", "friends/index.html"],
@@ -188,7 +190,7 @@
   }
   function current() {
     if (inBook) return chapter ? "ch-" + chapter : "book";
-    if (/\/journal\//.test(path)) return location.hash === "#log" ? "log" : location.hash === "#recent" ? "recent" : "journal";
+    if (/\/journal\//.test(path)) return location.hash === "#log" ? "log" : location.hash === "#recent" ? "recent" : location.hash === "#mine" ? "mine" : "journal";
     if (/\/trends\//.test(path)) return "trends";
     if (isCalc) return "calc";
     if (/\/settings\//.test(path)) return "settings";
