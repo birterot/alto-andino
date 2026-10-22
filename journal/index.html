@@ -162,7 +162,10 @@ dialog.dlg p{margin:0 0 4px;font-size:14.5px;color:var(--mut)}
 .sc:not(.on) input[type=range]::-webkit-slider-thumb{border-color:var(--mut);border-style:dashed}
 .sc:not(.on) input[type=range]::-moz-range-thumb{border-color:var(--mut);border-style:dashed}
 .sc:not(.on) .si{color:var(--mut)}
-.nt{--ac:var(--accent);display:grid;grid-template-columns:auto 1fr auto;gap:0 10px;align-items:center;margin-top:14px;max-width:420px}
+.nt{--ac:var(--accent);display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:14px;max-width:420px}   /* a long name: the buttons move under it */
+.nt .slb{flex:1 1 auto;min-width:0}
+.nt .seg{margin-left:auto}
+.nt .seg button{padding:6px 10px}
 .nt .si{color:var(--mut)}.nt.on .si{color:var(--ac)}
 .nt .slb{font-weight:600;font-size:15px;text-transform:capitalize}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--card)}
