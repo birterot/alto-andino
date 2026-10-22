@@ -193,7 +193,8 @@
             var ids = ((shelf && shelf.coffees) || []).filter(function (c) { return c.open_date && !c.finished_at && !c.archived; }).map(function (c) { return c.id; });
             return ids.length ? db.from("brews").select("coffee_id,dose_g").in("coffee_id", ids) : Promise.resolve({ data: [] });
           })(),
-          db.from("sleep_logs").select("night,quality").gte("night", since2.slice(0, 10))   // the sleep check (supabase/31_sleep.sql; before that: an error, left out)
+          db.from("sleep_logs").select("night,quality").gte("night", since2.slice(0, 10)),   // the sleep check (supabase/31_sleep.sql; before that: an error, left out)
+          db.rpc("my_guest_cups")   // cups friends made you at their place (supabase/33_friend_guests.sql; before that: an error, left out)
         ]).then(function (res) {
           var q = res[0]; if (q.error || !Array.isArray(q.data)) return;
           var nm = {}; ((res[1] && res[1].data) || []).forEach(function (p) { nm[p.id] = p.display_name; if (p.id === my && p.prefs) savePref(p.prefs); });
@@ -208,6 +209,19 @@
             if (CAFFEINE.recent(b, cut)) rows.push(CAFFEINE.row(b, b.coffees || {}));
             if (Number(b.dose_g) > 0 && rs.some(function (x) { return !x.is_guest && x.rater_id === my; })) all.push(CAFFEINE.row(b, b.coffees || {}));   // your cups, for the sleep tip
           });
+          // cups at friends': to rate (on the Friends page), in your caffeine and in what you drank
+          var gc = res[4] && !res[4].error && Array.isArray(res[4].data) ? res[4].data : [];
+          gc.forEach(function (x) {
+            var t = Date.parse(x.brewed_at), open = x.rating == null && x.balance == null && !Object.keys(x.scores || {}).length;
+            if (open && t >= week) pend.push({ b: x.brew_id, r: x.rating_id, n: x.coffee_name || "", by: x.maker, t: x.brewed_at, d: x.device || "", g: 1 });
+            mine.push([t, 0, 1]);
+            var r = { t: x.brewed_at, g: Number(x.dose_g) || 0, y: x.yield_g == null ? null : Number(x.yield_g), w: x.water_g == null ? null : Number(x.water_g), dv: x.device || "",
+              rl: x.roast_level || "", k: CAFFEINE.species({ is_decaf: x.is_decaf, variety: x.variety }), m: null, r: [my], rt: [x.drank_at || null] };
+            for (var j = 1; j < (x.cups || 1); j++) { r.r.push("o"); r.rt.push(null); }   // shared with the others it was for
+            if (r.g > 0 && (t >= cut || (x.drank_at && Date.parse(x.drank_at) >= cut))) rows.push(r);
+            if (r.g > 0) all.push(r);
+          });
+          if (gc.length) { var byT = function (a, b) { return Date.parse(a.t) - Date.parse(b.t); }; pend.sort(byT); rows.sort(byT); all.sort(byT); mine.sort(function (a, b) { return a[0] - b[0]; }); }
           var logs = res[3] && !res[3].error && Array.isArray(res[3].data) ? res[3].data.map(function (x) { return { n: x.night, q: x.quality }; }) : null;
           var used = null; if (res[2] && Array.isArray(res[2].data)) { used = {}; res[2].data.forEach(function (x) { used[x.coffee_id] = (used[x.coffee_id] || 0) + (Number(x.dose_g) || 0); }); }
           var tip = logs ? sleepTip(logs, all) : null;
@@ -247,12 +261,13 @@
   function toRate(list, nm) {
     if (!Array.isArray(list) || !list.length) return null;
     var my = session.user.id, x = list[list.length - 1], hm = function (iso) { var d = new Date(iso); return d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0"); };
-    var by = x.m && x.m !== my ? (nm && nm[x.m]) || "Someone" : null, today = new Date(x.t).toDateString() === new Date().toDateString();
+    var by = x.by || (x.m && x.m !== my ? (nm && nm[x.m]) || "Someone" : null), today = new Date(x.t).toDateString() === new Date().toDateString();
     var when = (today ? "at " : new Date(x.t).toLocaleDateString("en-GB", { weekday: "long" }) + " at ") + hm(x.t);
     var what = (x.n || "a coffee") + (x.d ? " on the " + (/^(Manual|Semi-automatic|Moka|French|Pour|Cold|Filter|Fully)\b/.test(x.d) ? x.d[0].toLowerCase() + x.d.slice(1) : x.d) : "");
-    var href = "journal/index.html#c=" + x.c + "&b=" + x.b + "&rate=" + x.r;
+    var href = x.g ? "friends/index.html#rate=" + x.r : "journal/index.html#c=" + x.c + "&b=" + x.b + "&rate=" + x.r;   // g: a cup at a friend's
     if (list.length === 1) return { k: "To rate", text: (by ? by + " made you a coffee " + when + ": " : "Your coffee from " + when + " is still to rate: ") + what + ".", href: href, go: "Rate your cup" };
-    return { k: "To rate", text: list.length + " of your cups are waiting for your rating. The latest: " + what + ", " + when + (by ? ", made by " + by : "") + ".", href: "journal/index.html#torate", go: "Rate them" };
+    var allG = list.every(function (y) { return y.g; });
+    return { k: "To rate", text: list.length + " of your cups are waiting for your rating. The latest: " + what + ", " + when + (by ? ", made by " + by : "") + ".", href: allG ? "friends/index.html" : x.g ? href : "journal/index.html#torate", go: allG ? "Rate them" : x.g ? "Rate this one" : "Rate them" };
   }
   function showCaffeine(rows) { cafNote = swapNote(cafNote, caffeine(rows), false); }
 

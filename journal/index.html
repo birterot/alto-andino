@@ -239,6 +239,8 @@ details.calcbox{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .forchips .fc.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
 .forchips .fc small{font-size:12.5px;opacity:.85}
 .forchips .fc.add{color:var(--mut);border-style:dashed}
+.forchips .fc.fr:not(.on){border-style:dotted}
+.forchips .frhint{flex-basis:100%;margin:2px 0 0;font-size:13px;color:var(--mut)}
 .forchips .fg{padding:0 6px 0 4px;cursor:default}
 .forchips .fg input{width:9em;height:32px;margin:0;padding:0 10px;border:0;border-radius:999px;background:var(--card);color:var(--ink);font:inherit;font-size:15px}
 .forchips .fx{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:0;border-radius:50%;background:none;color:inherit;cursor:pointer}
@@ -1888,6 +1890,7 @@ $("b-newnote").addEventListener("keydown", e => { if (e.key === "Enter") { e.pre
 // ----- who rates: several people can rate one brew (supabase/19_brew_ratings.sql). Each taster has their own
 // stars, taste sliders and tasting notes; the form shows the active taster's. A taster is a household member
 // (later also a friend) or a guest with an optional name. The brew's own rating is the average, for older pages.
+let friends = [], fnames = {}, showFr = false;   // people of befriended households, for "For"
 let tasters = [], tAct = 0, bmode = "brew", rateOrig = null;   // bmode: "brew" (log), "edit" (edit the brew), "rate" (rate the cup)
 // drinks (data/drinks.js): what each taster drank, and with which milk. A new taster starts on their usual drink
 // from Settings (one for espresso, one for filter coffee), or on plain espresso / filter coffee.
@@ -2241,6 +2244,27 @@ function renderFor() {
     x.onclick = () => { tasters.splice(i, 1); tAct = 0; renderFor(); userChanged(); };
     g.append(inp, x); box.appendChild(g);
   });
+  // friends (from households you are friends with): the ones in this cup always, the others after "+ Friend"
+  const frOn = id => tasters.some(t => !t.guest && t.rater_id === id);
+  friends.filter(f => showFr || frOn(f.user_id)).forEach(f => {
+    const id = f.user_id, i = tasters.findIndex(t => !t.guest && t.rater_id === id), t = tasters[i];
+    const b = el("button", "fc fr" + (t ? " on" : ""), f.name); b.type = "button"; b.setAttribute("aria-pressed", String(!!t));
+    b.title = f.name + ", " + f.household + ": they rate it on their own phone";
+    if (t && t.rating != null) b.appendChild(el("small", "", Stars.text(t.rating)));
+    b.onclick = () => {
+      stashTaster();
+      if (t) tasters.splice(i, 1); else tasters.push({ rater_id: id, guest: false, guest_name: null, rating: null, scores: {}, ...defDrink(null), auto: true });
+      tAct = 0; renderFor(); userChanged();
+    };
+    box.appendChild(b);
+  });
+  const frIn = friends.filter(f => frOn(f.user_id));
+  if (frIn.length) box.appendChild(el("p", "frhint", andList(frIn.map(f => f.name)) + (frIn.length > 1 ? " rate it" : " rates it") + " in their own app. They only see this cup, nothing else of yours."));
+  if (friends.some(f => !frOn(f.user_id))) {
+    const fb = el("button", "fc add", showFr ? "Fewer" : "+ Friend"); fb.type = "button"; fb.setAttribute("aria-expanded", String(showFr));
+    fb.onclick = () => { showFr = !showFr; renderFor(); };
+    box.appendChild(fb);
+  }
   const add = el("button", "fc add", "+ Guest"); add.type = "button";
   add.onclick = () => { stashTaster(); tasters.push({ rater_id: null, guest: true, guest_name: null, rating: null, scores: {}, ...defDrink(null), auto: true }); renderFor(); userChanged(); const ins = box.querySelectorAll(".fg input"); if (ins.length) ins[ins.length - 1].focus(); };
   box.appendChild(add);
@@ -2391,8 +2415,8 @@ function route() {
     const ps = new URLSearchParams(m[2].slice(1));
     focusBrew = ps.get("b");
     const rateIt = ps.has("rate") && ps.get("b");
-    openCoffee(m[1], ps.get("d"), !rateIt && (ps.has("new") || ps.has("d"))).then(() => {   // coming to log a brew opens the form, coming to look shows the brews
-      if (!rateIt) return;
+    openCoffee(m[1], ps.get("d"), !rateIt && (ps.has("new") || ps.has("d")), rateIt ? ps.get("rate") : null).then(ok => {   // coming to log a brew opens the form, coming to look shows the brews
+      if (!rateIt || ok === false) return;
       const b = brewData.find(x => x.id === rateIt); if (b) startRate(b, ps.get("rate") || null); else say("This brew is not there any more.");
       history.replaceState(null, "", location.pathname + location.search + "#c=" + m[1] + "&b=" + rateIt);   // a reload does not open it again
     });
@@ -2649,13 +2673,16 @@ $("logmodes").querySelectorAll("button").forEach(b => { b.onclick = () => { logM
 window.addEventListener("hashchange", route);
 document.addEventListener("click", e => { if (!e.target.closest(".pmenu")) document.querySelectorAll(".pmenu").forEach(m => { m.hidden = true; }); });
 
-async function openCoffee(id, dev, wantForm) {
+async function openCoffee(id, dev, wantForm, rid) {
   const [{ data: c, error }, { data: dv }, { data: all }] = await Promise.all([
     db.from("coffees").select("*").eq("id", id).single(),
     db.from("brews").select("device"),
     inHH(db.from("coffees").select("*")).order("created_at", { ascending: false })
   ]);
-  if (error || !c) { say("Could not open this coffee."); location.hash = ""; return; }
+  if (error || !c) {
+    if (rid) { location.replace("../friends/index.html#rate=" + encodeURIComponent(rid)); return false; }   // a cup a friend made you
+    say("Could not open this coffee."); location.hash = ""; return false;
+  }
   cur = c;
   fillCoffeeSwitch(c, all || []);
   ["bflt-device", "bflt-recipe", "bflt-who", "bflt-sort"].forEach(i => { $(i).value = ""; });
@@ -2999,6 +3026,17 @@ async function loadHouseholds() {
   if (hh) store.set("alto.household", hh);
   hhMembers = {};
   data.filter(m => seen.has(m.household_id)).forEach(m => (hhMembers[m.household_id] = hhMembers[m.household_id] || []).push(m));
+  loadFriends();
+}
+// the people of households you are friends with: you can make them a coffee too (under "For"), and they rate it on their own phone
+async function loadFriends() {
+  if (!hh) { friends = []; return; }
+  const { data, error } = await db.rpc("friend_people", { p_household: hh });
+  if (error) return;   // before supabase/33_friend_guests.sql
+  const inHH = new Set((hhMembers[hh] || []).map(m => m.user_id));
+  friends = (data || []).filter(f => !inHH.has(f.user_id));
+  friends.forEach(f => { fnames[f.user_id] = f.name; });
+  if (!$("forchips").closest("[hidden]") && document.querySelector("#forchips .fc")) renderFor();
 }
 async function tryPendingJoin() {
   const code = pendingJoin(); if (!code) return;
@@ -3067,7 +3105,7 @@ $("hh-join").onclick = () => { const c = $("hh-code").value.trim(); if (!c) { sa
 
 // ---------- Names: each login picks the name shown on its brews (table "profiles") ----------
 let names = {}, namesOk = false;
-const nameOf = id => (id && names[id]) || null;
+const nameOf = id => (id && (names[id] || fnames[id])) || null;
 function fillWho(ids) {
   const s = $("bflt-who"), keep = s.value; s.textContent = "";
   const o = el("option", "", "Made by"); o.value = ""; s.appendChild(o);

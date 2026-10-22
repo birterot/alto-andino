@@ -89,14 +89,37 @@ input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .notes{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .notes span{font-size:13.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--bg)}
 .take{margin:10px 0 0;font-size:14.5px}
-.off{color:var(--mut);font-size:14px;font-style:italic}
+p.off{color:var(--mut);font-size:14px;font-style:italic}
 #msg{min-height:1.4em;color:var(--mut);font-size:14px}
+/* cups friends made for you, and rating one */
+.cup{display:flex;align-items:center;gap:12px;padding:12px 2px;border-top:1px solid var(--line);color:inherit;text-decoration:none}
+.cup:first-of-type{border-top:0}
+.cup div{flex:1;min-width:0}.cup strong{display:block}.cup small{display:block;color:var(--mut);font-size:13.5px}
+.cup .tag{flex:none;font-size:13px;padding:4px 10px;border-radius:999px;background:var(--act);color:var(--on-act)}
+.cup .stars-row{flex:none;font-size:15px}
+.cup svg{flex:none;color:var(--mut)}
+.rfacts{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.rfacts span{font-size:13.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--bg)}
+.lab{display:block;font-size:13.5px;color:var(--mut);margin:16px 0 6px}
+.rstars{display:flex;align-items:center;gap:4px;touch-action:none}
+.rstars button{font-size:32px;line-height:1;width:44px;height:44px;padding:0;border:0;background:none;cursor:pointer;color:var(--accent);display:grid;place-items:center;-webkit-tap-highlight-color:transparent}
+.rstars .val{margin-left:10px;font-size:15px;color:var(--mut)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{font:inherit;font-size:14.5px;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.chips button[aria-pressed=true]{background:var(--act);border-color:var(--act);color:var(--on-act)}
+.bdesc{margin:6px 0 0;font-size:13.5px;color:var(--mut);min-height:1.3em}
+.sl{display:grid;grid-template-columns:64px 1fr 44px;align-items:center;gap:10px;margin:8px 0}
+.sl span{font-size:14.5px}.sl b{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;font-size:14px}
+.sl b.unset{color:var(--mut);font-weight:400}
+.sl input{height:30px;margin:0;padding:0;border:0;background:none;accent-color:var(--act)}
+.sl input.unset{opacity:.4}
+.slax{display:grid;grid-template-columns:64px 1fr 44px;gap:10px;font-size:11.5px;color:var(--mut)}.slax span:nth-child(2){display:flex;justify-content:space-between}
 </style>
 </head>
 <body>
 <main>
 <h1>Friends</h1>
-<p class="sub" id="lead">Befriend other households and see a few fun stats of each other: who brews more, favourite coffees, what you like. Friends never see your coffees, brews or notes themselves.</p>
+<p class="sub" id="lead">Befriend other households and see a few fun stats of each other: who brews more, favourite coffees, what you like. Friends never see your coffees, brews or notes themselves, only a cup you make for them.</p>
 
 <section class="box" id="signedout" hidden>
   <h2>Sign in first</h2>
@@ -115,6 +138,11 @@ input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 </section>
 
 <div id="listview" hidden>
+  <section class="box" id="cupsbox" hidden>
+    <h2>Cups friends made you</h2>
+    <p class="hint">Rate them here. Your rating goes to their household, like everyone else's.</p>
+    <div id="cups" style="margin-top:6px"></div>
+  </section>
   <section class="box">
     <h2>Your friends</h2>
     <div id="friends"></div>
@@ -147,6 +175,25 @@ input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
   <ul class="heads" id="heads"></ul>
   <div id="fbody"></div>
 </div>
+<div id="rateview" hidden>
+  <a class="back" href="#">&lsaquo; Friends</a>
+  <section class="box">
+    <h2 id="rname" style="font-size:22px"></h2>
+    <p class="hint" id="rwho"></p>
+    <div class="rfacts" id="rfacts"></div>
+    <span class="lab" id="rstarslab">Your stars</span>
+    <div class="rstars" id="rstars" role="slider" tabindex="0" aria-labelledby="rstarslab" aria-valuemin="0" aria-valuemax="5"></div>
+    <span class="lab">Balance <small>(how well the flavours come together)</small></span>
+    <div class="chips" id="rbal" role="group" aria-label="Balance"></div>
+    <p class="bdesc" id="rbaldesc"></p>
+    <span class="lab">Taste <small>(0 is just right; leave a slider alone to skip it)</small></span>
+    <div id="rsliders"></div>
+    <div class="slax"><span></span><span><span>too little</span><span>just right</span><span>too much</span></span><span></span></div>
+    <span class="lab">Drank it</span>
+    <div class="chips" id="rwhen" role="group" aria-label="Drank it"></div>
+    <div class="btns" style="margin-top:20px"><button class="go" id="rsave" type="button">Save rating</button><a class="lnk" href="#">Cancel</a></div>
+  </section>
+</div>
 <p id="msg" role="status"></p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
@@ -154,6 +201,7 @@ input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 <script src="../assets/js/theme.js"></script>
 <script src="../assets/js/stars.js"></script>
 <script src="../data/drinks.js"></script>
+<script src="../assets/js/scales.js"></script>
 <script src="../assets/js/nav.js" defer></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
@@ -191,9 +239,12 @@ async function stat(id, fresh) {
 
 async function route() {
   if (!me) return;
-  ["listview", "friendview", "accept", "nosql"].forEach(i => { $(i).hidden = true; });
+  ["listview", "friendview", "accept", "nosql", "rateview"].forEach(i => { $(i).hidden = true; });
+  $("lead").hidden = false;
   if (!hh) { $("signedout").hidden = false; $("soText").textContent = "Friends are households, and you are not in one yet. Start yours (or join one) on the Coffee Shelf, then come back here."; return; }
   if (pending()) { if (await showAccept()) return; }
+  const rm = location.hash.match(/^#rate=([0-9a-f-]{36})$/);
+  if (rm) return showRate(rm[1]);
   const m = location.hash.match(/^#f=([0-9a-f-]{36})$/);
   if (m) return showFriend(m[1]);
   return showList();
@@ -240,12 +291,85 @@ async function showList() {
     const d = el("div"); d.append(el("strong", "", f.name), el("small", "", "Friends since " + new Date(f.since).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })));
     a.append(d, chev()); box.appendChild(a);
   });
+  showCups();
   $("hhname").textContent = mine.name;
   const sh = mine.share || {};
   document.querySelectorAll("#shares input").forEach(i => { i.checked = sh[i.dataset.k] !== false; });
   $("preview").href = "#f=" + hh;
   const c = await db.rpc("friend_code", { p_household: hh });
   if (!c.error) showCode(c.data);
+}
+// ---------- cups friends made for you ----------
+let cups = null;
+async function guestCups(fresh) {
+  if (cups && !fresh) return cups;
+  const { data, error } = await db.rpc("my_guest_cups");
+  if (error) return (cups = []);   // before supabase/33_friend_guests.sql
+  return (cups = data || []);
+}
+const isOpen = c => c.rating == null && c.balance == null && !Object.keys(c.scores || {}).length;
+const dayTime = d => { const t = new Date(d), today = new Date(), y = new Date(Date.now() - 864e5), hm = t.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return (t.toDateString() === today.toDateString() ? "today" : t.toDateString() === y.toDateString() ? "yesterday" : t.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })) + ", " + hm; };
+async function showCups() {
+  const list = await guestCups(true), box = $("cups"); box.textContent = "";
+  $("cupsbox").hidden = !list.length;
+  list.slice(0, 12).forEach(c => {
+    const a = el("a", "cup"); a.href = "#rate=" + c.rating_id;
+    const d = el("div"); d.append(el("strong", "", c.coffee_name || "A coffee"), el("small", "", c.maker + " made it, " + dayTime(c.brewed_at) + (c.device ? ", " + c.device : "")));
+    a.appendChild(d);
+    if (isOpen(c)) a.appendChild(el("span", "tag", "To rate")); else if (c.rating != null) a.appendChild(Stars.row(c.rating, Stars.text(c.rating)));
+    a.appendChild(chev()); box.appendChild(a);
+  });
+}
+async function showRate(rid) {
+  const c = (await guestCups(true)).find(x => x.rating_id === rid);
+  if (!c) { say("This cup is not there any more (or it was not for you)."); history.replaceState(null, "", location.pathname); return showList(); }
+  say(""); $("rateview").hidden = false; $("lead").hidden = true; window.scrollTo(0, 0);
+  $("rname").textContent = c.coffee_name || "A coffee";
+  $("rwho").textContent = c.maker + " made it for you at " + c.household + ", " + dayTime(c.brewed_at) + (c.cups > 1 ? ", with " + (c.cups - 1) + (c.cups === 2 ? " other cup" : " other cups") : "") + ".";
+  const fx = $("rfacts"); fx.textContent = "";
+  const n = v => v == null ? null : Math.round(Number(v) * 10) / 10;
+  [c.roaster, c.device, n(c.dose_g) != null ? n(c.dose_g) + " g in" : null, n(c.yield_g) != null ? n(c.yield_g) + " g out" : n(c.water_g) != null ? n(c.water_g) + " g water" : null,
+   c.roast_level ? c.roast_level.replace(/^./, x => x.toUpperCase()) + " roast" : null, c.is_decaf ? "Decaf" : null].filter(Boolean).forEach(t => fx.appendChild(el("span", "", t)));
+  // stars: tap a star for a full star, again for a half, a third time to clear
+  let stars = c.rating == null ? null : Number(c.rating);
+  const sb = $("rstars"); sb.textContent = "";
+  const btns = [1, 2, 3, 4, 5].map(i => { const b = el("button"); b.type = "button"; b.tabIndex = -1; b.setAttribute("aria-label", i + " stars"); sb.appendChild(b);
+    b.onclick = () => { stars = stars === i ? i - 0.5 : stars === i - 0.5 ? null : i; drawStars(); }; return b; });
+  const val = el("span", "val"); sb.appendChild(val);
+  const drawStars = () => { btns.forEach((b, k) => Stars.fill(b, stars == null ? 0 : stars >= k + 1 ? 1 : stars >= k + 0.5 ? 0.5 : 0)); val.textContent = stars == null ? "Not rated" : Stars.text(stars);
+    sb.setAttribute("aria-valuenow", String(stars || 0)); sb.setAttribute("aria-valuetext", stars == null ? "not rated" : stars + " of 5 stars"); };
+  sb.onkeydown = e => { if (e.key === "ArrowRight" || e.key === "ArrowUp") stars = Math.min(5, (stars || 0) + 0.5); else if (e.key === "ArrowLeft" || e.key === "ArrowDown") stars = (stars || 0) <= 0.5 ? null : stars - 0.5; else return; e.preventDefault(); drawStars(); };
+  drawStars();
+  // balance 0 to 5, or not at all
+  let bal = c.balance == null ? null : Number(c.balance);
+  const bb = $("rbal"); bb.textContent = "";
+  const drawBal = () => { bb.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.v) === bal))); $("rbaldesc").textContent = bal == null ? "" : SCALE.balanceName(bal) + ". " + SCALE.BALANCE[bal][2]; };
+  SCALE.BALANCE.forEach(([v, name]) => { const b = el("button", "", String(v)); b.type = "button"; b.dataset.v = v; b.title = name; b.onclick = () => { bal = bal === v ? null : v; drawBal(); }; bb.appendChild(b); });
+  drawBal();
+  // sour, sweet, bitter, body: -5 to +5 shown, 0 to 10 stored; untouched sliders are not saved
+  const sc = Object.assign({}, c.scores || {}), host = $("rsliders"); host.textContent = "";
+  [["sour", "Sour"], ["sweet", "Sweet"], ["bitter", "Bitter"], ["body", "Body"]].forEach(([k, lab]) => {
+    const row = el("label", "sl"), r = el("input"), out = el("b"); r.type = "range"; r.min = -5; r.max = 5; r.step = 1; r.setAttribute("aria-label", lab);
+    const draw = () => { const set = sc[k] != null; r.value = set ? sc[k] - 5 : 0; out.textContent = set ? SCALE.text(k, sc[k]) : "skip"; out.className = set ? "" : "unset"; r.className = set ? "" : "unset"; };
+    r.oninput = () => { sc[k] = Number(r.value) + 5; draw(); };
+    row.append(el("span", "", lab), r, out); host.appendChild(row); draw();
+  });
+  // drank it: with the brew, or now (for a cup taken along or drunk later)
+  let drank = c.drank_at || null; const wb = $("rwhen"); wb.textContent = "";
+  const opts = [["With the brew", null], ["Now", "now"]];
+  if (drank) opts.push([dayTime(drank), drank]);
+  let pick = drank ? drank : null;
+  opts.forEach(([t, v]) => { const b = el("button", "", t); b.type = "button"; b.onclick = () => { pick = v; wb.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); }; b.setAttribute("aria-pressed", String(v === pick)); wb.appendChild(b); });
+  $("rsave").onclick = async () => {
+    $("rsave").disabled = true;
+    const { error } = await db.rpc("rate_guest_cup", { p_rating: rid, p_stars: stars, p_balance: bal, p_drink: c.drink || null,
+      p_drank_at: pick === "now" ? new Date().toISOString() : pick, p_scores: sc });
+    $("rsave").disabled = false;
+    if (error) { say("Could not save: " + error.message); return; }
+    cups = null; history.replaceState(null, "", location.pathname); await route();
+    say("Saved. " + c.maker + " sees your rating now.");
+  };
 }
 function chev() { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("width", 20); s.setAttribute("height", 20); s.setAttribute("aria-hidden", "true"); const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", "M9 6l6 6-6 6"); p.setAttribute("fill", "none"); p.setAttribute("stroke", "currentColor"); p.setAttribute("stroke-width", "1.8"); p.setAttribute("stroke-linecap", "round"); s.appendChild(p); return s; }
 let linkUrl = "";
