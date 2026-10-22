@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icons/icon-180.png?v=2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Alto Andino">
+<title>Privacy | Alto Andino</title>
+<link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/base.css">
+<style>
+.priv{max-width:680px}
+.priv h2{font-size:19px;margin:28px 0 6px}
+.priv a{color:var(--ink)}
+.priv p,.priv li{font-size:15.5px;line-height:1.55;max-width:66ch}
+.priv ul{padding-left:20px;margin:8px 0}
+.priv li{margin:4px 0}
+.priv .stand{color:var(--mut);font-size:14px}
+.priv table{width:100%;border-collapse:collapse;margin:10px 0;font-size:14.5px}
+.priv th,.priv td{text-align:left;vertical-align:top;padding:8px 8px;border-bottom:1px solid var(--line)}
+.priv th{font-size:13px;color:var(--mut);font-weight:600}
+</style>
+</head>
+<body>
+<main class="priv">
+<h1>Privacy</h1>
+<p class="sub">What Alto Andino stores about you, why, who helps us run it, and what you can do about it.</p>
+<p class="stand">As of October 2026</p>
+
+<h2>Who is responsible</h2>
+<p>Alto Andino is a private, non-commercial project by Birte and Andrés. Questions, or anything about your data: <a href="mailto:hello@alto-andino.com">hello@alto-andino.com</a>.</p>
+
+<h2>The short version</h2>
+<ul>
+<li>We store what you put into the app, so that it works: your account, your coffees and brews, your ratings, and the settings you choose.</li>
+<li>Your household sees your household's coffees and brews. Friends only see the stats you choose to share. Nobody else sees anything.</li>
+<li>No ads, no tracking, no analytics, no selling of data. No cookie banner, because nothing is stored on your phone that is not needed for the app itself.</li>
+<li>You can download everything and delete your account at any time, in Settings, under "Your data".</li>
+</ul>
+
+<h2>What we store, and why</h2>
+<table>
+<thead><tr><th>What</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Your email address and password (the password only scrambled, never readable)</td><td>To sign you in, and for emails you ask for (confirming your account, a new password).</td></tr>
+<tr><td>Your name, colour and settings (usual drink, device, caffeine settings, bedtime, Home shortcuts)</td><td>So the app shows your brews under your name and works the way you set it up.</td></tr>
+<tr><td>Coffees, bag photos, brews, ratings, tasting notes, comments and cuppings</td><td>The app itself: your Coffee Shelf, shared with the people in your household.</td></tr>
+<tr><td>Households, invites and friend links</td><td>To share with your household, and the stats you choose to share with friends.</td></tr>
+<tr><td>Caffeine: worked out on your phone from your cups</td><td>For the caffeine note on Home. You can turn it off in Settings.</td></tr>
+<tr><td>Sleep answers (badly, okay, well), only if you turn on the Sleep check</td><td>For the sleep tip on Home. Only you see them. This can count as information about your health, so we only store it with your consent, and you can delete it at any time.</td></tr>
+<tr><td>Notification addresses of your phones, only if you turn notifications on</td><td>To send you "someone made you a coffee".</td></tr>
+<tr><td>Feedback you send (with your name, email, a screenshot if you add one, and which phone or browser)</td><td>To read it, fix things and answer you.</td></tr>
+</tbody>
+</table>
+<p>The legal basis is that you use the app and we provide it to you (Art. 6(1)(b) GDPR); for keeping the sign-in safe from bots, our legitimate interest (Art. 6(1)(f)); for the sleep answers, your consent (Art. 6(1)(a) and 9(2)(a)), which you can withdraw at any time by turning the Sleep check off and deleting the answers.</p>
+
+<h2>On your phone</h2>
+<p>The app keeps a few things in your browser's storage so it is fast and remembers you: your sign-in, the last view of your shelf, unsaved brews, and some settings. They never leave your phone except as described here. Signing out clears your shelf from the phone.</p>
+
+<h2>Who helps us run it</h2>
+<p>These services process data for us, only to provide the app. Some are based in the USA; data sent there is covered by the EU-US Data Privacy Framework or the EU's standard contractual clauses.</p>
+<table>
+<thead><tr><th>Service</th><th>What for</th></tr></thead>
+<tbody>
+<tr><td>Supabase</td><td>The database, sign-in, photo storage and the notification sender.</td></tr>
+<tr><td>GitHub Pages (GitHub)</td><td>Hosting the app's pages. Like any website host it sees your IP address when the pages load.</td></tr>
+<tr><td>Cloudflare</td><td>Our domain, the email address hello@alto-andino.com, and the check against bots when you sign in (Turnstile).</td></tr>
+<tr><td>Resend</td><td>Sending the emails you ask for (confirm your account, new password).</td></tr>
+<tr><td>jsDelivr</td><td>Delivering the program library the app uses to talk to the database.</td></tr>
+<tr><td>Apple, Google, Mozilla push services</td><td>Delivering notifications to your phone, if you turned them on. The message itself is encrypted for your phone only.</td></tr>
+</tbody>
+</table>
+
+<h2>How long</h2>
+<p>As long as you have an account. When you delete it, your account and everything that is only yours goes straight away. In a household you share, the coffees and brews stay for the others, without your name. Backups at our database provider are kept for a short time and then overwritten.</p>
+
+<h2>Your rights</h2>
+<p>You can see, correct, download and delete your data (Settings, "Your data"), limit or object to how we use it, and withdraw your consent for the sleep answers at any time. For anything else, write to <a href="mailto:hello@alto-andino.com">hello@alto-andino.com</a>. You can also complain to a data protection authority.</p>
+</main>
+<script src="assets/js/nav.js" defer></script>
+</body>
+</html>

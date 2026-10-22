@@ -324,7 +324,7 @@
   // else at the time of the brew. Settings > Caffeine (kept on this phone too, so Home has it at once):
   // "high" counts the upper end of the range, "midnight" starts every day at zero, "line" is your sleep line (5 to 400 mg, 50 unless you changed it).
   function cafPref() { try { return JSON.parse(localStorage.getItem("alto.cafpref") || "{}") || {}; } catch (e) { return {}; } }
-  function savePref(p) { try { localStorage.setItem("alto.homehide", JSON.stringify(Array.isArray(p.home_hide) ? p.home_hide : [])); applyTiles(); } catch (e) {} try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "", line: p.caf_line != null ? p.caf_line : null, bed: p.caf_bed || "", show: p.caf_show || "", sleep: p.sleep || "" })); } catch (e) {} }
+  function savePref(p) { try { localStorage.setItem("alto.homehide", JSON.stringify(Array.isArray(p.home_hide) ? p.home_hide : [])); applyTiles(); } catch (e) {} try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "", line: p.caf_line != null ? p.caf_line : null, bed: p.caf_bed || "", show: p.caf_show || "", sleep: p.sleep === "on" && p.sleep_consent ? "on" : "" })); } catch (e) {} }   // the sleep check only with your consent
   function caffeine(rows) {
     if (!Array.isArray(rows) || !session || !window.CAFFEINE || cafPref().show === "off") return null;   // turned off in Settings
     var my = session.user.id, now = Date.now(), pref = cafPref(), high = pref.mode === "high";

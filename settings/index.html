@@ -43,6 +43,14 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .tchk{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-top:10px;max-width:420px}
 .tchk label{display:flex;align-items:center;gap:10px;margin:0;font-size:15px;color:var(--ink)}
 .tchk input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--act)}
+.set .hint a,label.chk a{color:var(--ink)}
+label.chk{display:flex;align-items:flex-start;gap:10px;color:var(--ink);font-size:14.5px;line-height:1.45;margin-top:12px;max-width:52ch}
+label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var(--act)}
+.lnk.danger{color:#b0412e;border-color:#e3b9ae}
+.delbox{margin-top:10px;padding:12px 14px;border:1px solid #e3b9ae;border-radius:12px;max-width:52ch}
+.delbox p{font-size:14.5px;line-height:1.45}
+.dangerbtn{background:#b0412e;border-color:#b0412e;color:#fff}
+.dangerbtn:disabled{opacity:.45}
 .pstate{margin:12px 0 0;font-size:15px;max-width:52ch}
 .pbtns{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}
 .pbtns .lnk{min-height:40px}
@@ -125,6 +133,22 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
     <h2>Sleep check</h2>
     <div class="seg" id="s-sleep"><button type="button" data-m="">Off</button><button type="button" data-m="on">On</button></div>
     <p class="hint">On: in the morning, Home asks how you slept (badly, okay or well), one tap. After a few good and a few bad nights, it compares them with your coffee and gives a tip, for example to have your last coffee earlier. Only you see your answers.</p>
+    <label class="chk consent" id="sleepconsent" hidden><input type="checkbox" id="s-sleepok"> I agree that Alto Andino stores my sleep answers to give me sleep tips. This can count as information about my health. I can turn it off and delete the answers at any time (<a href="../privacy.html">Privacy</a>).</label>
+    <p><button type="button" class="lnk" id="sleepdel">Delete my sleep answers</button> <span class="hint" id="sleepdelmsg" role="status"></span></p>
+  </section>
+
+  <section class="set" id="dataset">
+    <h2>Your data</h2>
+    <p class="hint">What the app stores and who helps run it: <a href="../privacy.html">Privacy</a>.</p>
+    <p><button type="button" class="lnk" id="export">Download my data</button> <span class="hint" id="exportmsg" role="status"></span></p>
+    <p><button type="button" class="lnk danger" id="delacc">Delete my account&hellip;</button></p>
+    <div class="delbox" id="delbox" hidden>
+      <p><strong>This cannot be undone.</strong> Your login, your name and settings, your sleep answers, your notification phones and your feedback go. So does every household you are the only member of, with all its coffees, photos and brews. In households you share, the coffees and brews stay for the others, without your name.</p>
+      <p class="hint">Want a copy first? “Download my data” above.</p>
+      <label>Type <b>delete</b> to confirm<input id="delword" autocomplete="off" autocapitalize="none"></label>
+      <p><button type="button" class="go dangerbtn" id="delgo" disabled>Delete my account</button> <button type="button" class="lnk" id="delno">Keep it</button></p>
+      <p class="hint" id="delmsg" role="status"></p>
+    </div>
   </section>
 
   <section class="set" id="pushset">
@@ -181,7 +205,63 @@ document.querySelectorAll("#s-cafmode button").forEach(b => { b.onclick = () => 
 document.querySelectorAll("#s-cafday button").forEach(b => { b.onclick = () => { cafDay = b.dataset.m; setSeg("s-cafday", cafDay); }; });
 $("s-bed-x").onclick = () => { $("s-bed").value = ""; };
 document.querySelectorAll("#s-cafshow button").forEach(b => { b.onclick = () => { cafShow = b.dataset.m; showCafShow(); }; });
-document.querySelectorAll("#s-sleep button").forEach(b => { b.onclick = () => { sleepOn = b.dataset.m; setSeg("s-sleep", sleepOn); }; });
+let sleepConsent = null;   // when you agreed (prefs.sleep_consent); turning it on needs the box ticked once
+function showSleep() { setSeg("s-sleep", sleepOn); $("sleepconsent").hidden = !(sleepOn === "on" && !sleepConsent); }
+document.querySelectorAll("#s-sleep button").forEach(b => { b.onclick = () => { sleepOn = b.dataset.m; showSleep(); }; });
+// ----- your data: a copy of everything, and deleting your account -----
+$("export").onclick = async () => {
+  $("exportmsg").textContent = "Collecting...";
+  try {
+    const get = async (q, name) => { const r = await q; if (r.error && !/does not exist|schema cache/i.test(r.error.message)) throw new Error(name + ": " + r.error.message); return r.data || []; };
+    const out = {
+      exported_at: new Date().toISOString(), account: { id: me.id, email: me.email },
+      profile: await get(db.from("profiles").select("*").eq("id", me.id), "profile"),
+      households: await get(db.from("household_members").select("household_id,role,joined_at,households(name)").eq("user_id", me.id), "households"),
+      coffees: await get(db.from("coffees").select("*"), "coffees"),
+      brews: await get(db.from("brews").select("*, brew_ratings(*), brew_scores(*)").order("brewed_at"), "brews"),
+      cuppings: await get(db.from("cuppings").select("*"), "cuppings"),
+      sleep: await get(db.from("sleep_logs").select("night,quality,created_at").order("night"), "sleep"),
+      feedback: await get(db.from("feedback").select("created_at,kind,message,page,device,photo_path").eq("user_id", me.id), "feedback"),
+      notification_phones: (await get(db.from("push_subscriptions").select("created_at"), "phones")).length
+    };
+    const blob = new Blob([JSON.stringify(out, null, 2)], { type: "application/json" }), a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "alto-andino-my-data-" + new Date().toISOString().slice(0, 10) + ".json"; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    $("exportmsg").textContent = "Done: " + out.coffees.length + " coffees, " + out.brews.length + " brews.";
+  } catch (e) { $("exportmsg").textContent = "Could not collect it: " + e.message; }
+};
+$("delacc").onclick = () => { $("delbox").hidden = false; $("delword").value = ""; $("delgo").disabled = true; $("delword").focus(); };
+$("delno").onclick = () => { $("delbox").hidden = true; };
+$("delword").addEventListener("input", () => { $("delgo").disabled = $("delword").value.trim().toLowerCase() !== "delete"; });
+$("delgo").onclick = async () => {
+  $("delgo").disabled = true; $("delmsg").textContent = "Deleting...";
+  try {
+    // photos first (files are not removed by the database): bag photos of the households only you are in, your feedback screenshots
+    const { data: mine } = await db.from("household_members").select("household_id").eq("user_id", me.id);
+    const { data: all } = await db.from("household_members").select("household_id,user_id");
+    const alone = (mine || []).map(m => m.household_id).filter(h => !(all || []).some(x => x.household_id === h && x.user_id !== me.id));
+    if (alone.length) {
+      const { data: cs } = await db.from("coffees").select("photo_path").in("household_id", alone);
+      const paths = [...new Set((cs || []).map(c => c.photo_path).filter(Boolean))].flatMap(p => [p, String(p).replace(/\.jpe?g$/i, "") + "-t.jpg"]);   // the photo and its small copy
+      if (paths.length) await db.storage.from("bag-photos").remove(paths);
+    }
+    const { data: fb } = await db.from("feedback").select("photo_path").eq("user_id", me.id);
+    const shots = (fb || []).map(f => f.photo_path).filter(Boolean);
+    if (shots.length) await db.storage.from("feedback").remove(shots);
+    try { const reg = await navigator.serviceWorker.getRegistration("../"); const sub = reg && await reg.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); } catch (e) {}
+    const { error } = await db.rpc("delete_my_account");
+    if (error) throw error;
+    try { Object.keys(localStorage).filter(k => /^alto\.|^sb-/.test(k)).forEach(k => localStorage.removeItem(k)); } catch (e) {}
+    await db.auth.signOut().catch(() => {});
+    location.replace("../journal/index.html#deleted");
+  } catch (e) { $("delmsg").textContent = "Could not delete: " + (e.message || e) + (/function|schema cache/.test(e.message || "") ? " (supabase/32_privacy.sql has not run yet)" : ""); $("delgo").disabled = false; }
+};
+$("sleepdel").onclick = async () => {
+  if (!confirm("Delete all your sleep answers? The Sleep check starts again from zero.")) return;
+  const { error } = await db.from("sleep_logs").delete().eq("user_id", me.id);
+  $("sleepdelmsg").textContent = error ? "Could not delete: " + error.message : "Deleted.";
+  if (!error) try { const sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh) { delete sh.sl; delete sh.stip; localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } } catch (e) {}
+};
 document.querySelectorAll("#s-cafline button").forEach(b => { b.onclick = () => { cafLine = b.dataset.m; showLine(); }; });
 $("s-cafline-n").addEventListener("input", () => {
   const raw = $("s-cafline-n").value.trim(), v = Math.round(Number(raw.replace(",", ".")));
@@ -243,7 +323,7 @@ async function load() {
   cafLine = p.caf_line != null && Number(p.caf_line) >= 0 && Number(p.caf_line) <= 400 && Number(p.caf_line) !== 50 ? String(Math.round(p.caf_line)) : ""; showLine();
   $("s-bed").value = /^\d\d:\d\d$/.test(p.caf_bed || "") ? p.caf_bed : "";
   homeHide = Array.isArray(p.home_hide) ? p.home_hide.filter(k => TILES.some(t => t[0] === k)) : []; renderTiles();
-  cafShow = p.caf_show === "off" ? "off" : ""; showCafShow(); sleepOn = p.sleep === "on" ? "on" : ""; setSeg("s-sleep", sleepOn);
+  cafShow = p.caf_show === "off" ? "off" : ""; showCafShow(); sleepOn = p.sleep === "on" ? "on" : ""; sleepConsent = p.sleep_consent || null; showSleep();
   // the others in your household (the profiles you can see), for the little letters on the colours
   const { data: ps } = await db.from("profiles").select("id,display_name,prefs");
   others = (ps || []).filter(x => x.id !== me.id).map(x => ({ name: x.display_name || "Someone", color: x.prefs && x.prefs.color })); renderColors();
@@ -262,7 +342,12 @@ $("sf").onsubmit = async e => {
   if (cafLine) prefs.caf_line = Number(cafLine); else delete prefs.caf_line;
   if ($("s-bed").value) prefs.caf_bed = $("s-bed").value; else delete prefs.caf_bed;
   if (cafShow) prefs.caf_show = cafShow; else delete prefs.caf_show;
+  if (sleepOn === "on" && !sleepConsent) {
+    if (!$("s-sleepok").checked) { $("msg").textContent = "To turn on the Sleep check, please tick the box below it first."; $("sleepconsent").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
+    sleepConsent = new Date().toISOString();
+  }
   if (sleepOn) prefs.sleep = sleepOn; else delete prefs.sleep;
+  if (sleepConsent) prefs.sleep_consent = sleepConsent; else delete prefs.sleep_consent;
   if (homeHide.length) prefs.home_hide = homeHide; else delete prefs.home_hide;
   const same = (x, y) => JSON.stringify(Object.keys(x).sort().map(k => [k, x[k]])) === JSON.stringify(Object.keys(y).sort().map(k => [k, y[k]]));
   if (profile && profile.display_name === name && same(prefs, profile.prefs || {})) { flash("Nothing changed, your settings are as they were."); return; }
@@ -273,7 +358,8 @@ $("sf").onsubmit = async e => {
   profile = { id: me.id, display_name: name, prefs };
   if (fm) try { localStorage.setItem("alto.formmode", fm); } catch (e2) {}
   try { localStorage.setItem("alto.homehide", JSON.stringify(homeHide)); } catch (e2) {}
-  try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: cafMode, day: cafDay, line: cafLine ? Number(cafLine) : null, bed: $("s-bed").value || "", show: cafShow, sleep: sleepOn })); } catch (e2) {}   // Home uses it at once
+  try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: cafMode, day: cafDay, line: cafLine ? Number(cafLine) : null, bed: $("s-bed").value || "", show: cafShow, sleep: sleepOn && sleepConsent ? "on" : "" })); } catch (e2) {}   // Home uses it at once
+  showSleep();
   flash("Saved. New brews start with these settings.");
 };
 // the message next to the button, briefly highlighted so it is not missed

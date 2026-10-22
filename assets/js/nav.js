@@ -48,7 +48,7 @@
 
   var path = location.pathname, file = (path.split("/").pop() || "index.html").replace(/\.html$/, "");
   var inBook = /\/chapters\//.test(path), chapter = inBook && file !== "index" ? file : null;
-  var isHome = !inBook && !/\/(journal|trends|calc|settings|cupping|friends|feedback)\//.test(path);
+  var isHome = !inBook && !/\/(journal|trends|calc|settings|cupping|friends|feedback)\//.test(path) && !/privacy\.html$/.test(path);
   var isCalc = /\/calc\//.test(path);
   var NS = "http://www.w3.org/2000/svg";
 
@@ -290,6 +290,7 @@
     add("Page", "Friends", "Fun stats with friends", "friends/index.html", "friend link invite share stats");
     add("Page", "Settings", "Your name, defaults, usual drink", "settings/index.html", "name default device grinder drink milk simple all");
     add("Page", "Caffeine", "How the caffeine on Home is worked out", "settings/caffeine.html", "caffeine mg espresso sleep half-life 50 mg upper end estimate");
+    add("Page", "Privacy", "What the app stores, and your data", "privacy.html", "data gdpr dsgvo delete account export privacy policy datenschutz");
     add("Page", "Feedback", "Tell us what is broken or what you wish for", "feedback/index.html", "bug idea problem help contact");
     CHAPTERS.forEach(function (c) { add("Bean to Cup", c[1], "Chapter", "chapters/" + c[0] + ".html", "book chapter"); });
     ((window.DEVICES && DEVICES.D) || []).forEach(function (d) { add("Brewing device", d.name, d.tag || d.kind || "", "chapters/devices.html#" + d.id, [(d.logAs || []).join(" "), d.kind, (d.variants || []).map(function (v) { return v.n; }).join(" "), "how to brew method recipe"].join(" ")); });

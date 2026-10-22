@@ -401,7 +401,7 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
   <label id="nmlab" hidden>Your name<input id="nm" maxlength="40" autocomplete="nickname" placeholder="Shown on the brews you make"></label>
   <label>Email<input id="em" type="email" autocomplete="username" required></label>
   <label id="pwlab">Password<input id="pw" type="password" autocomplete="current-password" minlength="8" required></label>
-  <p class="hint" id="pwhint" hidden>At least 8 characters.</p>
+  <p class="hint" id="pwhint" hidden>At least 8 characters. By creating an account you agree to how the app handles your data: <a href="../privacy.html">Privacy</a>.</p>
   <div id="captcha" class="captcha" hidden></div>
   <button class="go" id="authgo">Sign in</button>
   <p><button class="lnk" type="button" id="forgot">Forgot your password?</button></p>
@@ -3171,6 +3171,7 @@ function setAuthMode(m) {
 $("authmodes").querySelectorAll("button").forEach(b => { b.onclick = () => setAuthMode(b.dataset.m); });
 $("forgot").onclick = () => setAuthMode(authMode === "reset" ? "in" : "reset");
 setAuthMode(pendingJoin() ? "up" : "in");
+if (location.hash === "#deleted") { $("authsub").textContent = "Your account and its data were deleted. Thank you for having been here."; history.replaceState(null, "", location.pathname); }
 const backHere = () => location.origin + cleanPath();
 // Captcha (Cloudflare Turnstile): only when a site key is set in data/defaults.js. Each token works once.
 const CAPTCHA_KEY = (window.DEFAULTS && window.DEFAULTS.TURNSTILE_SITE_KEY) || "";
