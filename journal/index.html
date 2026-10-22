@@ -684,6 +684,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
 <script src="../assets/js/config.js"></script>
 <script src="../assets/js/lists.js"></script>
 <script src="../assets/js/scales.js"></script>
+<script src="../assets/js/caffeine.js"></script>
 <script src="../assets/js/stars.js"></script>
 <script src="../assets/js/theme.js"></script>
 <script src="../data/devices.js"></script>
@@ -1067,17 +1068,17 @@ async function load() {
   const uniq = k => [...new Set(data.map(c => c[k]).filter(Boolean))];
   fill("f-process", Object.keys(PAL), uniq("process")); fill("f-roast", window.LISTS.roast, [], true);
   coffeeData = data; coffeeCounts = counts; coffeeRates = rates; coffeeUsed = used;
-  // the brews of the last day and a half, for the caffeine on Home (who rated them drank them)
+  // the brews of the last day and a half, for the caffeine on Home (assets/js/caffeine.js; they count for whoever they were for)
   const byId = {}, since = Date.now() - 36 * 3600e3; data.forEach(c => { byId[c.id] = c; });
   // and your own brews of the last two months, for "you brewed ... and drank ..." on Home: [time, made it, drank it]
-  // (drank = you rated it, as for the caffeine)
+  // (drank = it was for you, as for the caffeine)
   const since2 = Date.now() - 62 * 864e5;
   myBrews = !me ? null : (bs || []).filter(b => b.brewed_at && Date.parse(b.brewed_at) >= since2).map(b => {
     const rs = b.brew_ratings || [], made = (b.made_by || b.created_by) === me.id;
     const drank = rs.some(r => !r.is_guest && r.rater_id === me.id);
     return made || drank ? [Date.parse(b.brewed_at), made ? 1 : 0, drank ? 1 : 0] : null;
   }).filter(Boolean);
-  recentBrews = (bs || []).filter(b => b.brewed_at && (Date.parse(b.brewed_at) >= since || (b.brew_ratings || []).some(r => r.drank_at && Date.parse(r.drank_at) >= since)) && Number(b.dose_g) > 0).map(b => cafRow(b, byId[b.coffee_id]));
+  recentBrews = (bs || []).filter(b => CAFFEINE.recent(b, since)).map(b => CAFFEINE.row(b, byId[b.coffee_id]));
   const paths = data.map(c => c.photo_path).filter(Boolean);
   const known = photoLinks(paths, true);   // links still valid from earlier visits: no waiting
   coffeeUrls = known.full; coffeeThumbs = known.thumb;
@@ -1139,12 +1140,6 @@ async function makeThumbs(paths) {
 // the shelf as it was last time, shown at once when the app opens (the fresh data replaces it right after)
 const SHELF = "alto.shelf.v1";
 let recentBrews = null, myBrews = null;
-// one brew, as Home's caffeine needs it: when, grams, dial-in, who made it, who rated it (g = a guest), and the kind of coffee
-function cafRow(b, c) {
-  const v = String((c && c.variety) || "").toLowerCase();
-  return { t: b.brewed_at, g: Number(b.dose_g), d: !!b.is_dialin, m: b.made_by || b.created_by || null,
-    r: (b.brew_ratings || []).map(r => r.is_guest ? "g" : r.rater_id), rt: (b.brew_ratings || []).map(r => r.drank_at || null), y: b.yield_g == null ? null : Number(b.yield_g), w: b.water_g == null ? null : Number(b.water_g), dv: b.device || "", rl: (c && c.roast_level) || "", k: c && c.is_decaf ? "decaf" : /robusta/.test(v) ? (/arabica|,/.test(v) ? "blend" : "robusta") : "" };
-}
 function saveShelf() {
   try {
     const old = JSON.parse(localStorage.getItem(SHELF) || "null");

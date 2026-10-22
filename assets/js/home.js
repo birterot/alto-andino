@@ -160,7 +160,7 @@
   }
   // Then, quietly: your brews of the last two months straight from the database, for the line under the greeting and the
   // caffeine (also brews someone else logged and you rated). Supabase's own library renews the login if it ran out.
-  if (session) setTimeout(freshen, 900);
+  if (session && window.CAFFEINE) setTimeout(freshen, 900);
   function freshen() {
     var S = window.SUPA; if (!S) return;
     var go = function () {
@@ -187,11 +187,7 @@
               pend.push({ b: b.id, c: b.coffee_id, r: me1.id, n: (b.coffees || {}).name || "", m: b.made_by || b.created_by || null, t: b.brewed_at, d: b.device || "" });
             var rs = b.brew_ratings || [], made = (b.made_by || b.created_by) === my, drank = rs.some(function (x) { return !x.is_guest && x.rater_id === my; });
             if (made || drank) mine.push([Date.parse(b.brewed_at), made ? 1 : 0, drank ? 1 : 0]);
-            if (!(Number(b.dose_g) > 0) || !(Date.parse(b.brewed_at) >= cut || rs.some(function (x) { return x.drank_at && Date.parse(x.drank_at) >= cut; }))) return;
-            var c = b.coffees || {}, v = String(c.variety || "").toLowerCase();
-            rows.push({ t: b.brewed_at, g: Number(b.dose_g), d: !!b.is_dialin, m: b.made_by || b.created_by || null,
-              r: rs.map(function (x) { return x.is_guest ? "g" : x.rater_id; }), rt: rs.map(function (x) { return x.drank_at || null; }),
-              k: c.is_decaf ? "decaf" : /robusta/.test(v) ? (/arabica|,/.test(v) ? "blend" : "robusta") : "", y: b.yield_g == null ? null : Number(b.yield_g), w: b.water_g == null ? null : Number(b.water_g), dv: b.device || "", rl: c.roast_level || "" });
+            if (CAFFEINE.recent(b, cut)) rows.push(CAFFEINE.row(b, b.coffees || {}));
           });
           var used = null; if (res[2] && Array.isArray(res[2].data)) { used = {}; res[2].data.forEach(function (x) { used[x.coffee_id] = (used[x.coffee_id] || 0) + (Number(x.dose_g) || 0); }); }
           var sh = null; try { sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === my) { sh.cb = rows; sh.cbt = Date.now(); sh.my = mine; sh.tr = pend; sh.nm = nm; if (used) sh.used = Object.assign({}, sh.used || {}, used); localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } else sh = null; } catch (e) { sh = null; }
@@ -227,18 +223,15 @@
   }
   function showCaffeine(rows) { cafNote = swapNote(cafNote, caffeine(rows), false); }
 
-  // ---------- caffeine: an estimate from the brews you rated ----------
-  // About 9 mg of caffeine per gram of arabica coffee ends up in the cup (beans are about 1.2 % caffeine, most of it is
-  // extracted); robusta about twice that, decaf almost none. In the body it rises for about 45 minutes and then halves
-  // roughly every 5 hours (Bateman curve, absorption 4.5 per hour). A brew counts for everyone it was for (split
-  // between them, rated or not yet), at the time they drank it if they said, else at the time of the brew.
-  // Settings > Caffeine (kept on this phone too, so Home has it at once): "high" counts the upper end of the range,
-  // "midnight" starts every day at zero
+  // ---------- caffeine: the note and its curve (the numbers come from assets/js/caffeine.js) ----------
+  // A brew counts for everyone it was for (split between them, rated or not yet), at the time they drank it if they said,
+  // else at the time of the brew. Settings > Caffeine (kept on this phone too, so Home has it at once):
+  // "high" counts the upper end of the range, "midnight" starts every day at zero.
   function cafPref() { try { return JSON.parse(localStorage.getItem("alto.cafpref") || "{}") || {}; } catch (e) { return {}; } }
   function savePref(p) { try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "" })); } catch (e) {} }
   function caffeine(rows) {
     if (!Array.isArray(rows) || !session || !window.CAFFEINE) return null;
-    var my = session.user.id, KE = Math.LN2 / 5, KA = 4.5, now = Date.now(), pref = cafPref(), high = pref.mode === "high";
+    var my = session.user.id, now = Date.now(), pref = cafPref(), high = pref.mode === "high";
     var mid = new Date(); mid.setHours(0, 0, 0, 0);
     var doses = [];
     rows.forEach(function (b) {
@@ -248,7 +241,7 @@
       var c = CAFFEINE.mg(b), n = b.r.length;
       doses.push({ t: t, mg: (high ? c.hi : c.mg) / n, lo: c.lo / n, hi: c.hi / n });
     });
-    var level = function (at) { return doses.reduce(function (s, d) { var hh = (at - d.t) / 36e5; return hh <= 0 ? s : s + d.mg * KA / (KA - KE) * (Math.exp(-KE * hh) - Math.exp(-KA * hh)); }, 0); };
+    var level = function (at) { return CAFFEINE.level(doses, at); };
     var today = doses.filter(function (d) { return d.t >= mid.getTime(); }), total = today.reduce(function (s, d) { return s + d.mg; }, 0);
     var nowL = level(now), span = doses.reduce(function (s, d) { return s + d.mg; }, 0), ratio = function (f) { return span ? doses.reduce(function (s, d) { return s + d[f]; }, 0) / span : 1; };
     var lo = nowL * ratio("lo"), hi = nowL * ratio("hi");
