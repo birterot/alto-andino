@@ -73,7 +73,9 @@
   }
 
   // one note at a time: your caffeine first (when there was coffee today), then to do, Friends, the fact of the day
-  var notes = [], cafNote = null;
+  var notes = [], cafNote = null, rateNote = null;
+  var tr = session && shelf ? toRate(shelf.tr, shelf.nm) : null;
+  if (tr) notes.push(rateNote = tr);
   var caf = session ? caffeine(shelf && shelf.cb) : null;
   if (caf) notes.push(cafNote = caf);
   if (shelf) {
@@ -126,10 +128,18 @@
       db.auth.getSession().then(function (r) {
         var ses = r && r.data && r.data.session; if (!ses || ses.user.id !== session.user.id) return;
         var my = ses.user.id, since2 = new Date(Date.now() - 62 * 864e5).toISOString();
-        return db.from("brews").select("brewed_at,dose_g,is_dialin,made_by,created_by,coffees(is_decaf,variety),brew_ratings(rater_id,is_guest,drank_at)").gte("brewed_at", since2).order("brewed_at").then(function (q) {
-          if (q.error || !Array.isArray(q.data)) return;
-          var cut = Date.now() - 36 * 36e5, mine = [], rows = [];
+        return Promise.all([
+          db.from("brews").select("id,coffee_id,brewed_at,device,dose_g,is_dialin,made_by,created_by,coffees(name,is_decaf,variety),brew_ratings(id,rater_id,is_guest,rating,balance,drank_at),brew_scores(rating_id)").gte("brewed_at", since2).order("brewed_at"),
+          db.from("profiles").select("id,display_name")
+        ]).then(function (res) {
+          var q = res[0]; if (q.error || !Array.isArray(q.data)) return;
+          var nm = {}; ((res[1] && res[1].data) || []).forEach(function (p) { nm[p.id] = p.display_name; });
+          var cut = Date.now() - 36 * 36e5, mine = [], rows = [], pend = [], week = Date.now() - 7 * 864e5;
           q.data.forEach(function (b) {
+            // your cup, not rated yet (the last 7 days)
+            var me1 = (b.brew_ratings || []).filter(function (x) { return !x.is_guest && x.rater_id === my; })[0];
+            if (me1 && me1.rating == null && me1.balance == null && !(b.brew_scores || []).some(function (s) { return s.rating_id === me1.id; }) && Date.parse(b.brewed_at) >= week)
+              pend.push({ b: b.id, c: b.coffee_id, r: me1.id, n: (b.coffees || {}).name || "", m: b.made_by || b.created_by || null, t: b.brewed_at, d: b.device || "" });
             var rs = b.brew_ratings || [], made = (b.made_by || b.created_by) === my, drank = rs.some(function (x) { return !x.is_guest && x.rater_id === my; });
             if (made || drank) mine.push([Date.parse(b.brewed_at), made ? 1 : 0, drank ? 1 : 0]);
             if (!(Number(b.dose_g) > 0) || !(Date.parse(b.brewed_at) >= cut || rs.some(function (x) { return x.drank_at && Date.parse(x.drank_at) >= cut; }))) return;
@@ -138,35 +148,49 @@
               r: rs.map(function (x) { return x.is_guest ? "g" : x.rater_id; }), rt: rs.map(function (x) { return x.drank_at || null; }),
               k: c.is_decaf ? "decaf" : /robusta/.test(v) ? (/arabica|,/.test(v) ? "blend" : "robusta") : "" });
           });
-          try { var sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === my) { sh.cb = rows; sh.cbt = Date.now(); sh.my = mine; localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } } catch (e) {}
-          showStat(mine); showCaffeine(rows);
+          try { var sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === my) { sh.cb = rows; sh.cbt = Date.now(); sh.my = mine; sh.tr = pend; sh.nm = nm; localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } } catch (e) {}
+          showStat(mine); showRate(pend, nm); showCaffeine(rows);
         });
       }).catch(function () {});
     };
     if (window.supabase) return go();
     var sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"; sc.onload = go; document.head.appendChild(sc);
   }
-  function showCaffeine(rows) {
-    var c = caffeine(rows);
-    if (!c) { if (cafNote && card) { notes.splice(notes.indexOf(cafNote), 1); cafNote = null; i = 0; if (notes.length) draw(); } return; }
-    if (cafNote) { cafNote.text = c.text; cafNote.curve = c.curve; cafNote.small = c.small; }
-    else if (card) { notes.unshift(cafNote = c); i = 0; }
-    else return;   // no note card at all: rare, leave Home as it is
+  // a note that comes, changes or goes when the fresh brews arrive (first = it goes to the top)
+  function swapNote(old, nu, first) {
+    var at = old ? notes.indexOf(old) : -1;
+    if (nu && at >= 0) notes[at] = nu; else if (nu) { if (first) notes.unshift(nu); else notes.splice(rateNote && notes[0] === rateNote ? 1 : 0, 0, nu); } else if (at >= 0) notes.splice(at, 1);
+    if (!card) return nu;
+    i = 0;
     if (notes.length > 1 && !card.hasAttribute("role")) { card.setAttribute("role", "button"); card.tabIndex = 0; card.setAttribute("aria-label", "Next note"); card.addEventListener("click", function () { i = (i + 1) % notes.length; draw(); }); }
-    draw();
+    if (notes.length) draw();
+    return nu;
   }
+  function showRate(list, nm) { rateNote = swapNote(rateNote, toRate(list, nm), true); }
+  // your cups still to rate: one = which one (and who made it), several = how many, to My brews
+  function toRate(list, nm) {
+    if (!Array.isArray(list) || !list.length) return null;
+    var my = session.user.id, x = list[list.length - 1], hm = function (iso) { var d = new Date(iso); return d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0"); };
+    var by = x.m && x.m !== my ? (nm && nm[x.m]) || "Someone" : null, today = new Date(x.t).toDateString() === new Date().toDateString();
+    var when = (today ? "at " : new Date(x.t).toLocaleDateString("en-GB", { weekday: "long" }) + " at ") + hm(x.t);
+    var what = (x.n || "a coffee") + (x.d ? " on the " + (/^(Manual|Semi-automatic|Moka|French|Pour|Cold|Filter|Fully)\b/.test(x.d) ? x.d[0].toLowerCase() + x.d.slice(1) : x.d) : "");
+    var href = "journal/index.html#c=" + x.c + "&b=" + x.b + "&rate=" + x.r;
+    if (list.length === 1) return { k: "To rate", text: (by ? by + " made you a coffee " + when + ": " : "Your coffee from " + when + " is still to rate: ") + what + ".", href: href, go: "Rate your cup" };
+    return { k: "To rate", text: list.length + " of your cups are waiting for your rating. The latest: " + what + ", " + when + (by ? ", made by " + by : "") + ".", href: "journal/index.html#torate", go: "Rate them" };
+  }
+  function showCaffeine(rows) { cafNote = swapNote(cafNote, caffeine(rows), false); }
 
   // ---------- caffeine: an estimate from the brews you rated ----------
   // About 9 mg of caffeine per gram of arabica coffee ends up in the cup (beans are about 1.2 % caffeine, most of it is
   // extracted); robusta about twice that, decaf almost none. In the body it rises for about 45 minutes and then halves
-  // roughly every 5 hours (Bateman curve, absorption 4.5 per hour). A brew counts for everyone who rated it (split
-  // between them), at the time of the brew; a brew nobody rated yet counts for nobody until someone rates it.
+  // roughly every 5 hours (Bateman curve, absorption 4.5 per hour). A brew counts for everyone it was for (split
+  // between them, rated or not yet), at the time they drank it if they said, else at the time of the brew.
   function caffeine(rows) {
     if (!Array.isArray(rows) || !session) return null;
     var my = session.user.id, MG = { decaf: 0.3, robusta: 18, blend: 13 }, KE = Math.LN2 / 5, KA = 4.5, now = Date.now();
     var doses = [];
     rows.forEach(function (b) {
-      var k = b.r ? b.r.indexOf(my) : -1; if (!(b.g > 0) || k < 0) return;   // only the brews you rated; shared with the others who rated it
+      var k = b.r ? b.r.indexOf(my) : -1; if (!(b.g > 0) || k < 0) return;   // only the cups that were for you; shared with the others it was for
       var t = Date.parse((b.rt && b.rt[k]) || b.t); if (!isFinite(t) || t > now + 60e3) return;   // when you drank it (if you said), else the brew
       doses.push({ t: t, mg: b.g / b.r.length * (MG[b.k] || 9) });
     });
@@ -182,7 +206,7 @@
     var text = (nowL >= 5 ? "About " + r10(nowL) + " mg in you right now" : "Almost none left") +
       (today.length ? ", from " + (today.length === 1 ? "1 coffee" : today.length + " coffees") + " today (about " + r10(total) + " mg)." : ".") + " " + under;
     if (total > 400) text += " That is more than the 400 mg a day usually given as the limit for healthy adults.";
-    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Under the dashed line there is little left. An estimate: about 9 mg per gram of coffee, halving about every 5 hours, from the brews you rated." };
+    return { k: "Caffeine", text: text, curve: curveOf(level, mid.getTime(), now), small: "The curve is the caffeine in you today: solid until now, lighter for how it wears off. Under the dashed line there is little left. An estimate: about 9 mg per gram of coffee, halving about every 5 hours, from the cups that were for you." };
   }
   // today from 6:00 (or the first coffee) until midnight: solid up to now, lighter for what is still to come,
   // the dashed 50 mg line, a mark for now with the amount, and the hours underneath
