@@ -112,6 +112,31 @@ button.leg{cursor:pointer}
 .tile .tl i{width:10px;height:10px;border-radius:50%;background:var(--col)}
 .tile .tv{margin-top:2px;font-size:26px;font-weight:600;color:var(--ink)}
 .tile .ts{font-size:13px;color:var(--mut)}
+/* beans left: the open bags standing side by side on a shelf, each filled to what is left */
+.shelf{display:grid;grid-auto-flow:column;grid-auto-columns:92px;gap:10px;align-items:start;margin:14px -4px 4px;padding:0 4px 4px;overflow-x:auto;scrollbar-width:none;
+  background:linear-gradient(var(--axis),var(--axis)) 0 92px/100% 3px no-repeat;background-attachment:local}
+.shelf::-webkit-scrollbar{display:none}
+.bagb{display:flex;flex-direction:column;align-items:center;text-align:center;color:inherit;text-decoration:none}
+.bagb svg{width:70px;height:91px;overflow:visible;display:block}
+.bagb b{margin-top:10px}
+.bagb .bf{fill:var(--one);opacity:.85}
+.bagb .bo{fill:none;stroke:var(--ink);stroke-width:1.4;stroke-linejoin:round}
+.bagb .bo.thin{stroke-width:1}
+.bagb b{font-size:13px;font-weight:600;line-height:1.25;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.bagb small{font-size:12px;color:var(--mut);line-height:1.3}
+.bagb.low small{color:var(--f-sweet)}
+.shelfsum{margin:10px 0 0;font-size:14.5px}
+/* origins: a world map, the countries you brewed coloured by how many coffees came from there */
+.map{position:relative;margin:12px 0 4px}
+.map svg{display:block;width:100%;height:auto;touch-action:pan-y}
+.map .land{fill:var(--one-track)}
+.map .cty{stroke:var(--card);stroke-width:.6;cursor:pointer;vector-effect:non-scaling-stroke}
+.map .dot{stroke:var(--card);cursor:pointer}
+.map .cty.hot,.map .dot.hot{stroke:var(--ink);stroke-width:2}
+.map .belt{stroke:var(--axis);stroke-width:1;stroke-dasharray:4 5;fill:none;vector-effect:non-scaling-stroke}
+.map .bl{fill:var(--mut);stroke:var(--card);paint-order:stroke;stroke-linejoin:round;pointer-events:none}
+.mleg{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mut);margin-top:6px;flex-wrap:wrap}
+.mleg i{display:inline-block;width:18px;height:10px;border-radius:2px}
 .meter{margin:12px 0 0}
 .meter .mt{display:flex;justify-content:space-between;gap:10px;font-size:14px}
 .meter .mt b{font-weight:600}
@@ -163,6 +188,7 @@ th{color:var(--mut);font-weight:500}
 <script src="../assets/js/stars.js"></script>
 <script src="../data/devices.js"></script>
 <script src="../data/defaults.js"></script>
+<script src="../data/world.js"></script>
 <script src="../assets/js/charts.js"></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
@@ -582,20 +608,108 @@ function viewUs() {
     numbers(a, ["Week of", ...ppl.map(nameOf), "Total"], cols.map(c => [c.full, ...ppl.map((id, i) => c.parts[i].value), c.n]));
   }
 
-  const bl = card("Beans left", "Open bags with a bag size: grams used by the brews logged so far.");
-  const bags = state.coffees.filter(c => !c.archived && !c.finished_at && c.bag_g && c.open_date);
-  if (!bags.length) empty(bl, "Add the bag size (in grams) to an opened coffee on the Coffee Shelf to see how much is left.");
-  else bags.forEach(c => {
+  beansLeft();
+  origins(list);
+}
+
+// Beans left: the open bags with a bag size, side by side on a shelf, each filled to what is left (emptiest first)
+function bagSvg(frac) {
+  const NS = "http://www.w3.org/2000/svg", mk = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
+  const s = mk("svg", { viewBox: "0 0 40 52", "aria-hidden": "true" });
+  const BODY = "M7.5 14h25l2.3 31.5a3 3 0 01-3 3.2H8.2a3 3 0 01-3-3.2z", id = "tb" + Math.random().toString(36).slice(2, 8);
+  const cp = mk("clipPath", { id }); cp.appendChild(mk("path", { d: BODY })); const df = mk("defs", {}); df.appendChild(cp); s.appendChild(df);
+  const g = mk("g", { "clip-path": "url(#" + id + ")" }); g.appendChild(mk("rect", { x: 0, y: 14 + 35 * (1 - frac), width: 40, height: 35 * frac, class: "bf" })); s.appendChild(g);
+  s.appendChild(mk("path", { d: BODY, class: "bo" })); s.appendChild(mk("path", { d: "M6.5 7.5h27v6.5h-27z", class: "bo" }));
+  s.appendChild(mk("path", { d: "M10 10.75h20", class: "bo thin" })); s.appendChild(mk("circle", { cx: 20, cy: 22.5, r: 2.4, class: "bo thin" }));
+  return s;
+}
+function beansLeft() {
+  const bl = card("Beans left", "Your open bags with a bag size, emptiest first: what is left after the brews logged so far.");
+  const bags = state.coffees.filter(c => !c.archived && !c.finished_at && c.bag_g && c.open_date).map(c => {
     const mine = state.brews.filter(b => b.coffeeId === c.id), used = mine.reduce((x, b) => x + (b.dose || 0), 0);
-    const left = Math.max(0, c.bag_g - used), doses = mine.map(b => b.dose).filter(Boolean).sort((x, y) => x - y);
-    const typical = doses.length ? doses[Math.floor(doses.length / 2)] : 18;
-    const m = el("div", "meter"), top = el("div", "mt");
-    top.append(el("b", "", c.name), el("span", "", Math.round(left) + " g left"));
-    const tr = el("div", "tr"), fl = el("div", "fl"); fl.style.width = Math.min(100, left / c.bag_g * 100) + "%"; tr.appendChild(fl);
-    tr.setAttribute("role", "img"); tr.setAttribute("aria-label", Math.round(left) + " of " + c.bag_g + " grams left");
-    m.append(top, tr, el("p", "ms", Math.round(used) + " of " + c.bag_g + " g used in " + mine.length + (mine.length === 1 ? " brew" : " brews") + (left > 0 ? ", about " + Math.floor(left / typical) + " more at " + typical + " g" : "")));
-    bl.appendChild(m);
+    const doses = mine.map(b => b.dose).filter(Boolean).sort((x, y) => x - y), typical = doses.length ? doses[Math.floor(doses.length / 2)] : 18;
+    const left = Math.max(0, c.bag_g - used);
+    return { c, used, left, typical, n: mine.length, cups: Math.floor(left / typical) };
+  }).sort((x, y) => x.left / x.c.bag_g - y.left / y.c.bag_g);
+  if (!bags.length) { empty(bl, "Add the bag size (in grams) to an opened coffee on the Coffee Shelf to see how much is left."); return; }
+  const shelf = el("div", "shelf"); bl.appendChild(shelf);
+  bags.forEach(x => {
+    const a = el(state.demo ? "div" : "a", "bagb" + (x.cups < 3 ? " low" : "")); if (!state.demo) a.href = "../journal/index.html#c=" + x.c.id;
+    a.setAttribute("aria-label", x.c.name + ": " + Math.round(x.left) + " of " + x.c.bag_g + " grams left, about " + x.cups + " cups");
+    a.title = Math.round(x.used) + " of " + x.c.bag_g + " g used in " + x.n + (x.n === 1 ? " brew" : " brews");
+    a.append(bagSvg(Math.min(1, x.left / x.c.bag_g)), el("b", "", x.c.name), el("small", "", Math.round(x.left) + " g left"), el("small", "", x.left <= 0 ? "empty" : x.cups >= 1 ? "about " + x.cups + (x.cups === 1 ? " cup" : " cups") : "almost empty"));
+    shelf.appendChild(a);
   });
+  const g = bags.reduce((t, x) => t + x.left, 0), cups = bags.reduce((t, x) => t + x.cups, 0);
+  if (bags.length > 1) bl.appendChild(el("p", "shelfsum", "Altogether " + Math.round(g) + " g left, about " + cups + " cups."));
+  numbers(bl, ["Coffee", "Bag", "Used", "Left", "Brews", "Usual dose", "Cups left"], bags.map(x => [x.c.name, x.c.bag_g + " g", Math.round(x.used) + " g", Math.round(x.left) + " g", x.n, x.typical + " g", x.cups]));
+}
+
+// Origins: a world map of where the coffees you brewed (in the time frame) come from, darker = more coffees
+function origins(list) {
+  const m = card("Where your coffee comes from", "The countries of the coffees brewed in this time frame. Darker means more coffees from there. Tap a country. The dashed lines are the tropics, the coffee belt.");
+  const W = window.WORLD;
+  const by = {}, seen = new Set();
+  list.forEach(b => {
+    const c = coffeeOf(b.coffeeId); if (!c) return;
+    const o = splitOrigin(c.origin), cs = o.countries.length ? o.countries : o.country ? [o.country] : [];
+    cs.forEach(k => {
+      const x = by[k] = by[k] || { name: k, coffees: new Set(), brews: 0, stars: [] };
+      x.coffees.add(c.group_id || c.id); x.brews++; if (b.rating && !b.dialin) x.stars.push(b.rating);
+    });
+    seen.add(c.id);
+  });
+  const rows = Object.values(by).map(x => ({ ...x, n: x.coffees.size, avg: x.stars.length ? avg(x.stars) : null })).sort((a, b) => b.n - a.n || b.brews - a.brews || a.name.localeCompare(b.name));
+  if (!rows.length) { empty(m, seen.size ? "Add the origin (the country) to your coffees on the Coffee Shelf to see them on the map." : "Nothing brewed in this time frame."); return; }
+  const max = rows[0].n, shade = n => "var(--r" + Math.max(1, Math.min(5, Math.ceil(5 * n / Math.max(max, 3)))) + ")";
+  // one clear sentence first
+  const rated = rows.filter(r => r.stars.length >= 2).sort((a, b) => b.avg - a.avg);
+  const nC = rows.length, top = rows[0];
+  m.appendChild(el("p", "take", "Coffee from " + (nC === 1 ? "one country" : nC + " countries") + " so far" + (nC > 1 && top.n > rows[1].n ? ", most from " + top.name + " (" + top.n + (top.n === 1 ? " coffee" : " coffees") + ")" : "") + "." +
+    (rated.length > 1 && rated[0].avg - rated[1].avg >= 0.2 ? " Your best rated: " + rated[0].name + ", " + r1(rated[0].avg).toFixed(1) + "\u2605 on average." : "")));
+  if (W) {
+    const NS = "http://www.w3.org/2000/svg", mk = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
+    // zoomed to the countries you had (with some room around), never closer than about a third of the world
+    const pts = rows.map(r => W.c[r.name]).filter(Boolean);
+    let x0 = Math.min(...pts.map(p => p.x)) - 110, x1 = Math.max(...pts.map(p => p.x)) + 110;
+    if (!pts.length) { x0 = 0; x1 = W.w; }
+    const vw = Math.min(W.w, Math.max(380, x1 - x0)), vh = Math.min(W.h, vw * 0.52), cx = (x0 + x1) / 2, cy = pts.length ? pts.reduce((t, p) => t + p.y, 0) / pts.length : W.y0 + W.h / 2;
+    const vx = Math.max(0, Math.min(W.w - vw, cx - vw / 2)), vy = Math.max(W.y0, Math.min(W.y0 + W.h - vh, cy - vh / 2)), k = vw / W.w;
+    const box = el("div", "map"), svg = mk("svg", { viewBox: [vx, vy, vw, vh].map(Math.round).join(" "), role: "img", "aria-label": "World map: coffee from " + andList(rows.map(r => r.name)) });
+    svg.style.setProperty("--k", k);
+    svg.appendChild(mk("path", { d: W.land, class: "land" }));
+    const labs = [];
+    W.belt.forEach((y, i) => { svg.appendChild(mk("path", { d: "M0 " + y + "H" + W.w, class: "belt" })); const t = mk("text", { x: vx + 6 * k, y: y - 5 * k, class: "bl", "font-size": Math.round(34 * k), "stroke-width": 6 * k }); t.textContent = i ? "Tropic of Capricorn" : "Tropic of Cancer"; labs.push(t); });
+    const tip = (r, e, target) => {
+      const rect = target.getBoundingClientRect();
+      Charts.showTip(e && e.clientX !== undefined ? e.clientX : rect.left + rect.width / 2, e && e.clientY !== undefined ? e.clientY : rect.top, { title: r.name, rows: [
+        { value: String(r.n), label: r.n === 1 ? "coffee" : "coffees" }, { value: String(r.brews), label: r.brews === 1 ? "brew" : "brews" }].concat(r.avg != null ? [{ value: r1(r.avg).toFixed(1) + "\u2605", label: "on average" }] : []) }, box);
+      svg.querySelectorAll(".hot").forEach(x => x.classList.remove("hot")); svg.querySelectorAll('[data-k="' + CSS.escape(r.name) + '"]').forEach(x => x.classList.add("hot"));
+    };
+    const dots = [];
+    rows.forEach(r => {
+      const g = W.c[r.name]; if (!g) return;
+      const parts = [];
+      if (g.d) parts.push(mk("path", { d: g.d, class: "cty", fill: shade(r.n) }));
+      if (g.s || !g.d) dots.push([r, mk("circle", { cx: g.x, cy: g.y, r: Math.max(5, 22 * k), class: "dot", fill: shade(r.n), "stroke-width": 4 * k })]);
+      parts.forEach(p => { p.dataset.k = r.name; svg.appendChild(p); });
+    });
+    dots.forEach(([r, d]) => { d.dataset.k = r.name; svg.appendChild(d); });
+    labs.forEach(t => svg.appendChild(t));   // on top, with a halo so they read over land
+    svg.querySelectorAll("[data-k]").forEach(x => {
+      const r = rows.find(y => y.name === x.dataset.k);
+      x.addEventListener("pointerenter", e => tip(r, e, x)); x.addEventListener("click", e => { e.stopPropagation(); tip(r, e, x); });
+    });
+    svg.addEventListener("pointerleave", () => { Charts.hideTip(); svg.querySelectorAll(".hot").forEach(x => x.classList.remove("hot")); });
+    box.appendChild(svg); m.appendChild(box);
+    const lg = el("div", "mleg"); lg.appendChild(document.createTextNode("Fewer"));
+    [1, 2, 3, 4, 5].forEach(i => { const b = el("i"); b.style.background = "var(--r" + i + ")"; lg.appendChild(b); });
+    lg.appendChild(document.createTextNode("More coffees")); m.appendChild(lg);
+    const off = rows.filter(r => !W.c[r.name]).map(r => r.name);
+    if (off.length) m.appendChild(el("p", "what", "Not on the map (not a country we know): " + andList(off) + "."));
+  }
+  m.appendChild(rankList(rows.map(r => ({ label: r.name, sub: r.avg != null ? "(" + r1(r.avg).toFixed(1) + "\u2605)" : "", value: r.n, max, text: r.n + (r.n === 1 ? " coffee" : " coffees") }))));
+  numbers(m, ["Country", "Coffees", "Brews", "Average stars"], rows.map(r => [r.name, r.n, r.brews, r.avg != null ? r1(r.avg).toFixed(1) : ""]));
 }
 
 // ---------- over time (the original chart, redrawn) ----------
@@ -728,9 +842,9 @@ function demo() {
   let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
   const day = n => { const d = new Date(); d.setHours(8, 0, 0, 0); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
   const coffees = [
-    { id: "d1", name: "Colombia Huila", origin: "Colombia, Huila", process: "Washed", roast_level: "Light", altitude_min_m: 1700, altitude_max_m: 1900, roast_date: day(40), open_date: day(34), bag_size_g: 250 },
-    { id: "d2", name: "Ethiopia Guji", origin: "Ethiopia, Guji", process: "Natural", roast_level: "Medium-light", altitude_min_m: 2000, altitude_max_m: 2200, roast_date: day(30), open_date: day(22), bag_size_g: 250 },
-    { id: "d3", name: "Brazil Cerrado", origin: "Brazil, Cerrado", process: "Pulped natural", roast_level: "Medium-dark", altitude_min_m: 1100, roast_date: day(55), open_date: day(48), archived: false }
+    { id: "d1", name: "Colombia Huila", origin: "Colombia, Huila", process: "Washed", roast_level: "Light", altitude_min_m: 1700, altitude_max_m: 1900, roast_date: day(40), open_date: day(34), bag_size_g: 1000 },
+    { id: "d2", name: "Ethiopia Guji", origin: "Ethiopia, Guji", process: "Natural", roast_level: "Medium-light", altitude_min_m: 2000, altitude_max_m: 2200, roast_date: day(30), open_date: day(22), bag_size_g: 340 },
+    { id: "d3", name: "Brazil Cerrado", origin: "Brazil, Cerrado", process: "Pulped natural", roast_level: "Medium-dark", altitude_min_m: 1100, roast_date: day(55), open_date: day(48), bag_size_g: 1000, archived: false }
   ];
   const brews = []; let n = 0;
   coffees.forEach((c, ci) => {
