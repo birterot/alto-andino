@@ -211,7 +211,12 @@ h3.sh{font-size:16px;margin:26px 0 2px}
 .bc .rt .rh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .bc .rt .rn{font-size:14px;color:var(--mut)}
 .bc .rt .tags{margin-top:4px}
-.bc .rby{font-size:14px;color:var(--mut);margin-left:8px}
+.bc .rby{font-size:14px;color:var(--mut);margin-left:8px;display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap}
+/* a person: their initial in their colour, then the name */
+.pt{display:inline-flex;align-items:center;gap:5px;vertical-align:middle}
+.pt .av{width:20px;height:20px;font-size:11px}
+.pt b{font-weight:600;color:var(--ink)}
+.bc .age .pt{margin-left:2px}
 label.off{opacity:.45}
 body.simple .adv{display:none!important}
 .fmode{display:flex;gap:6px;margin:6px 0 4px}
@@ -533,8 +538,9 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
   </div>
 
   <div id="mineview" hidden>
-    <p class="hint" style="margin-top:0">Every brew you made or rated, newest first. Your Balance can be changed right here (tap it again to leave it unrated); for anything else, open the brew.</p>
+    <p class="hint" style="margin-top:0" id="mhint">Every brew you made or rated, newest first. You can give your Balance right here; changing one you already gave asks first. For anything else, open the brew.</p>
     <div class="filters" id="mfilters">
+      <select id="mflt-person" aria-label="Whose brews"></select>
       <select id="mflt-who" aria-label="Which brews"><option value="">Made or rated</option><option value="torate">To rate</option><option value="rated">Rated by me</option><option value="made">Made by me</option></select>
       <select id="mflt-bal" aria-label="Balance"><option value="">Any Balance</option><option value="none">Balance not rated</option><option value="old">From the old slider</option></select>
     </div>
@@ -2390,8 +2396,9 @@ function route() {
   $("hhview").hidden = !noHH;
   if (noHH) { ["listview", "recentview", "mineview", "vtabs", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); return; }
   if (store.get("alto.friend")) { location.href = "../friends/index.html"; return; }   // came with a friend link: back to it, now signed in
-  const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)((?:&[^&]*)*)$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/), isRecent = hash === "#recent", isMine = hash === "#mine" || hash === "#torate", isHH = hash === "#household";
-  if (hash === "#torate") { $("mflt-who").value = "torate"; history.replaceState(null, "", location.pathname + location.search + "#mine"); }
+  const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)((?:&[^&]*)*)$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/), isRecent = hash === "#recent", isMine = hash === "#mine" || hash === "#torate" || hash === "#nobal", isHH = hash === "#household";
+  if (hash === "#torate") { $("mflt-person").value = "me"; $("mflt-who").value = "torate"; $("mflt-bal").value = ""; history.replaceState(null, "", location.pathname + location.search + "#mine"); }
+  if (hash === "#nobal") { $("mflt-person").value = "me"; $("mflt-who").value = ""; $("mflt-bal").value = "none"; history.replaceState(null, "", location.pathname + location.search + "#mine"); }
   $("listview").hidden = !!m || isLog || !!add || isRecent || isMine || isHH;
   // the household (name, members, invites, switching) has its own page, reached from Settings
   $("hhpage").hidden = !isHH; $("ptitle").textContent = isHH ? "Household" : "Coffee Shelf";
@@ -2510,6 +2517,10 @@ function avatar(id, name) {
   if (i < 0) { i = 0; String(id || name || "").split("").forEach(ch => { i = (i * 31 + ch.charCodeAt(0)) >>> 0; }); }
   s.style.background = own ? own[1] : C[i % C.length][1]; s.setAttribute("aria-hidden", "true"); return s;
 }
+// a person (a household member, a friend or a guest) as their initial in their colour plus the name
+function personTag(t, bold) {
+  const n = tName(t), s = el("span", "pt"); s.append(avatar(t.guest ? null : t.rater_id, t.guest ? (t.guest_name || "Guest") : n), el(bold ? "b" : "span", "", n)); return s;
+}
 function feedCard(x) {
   const line = (href, icon, parts, time, c) => {   // a short line: added, opened, finished, cupped
     const a = el("a", "fe"); a.href = href; if (c) applyLook(a, c);
@@ -2535,7 +2546,7 @@ function feedCard(x) {
       ts.forEach(t => {
         const sp = el("span");
         if (t.rating != null) sp.appendChild(Stars.row(t.rating, tName(t) + ": " + Stars.text(t.rating) + " of 5"));
-        sp.append(document.createTextNode(isPending(t) ? tName(t) + ": to rate" : tName(t) + (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.balance != null ? ", balance " + SCALE.balanceText(t.balance) : "") + (t.rating == null ? ", taste only" : "")));
+        sp.append(personTag(t), document.createTextNode(isPending(t) ? ": to rate" : (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.balance != null ? ", balance " + SCALE.balanceText(t.balance) : "") + (t.rating == null ? ", taste only" : "")));
         rr.appendChild(sp);
       });
       a.appendChild(rr);
@@ -2557,7 +2568,7 @@ function feedCard(x) {
 ["rflt-kind", "rflt-who"].forEach(id => $(id).addEventListener("change", renderFeed));
 
 // ---------- My brews: every brew you made or rated, to go through them (and change your Balance on the spot) ----------
-let mineData = [], mineCoffees = {}, mineShow = 30, mineId = 0;
+let mineData = [], mineRaw = [], mineCoffees = {}, mineShow = 30, mineId = 0;
 async function loadMine() {
   const my = ++mineId;
   const { data: cs, error } = await inHH(db.from("coffees").select("id,name,roaster,roast_level,process,group_id"));
@@ -2565,25 +2576,50 @@ async function loadMine() {
   if (error) { say("Could not load your brews: " + error.message); return; }
   mineCoffees = {}; cs.forEach(c => { mineCoffees[c.id] = c; });
   const ids = cs.map(c => c.id);
-  if (!ids.length) { mineData = []; renderMine(); return; }
-  const { data, error: e2 } = await db.from("brews").select("id,coffee_id,brewed_at,device,dose_g,yield_g,water_g,time_s,is_dialin,made_by,created_by,recipe, brew_ratings(id,rater_id,is_guest,rating,balance,drink,milk), brew_scores(attribute,score,rating_id)")
+  if (!ids.length) { mineRaw = []; renderMine(); return; }
+  const { data, error: e2 } = await db.from("brews").select("id,coffee_id,brewed_at,device,dose_g,yield_g,water_g,time_s,is_dialin,made_by,created_by,recipe, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk), brew_scores(attribute,score,rating_id)")
     .in("coffee_id", ids).order("brewed_at", { ascending: false }).limit(1000);
   if (my !== mineId) return;
   if (e2) { say("Could not load your brews: " + e2.message); return; }
-  mineData = (data || []).map(b => {
-    const r = (b.brew_ratings || []).find(x => !x.is_guest && x.rater_id === me.id) || null;
-    const old = r ? (b.brew_scores || []).find(x => x.rating_id === r.id && x.attribute === "balance") : null;
-    const pend = !!r && r.rating == null && r.balance == null && !(b.brew_scores || []).some(x => x.rating_id === r.id);   // for you, not rated yet
-    return { b, r, pend, old: old ? old.score - 5 : null, made: (b.made_by || b.created_by) === me.id };
-  }).filter(x => x.made || x.r);
+  mineRaw = data || [];
   renderMine();
 }
+// whose brews: you (the default), someone else in the household, or everyone
+function fillMinePerson() {
+  const sel = $("mflt-person"), keep = sel.value || "me"; sel.textContent = "";
+  const add = (v, t) => { const o = el("option", "", t); o.value = v; sel.appendChild(o); };
+  add("me", "My brews");
+  hhPeople().filter(id => !me || id !== me.id).forEach(id => add(id, (nameOf(id) || "Someone") + "\u2019s brews"));
+  add("all", "Everyone's brews");
+  sel.value = [...sel.options].some(o => o.value === keep) ? keep : "me";
+  // the second filter talks about that person
+  const p = sel.value, nm = p === "me" ? "me" : p === "all" ? null : (nameOf(p) || "them");
+  const w = $("mflt-who"); w.hidden = p === "all";
+  w.options[2].textContent = "Rated by " + nm; w.options[3].textContent = "Made by " + nm;
+  w.options[1].hidden = p !== "me";   // "To rate" is about your own cups
+  if (p !== "me" && w.value === "torate") w.value = "";
+}
+function mineRows() {
+  const p = $("mflt-person").value || "me", pid = p === "me" ? me.id : p;
+  return mineRaw.map(b => {
+    const r = (b.brew_ratings || []).find(x => !x.is_guest && x.rater_id === me.id) || null;   // your own rating (the one you can change here)
+    const pr = p === "all" ? null : p === "me" ? r : (b.brew_ratings || []).find(x => !x.is_guest && x.rater_id === pid) || null;   // the rating of whoever is shown
+    const old = r ? (b.brew_scores || []).find(x => x.rating_id === r.id && x.attribute === "balance") : null;
+    const pend = !!r && r.rating == null && r.balance == null && !(b.brew_scores || []).some(x => x.rating_id === r.id);   // for you, not rated yet
+    const ppend = !!pr && pr.rating == null && pr.balance == null && !(b.brew_scores || []).some(x => x.rating_id === pr.id);
+    return { b, r, pr, pend, ppend, old: old ? old.score - 5 : null, made: (b.made_by || b.created_by) === pid, p };
+  }).filter(x => x.p === "all" || x.made || x.pr);
+}
 function renderMine() {
-  const who = $("mflt-who").value, bal = $("mflt-bal").value;
-  const list = mineData.filter(x => (!who || (who === "torate" ? x.pend : who === "rated" ? !!x.r && !x.pend : x.made)) && (!bal || (bal === "none" ? x.r && !x.pend && x.r.balance == null : x.old != null)));
+  fillMinePerson();
+  mineData = mineRows();
+  const p = $("mflt-person").value, who = p === "all" ? "" : $("mflt-who").value, bal = $("mflt-bal").value;
+  const list = mineData.filter(x => (!who || (who === "torate" ? x.pend : who === "rated" ? !!x.pr && !x.ppend : x.made)) && (!bal || (bal === "none" ? x.r && !x.pend && x.r.balance == null : x.old != null)));
   const box = $("mlist"); box.textContent = "";
+  $("mhint").textContent = p === "me" ? "Every brew you made or rated, newest first. You can give your Balance right here; changing one you already gave asks first. For anything else, open the brew."
+    : p === "all" ? "Every brew of the household, newest first, with everyone's stars. Your own Balance can be given right here." : "Every brew " + (nameOf(p) || "they") + " made or rated, newest first. Your own Balance (where you tasted too) can be given right here.";
   $("mcount").textContent = mineData.length ? list.length + (list.length === 1 ? " brew" : " brews") + (list.length !== mineData.length ? " of " + mineData.length : "") : "";
-  if (!mineData.length) { box.appendChild(el("p", "hint", "No brews of yours yet. Brews you make or rate show up here.")); $("mmore").hidden = true; return; }
+  if (!mineData.length) { box.appendChild(el("p", "hint", p === "me" ? "No brews of yours yet. Brews you make or rate show up here." : "No brews here yet.")); $("mmore").hidden = true; return; }
   if (!list.length) { box.appendChild(el("p", "hint", who === "torate" ? "Nothing to rate: all your cups are rated." : "No brews match these filters.")); $("mmore").hidden = true; return; }
   list.slice(0, mineShow).forEach(x => box.appendChild(mineCard(x)));
   $("mmore").hidden = list.length <= mineShow;
@@ -2593,22 +2629,42 @@ function mineCard(x) {
   if (c) applyLook(a, c);
   const top = el("div", "ft"); top.append(el("strong", "", c ? c.name : "A coffee"), el("time", "", fmtDT(new Date(b.brewed_at)))); a.appendChild(top);
   const maker = b.made_by || b.created_by, dv = DEV_OLD[b.device] || b.device, dev = dv && /^(Manual|Semi-automatic|Moka|French|Pour|Cold|Turkish|Drip|Filter|Fully)\b/.test(dv) ? dv[0].toLowerCase() + dv.slice(1) : dv;
-  a.appendChild(el("p", "", [(maker === me.id ? "Brewed by you" : "Brewed by " + (nameOf(maker) || "someone")) + (dev ? " on the " + dev : ""), b.is_dialin ? "dial-in" : null].filter(Boolean).join(" \u00B7 ")));
+  const bl = el("p", "", "Brewed by "); bl.appendChild(personTag({ rater_id: maker }, true));
+  bl.appendChild(document.createTextNode([(dev ? " on the " + dev : ""), b.is_dialin ? "dial-in" : null].filter(Boolean).join(" \u00B7 "))); a.appendChild(bl);
+  // someone else's (or everyone's) brews: their stars, read only
+  if (x.p !== "me") {
+    const ts = (b.brew_ratings || []).filter(t => x.p === "all" || (!t.is_guest && t.rater_id === x.p) || (me && !t.is_guest && t.rater_id === me.id));
+    if (ts.length) {
+      const rr = el("div", "rr");
+      ts.forEach(t => {
+        const tt = { rater_id: t.rater_id, guest: t.is_guest, guest_name: t.guest_name }, sp = el("span");
+        if (t.rating != null) sp.appendChild(Stars.row(Number(t.rating), tName(tt) + ": " + Stars.text(Number(t.rating))));
+        const open = t.rating == null && t.balance == null && !(b.brew_scores || []).some(s => s.rating_id === t.id);
+        sp.append(personTag(tt), document.createTextNode(open ? ": to rate" : (t.balance != null ? ", balance " + SCALE.balanceText(t.balance) : "") + (t.rating == null ? ", taste only" : "")));
+        rr.appendChild(sp);
+      });
+      a.appendChild(rr);
+    } else a.appendChild(el("p", "", "Not rated yet."));
+    if (!x.r || x.pend) { const op = el("a", "open", "Open the brew \u2192"); op.href = "#c=" + b.coffee_id + "&b=" + b.id; a.appendChild(op); return a; }
+  }
   if (!x.r) { a.appendChild(el("p", "", "You did not rate this one.")); }
   else if (x.pend) {
     const p = el("div", "pend"); p.appendChild(el("span", "", "Your cup is waiting for your rating."));
     const go = el("a", "btn", "Rate your cup"); go.href = "#c=" + b.coffee_id + "&b=" + b.id + "&rate=" + x.r.id; p.appendChild(go); a.appendChild(p);
   }
   else {
-    if (x.r.rating != null) { const s = el("div", "rr"), sp = el("span"); sp.append(Stars.row(Number(x.r.rating), "Your stars: " + Stars.text(Number(x.r.rating))), document.createTextNode("Your stars" + (x.r.drink ? ", " + drinkText(x.r.drink, x.r.milk).toLowerCase() : ""))); s.appendChild(sp); a.appendChild(s); }
+    if (x.r.rating != null && x.p === "me") { const s = el("div", "rr"), sp = el("span"); sp.append(Stars.row(Number(x.r.rating), "Your stars: " + Stars.text(Number(x.r.rating))), document.createTextNode("Your stars" + (x.r.drink ? ", " + drinkText(x.r.drink, x.r.milk).toLowerCase() : ""))); s.appendChild(sp); a.appendChild(s); }
     const row = el("div", "mine-bal"), seg = el("div", "bal"), ok = el("span", "ok");
     row.append(el("span", "lb", "Your Balance"), seg, ok);
+    if (x.r.balance != null) seg.classList.add("set");
     const draw = () => seg.querySelectorAll("button").forEach(btn => btn.setAttribute("aria-checked", String(x.r.balance != null && +btn.dataset.v === Number(x.r.balance))));
     SCALE.BALANCE.forEach(([v, name]) => {
       const btn = el("button", "", String(v)); btn.type = "button"; btn.dataset.v = v; btn.title = name;
       btn.setAttribute("role", "radio"); btn.setAttribute("aria-label", v + ": " + name);
       btn.onclick = async () => {
         const nv = x.r.balance != null && Number(x.r.balance) === v ? null : v, was = x.r.balance;
+        // a Balance you already gave is not changed by a stray tap: it asks first
+        if (was != null && !confirm(nv == null ? "Take away your Balance (" + was + ", " + SCALE.balanceName(was).toLowerCase() + ") for this brew?" : "Change your Balance for this brew from " + was + " (" + SCALE.balanceName(was).toLowerCase() + ") to " + nv + " (" + SCALE.balanceName(nv).toLowerCase() + ")?")) return;
         x.r.balance = nv; draw(); ok.textContent = "Saving...";
         const { data, error } = await db.from("brew_ratings").update({ balance: nv }).eq("id", x.r.id).select("id");
         if (error || !data || !data.length) { x.r.balance = was; draw(); ok.textContent = "Not saved" + (error ? ": " + error.message : ""); return; }
@@ -2624,7 +2680,7 @@ function mineCard(x) {
   const op = el("a", "open", "Open the brew \u2192"); op.href = "#c=" + b.coffee_id + "&b=" + b.id; a.appendChild(op);
   return a;
 }
-["mflt-who", "mflt-bal"].forEach(id => $(id).addEventListener("change", () => { mineShow = 30; renderMine(); }));
+["mflt-person", "mflt-who", "mflt-bal"].forEach(id => $(id).addEventListener("change", () => { mineShow = 30; renderMine(); }));
 $("mmore").onclick = () => { mineShow += 30; renderMine(); };
 $("rmore").onclick = () => { feedN += 40; loadFeed(); };
 
@@ -2761,7 +2817,7 @@ function brewCard(b) {
   const a = el("article", "bc"), when = new Date(b.brewed_at); a.dataset.bid = b.id;
   const hd = el("div", "hd"); hd.appendChild(el("h3", "", fmtDT(when))); a.appendChild(hd);
   const who = nameOf(b.made_by || b.created_by);
-  if (who) { const w = el("p", "age", "Brewed by "); w.appendChild(el("span", "by", who)); a.appendChild(w); }
+  if (who) { const w = el("p", "age", "Brewed by "); w.appendChild(personTag({ rater_id: b.made_by || b.created_by }, true)); a.appendChild(w); }
   const dr = cur.roast_date ? dayN(cur.roast_date, when) : null, dop = cur.open_date ? dayN(cur.open_date, when) : null;
   const dp = !cur.roast_date && cur.purchase_date ? dayN(cur.purchase_date, when) : null;
   const age = [dr !== null ? (dr === 0 ? "roast day" : "day " + dr + " after roast") : dp !== null ? (dp === 0 ? "purchase day" : "day " + dp + " after purchase") : null, dop !== null ? (dop === 0 ? "opening day" : "day " + dop + " after opening") : null].filter(Boolean).join(", ");
@@ -2772,8 +2828,7 @@ function brewCard(b) {
   if (avg != null) {
     const s = el("p", "starsum"); s.appendChild(Stars.row(avg, "Rated " + Stars.text(avg) + " of 5"));
     if (ts.length > 1) s.appendChild(el("span", "rby", "average of " + ts.length + " tasters"));
-    else if (ts.length === 1 && (ts[0].guest || (ts[0].rater_id && ts[0].rater_id !== maker && nameOf(ts[0].rater_id)))) s.appendChild(el("span", "rby", "rated by " + tName(ts[0]) + (ts[0].drink ? ", " + drinkText(ts[0].drink, ts[0].milk).toLowerCase() : "")));
-    else if (ts.length === 1 && ts[0].drink) s.appendChild(el("span", "rby", drinkText(ts[0].drink, ts[0].milk)));
+    else if (ts.length === 1) { const r = el("span", "rby", "rated by "); r.appendChild(personTag(ts[0])); if (ts[0].drink) r.appendChild(document.createTextNode(", " + drinkText(ts[0].drink, ts[0].milk).toLowerCase())); s.appendChild(r); }
     a.appendChild(s);
   }
   if (b.recipe) a.appendChild(el("p", "", b.recipe));
@@ -2808,13 +2863,16 @@ function brewCard(b) {
     });
     a.appendChild(p);
   }
-  if (rated.length === 1 && ts.length === 1) { const t = chips(ts[0].scores, ts[0].balance); if (t) a.appendChild(t); }
+  if (rated.length === 1 && ts.length === 1) {
+    if (avg == null) { const r = el("p", "age", "Rated by "); r.appendChild(personTag(ts[0], true)); r.appendChild(document.createTextNode(", taste only")); a.appendChild(r); }
+    const t = chips(ts[0].scores, ts[0].balance); if (t) a.appendChild(t);
+  }
   else if (rated.length) {   // several tasters: each with their stars and taste
     const box = el("div", "rts");
     rated.forEach(t => {
       const r = el("div", "rt"), h = el("div", "rh");
       if (t.rating != null) h.appendChild(Stars.row(t.rating, tName(t) + ": " + Stars.text(t.rating) + " of 5"));
-      h.appendChild(el("span", "rn", tName(t) + (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.rating == null ? ", taste only" : "")));
+      const rn = el("span", "rn"); rn.append(personTag(t), document.createTextNode((t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.rating == null ? ", taste only" : ""))); h.appendChild(rn);
       r.appendChild(h); const c = chips(t.scores, t.balance); if (c) r.appendChild(c); box.appendChild(r);
     });
     a.appendChild(box);

@@ -50,6 +50,8 @@ details.after summary{cursor:pointer;padding:10px 0 10px 28px;color:var(--mut);f
 .seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
 .seg button{height:14px;padding:0;border-radius:2px;border:1px dashed var(--line);background:none;cursor:pointer}
 .seg button.on{border:1px solid var(--s);background:var(--s)}
+.seg.ro span{height:14px;border-radius:2px;border:1px dashed var(--line)}
+.seg.ro span.on{border:1px solid var(--s);background:var(--s)}
 .gv{font-size:13px;color:var(--mut);text-align:right}
 .chips{display:flex;flex-wrap:wrap;gap:4px 16px}
 .fact{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:3px 12px;border-radius:999px;background:var(--f);color:var(--t);border:1px solid var(--line)}

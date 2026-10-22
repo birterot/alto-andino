@@ -120,7 +120,8 @@
   var sleepLogs = shelf && Array.isArray(shelf.sl) ? shelf.sl : null;
 
   // one note at a time: your caffeine first (when there was coffee today), then to do, Friends, the fact of the day
-  var notes = [], cafNote = null, rateNote = null, tipNote = null;
+  var notes = [], cafNote = null, rateNote = null, tipNote = null, todoNote = null;
+  function todoOf(n) { return n > 0 ? { k: "To do", text: n + (n === 1 ? " of your brews still needs" : " of your brews still need") + " a Balance rating.", href: "journal/index.html#nobal", go: "Rate them" } : null; }
   var tr = session && shelf ? toRate(shelf.tr, shelf.nm) : null;
   if (tr) notes.push(rateNote = tr);
   var caf = session ? caffeine(shelf && shelf.cb) : null;
@@ -128,7 +129,7 @@
   var tip0 = session && cafPref().sleep === "on" && shelf && shelf.stip ? tipToNote(shelf.stip) : null;
   if (tip0) notes.push(tipNote = tip0);
   if (shelf) {
-    if (shelf.nob > 0) notes.push({ k: "To do", text: shelf.nob + (shelf.nob === 1 ? " of your brews still needs" : " of your brews still need") + " a Balance rating.", href: "journal/index.html#mine", go: "Rate them" });
+    if (shelf.nob > 0) notes.push(todoNote = todoOf(shelf.nob));
     shelf.coffees.forEach(function (c) {
       if (!c.open_date || c.finished_at || c.archived || !c.bag_size_g) return;
       var left = c.bag_size_g - ((shelf.used || {})[c.id] || 0), dose = (shelf.dose || {})[c.id] || 18;
@@ -194,7 +195,9 @@
             return ids.length ? db.from("brews").select("coffee_id,dose_g").in("coffee_id", ids) : Promise.resolve({ data: [] });
           })(),
           db.from("sleep_logs").select("night,quality").gte("night", since2.slice(0, 10)),   // the sleep check (supabase/31_sleep.sql; before that: an error, left out)
-          db.rpc("my_guest_cups")   // cups friends made you at their place (supabase/33_friend_guests.sql; before that: an error, left out)
+          db.rpc("my_guest_cups"),   // cups friends made you at their place (supabase/33_friend_guests.sql; before that: an error, left out)
+          // your rated brews without a Balance (the To do note), counted fresh; brews!inner leaves out cups at friends' (you cannot see their brews)
+          db.from("brew_ratings").select("id,brews!inner(id)", { count: "exact", head: true }).eq("rater_id", my).eq("is_guest", false).is("balance", null).not("rating", "is", null)
         ]).then(function (res) {
           var q = res[0]; if (q.error || !Array.isArray(q.data)) return;
           var nm = {}; ((res[1] && res[1].data) || []).forEach(function (p) { nm[p.id] = p.display_name; if (p.id === my && p.prefs) savePref(p.prefs); });
@@ -222,12 +225,14 @@
             if (r.g > 0) all.push(r);
           });
           if (gc.length) { var byT = function (a, b) { return Date.parse(a.t) - Date.parse(b.t); }; pend.sort(byT); rows.sort(byT); all.sort(byT); mine.sort(function (a, b) { return a[0] - b[0]; }); }
+          var nob = res[5] && !res[5].error && typeof res[5].count === "number" ? res[5].count : null;
           var logs = res[3] && !res[3].error && Array.isArray(res[3].data) ? res[3].data.map(function (x) { return { n: x.night, q: x.quality }; }) : null;
           var used = null; if (res[2] && Array.isArray(res[2].data)) { used = {}; res[2].data.forEach(function (x) { used[x.coffee_id] = (used[x.coffee_id] || 0) + (Number(x.dose_g) || 0); }); }
           var tip = logs ? sleepTip(logs, all) : null;
-          var sh = null; try { sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === my) { sh.cb = rows; sh.cbt = Date.now(); sh.my = mine; sh.tr = pend; sh.nm = nm; if (used) sh.used = Object.assign({}, sh.used || {}, used); if (logs) { sh.sl = logs; sh.stip = tip; } localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } else sh = null; } catch (e) { sh = null; }
+          var sh = null; try { sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === my) { sh.cb = rows; sh.cbt = Date.now(); sh.my = mine; sh.tr = pend; sh.nm = nm; if (nob != null) sh.nob = nob; if (used) sh.used = Object.assign({}, sh.used || {}, used); if (logs) { sh.sl = logs; sh.stip = tip; } localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } else sh = null; } catch (e) { sh = null; }
           if (sh) drawBags(sh);
           showStat(mine); showRate(pend, nm); showCaffeine(rows);
+          if (nob != null) todoNote = swapNote(todoNote, todoOf(nob), false);
           if (logs) { sleepLogs = logs; drawAsk(); showTip(tip); }
         });
       });

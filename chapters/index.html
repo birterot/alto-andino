@@ -14,9 +14,9 @@
 <link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="stylesheet" href="../assets/css/base.css">
 <style>
-.cups{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
-.mc{display:block;width:56px;text-align:center;font-size:11px;color:var(--mut)}
-.mc svg{display:block;width:100%;height:auto}
+.cups{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:14px;max-width:360px;align-items:start}
+.mc{display:flex;flex-direction:column;align-items:center;text-align:center;font-size:11px;line-height:1.25;color:var(--mut);min-width:0;hyphens:auto}
+.mc svg{display:block;width:100%;max-width:52px;height:auto;margin-bottom:3px}
 </style>
 </head>
 <body>
