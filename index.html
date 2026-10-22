@@ -35,21 +35,21 @@ try { if (!sessionStorage.getItem("alto.intro") && !(window.matchMedia && matchM
 html.intro .hero .mark{visibility:hidden}
 html.intro .hero h1,html.intro #today,html.intro .tiles,html.intro nav.small,html.intro .topnav{opacity:.001;will-change:opacity,transform}   /* .001, not 0: painted up front, so fading in costs nothing */
 html.intro body::before{opacity:0}
-.hero{display:flex;flex-direction:column;align-items:center;gap:14px;margin:28px 0 36px;text-align:center}
+.hero{display:flex;flex-direction:column;align-items:center;gap:14px;margin:4px 0 26px;text-align:center}
 .hero{gap:18px}
 .hero .mark{width:168px;color:var(--brand)}.hero .mark svg{display:block;width:100%;height:auto}
 .hero h1.wm{width:220px;margin:0}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
-.tile{display:flex;flex-direction:column;gap:4px;padding:16px;min-height:118px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:inherit;text-decoration:none}
+.tile{display:flex;flex-direction:row;align-items:center;gap:10px;padding:12px 14px;min-height:52px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:inherit;text-decoration:none}
 .tile:hover{border-color:var(--ink)}
 .tile:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-.tile svg{width:26px;height:26px;color:var(--accent);flex:none}
-.tile h2{margin:6px 0 0;font-size:17px;line-height:1.25}
-.tile p{margin:0;color:var(--mut);font-size:13.5px;line-height:1.4}
-.tile.main{grid-column:1/-1;flex-direction:row;align-items:center;gap:16px;min-height:0;padding:20px;background:var(--act);color:var(--on-act);border-color:var(--act)}
-.tile.main svg,.tile.main p{color:var(--on-act);opacity:.85}
-.tile.main h2{margin:0;font-size:19px}
-.tile.main p{font-size:14px}
+.tile svg{width:22px;height:22px;color:var(--accent);flex:none}
+.tile h2{margin:0;font-size:15.5px;line-height:1.25}
+.tile p{display:none}   /* the names say enough; Home stays light */
+.tile.main{grid-column:1/-1;flex-direction:row;align-items:center;gap:16px;min-height:0;margin:0 0 14px;padding:18px 20px;background:var(--act);color:var(--on-act);border-color:var(--act);box-shadow:0 8px 22px rgba(60,35,15,.18)}
+.tile.main svg{width:28px;height:28px;color:var(--on-act)}
+.tile.main p{display:block;margin:2px 0 0;font-size:14px;color:var(--on-act);opacity:.85}
+.tile.main h2{margin:0;font-size:20px}
 nav.small{display:flex;justify-content:center;gap:10px;margin:22px 0 0}
 nav.small a{flex:0 1 150px;justify-content:center;display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--line);color:var(--mut);text-decoration:none;font-size:14px}
 nav.small svg{width:18px;height:18px}
@@ -120,7 +120,7 @@ nav.small svg{width:18px;height:18px}
 <div class="tiles">
   <a class="tile main" href="journal/index.html#log">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-    <div><h2>Log a brew</h2><p>Pick a coffee, set the dial-in, rate the cup.</p></div>
+    <div><h2>Log a brew</h2><p>Pick a coffee and note the dial-in.</p></div>
   </a>
   <a class="tile" href="journal/index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3V4zM5 17a3 3 0 013-3h11"/></svg><h2>Coffee Shelf</h2><p>Your coffees and bags</p></a>
   <a class="tile" href="journal/index.html#recent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7.5V12l3 2 M4.2 13.5A8 8 0 104.6 9 M4 4.5V9h4.5"/></svg><h2>Recent Activity</h2><p>What happened lately</p></a>

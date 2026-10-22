@@ -94,7 +94,12 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
   </section>
 
   <div class="bar"><button class="go" id="save" type="submit">Save settings</button><p id="msg" role="status"></p></div>
-  <p class="foot"><span id="who"></span> <a class="lnk" href="../journal/index.html">Household</a> <button class="lnk" id="tour" type="button">Show the tour again</button> <button class="lnk" id="out" type="button">Sign out</button></p>
+  <section class="set">
+    <h2>Household</h2>
+    <p class="hint" id="hhname">The coffees, brews and people you share.</p>
+    <p><a class="lnk" href="../journal/index.html#household">Name, members and invites &rarr;</a></p>
+  </section>
+  <p class="foot"><span id="who"></span> <button class="lnk" id="tour" type="button">Show the tour again</button> <button class="lnk" id="out" type="button">Sign out</button></p>
 </form>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
@@ -243,7 +248,7 @@ $("poff").onclick = async () => {
 db.auth.onAuthStateChange((_e, session) => setTimeout(() => {
   me = session ? session.user : null;
   $("signedout").hidden = !!me; $("sf").hidden = !me;
-  if (me) { load(); pushCheck(); }
+  if (me) { load(); pushCheck(); db.from("households").select("name").then(r => { const n = (r.data || []).map(x => x.name); if (n.length) $("hhname").textContent = (n.length === 1 ? "You share coffees, brews and stats in " + n[0] : "Your households: " + n.join(", ")) + "."; }); }
 }, 0));
 </script>
 </body>

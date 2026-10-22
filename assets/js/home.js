@@ -77,29 +77,35 @@
     box.appendChild(so);
   }
 
-  // open bags, with the cups left
-  if (shelf) {
-    var open = shelf.coffees.filter(function (c) { return c.open_date && !c.finished_at && !c.archived; });
+  // the big "Log a brew" comes right after the greeting: it is what Home is for
+  var main = document.querySelector(".tiles .tile.main");
+  if (main) box.appendChild(main);
+
+  // open bags, with the cups left (drawn again when the fresh numbers arrive)
+  var strip = el("div", "bags"); strip.setAttribute("aria-label", "Your open bags"); strip.hidden = true; box.appendChild(strip);
+  function drawBags(sh) {
+    strip.textContent = ""; strip.hidden = true;
+    if (!sh || !Array.isArray(sh.coffees)) return;
+    var open = sh.coffees.filter(function (c) { return c.open_date && !c.finished_at && !c.archived; });
     var seen = {}; open = open.filter(function (c) { var k = c.group_id || c.id; if (seen[k]) return false; seen[k] = 1; return true; });
     // the emptiest first (fewest cups left); bags without a size at the end
-    var cupsLeft = function (c) { return c.bag_size_g ? (c.bag_size_g - ((shelf.used || {})[c.id] || 0)) / ((shelf.dose || {})[c.id] || 18) : Infinity; };
+    var cupsLeft = function (c) { return c.bag_size_g ? (c.bag_size_g - ((sh.used || {})[c.id] || 0)) / ((sh.dose || {})[c.id] || 18) : Infinity; };
     open.sort(function (x, y) { return cupsLeft(x) - cupsLeft(y); });
-    if (open.length) {
-      var strip = el("div", "bags"); strip.setAttribute("aria-label", "Your open bags");
-      open.slice(0, 8).forEach(function (c) {
-        var a = el("a", "bagc"); a.href = "journal/index.html#c=" + c.id + "&new";
-        a.setAttribute("aria-label", "Log a brew with " + c.name);
-        var used = (shelf.used || {})[c.id] || 0, dose = (shelf.dose || {})[c.id] || 18;
-        var frac = c.bag_size_g ? Math.max(0, Math.min(1, (c.bag_size_g - used) / c.bag_size_g)) : null;
-        a.appendChild(bagIcon(frac));
-        var t = el("span", "bt"); t.appendChild(el("strong", "", c.name));
-        if (frac !== null) { var left = Math.max(0, c.bag_size_g - used), n = Math.floor(left / dose); t.appendChild(el("small", "", n >= 1 ? "about " + n + (n === 1 ? " cup" : " cups") + " left" : "almost empty")); }
-        else if (c.roaster) t.appendChild(el("small", "", c.roaster));
-        a.appendChild(t); strip.appendChild(a);
-      });
-      box.appendChild(strip);
-    }
+    if (!open.length) return;
+    open.slice(0, 8).forEach(function (c) {
+      var a = el("a", "bagc"); a.href = "journal/index.html#c=" + c.id + "&new";
+      a.setAttribute("aria-label", "Log a brew with " + c.name);
+      var used = (sh.used || {})[c.id] || 0, dose = (sh.dose || {})[c.id] || 18;
+      var frac = c.bag_size_g ? Math.max(0, Math.min(1, (c.bag_size_g - used) / c.bag_size_g)) : null;
+      a.appendChild(bagIcon(frac));
+      var t = el("span", "bt"); t.appendChild(el("strong", "", c.name));
+      if (frac !== null) { var left = Math.max(0, c.bag_size_g - used), n = Math.floor(left / dose); t.appendChild(el("small", "", n >= 1 ? "about " + n + (n === 1 ? " cup" : " cups") + " left" : "almost empty")); }
+      else if (c.roaster) t.appendChild(el("small", "", c.roaster));
+      a.appendChild(t); strip.appendChild(a);
+    });
+    strip.hidden = false;
   }
+  if (shelf) drawBags(shelf);
 
   // one note at a time: your caffeine first (when there was coffee today), then to do, Friends, the fact of the day
   var notes = [], cafNote = null, rateNote = null;
@@ -164,7 +170,11 @@
         var my = ses.user.id, since2 = new Date(Date.now() - 62 * 864e5).toISOString();
         return Promise.all([
           db.from("brews").select("id,coffee_id,brewed_at,device,dose_g,is_dialin,made_by,created_by,coffees(name,is_decaf,variety),brew_ratings(id,rater_id,is_guest,rating,balance,drank_at),brew_scores(rating_id)").gte("brewed_at", since2).order("brewed_at"),
-          db.from("profiles").select("id,display_name")
+          db.from("profiles").select("id,display_name"),
+          (function () {   // all brews of the open bags (for the cups left), however old
+            var ids = ((shelf && shelf.coffees) || []).filter(function (c) { return c.open_date && !c.finished_at && !c.archived; }).map(function (c) { return c.id; });
+            return ids.length ? db.from("brews").select("coffee_id,dose_g").in("coffee_id", ids) : Promise.resolve({ data: [] });
+          })()
         ]).then(function (res) {
           var q = res[0]; if (q.error || !Array.isArray(q.data)) return;
           var nm = {}; ((res[1] && res[1].data) || []).forEach(function (p) { nm[p.id] = p.display_name; });
@@ -182,7 +192,9 @@
               r: rs.map(function (x) { return x.is_guest ? "g" : x.rater_id; }), rt: rs.map(function (x) { return x.drank_at || null; }),
               k: c.is_decaf ? "decaf" : /robusta/.test(v) ? (/arabica|,/.test(v) ? "blend" : "robusta") : "" });
           });
-          try { var sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === my) { sh.cb = rows; sh.cbt = Date.now(); sh.my = mine; sh.tr = pend; sh.nm = nm; localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } } catch (e) {}
+          var used = null; if (res[2] && Array.isArray(res[2].data)) { used = {}; res[2].data.forEach(function (x) { used[x.coffee_id] = (used[x.coffee_id] || 0) + (Number(x.dose_g) || 0); }); }
+          var sh = null; try { sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === my) { sh.cb = rows; sh.cbt = Date.now(); sh.my = mine; sh.tr = pend; sh.nm = nm; if (used) sh.used = Object.assign({}, sh.used || {}, used); localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } else sh = null; } catch (e) { sh = null; }
+          if (sh) drawBags(sh);
           showStat(mine); showRate(pend, nm); showCaffeine(rows);
         });
       }).catch(function () {});

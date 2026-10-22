@@ -227,10 +227,10 @@ input:disabled{background:var(--bg);cursor:not-allowed}
 details.calcbox{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:var(--bg)}
 .when{margin:14px 0 4px}
 .when .wl{display:block;font-size:13.5px;color:var(--mut)}
-.wchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.wchips button{font:inherit;font-size:14px;min-height:36px;padding:0 13px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.wchips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.wchips button{font:inherit;font-size:14px;min-height:36px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
 .wchips button.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
-#b-when{max-width:260px;margin-top:8px}
+#b-when,#b-drank{width:auto;max-width:100%;height:42px;margin-top:8px;padding:0 12px}
 .forchips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .forchips .fc{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:15px;min-height:40px;padding:0 15px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
 .forchips .fc.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
@@ -262,7 +262,9 @@ details.calcbox[open] summary small{display:none}
 .dvrow button,.modes button{font:inherit;font-size:14px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
 .dvrow button.on,.modes button.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
 .modes{display:flex;gap:8px;margin:8px 0 4px}
-.how{margin-top:10px}
+details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:var(--bg)}
+#bsave,#bcancel{min-width:150px;height:48px;margin-top:20px;padding:0 22px;border-radius:12px;font-size:16px;vertical-align:top}
+#bcancel{margin-left:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 .how summary{font-weight:600}
 .how .howt{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:10px 0 0;font-size:14px}
 .how .howt dt{color:var(--mut)}.how .howt dd{margin:0}
@@ -341,6 +343,14 @@ details.calcbox[open] summary small{display:none}
 .bc .tags{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:10px}
 .bc .acts{display:flex;gap:8px;margin-top:6px}
 .bc .ib{color:var(--mut)}
+.bc .ibs{position:relative}
+#dhead{position:relative}
+#dhead .dedit{position:absolute;top:12px;right:12px;color:var(--mut)}
+#dhead #dname{padding-right:40px}
+.pmenu{position:absolute;right:0;top:calc(100% + 4px);z-index:20;display:flex;flex-direction:column;min-width:190px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 10px 28px rgba(20,14,10,.18)}
+.pmenu[hidden]{display:none}
+.pmenu button{font:inherit;font-size:15px;text-align:left;padding:10px 12px;border:0;border-radius:8px;background:none;color:var(--ink);cursor:pointer}
+.pmenu button:hover,.pmenu button:focus-visible{background:var(--bg);outline:none}
 .bc .chip svg{color:var(--ac)}
 .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0 0 16px}
 .filters input,.filters select{margin:0;max-width:none}
@@ -382,7 +392,7 @@ details.calcbox[open] summary small{display:none}
 </head>
 <body>
 <main>
-<h1>Coffee Shelf</h1>
+<h1 id="ptitle">Coffee Shelf</h1>
 
 <form id="login" hidden>
   <div class="modes" id="authmodes"><button type="button" data-m="in" class="on">Sign in</button><button type="button" data-m="up">Create account</button></div>
@@ -426,6 +436,10 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
   <div class="namebox" id="namebox" hidden>
     <p><strong>What should we call you?</strong> <span id="nameq"></span> Your name is shown on the brews you make.</p>
     <div class="row"><input id="namein" maxlength="40" autocomplete="nickname" placeholder="e.g. Birte" aria-label="Your name"><button class="go" id="namego" type="button">Save</button></div>
+  </div>
+  <div id="hhpage" hidden>
+    <a class="back" href="../settings/index.html">Settings</a>
+    <div id="hhhost"></div>
   </div>
   <div id="addview" hidden>
     <a class="back" href="#log">Log a brew</a>
@@ -527,7 +541,8 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
   <div id="detail" hidden>
     <a class="back" id="dback" href="#">All coffees</a>
     <section id="dhead" class="cc"><button type="button" class="phb" id="dphotob" hidden><img id="dphoto" alt=""></button><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><div class="acts" id="dacts"><span id="dbuy"></span><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button></div><p class="darch" id="darch" hidden></p></div></section>
-    <details class="add" id="brewbox" open>
+    <div id="dedithost"></div>
+    <details class="add" id="brewbox">
       <summary id="brewsum">Log a brew</summary>
       <form id="bf">
         <div class="ratehead" id="ratehead" hidden></div>
@@ -1213,6 +1228,7 @@ function setSel(id, v) {
 }
 function endEdit() {
   editing = null; newBagOf = null;
+  if ($("addbox").parentNode === $("dedithost")) $("listhost").appendChild($("addbox"));   // edited from the coffee's page: back to the list
   $("cf").reset();
   ["f-process", "f-roast"].forEach(i => { $(i + "-new").hidden = true; $(i + "-new").required = false; });
   syncBlend();
@@ -1609,7 +1625,9 @@ $("cf").onsubmit = async e => {
       newId = made && made.id;
     }
     const after = logAfter;
+    const onPage = $("addbox").parentNode === $("dedithost") && cur;
     endEdit(); say("Saved."); load();
+    if (onPage) openCoffee(cur.id);
     if (newId && after) { location.hash = "c=" + newId + (after.dev ? "&d=" + encodeURIComponent(after.dev) : "") + "&new"; }
   } catch (err) { say("Could not save: " + err.message); }
   finally { saving = false; $("save").disabled = false; }
@@ -2350,12 +2368,16 @@ function route() {
   $("hhview").hidden = !noHH;
   if (noHH) { ["listview", "recentview", "mineview", "vtabs", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); return; }
   if (store.get("alto.friend")) { location.href = "../friends/index.html"; return; }   // came with a friend link: back to it, now signed in
-  const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)((?:&[^&]*)*)$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/), isRecent = hash === "#recent", isMine = hash === "#mine" || hash === "#torate";
+  const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)((?:&[^&]*)*)$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/), isRecent = hash === "#recent", isMine = hash === "#mine" || hash === "#torate", isHH = hash === "#household";
   if (hash === "#torate") { $("mflt-who").value = "torate"; history.replaceState(null, "", location.pathname + location.search + "#mine"); }
-  $("listview").hidden = !!m || isLog || !!add || isRecent || isMine;
+  $("listview").hidden = !!m || isLog || !!add || isRecent || isMine || isHH;
+  // the household (name, members, invites, switching) has its own page, reached from Settings
+  $("hhpage").hidden = !isHH; $("ptitle").textContent = isHH ? "Household" : "Coffee Shelf";
+  if (isHH && $("hhbox").parentNode !== $("hhhost")) $("hhhost").appendChild($("hhbox"));
+  if (isHH) { renderHousehold(); $("hhbox").open = true; }
   $("recentview").hidden = !isRecent;
   $("mineview").hidden = !isMine;
-  $("vtabs").hidden = !!m || isLog || !!add;
+  $("vtabs").hidden = !!m || isLog || !!add || isHH;
   $("vtabs").querySelectorAll("a").forEach(a => { const on = a.dataset.v === (isRecent ? "recent" : isMine ? "mine" : "list"); a.classList.toggle("on", on); if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
   if (!m) { $("dback").href = isRecent ? "#recent" : isMine ? "#mine" : "#"; $("dback").textContent = isRecent ? "Recent activity" : isMine ? "My brews" : "All coffees"; }
   $("detail").hidden = !m;
@@ -2380,6 +2402,7 @@ function route() {
   else if (isLog) pickList();
   else if (isRecent) loadFeed();
   else if (isMine) loadMine();
+  else if (isHH) { /* the household page needs nothing else */ }
   else { tryRestoreCoffee(); load(); }
 }
 
@@ -2626,6 +2649,7 @@ function renderPick() {
 }
 $("logmodes").querySelectorAll("button").forEach(b => { b.onclick = () => { logMode = b.dataset.m; store.set("alto.logmode", logMode); renderPick(); }; });
 window.addEventListener("hashchange", route);
+document.addEventListener("click", e => { if (!e.target.closest(".pmenu")) document.querySelectorAll(".pmenu").forEach(m => { m.hidden = true; }); });
 
 async function openCoffee(id, dev, wantForm) {
   const [{ data: c, error }, { data: dv }, { data: all }] = await Promise.all([
@@ -2642,6 +2666,7 @@ async function openCoffee(id, dev, wantForm) {
   const da = $("darch"); da.textContent = ""; da.hidden = !c.archived;
   if (c.archived) { da.append(document.createTextNode("This bag is archived. Its brews still count in Trends.")); da.appendChild(abtn("btn ghost", "Restore", "check", async () => { if (await setArchived(c, false)) openCoffee(c.id); })); }
   $("dname").textContent = c.name;
+  if (!$("dedit")) { const eb = ibtn("Edit coffee", "edit", () => { $("dedithost").appendChild($("addbox")); startEdit(cur); }); eb.id = "dedit"; eb.classList.add("dedit"); $("dhead").appendChild(eb); }
   if (c.photo_path && !coffeeUrls[c.photo_path]) { const got = await photoLinks([c.photo_path]); coffeeUrls = Object.assign({}, coffeeUrls, got.full); coffeeThumbs = Object.assign({}, coffeeThumbs, got.thumb); }   // opened straight from a link
   const ph = $("dphoto"), pu = c.photo_path ? coffeeUrls[c.photo_path] : null, pt = c.photo_path ? (coffeeThumbs[c.photo_path] || pu) : null;
   const pb = $("dphotob"); pb.hidden = !pu; if (!pb.querySelector(".zm")) pb.appendChild(zoomBadge());
@@ -2656,7 +2681,7 @@ async function openCoffee(id, dev, wantForm) {
   newBrewSetup(dev);
   // From "Brews" on a card: the form stays folded into one line, so the brews are right below the coffee.
   // From "Log a brew" (or with an unsaved draft): the form is open.
-  $("brewbox").open = !!wantForm || draftWasRestored;
+  $("brewbox").open = !!wantForm;   // only when you came to log one; an unsaved brew waits behind "Continue your brew"
   window.scrollTo(0, 0);
   await loadBrews();
 }
@@ -2685,7 +2710,7 @@ function syncNewBrew() {
   const open = $("brewbox").open, b = $("newbrew"); b.textContent = "";
   b.setAttribute("aria-expanded", String(open));
   if (open) b.append(ico("close", 16), el("span", "", editingBrew ? "Close without saving" : "Close form"));
-  else b.append(ico("plus", 16), el("span", "", "Log a brew"));
+  else b.append(ico("plus", 16), el("span", "", draftWasRestored && !editingBrew ? "Continue your brew" : "Log a brew"));
 }
 $("newbrew").onclick = () => {
   if ($("brewbox").open) { if (editingBrew) newBrewSetup(); $("brewbox").open = false; }
@@ -2742,7 +2767,7 @@ function brewCard(b) {
       .sort(([x], [y]) => { const i = k => CORE.includes(k) ? CORE.indexOf(k) : 99; return i(x) - i(y); });
     if (!list.length && bal == null) return null;
     const t = el("div", "tags");
-    if (bal != null) { const ch = el("span", "chip bal"); ch.style.setProperty("--ac", attrColor("balance")); ch.title = SCALE.balanceName(bal); ch.append(ico("balance", 14), document.createTextNode("balance " + SCALE.balanceText(bal))); t.appendChild(ch); }
+    if (bal != null) { const ch = el("span", "chip balc"); ch.style.setProperty("--ac", attrColor("balance")); ch.title = SCALE.balanceName(bal); ch.append(ico("balance", 14), document.createTextNode("balance " + SCALE.balanceText(bal))); t.appendChild(ch); }
     list.forEach(([k, v]) => { const ch = el("span", "chip"); ch.style.setProperty("--ac", attrColor(k)); ch.append(ico(attrIcon(k), 14), document.createTextNode((k === "balance" ? "balance (old scale) " : k + " ") + SCALE.text(k, v))); t.appendChild(ch); });
     return t;
   };
@@ -2770,14 +2795,20 @@ function brewCard(b) {
     a.appendChild(box);
   }
   if (b.notes) a.appendChild(el("p", "", b.notes));
-  const ed = ibtn("Edit", "edit", () => startBrewEdit(b));
-  const rt = ibtn(mine && !isPending(mine) ? "Change your rating" : "Rate", "star", () => startRate(b, mine ? mine.id : null));
+  // one pencil, two things to change: the brew itself, or your rating of it
+  const menu = el("div", "pmenu"); menu.hidden = true; menu.setAttribute("role", "menu");
+  const mi = (t, fn) => { const x = el("button", "", t); x.type = "button"; x.setAttribute("role", "menuitem"); x.onclick = () => { menu.hidden = true; fn(); }; menu.appendChild(x); };
+  mi("Edit brew", () => startBrewEdit(b));
+  mi(!mine ? "Rate it" : isPending(mine) ? "Rate your cup" : "Edit your rating", () => startRate(b, mine ? mine.id : null));
+  if (ts.some(t => t.guest)) mi("Rate for a guest", () => startRate(b, ts.find(t => t.guest).id));
+  const ed = ibtn("Edit", "edit", e => { e.stopPropagation(); const was = menu.hidden; document.querySelectorAll(".pmenu").forEach(m => { m.hidden = true; }); menu.hidden = !was; ed.setAttribute("aria-expanded", String(was)); });
+  ed.setAttribute("aria-haspopup", "menu"); ed.setAttribute("aria-expanded", "false");
   const del = ibtn("Delete", "trash", async () => {
     if (!confirm("Delete this brew? This cannot be undone.")) return;
     const { data: gone, error } = await db.from("brews").delete().eq("id", b.id).select();
-    if (error) say("Could not delete: " + error.message); else if (!gone.length) say("Nothing was deleted."); else loadBrews();
+    if (error) say("Could not delete: " + error.message); else if (!gone.length) say("Nothing was deleted."); else { loadBrews(); load(); }
   }, "del");
-  const grp = el("div", "ibs"); grp.append(rt, ed, del);
+  const grp = el("div", "ibs"); grp.append(ed, del, menu);
   hd.appendChild(grp);
   return a;
 }
@@ -2941,6 +2972,7 @@ $("bf").onsubmit = async e => {
     const forMe = tasterRows().some(t => !t.is_guest && me && t.rater_id === me.id && isPending({ rating: t.rating, balance: t.balance, scores: t.scores }));
     focusBrew = id;
     await openCoffee(cur.id, device);   // resets the form and reloads the list (this brew outlined)
+    load();   // the shelf and Home's "cups left" count this brew too
     say(forMe ? "Saved. Rate your cup whenever you have tasted it: the button is on the brew." : "Saved.");
   } catch (err) { say("Could not save: " + err.message); }
   finally { savingB = false; $("bsave").disabled = false; }
@@ -2988,9 +3020,9 @@ async function hhAction(fn, args, done) {
 }
 function renderHousehold() {
   const box = $("hhbox"), body = $("hhbody"), cur = hhs.find(x => x.id === hh);
-  box.hidden = !hhOk || !cur; body.textContent = "";
+  box.hidden = !hhOk || !cur || location.hash !== "#household"; body.textContent = "";   // only on its own page (Settings > Household)
   if (!cur) return;
-  $("hhsum").textContent = "Household: " + cur.name;
+  $("hhsum").textContent = cur.name;
   const sec = t => { const d = el("div", "sec"); d.appendChild(el("h3", "", t)); body.appendChild(d); return d; };
   if (hhs.length > 1) {
     const d = sec("Switch household"), sel = el("select");

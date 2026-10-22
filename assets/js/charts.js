@@ -128,7 +128,7 @@ window.Charts = (function () {
     var tp = pts.slice(o.trailFrom || 0);
     if (o.path && tp.length > 1) f.svg.appendChild(s("polyline", { points: tp.map(function (p) { return x(p.x) + "," + y(p.y); }).join(" "), class: "trail" }));
     pts.forEach(function (p, i) {
-      var g = s("g", { class: p.faded ? "pt faded" : "pt" }), cx = x(p.x), cy = y(p.y), r = p.r || 5;
+      var g = s("g", { class: p.faded ? "pt faded" : "pt" }), cx = x(p.x), cy = y(p.y), r = (p.r || 5) * (p.faded ? 0.7 : 1);   // older dots: smaller, same colour (so the stars still read right)
       g.appendChild(s("circle", { cx: cx, cy: cy, r: 13, class: "hit" }));
       if (o.last && i === pts.length - 1) g.appendChild(s("circle", { cx: cx, cy: cy, r: r + 5, class: "lastring" }));
       g.appendChild(s("circle", { cx: cx, cy: cy, r: r, class: p.hollow ? "dot hollow" : "dot", style: p.hollow ? "stroke:" + p.color : "fill:" + p.color }));
