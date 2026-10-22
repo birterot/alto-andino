@@ -40,6 +40,9 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .ownrow{display:flex;align-items:center;gap:8px;margin-top:6px}
 .ownrow input{margin:0;width:110px}
 .ownrow input[type=time]{width:130px}
+.tchk{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-top:10px;max-width:420px}
+.tchk label{display:flex;align-items:center;gap:10px;margin:0;font-size:15px;color:var(--ink)}
+.tchk input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--act)}
 .pstate{margin:12px 0 0;font-size:15px;max-width:52ch}
 .pbtns{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}
 .pbtns .lnk{min-height:40px}
@@ -88,6 +91,12 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
     <label>With espresso (espresso machine, moka pot)<select id="s-drink-esp"></select></label>
     <label>With filter coffee<select id="s-drink-filter"></select></label>
     <label>Milk<select id="s-milk"></select></label>
+  </section>
+
+  <section class="set" id="homeset">
+    <h2>Home</h2>
+    <p class="hint">Which shortcuts Home shows under “Log a brew”. Everything stays in the menu (☰) either way.</p>
+    <div class="tchk" id="s-tiles"></div>
   </section>
 
   <section class="set" id="cafset">
@@ -148,6 +157,17 @@ const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
 const opt = (s, v, t) => { const o = el("option", "", t); o.value = v; s.appendChild(o); return o; };
 let me = null, profile = null, fm = "", color = "", others = [], cafMode = "", cafDay = "", cafLine = "", cafShow = "", sleepOn = "";
+const TILES = [["shelf", "Coffee Shelf"], ["recent", "Recent activity"], ["mine", "My brews"], ["trends", "Trends"], ["calc", "Calculator"], ["cupping", "Cupping"], ["friends", "Friends"], ["book", "Bean to Cup"]];
+let homeHide = [];
+function renderTiles() {
+  const box = $("s-tiles"); box.textContent = "";
+  TILES.forEach(([k, name]) => {
+    const l = el("label"), c = el("input"); c.type = "checkbox"; c.checked = !homeHide.includes(k);
+    c.onchange = () => { homeHide = c.checked ? homeHide.filter(x => x !== k) : homeHide.concat([k]); };
+    l.append(c, document.createTextNode(name)); box.appendChild(l);
+  });
+}
+renderTiles();
 function showCafShow() { setSeg("s-cafshow", cafShow); $("cafmore").hidden = cafShow === "off"; $("cafoff").hidden = cafShow !== "off"; }
 const LINE_H = { "25": "The dashed line on Home sits at 25 mg: for people who sleep badly after an afternoon coffee.", "": "The dashed line on Home sits at 50 mg, about half an espresso.", "100": "The dashed line on Home sits at 100 mg: for people who can have an espresso in the evening and still sleep." };
 // your sleep line: one of the three, or any number from 0 to 400 mg ("" = 50, the normal one)
@@ -222,6 +242,7 @@ async function load() {
   cafMode = p.caf_mode === "high" ? "high" : ""; cafDay = p.caf_day === "midnight" ? "midnight" : ""; setSeg("s-cafmode", cafMode); setSeg("s-cafday", cafDay);
   cafLine = p.caf_line != null && Number(p.caf_line) >= 0 && Number(p.caf_line) <= 400 && Number(p.caf_line) !== 50 ? String(Math.round(p.caf_line)) : ""; showLine();
   $("s-bed").value = /^\d\d:\d\d$/.test(p.caf_bed || "") ? p.caf_bed : "";
+  homeHide = Array.isArray(p.home_hide) ? p.home_hide.filter(k => TILES.some(t => t[0] === k)) : []; renderTiles();
   cafShow = p.caf_show === "off" ? "off" : ""; showCafShow(); sleepOn = p.sleep === "on" ? "on" : ""; setSeg("s-sleep", sleepOn);
   // the others in your household (the profiles you can see), for the little letters on the colours
   const { data: ps } = await db.from("profiles").select("id,display_name,prefs");
@@ -242,6 +263,7 @@ $("sf").onsubmit = async e => {
   if ($("s-bed").value) prefs.caf_bed = $("s-bed").value; else delete prefs.caf_bed;
   if (cafShow) prefs.caf_show = cafShow; else delete prefs.caf_show;
   if (sleepOn) prefs.sleep = sleepOn; else delete prefs.sleep;
+  if (homeHide.length) prefs.home_hide = homeHide; else delete prefs.home_hide;
   const same = (x, y) => JSON.stringify(Object.keys(x).sort().map(k => [k, x[k]])) === JSON.stringify(Object.keys(y).sort().map(k => [k, y[k]]));
   if (profile && profile.display_name === name && same(prefs, profile.prefs || {})) { flash("Nothing changed, your settings are as they were."); return; }
   $("save").disabled = true; $("msg").textContent = "Saving...";
@@ -250,6 +272,7 @@ $("sf").onsubmit = async e => {
   if (error) { $("msg").textContent = "Could not save: " + error.message; return; }
   profile = { id: me.id, display_name: name, prefs };
   if (fm) try { localStorage.setItem("alto.formmode", fm); } catch (e2) {}
+  try { localStorage.setItem("alto.homehide", JSON.stringify(homeHide)); } catch (e2) {}
   try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: cafMode, day: cafDay, line: cafLine ? Number(cafLine) : null, bed: $("s-bed").value || "", show: cafShow, sleep: sleepOn })); } catch (e2) {}   // Home uses it at once
   flash("Saved. New brews start with these settings.");
 };

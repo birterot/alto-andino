@@ -77,6 +77,14 @@
     box.appendChild(so);
   }
 
+  // the tiles you chose in Settings > Home (all of them unless you took some away)
+  function applyTiles() {
+    var hide = []; try { hide = JSON.parse(localStorage.getItem("alto.homehide") || "[]") || []; } catch (e) {}
+    document.querySelectorAll(".tiles .tile[data-k]").forEach(function (t) { t.hidden = hide.indexOf(t.dataset.k) >= 0; });
+    var tl = document.querySelector(".tiles"); if (tl) tl.hidden = !tl.querySelector(".tile[data-k]:not([hidden])");
+  }
+  applyTiles();
+
   // the big "Log a brew" comes right after the greeting: it is what Home is for
   var main = document.querySelector(".tiles .tile.main");
   if (main) box.appendChild(main);
@@ -156,13 +164,7 @@
       }
       if (n.href) { var a = el("a", "go", n.go + " →"); a.href = n.href; if (n.ext) { a.target = "_blank"; a.rel = "noopener"; } a.addEventListener("click", function (e) { e.stopPropagation(); }); card.appendChild(a); }
     };
-    if (notes.length > 1) {
-      card.setAttribute("role", "button"); card.tabIndex = 0; card.setAttribute("aria-label", "Next note");
-      var next = function () { i = (i + 1) % notes.length; draw(); };
-      card.addEventListener("click", next);
-      card.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); next(); } });
-    }
-    draw(); box.appendChild(card);
+    wireCard(); draw(); box.appendChild(card);
   }
   drawAsk();
   // Then, quietly: your brews of the last two months straight from the database, for the line under the greeting and the
@@ -217,13 +219,26 @@
       });
     }).catch(function () {});
   }
+  // The note card: tap it, or swipe left and right, for the next or the previous note (wired once; it checks how many there are)
+  function wireCard() {
+    if (!card || card.dataset.wired) return; card.dataset.wired = "1";
+    var go = function (d) { if (notes.length < 2) return; i = (i + d + notes.length) % notes.length; draw(); card.classList.remove("sl", "sr"); void card.offsetWidth; card.classList.add(d > 0 ? "sl" : "sr"); };
+    var sx = null, sy = 0, swiped = false;
+    card.addEventListener("touchstart", function (e) { if (e.touches.length !== 1) { sx = null; return; } sx = e.touches[0].clientX; sy = e.touches[0].clientY; swiped = false; }, { passive: true });
+    card.addEventListener("touchend", function (e) {
+      if (sx === null) return; var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.3) { swiped = true; go(dx < 0 ? 1 : -1); }
+    }, { passive: true });
+    card.addEventListener("click", function (e) { if (swiped) { swiped = false; return; } if (e.target.closest("a,button")) return; go(1); });
+    card.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " " || e.key === "ArrowRight") { e.preventDefault(); go(1); } else if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); } });
+    card.tabIndex = 0; card.setAttribute("aria-label", "Notes: tap or swipe for the next one");
+  }
   // a note that comes, changes or goes when the fresh brews arrive (first = it goes to the top)
   function swapNote(old, nu, first) {
     var at = old ? notes.indexOf(old) : -1;
     if (nu && at >= 0) notes[at] = nu; else if (nu) { if (first) notes.unshift(nu); else notes.splice(rateNote && notes[0] === rateNote ? 1 : 0, 0, nu); } else if (at >= 0) notes.splice(at, 1);
     if (!card) return nu;
     i = 0;
-    if (notes.length > 1 && !card.hasAttribute("role")) { card.setAttribute("role", "button"); card.tabIndex = 0; card.setAttribute("aria-label", "Next note"); card.addEventListener("click", function () { i = (i + 1) % notes.length; draw(); }); }
     if (notes.length) draw();
     return nu;
   }
@@ -309,7 +324,7 @@
   // else at the time of the brew. Settings > Caffeine (kept on this phone too, so Home has it at once):
   // "high" counts the upper end of the range, "midnight" starts every day at zero, "line" is your sleep line (5 to 400 mg, 50 unless you changed it).
   function cafPref() { try { return JSON.parse(localStorage.getItem("alto.cafpref") || "{}") || {}; } catch (e) { return {}; } }
-  function savePref(p) { try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "", line: p.caf_line != null ? p.caf_line : null, bed: p.caf_bed || "", show: p.caf_show || "", sleep: p.sleep || "" })); } catch (e) {} }
+  function savePref(p) { try { localStorage.setItem("alto.homehide", JSON.stringify(Array.isArray(p.home_hide) ? p.home_hide : [])); applyTiles(); } catch (e) {} try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "", line: p.caf_line != null ? p.caf_line : null, bed: p.caf_bed || "", show: p.caf_show || "", sleep: p.sleep || "" })); } catch (e) {} }
   function caffeine(rows) {
     if (!Array.isArray(rows) || !session || !window.CAFFEINE || cafPref().show === "off") return null;   // turned off in Settings
     var my = session.user.id, now = Date.now(), pref = cafPref(), high = pref.mode === "high";
