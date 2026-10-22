@@ -252,7 +252,7 @@
       return out;
     }).join("");
   }
-  var HEAD = "h1,h2,h3,h4,summary,.topnav nav a,.crumbs,.pager a", KEEP = ".cc h3,#dname,.bc h3,dialog,[data-case=keep],.vlist,.res,details.cup summary";
+  var HEAD = "h1,h2,h3,h4,summary,.topnav nav a,.crumbs,.pager a,.sectabs a", KEEP = ".cc h3,#dname,.bc h3,dialog,[data-case=keep],.vlist,.res,details.cup summary";
   function caseIn(root) {
     var list = [];
     if (root.matches && root.matches(HEAD)) list.push(root);
@@ -434,5 +434,68 @@
       if (idx < CHAPTERS.length - 1) pl(CHAPTERS[idx + 1], "nx", "Next →");
       main.appendChild(pg);
     }
+  }
+
+  // Section tabs, right under the bar: the shortcuts you chose for Home (Settings > Home), in your order,
+  // so you can jump between them. They show on those pages only (not on Home, Settings or Feedback).
+  var SECTIONS = [   // key (as on Home), label, link
+    ["shelf", "Coffee Shelf", "journal/index.html#"],
+    ["recent", "Recent activity", "journal/index.html#recent"],
+    ["mine", "My brews", "journal/index.html#mine"],
+    ["trends", "Trends", "trends/index.html"],
+    ["calc", "Calculator", "calc/index.html"],
+    ["cupping", "Cupping", "cupping/index.html"],
+    ["friends", "Friends", "friends/index.html"],
+    ["book", BOOK.charAt(0).toUpperCase() + BOOK.slice(1), "chapters/index.html"]
+  ];
+  window.ALTO_SECTIONS = SECTIONS;   // Settings and Home use the same list
+  function section() {
+    if (inBook) return "book";
+    if (/\/journal\//.test(path)) { var h = location.hash; return /^#(recent)$/.test(h) ? "recent" : /^#(mine|torate|nobal)$/.test(h) ? "mine" : /^#(log|addcoffee)/.test(h) ? null : "shelf"; }
+    if (/\/trends\//.test(path)) return "trends";
+    if (isCalc) return "calc";
+    if (/\/cupping\//.test(path)) return "cupping";
+    if (/\/friends\//.test(path)) return "friends";
+    return undefined;   // not a section page: no tabs
+  }
+  function tabOrder() {
+    var order = [], hide = [];
+    try { order = JSON.parse(localStorage.getItem("alto.homeorder") || "[]") || []; } catch (e) {}
+    try { hide = JSON.parse(localStorage.getItem("alto.homehide") || "[]") || []; } catch (e) {}
+    var keys = SECTIONS.map(function (x) { return x[0]; });
+    var list = order.filter(function (k, i) { return keys.indexOf(k) >= 0 && order.indexOf(k) === i; });
+    keys.forEach(function (k) { if (list.indexOf(k) < 0) list.push(k); });
+    return { list: list, hide: hide };
+  }
+  if (main && section() !== undefined) {
+    var st = document.createElement("nav"); st.className = "sectabs"; st.setAttribute("aria-label", "Sections");
+    var drawTabs = function () {
+      var now = section(), o = tabOrder(); st.textContent = "";
+      o.list.forEach(function (k) {
+        if (o.hide.indexOf(k) >= 0 && k !== now) return;   // hidden from Home: not a tab (unless you are on it)
+        var it = SECTIONS.filter(function (x) { return x[0] === k; })[0], a = document.createElement("a");
+        a.href = root + it[2]; a.dataset.k = k; a.textContent = it[1];
+        if (k === now) a.setAttribute("aria-current", "page");
+        st.appendChild(a);
+      });
+      var on = st.querySelector("[aria-current]");
+      if (on) requestAnimationFrame(function () { var l = on.offsetLeft - 20, r = on.offsetLeft + on.offsetWidth - st.clientWidth + 20; if (st.scrollLeft > l) st.scrollLeft = l; else if (st.scrollLeft < r) st.scrollLeft = r; });
+    };
+    drawTabs();
+    main.insertBefore(st, main.firstChild);
+    document.body.classList.add("hastabs");
+    window.addEventListener("hashchange", drawTabs);
+    window.addEventListener("storage", function (e) { if (e.key === "alto.homeorder" || e.key === "alto.homehide") drawTabs(); });
+    window.ALTO_TABS = { redraw: drawTabs };
+    var tcss = document.createElement("style");
+    tcss.textContent = "body.hastabs main{padding-top:0}" +
+      // tabs with a line under the one you are on, so they do not look like the filter buttons on the pages
+      ".sectabs{display:flex;gap:2px;overflow-x:auto;margin:0 -20px 22px;padding:0 12px;border-bottom:1px solid var(--line,#ccc);scrollbar-width:none;-webkit-overflow-scrolling:touch}" +
+      ".sectabs::-webkit-scrollbar{display:none}" +
+      ".sectabs a{flex:none;display:inline-flex;align-items:center;min-height:46px;padding:0 10px;margin-bottom:-1px;border-bottom:3px solid transparent;color:var(--mut,#666);font-size:15px;text-decoration:none;white-space:nowrap}" +
+      ".sectabs a[aria-current]{color:var(--ink,#222);font-weight:600;border-bottom-color:var(--act,#4a2f1c)}" +
+      "@media (hover:hover){.sectabs a:hover{color:var(--ink,#222)}}" +
+      ".sectabs + .crumbs{margin-top:0}";
+    document.head.appendChild(tcss);
   }
 })();

@@ -40,8 +40,13 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .ownrow{display:flex;align-items:center;gap:8px;margin-top:6px}
 .ownrow input{margin:0;width:110px}
 .ownrow input[type=time]{width:130px}
-.tchk{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-top:10px;max-width:420px}
-.tchk label{display:flex;align-items:center;gap:10px;margin:0;font-size:15px;color:var(--ink)}
+.tchk{display:grid;gap:0;margin-top:10px;max-width:420px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tchk .trow{display:flex;align-items:center;gap:4px;padding:4px 6px 4px 14px;border-top:1px solid var(--line);background:var(--card)}
+.tchk .trow:first-child{border-top:0}
+.tchk .trow.off label{color:var(--mut)}
+.tchk label{display:flex;align-items:center;gap:10px;margin:0;font-size:15px;color:var(--ink);flex:1;min-height:44px;cursor:pointer}
+.tchk .mv{width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:10px;background:none;color:var(--ink);cursor:pointer}
+.tchk .mv:disabled{opacity:.25;cursor:default}
 .tchk input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--act)}
 .set .hint a,label.chk a{color:var(--ink)}
 label.chk{display:flex;align-items:flex-start;gap:10px;color:var(--ink);font-size:14.5px;line-height:1.45;margin-top:12px;max-width:52ch}
@@ -103,7 +108,7 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
 
   <section class="set" id="homeset">
     <h2>Home</h2>
-    <p class="hint">Which shortcuts Home shows under “Log a brew”. Everything stays in the menu (☰) either way.</p>
+    <p class="hint">Which shortcuts Home shows under “Log a brew”, and in which order. They are also the tabs at the top of those pages. Everything stays in the menu (☰) either way.</p>
     <div class="tchk" id="s-tiles"></div>
   </section>
 
@@ -182,14 +187,26 @@ const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls)
 const opt = (s, v, t) => { const o = el("option", "", t); o.value = v; s.appendChild(o); return o; };
 let me = null, profile = null, fm = "", color = "", others = [], cafMode = "", cafDay = "", cafLine = "", cafShow = "", sleepOn = "";
 const TILES = [["shelf", "Coffee Shelf"], ["recent", "Recent activity"], ["mine", "My brews"], ["trends", "Trends"], ["calc", "Calculator"], ["cupping", "Cupping"], ["friends", "Friends"], ["book", "Bean to Cup"]];
-let homeHide = [];
-function renderTiles() {
+let homeHide = [], homeOrder = TILES.map(t => t[0]);
+const fullOrder = o => { const keys = TILES.map(t => t[0]), l = (o || []).filter((k, i, a) => keys.includes(k) && a.indexOf(k) === i); keys.forEach(k => { if (!l.includes(k)) l.push(k); }); return l; };
+// one row per shortcut: on or off, and up or down
+function renderTiles(focus) {
   const box = $("s-tiles"); box.textContent = "";
-  TILES.forEach(([k, name]) => {
-    const l = el("label"), c = el("input"); c.type = "checkbox"; c.checked = !homeHide.includes(k);
-    c.onchange = () => { homeHide = c.checked ? homeHide.filter(x => x !== k) : homeHide.concat([k]); };
-    l.append(c, document.createTextNode(name)); box.appendChild(l);
+  homeOrder.forEach((k, i) => {
+    const name = (TILES.find(t => t[0] === k) || [k, k])[1];
+    const r = el("div", "trow"), l = el("label"), c = el("input"); c.type = "checkbox"; c.checked = !homeHide.includes(k);
+    c.onchange = () => { homeHide = c.checked ? homeHide.filter(x => x !== k) : homeHide.concat([k]); r.classList.toggle("off", !c.checked); };
+    l.append(c, document.createTextNode(name)); r.appendChild(l); r.classList.toggle("off", !c.checked);
+    const mv = (d, label, path) => {
+      const b = el("button", "mv"); b.type = "button"; b.setAttribute("aria-label", label + ": " + name); b.disabled = d < 0 ? i === 0 : i === homeOrder.length - 1;
+      b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="' + path + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      b.onclick = () => { const j = i + d; [homeOrder[i], homeOrder[j]] = [homeOrder[j], homeOrder[i]]; renderTiles(k + (d < 0 ? "u" : "d")); };
+      b.dataset.f = k + (d < 0 ? "u" : "d"); r.appendChild(b);
+    };
+    mv(-1, "Move up", "M6 15l6-6 6 6"); mv(1, "Move down", "M6 9l6 6 6-6");
+    box.appendChild(r);
   });
+  if (focus) { const b = box.querySelector('[data-f="' + focus + '"]'); if (b && !b.disabled) b.focus(); else { const o = box.querySelector('[data-f="' + focus.slice(0, -1) + (focus.endsWith("u") ? "d" : "u") + '"]'); if (o) o.focus(); } }
 }
 renderTiles();
 function showCafShow() { setSeg("s-cafshow", cafShow); $("cafmore").hidden = cafShow === "off"; $("cafoff").hidden = cafShow !== "off"; }
@@ -322,7 +339,7 @@ async function load() {
   cafMode = p.caf_mode === "high" ? "high" : ""; cafDay = p.caf_day === "midnight" ? "midnight" : ""; setSeg("s-cafmode", cafMode); setSeg("s-cafday", cafDay);
   cafLine = p.caf_line != null && Number(p.caf_line) >= 0 && Number(p.caf_line) <= 400 && Number(p.caf_line) !== 50 ? String(Math.round(p.caf_line)) : ""; showLine();
   $("s-bed").value = /^\d\d:\d\d$/.test(p.caf_bed || "") ? p.caf_bed : "";
-  homeHide = Array.isArray(p.home_hide) ? p.home_hide.filter(k => TILES.some(t => t[0] === k)) : []; renderTiles();
+  homeHide = Array.isArray(p.home_hide) ? p.home_hide.filter(k => TILES.some(t => t[0] === k)) : []; homeOrder = fullOrder(p.home_order); renderTiles();
   cafShow = p.caf_show === "off" ? "off" : ""; showCafShow(); sleepOn = p.sleep === "on" ? "on" : ""; sleepConsent = p.sleep_consent || null; showSleep();
   // the others in your household (the profiles you can see), for the little letters on the colours
   const { data: ps } = await db.from("profiles").select("id,display_name,prefs");
@@ -349,6 +366,7 @@ $("sf").onsubmit = async e => {
   if (sleepOn) prefs.sleep = sleepOn; else delete prefs.sleep;
   if (sleepConsent) prefs.sleep_consent = sleepConsent; else delete prefs.sleep_consent;
   if (homeHide.length) prefs.home_hide = homeHide; else delete prefs.home_hide;
+  if (homeOrder.join() !== TILES.map(t => t[0]).join()) prefs.home_order = homeOrder.slice(); else delete prefs.home_order;
   const same = (x, y) => JSON.stringify(Object.keys(x).sort().map(k => [k, x[k]])) === JSON.stringify(Object.keys(y).sort().map(k => [k, y[k]]));
   if (profile && profile.display_name === name && same(prefs, profile.prefs || {})) { flash("Nothing changed, your settings are as they were."); return; }
   $("save").disabled = true; $("msg").textContent = "Saving...";
@@ -357,7 +375,7 @@ $("sf").onsubmit = async e => {
   if (error) { $("msg").textContent = "Could not save: " + error.message; return; }
   profile = { id: me.id, display_name: name, prefs };
   if (fm) try { localStorage.setItem("alto.formmode", fm); } catch (e2) {}
-  try { localStorage.setItem("alto.homehide", JSON.stringify(homeHide)); } catch (e2) {}
+  try { localStorage.setItem("alto.homehide", JSON.stringify(homeHide)); localStorage.setItem("alto.homeorder", JSON.stringify(homeOrder)); } catch (e2) {}
   try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: cafMode, day: cafDay, line: cafLine ? Number(cafLine) : null, bed: $("s-bed").value || "", show: cafShow, sleep: sleepOn && sleepConsent ? "on" : "" })); } catch (e2) {}   // Home uses it at once
   showSleep();
   flash("Saved. New brews start with these settings.");

@@ -79,7 +79,10 @@
 
   // the tiles you chose in Settings > Home (all of them unless you took some away)
   function applyTiles() {
-    var hide = []; try { hide = JSON.parse(localStorage.getItem("alto.homehide") || "[]") || []; } catch (e) {}
+    var hide = [], order = []; try { hide = JSON.parse(localStorage.getItem("alto.homehide") || "[]") || []; order = JSON.parse(localStorage.getItem("alto.homeorder") || "[]") || []; } catch (e) {}
+    // your order (Settings > Home); shortcuts not in it keep their place at the end
+    var tl0 = document.querySelector(".tiles"), ts = Array.prototype.slice.call(document.querySelectorAll(".tiles .tile[data-k]"));
+    if (tl0 && order.length) ts.slice().sort(function (a, b) { var i = order.indexOf(a.dataset.k), j = order.indexOf(b.dataset.k); return (i < 0 ? 99 + ts.indexOf(a) : i) - (j < 0 ? 99 + ts.indexOf(b) : j); }).forEach(function (t) { tl0.appendChild(t); });
     document.querySelectorAll(".tiles .tile[data-k]").forEach(function (t) { t.hidden = hide.indexOf(t.dataset.k) >= 0; });
     var tl = document.querySelector(".tiles"); if (tl) tl.hidden = !tl.querySelector(".tile[data-k]:not([hidden])");
   }
@@ -344,7 +347,7 @@
   // else at the time of the brew. Settings > Caffeine (kept on this phone too, so Home has it at once):
   // "high" counts the upper end of the range, "midnight" starts every day at zero, "line" is your sleep line (5 to 400 mg, 50 unless you changed it).
   function cafPref() { try { return JSON.parse(localStorage.getItem("alto.cafpref") || "{}") || {}; } catch (e) { return {}; } }
-  function savePref(p) { try { localStorage.setItem("alto.homehide", JSON.stringify(Array.isArray(p.home_hide) ? p.home_hide : [])); applyTiles(); } catch (e) {} try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "", line: p.caf_line != null ? p.caf_line : null, bed: p.caf_bed || "", show: p.caf_show || "", sleep: p.sleep === "on" && p.sleep_consent ? "on" : "" })); } catch (e) {} }   // the sleep check only with your consent
+  function savePref(p) { try { localStorage.setItem("alto.homehide", JSON.stringify(Array.isArray(p.home_hide) ? p.home_hide : [])); localStorage.setItem("alto.homeorder", JSON.stringify(Array.isArray(p.home_order) ? p.home_order : [])); applyTiles(); } catch (e) {} try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "", line: p.caf_line != null ? p.caf_line : null, bed: p.caf_bed || "", show: p.caf_show || "", sleep: p.sleep === "on" && p.sleep_consent ? "on" : "" })); } catch (e) {} }   // the sleep check only with your consent
   function caffeine(rows) {
     if (!Array.isArray(rows) || !session || !window.CAFFEINE || cafPref().show === "off") return null;   // turned off in Settings
     var my = session.user.id, now = Date.now(), pref = cafPref(), high = pref.mode === "high";
