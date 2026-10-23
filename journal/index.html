@@ -781,11 +781,15 @@ const GREY = ["#F1EFE8","#2C2C2A","#5F5E5A","#B4B2A9","#444441","#D3D1C7"];
 
 // Dropdowns: the fixed list, plus everything used before, plus "Other (add new)".
 // Brewing devices: the ones from the atlas chapter (data/devices.js) plus any you added in lists.js.
-function deviceList() {
+function deviceList(every) {
   const out = [], add = x => { if (x && !out.includes(x)) out.push(x); };
   ((window.DEVICES && window.DEVICES.D) || []).forEach(d => (d.logAs || [d.name]).forEach(add));
   (window.LISTS.device || []).forEach(add);
-  return out;   // plain names, no sizes: your own ("French press (1 l)") come with "Other (add new)" and stay in the list once used
+  // only the devices you own, if you ticked some in Settings (kept on the phone too, so it is right from the start)
+  let own = (myPrefs().devices || []);
+  if (!own.length) { try { own = JSON.parse(store.get("alto.mydevs") || "[]"); } catch (e) { own = []; } }
+  const mine = out.filter(d => own.includes(d));
+  return mine.length && !every ? mine : out;   // plain names, no sizes: your own ("French press (1 l)") come with "Other (add new)" and stay in the list once used
 }
 function fill(id, base, used, fixed) {   // fixed: only the base list, no "Other" (roast levels)
   const s = $(id), keep = s.value;
@@ -3088,7 +3092,9 @@ async function openCoffee(id, dev, wantForm, rid) {
   bagActions(c, () => { load(); openCoffee(c.id); }).forEach(x => bx.appendChild(x));
   const t = $("dtags"); t.textContent = "";
   (c.flavour_tags || []).forEach(x => t.appendChild(el("span", "chip", x)));
-  fill("b-device", deviceList(), [...new Set((dv || []).map(b => DEV_OLD[b.device] || b.device).filter(Boolean))]);
+  // devices you do not own (ticked in Settings) stay out, even if used for this coffee before; your own names ("French press (1 l)") stay in
+  const std = deviceList(true), devs = deviceList(), owns = devs.length < std.length;
+  fill("b-device", devs, [...new Set((dv || []).map(b => DEV_OLD[b.device] || b.device).filter(Boolean))].filter(d => !owns || !std.includes(d)));
   otherBox("b-device");
   newBrewSetup(dev);
   // From "Brews" on a card: the form stays folded into one line, so the brews are right below the coffee.
@@ -3553,7 +3559,11 @@ async function loadNames() {
   (data || []).forEach(p => { names[p.id] = p.display_name; prefsOf[p.id] = p.prefs || {}; });
   if (me && names[me.id]) store.set("alto.myname", names[me.id]);   // for the greeting on Home
   // Settings: the form mode once per visit (the toggle in the form still works for now)
-  if (!prefsApplied) { prefsApplied = true; const fm = myPrefs().formmode; if (fm === "simple" || fm === "all") setFormMode(fm); }
+  if (!prefsApplied) {
+    prefsApplied = true; const fm = myPrefs().formmode; if (fm === "simple" || fm === "all") setFormMode(fm);
+    const own = myPrefs().devices; if (own && own.length) store.set("alto.mydevs", JSON.stringify(own)); else store.del("alto.mydevs");   // the devices you own, for next time
+    if (!$("pickview").hidden) renderPick();
+  }
   showName();
   fillMadeBy(editingBrew ? (editingBrew.made_by || editingBrew.created_by || "") : ($("b-madeby").value || (me && me.id)));
   if (tasters.length && !editingBrew && !edited) refreshAutoDrinks(); else if (tasters.length) renderTasters();   // names (and usual drinks) arrived
