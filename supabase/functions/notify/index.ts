@@ -4,6 +4,7 @@
 //   { action: "key" }                              -> the public key the phones need to subscribe
 //   { action: "test" }                             -> a test notification to your own phones
 //   { action: "brew", brew_id, ratings: [ids] }    -> "Andrés made you a coffee" to the people the brew is for
+//   { action: "rated", rating_id }                 -> "Birte rated your coffee" to the person who made the brew (supabase/35)
 // Secrets (Supabase > Edge Functions > Secrets): VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:...)
 // The encryption is written out here (RFC 8291 and 8292) with the browser's own crypto, so nothing else is needed.
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -89,6 +90,15 @@ if (globalThis.Deno) Deno.serve(async req => {
     targets = (data || []).filter(t => !only || only.has(t.rating_id)).map(t => ({ s: t, msg: {
       title: t.maker + " made you a coffee", body: (t.coffee_name || "A coffee") + dev(t.device) + ". Tap to rate your cup.",
       url: site + "journal/index.html#c=" + t.coffee_id + "&b=" + q.brew_id + "&rate=" + t.rating_id, tag: "rate-" + t.rating_id } }));
+  } else if (q.action === "rated" && q.rating_id) {
+    const { data, error } = await db.rpc("push_rated_targets", { p_rating: q.rating_id });
+    if (error) return json({ error: error.message }, 500);
+    const dev = d => !d ? "" : " on the " + (/^(Manual|Semi-automatic|Moka|French|Pour|Cold|Filter|Fully)\b/.test(d) ? d[0].toLowerCase() + d.slice(1) : d);
+    const stars = v => v == null ? "" : String(Math.round(Number(v) * 2) / 2).replace(/\.0$/, "") + "\u2605";
+    targets = (data || []).map(t => ({ s: t, msg: {
+      title: t.rater + " rated your coffee" + (t.rating != null ? ": " + stars(t.rating) : ""),
+      body: (t.coffee_name || "A coffee") + dev(t.device) + (t.balance != null ? ", balance " + t.balance + "/5" : "") + ". Tap to see it.",
+      url: site + "journal/index.html#c=" + t.coffee_id + "&b=" + t.brew_id, tag: "rated-" + q.rating_id } }));
   } else return json({ error: "Unknown action." }, 400);
   await Promise.all(targets.map(async t => {
     try {

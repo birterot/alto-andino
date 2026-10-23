@@ -588,6 +588,7 @@ async function showRate(rid) {
       p_drank_at: pick === "now" ? new Date().toISOString() : pick, p_scores: sc });
     $("rsave").disabled = false;
     if (error) { say("Could not save: " + error.message); return; }
+    if (c.rating == null && c.balance == null) try { db.functions.invoke("notify", { body: { action: "rated", rating_id: rid } }).catch(() => {}); } catch (e) { /* the rating is saved either way */ }   // first time: tell who made it
     cups = null; history.replaceState(null, "", location.pathname); await route();
     say("Saved. " + c.maker + " sees your rating now.");
   };

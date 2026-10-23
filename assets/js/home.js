@@ -124,7 +124,7 @@
 
   // one note at a time: your caffeine first (when there was coffee today), then to do, Friends, the fact of the day
   var notes = [], cafNote = null, rateNote = null, tipNote = null, todoNote = null, trendNote = null;
-  function todoOf(n) { return n > 0 ? { k: "To do", text: n + (n === 1 ? " of your brews still needs" : " of your brews still need") + " a Balance rating.", href: "journal/index.html#nobal", go: "Rate them" } : null; }
+  function todoOf(n) { return n > 0 ? { k: "To do", text: n + (n === 1 ? " of your brews still needs" : " of your brews still need") + " a Balance rating.", href: "journal/index.html#nobal", go: "Rate them", tap: true } : null; }
   var tr = session && shelf ? toRate(shelf.tr, shelf.nm) : null;
   if (tr) notes.push(rateNote = tr);
   var caf = session ? caffeine(shelf && shelf.cb) : null;
@@ -255,7 +255,8 @@
       if (sx === null) return; var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
       if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.3) { swiped = true; go(dx < 0 ? 1 : -1); }
     }, { passive: true });
-    card.addEventListener("click", function (e) { if (swiped) { swiped = false; return; } if (e.target.closest("a,button")) return; go(1); });
+    // a tap: a "to do" note (to rate, a Balance missing) takes you there; any other note shows the next one (swiping works for all)
+    card.addEventListener("click", function (e) { if (swiped) { swiped = false; return; } if (e.target.closest("a,button")) return; var n = notes[i]; if (n && n.tap && n.href) { location.href = n.href; return; } go(1); });
     card.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " " || e.key === "ArrowRight") { e.preventDefault(); go(1); } else if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); } });
     card.tabIndex = 0; card.setAttribute("aria-label", "Notes: tap or swipe for the next one");
   }
@@ -277,9 +278,9 @@
     var when = (today ? "at " : new Date(x.t).toLocaleDateString("en-GB", { weekday: "long" }) + " at ") + hm(x.t);
     var what = (x.n || "a coffee") + (x.d ? " on the " + (/^(Manual|Semi-automatic|Moka|French|Pour|Cold|Filter|Fully)\b/.test(x.d) ? x.d[0].toLowerCase() + x.d.slice(1) : x.d) : "");
     var href = x.g ? "friends/index.html#rate=" + x.r : "journal/index.html#c=" + x.c + "&b=" + x.b + "&rate=" + x.r;   // g: a cup at a friend's
-    if (list.length === 1) return { k: "To rate", text: (by ? by + " made you a coffee " + when + ": " : "Your coffee from " + when + " is still to rate: ") + what + ".", href: href, go: "Rate your cup" };
+    if (list.length === 1) return { k: "To rate", text: (by ? by + " made you a coffee " + when + ": " : "Your coffee from " + when + " is still to rate: ") + what + ".", href: href, go: "Rate your cup" , tap: true};
     var allG = list.every(function (y) { return y.g; });
-    return { k: "To rate", text: list.length + " of your cups are waiting for your rating. The latest: " + what + ", " + when + (by ? ", made by " + by : "") + ".", href: allG ? "friends/index.html" : x.g ? href : "journal/index.html#torate", go: allG ? "Rate them" : x.g ? "Rate this one" : "Rate them" };
+    return { k: "To rate", text: list.length + " of your cups are waiting for your rating. The latest: " + what + ", " + when + (by ? ", made by " + by : "") + ".", href: allG ? "friends/index.html" : x.g ? href : "journal/index.html#torate", go: allG ? "Rate them" : x.g ? "Rate this one" : "Rate them", tap: true };
   }
   function showCaffeine(rows) { cafNote = swapNote(cafNote, caffeine(rows), false); }
 

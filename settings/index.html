@@ -22,6 +22,11 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .set{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:6px 18px 20px;margin:0 0 16px;max-width:560px}
 .set h2{font-size:19px;margin:14px 0 2px}
 .set .hint{margin:2px 0 0;color:var(--mut);font-size:14px;max-width:52ch}
+.stabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:14px -16px 18px;padding:2px 16px;max-width:600px}
+.stabs::-webkit-scrollbar{display:none}
+.stabs button{flex:none;min-height:40px;padding:0 16px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font:inherit;font-size:14.5px;cursor:pointer;white-space:nowrap}
+.stabs button[aria-current=true]{border-color:var(--act);background:var(--act);color:var(--on-act);font-weight:600}
+[data-tab][hidden],.bar[hidden]{display:none}
 .devs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .devs button{min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
 .devs button[aria-pressed=true]{border-color:var(--act);background:var(--act);color:var(--on-act)}
@@ -76,7 +81,8 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
 <body>
 <main>
 <h1>Settings</h1>
-<p class="sub">Your name, and what a new brew starts with. Saved with your login, so it is the same on every phone.</p>
+<p class="sub">Saved with your login, so it is the same on every phone.</p>
+<nav class="stabs" id="stabs" aria-label="Settings" hidden></nav>
 
 <section id="signedout" class="set out" hidden>
   <h2>Sign in first</h2>
@@ -85,7 +91,7 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
 </section>
 
 <form id="sf" hidden>
-  <section class="set" id="you">
+  <section class="set" id="you" data-tab="you">
     <h2>You</h2>
     <div class="me" id="mebox" hidden>
       <span class="face" id="s-face" aria-hidden="true"></span>
@@ -100,7 +106,7 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
     <p class="hint" id="colorhint"></p>
   </section>
 
-  <section class="set">
+  <section class="set" id="brewset" data-tab="brew">
     <h2>New brews start with</h2>
     <p class="lab" id="devslab">Devices you own</p>
     <div class="devs" id="s-devs" role="group" aria-labelledby="devslab"></div>
@@ -115,7 +121,7 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
     <p class="hint">Simple shows what you need to log and rate a brew; All shows grinder, temperature, pressure, tasting notes and more. You can still switch inside the form.</p>
   </section>
 
-  <section class="set">
+  <section class="set" id="drinkset" data-tab="brew">
     <h2>Your usual drink</h2>
     <p class="hint">When you rate a brew, it starts on this. The others in your household see yours too, so it is filled in when they add you as a taster.</p>
     <label>With espresso (espresso machine, moka pot)<select id="s-drink-esp"></select></label>
@@ -123,13 +129,13 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
     <label>Milk<select id="s-milk"></select></label>
   </section>
 
-  <section class="set" id="homeset">
+  <section class="set" id="homeset" data-tab="home">
     <h2>Home</h2>
     <p class="hint">Which shortcuts Home shows under “Log a brew”, and in which order. They are also the tabs at the top of those pages. Everything stays in the menu (☰) either way.</p>
     <div class="tchk" id="s-tiles"></div>
   </section>
 
-  <section class="set" id="cafset">
+  <section class="set" id="cafset" data-tab="home">
     <h2>Caffeine on Home</h2>
     <div class="seg" id="s-cafshow"><button type="button" data-m="">On</button><button type="button" data-m="off">Off</button></div>
     <div id="cafmore">
@@ -151,7 +157,7 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
     <p class="hint" id="cafoff" hidden>Off: Home shows no caffeine. Your cups are still logged as usual, and you can turn it on again here any time.</p>
   </section>
 
-  <section class="set" id="sleepset">
+  <section class="set" id="sleepset" data-tab="home">
     <h2>Sleep check</h2>
     <div class="seg" id="s-sleep"><button type="button" data-m="">Off</button><button type="button" data-m="on">On</button></div>
     <p class="hint">On: in the morning, Home asks how you slept (badly, okay or well), one tap. After a few good and a few bad nights, it compares them with your coffee and gives a tip, for example to have your last coffee earlier. Only you see your answers.</p>
@@ -159,19 +165,23 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
     <p><button type="button" class="lnk" id="sleepdel">Delete my sleep answers</button> <span class="hint" id="sleepdelmsg" role="status"></span></p>
   </section>
 
-  <div class="bar"><button class="go" id="save" type="submit">Save settings</button><p id="msg" role="status"></p></div>
-  <section class="set">
+  <div class="bar" id="savebar"><button class="go" id="save" type="submit">Save settings</button><p id="msg" role="status"></p></div>
+  <section class="set" id="hhset" data-tab="account">
     <h2>Household</h2>
     <p class="hint" id="hhname">The coffees, brews and people you share.</p>
     <p><a class="lnk" href="../journal/index.html#household">Name, members and invites &rarr;</a></p>
   </section>
-  <section class="set" id="pushset">
+  <section class="set" id="pushset" data-tab="notify">
     <h2>Notifications</h2>
-    <p class="hint">On this phone: a notification when someone logs a brew for you, so you can rate your cup. Each phone is turned on by itself.</p>
+    <p class="hint">On this phone: a notification when someone makes you a coffee (so you can rate your cup), or rates one you made. Each phone is turned on by itself.</p>
     <p class="pstate" id="pstate" role="status">Checking...</p>
     <div class="pbtns"><button type="button" class="go" id="pon" hidden>Turn on notifications</button><button type="button" class="lnk" id="ptest" hidden>Send a test</button><button type="button" class="lnk" id="poff" hidden>Turn off</button></div>
+    <p class="lab">Tell me when</p>
+    <label class="chk"><input type="checkbox" id="n-rate" checked> Someone made me a coffee to rate</label>
+    <label class="chk"><input type="checkbox" id="n-rated" checked> Someone rated a coffee I made</label>
+    <p class="hint" id="nmsg" role="status">For all your phones with notifications on. Saved right away.</p>
   </section>
-  <section class="set" id="dataset">
+  <section class="set" id="dataset" data-tab="account">
     <h2>Your data</h2>
     <p class="hint">What the app stores and who helps run it: <a href="../privacy.html">Privacy</a>.</p>
     <p><button type="button" class="lnk" id="export">Download my data</button> <span class="hint" id="exportmsg" role="status"></span></p>
@@ -186,7 +196,7 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
   </section>
 
 
-  <p class="foot"><span id="who"></span> <button class="lnk" id="tour" type="button">Show the tour again</button> <button class="lnk" id="out" type="button">Sign out</button></p>
+  <p class="foot" data-tab="account"><span id="who"></span> <button class="lnk" id="tour" type="button">Show the tour again</button> <button class="lnk" id="out" type="button">Sign out</button></p>
 </form>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
@@ -200,6 +210,26 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
 const db = supabase.createClient(SUPA.url, SUPA.key);
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
+// tabs: You, Brewing, Home (shortcuts, caffeine, sleep), Notifications, Account. "Save settings" is for the first three; the others act right away.
+const TABS = [["you", "You"], ["brew", "Brewing"], ["home", "Home"], ["notify", "Notifications"], ["account", "Account"]];
+let tab = "you";
+function showTab(t, push) {
+  tab = TABS.some(x => x[0] === t) ? t : "you";
+  document.querySelectorAll("#sf [data-tab]").forEach(x => { x.hidden = x.dataset.tab !== tab; });
+  $("savebar").hidden = !["you", "brew", "home"].includes(tab);
+  $("stabs").querySelectorAll("button").forEach(b => b.setAttribute("aria-current", String(b.dataset.t === tab)));
+  const on = $("stabs").querySelector('[aria-current="true"]'); if (on) { const n = $("stabs"); n.scrollLeft = Math.max(0, on.offsetLeft - (n.clientWidth - on.offsetWidth) / 2); }
+  if (push) history.replaceState(null, "", location.pathname + location.search + "#" + tab);
+}
+const revealIn = node => { const s = node && node.closest("[data-tab]"); if (s && s.dataset.tab !== tab) showTab(s.dataset.tab, true); };
+TABS.forEach(([k, t]) => { const b = el("button", "", t); b.type = "button"; b.dataset.t = k; b.onclick = () => { showTab(k, true); window.scrollTo({ top: 0 }); }; $("stabs").appendChild(b); });
+function tabFromHash() {   // #brew, or a part of a page: #cafset (from Home), #pushset, #you
+  const h = location.hash.slice(1); if (!h) { showTab(tab); return; }
+  if (TABS.some(x => x[0] === h)) { showTab(h); return; }
+  const n = document.getElementById(h); const sec = n && n.closest("[data-tab]");
+  showTab(sec ? sec.dataset.tab : tab); if (n) setTimeout(() => n.scrollIntoView({ block: "start" }), 60);
+}
+window.addEventListener("hashchange", tabFromHash);
 let syncDevs = () => {};   // set once the device list is built
 const ownedDevs = () => [...document.querySelectorAll("#s-devs button[aria-pressed=true]")].map(b => b.dataset.d);
 const opt = (s, v, t) => { const o = el("option", "", t); o.value = v; s.appendChild(o); return o; };
@@ -405,6 +435,7 @@ async function load() {
   if (hasProfile) { $("s-about").value = (data && data.about) || ""; $("s-prof").href = "../friends/index.html#p=" + me.id; photoPath = (data && data.photo_path) || null; drawFace(); }
   const pick = (id, v) => { const s = $(id); s.value = v || ""; if (s.value !== (v || "")) s.value = ""; };
   pick("s-device", p.device); pick("s-grinder", p.grinder); pick("s-drink-esp", p.drink_esp); pick("s-drink-filter", p.drink_filter); pick("s-milk", p.milk);
+  $("n-rate").checked = !(p.notify && p.notify.rate === false); $("n-rated").checked = !(p.notify && p.notify.rated === false);
   document.querySelectorAll("#s-devs button").forEach(b => b.setAttribute("aria-pressed", String((p.devices || []).includes(b.dataset.d)))); syncDevs();
   setFm(p.formmode || "");
   color = (DEFAULTS.COLORS || []).some(c => c[0] === p.color) ? p.color : ""; renderColors();
@@ -421,7 +452,7 @@ async function load() {
 $("sf").onsubmit = async e => {
   e.preventDefault();
   const name = $("s-name").value.trim().slice(0, 40);
-  if (!name) { $("msg").textContent = "Please put in a name first: it is shown on your brews."; $("s-name").focus(); return; }
+  if (!name) { $("msg").textContent = "Please put in a name first: it is shown on your brews."; revealIn($("s-name")); $("s-name").focus(); return; }
   const prefs = Object.assign({}, (profile && profile.prefs) || {});
   [["device", "s-device"], ["grinder", "s-grinder"], ["drink_esp", "s-drink-esp"], ["drink_filter", "s-drink-filter"], ["milk", "s-milk"]].forEach(([k, id]) => { if ($(id).value) prefs[k] = $(id).value; else delete prefs[k]; });
   const own = ownedDevs(); if (own.length) prefs.devices = own; else delete prefs.devices;
@@ -434,7 +465,7 @@ $("sf").onsubmit = async e => {
   if ($("s-bed").value) prefs.caf_bed = $("s-bed").value; else delete prefs.caf_bed;
   if (cafShow) prefs.caf_show = cafShow; else delete prefs.caf_show;
   if (sleepOn === "on" && !sleepConsent) {
-    if (!$("s-sleepok").checked) { $("msg").textContent = "To turn on the Sleep check, please tick the box below it first."; $("sleepconsent").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
+    if (!$("s-sleepok").checked) { $("msg").textContent = "To turn on the Sleep check, please tick the box below it first."; revealIn($("sleepconsent")); $("sleepconsent").scrollIntoView({ block: "center", behavior: "smooth" }); return; }
     sleepConsent = new Date().toISOString();
   }
   if (sleepOn) prefs.sleep = sleepOn; else delete prefs.sleep;
@@ -485,6 +516,17 @@ async function pushCheck() {
   if (sub) pushUI("On for this phone.", true); else pushUI("Off on this phone.", false);
   if (!pushKey) pushNotify({ action: "key" }).then(d => { pushKey = d && d.key; }).catch(() => {});   // ready before you tap (the iPhone wants the question right away)
 }
+// which notifications you want (for all your phones): saved into your settings at once
+["n-rate", "n-rated"].forEach(id => $(id).addEventListener("change", async () => {
+  if (!profile) { $("nmsg").textContent = "Save your name under \u201CYou\u201D first, then choose here."; return; }
+  const prefs = Object.assign({}, profile.prefs || {}), n = {};
+  if (!$("n-rate").checked) n.rate = false; if (!$("n-rated").checked) n.rated = false;
+  if (Object.keys(n).length) prefs.notify = n; else delete prefs.notify;
+  $("nmsg").textContent = "Saving...";
+  const { error } = await db.from("profiles").update({ prefs }).eq("id", me.id);
+  if (error) { $("nmsg").textContent = "Could not save: " + error.message; return; }
+  profile.prefs = prefs; $("nmsg").textContent = "Saved. " + (n.rate && n.rated ? "No notifications from the app for now." : "For all your phones with notifications on.");
+}));
 $("pon").onclick = async () => {
   try {
     const perm = await Notification.requestPermission();
@@ -513,7 +555,7 @@ $("poff").onclick = async () => {
 
 db.auth.onAuthStateChange((_e, session) => setTimeout(() => {
   me = session ? session.user : null;
-  $("signedout").hidden = !!me; $("sf").hidden = !me;
+  $("signedout").hidden = !!me; $("sf").hidden = !me; $("stabs").hidden = !me; if (me) tabFromHash();
   if (me) { load(); pushCheck(); db.from("households").select("name").then(r => { const n = (r.data || []).map(x => x.name); if (n.length) $("hhname").textContent = (n.length === 1 ? "You share coffees, brews and stats in " + n[0] : "Your households: " + n.join(", ")) + "."; }); }
 }, 0));
 </script>

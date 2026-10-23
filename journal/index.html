@@ -355,6 +355,11 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .addc .ico{stroke-width:1.6}
 #listhost > #addbox:not([open]){display:none}
 #cfilters{margin-top:16px}
+/* the roast legend over the coffee cards */
+.rleg{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:-4px 0 12px;font-size:12.5px;color:var(--mut)}
+.rleg > span:first-child{margin-right:2px}
+.rleg .sws{display:inline-flex;gap:3px}
+.rleg i{width:18px;height:14px;border-radius:4px;background:var(--f);border:1px solid var(--line);border-top:3px solid var(--s)}
 /* Recent activity: one day after the other, newest first */
 #feed h3.day{margin:24px 0 8px;font-size:14px;font-weight:600;color:var(--mut)}
 #feed h3.day:first-child{margin-top:4px}
@@ -581,6 +586,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
     <select id="flt-roast" aria-label="Filter by roast level"></select>
     <select id="flt-open" aria-label="Filter by bag"><option value="">Any bag</option><option value="open">Open now</option><option value="closed">Not opened yet</option><option value="done">Finished</option></select>
   </div>
+  <div class="rleg" id="rleg" hidden></div>
   <div id="list" class="clist"></div>
   <div id="archived"></div>
   </div>
@@ -863,6 +869,14 @@ function applyPal(a, process) {
 // Card colours follow the roast level (data/defaults.js ROAST_COLOURS); unknown roast levels use the process colours.
 const ROASTS = (window.DEFAULTS && window.DEFAULTS.ROAST_COLOURS) || [];
 const roastIdx = r => ROASTS.findIndex(x => x[0].toLowerCase() === String(r || "").trim().toLowerCase());
+// what the card colours mean: one little swatch per roast level, light to dark (the names show when you tap or hover)
+function drawRoastLegend(show) {
+  const box = $("rleg"); box.hidden = !show || !ROASTS.length; if (box.hidden || box.childNodes.length) return;
+  box.append(el("span", "", "Card colour shows the roast:"), el("span", "", "light"));
+  const sw = el("span", "sws"); sw.setAttribute("role", "img"); sw.setAttribute("aria-label", "From light to dark: " + ROASTS.map(r => r[0]).join(", "));
+  ROASTS.forEach(r => { const i = el("i"); i.title = r[0]; i.style.setProperty("--f", "light-dark(" + r[1][0] + "," + r[1][1] + ")"); i.style.setProperty("--s", "light-dark(" + r[1][2] + "," + r[1][3] + ")"); sw.appendChild(i); });
+  box.append(sw, el("span", "", "dark"));
+}
 function applyLook(a, c) {
   const i = roastIdx(c.roast_level);
   if (i < 0) { applyPal(a, c.process); return; }
@@ -1280,6 +1294,7 @@ function renderCoffees() {
   const active = coffeeData.filter(c => !c.archived);
   renderArchived(coffeeData.filter(c => c.archived));
   $("cfilters").hidden = active.length < 2;
+  drawRoastLegend(active.length > 0);
   if (!active.length) {
     const p = el("p", "hint", coffeeData.length ? "All bags are archived. Add a new coffee with the bag and plus at the top." : "No coffees yet. Add your first one with the bag and plus at the top.");
     if (!coffeeData.length && friends.length) { p.append(" Or see what your friends drink, and add one of theirs: "); const a = el("a", "", "their shelves \u2192"); a.href = "../friends/index.html"; p.appendChild(a); }
@@ -2431,8 +2446,8 @@ function startRate(b, rid) {
 }
 const rateSig = t => JSON.stringify([t.id || null, t.rater_id || null, !!t.guest, t.guest_name || null, t.rating ?? null, t.balance ?? null, t.drink || null, t.milk || null, t.drank || t.drank_at || null, Object.entries(t.scores || {}).sort()]);
 
-// When you had it: empty = now (the moment you save). Logged later? Pick "1 h ago" or a time; it counts for the caffeine on Home.
-const WHEN = [["Now", 0], ["30 min ago", 30], ["1 h ago", 60], ["Earlier\u2026", null]];
+// When you had it: empty = now (the moment you save). A little later? "15 min ago". Anything else: pick the day and time. It counts for the caffeine on Home.
+const WHEN = [["Now", 0], ["15 min ago", 15], ["Pick a time\u2026", null]];
 function renderWhen() {
   const box = $("wchips"), inp = $("b-when"), v = inp.value; box.textContent = "";
   inp.max = localDT(new Date(Date.now() + 5 * 60e3));
@@ -3300,14 +3315,18 @@ async function saveRate() {
       const d1 = await db.from("brew_scores").delete().eq("rating_id", o.id); if (d1.error) throw d1.error;
       const d2 = await db.from("brew_ratings").delete().eq("id", o.id); if (d2.error) throw d2.error;
     }
+    const tell = [];   // your own cup, rated for the first time: the one who made the brew gets a notification
     for (const t of changed) {
       const f = { rating: t.rating, balance: t.balance, drink: t.drink || null, milk: t.milk || null, drank_at: t.drank_at || null };
       let rid = t.id;
+      const was = rid ? tastersOf(b).find(o => o.id === rid) : null, first = !was || (was.rating == null && was.balance == null);
       if (rid) { const { error } = await db.from("brew_ratings").update(f).eq("id", rid); if (error) throw error; const d = await db.from("brew_scores").delete().eq("rating_id", rid); if (d.error) throw d.error; }
       else { const { data: r, error } = await db.from("brew_ratings").insert({ brew_id: b.id, rater_id: t.rater_id, is_guest: t.is_guest, guest_name: t.guest_name, ...f }).select("id").single(); if (error) throw error; rid = r.id; }
       const sc = Object.entries(t.scores || {}).map(([attribute, score]) => ({ brew_id: b.id, rating_id: rid, attribute, score }));
       if (sc.length) { const r2 = await db.from("brew_scores").insert(sc); if (r2.error) throw r2.error; }
+      if (first && me && !t.is_guest && t.rater_id === me.id && (t.rating != null || t.balance != null)) tell.push(rid);
     }
+    tell.forEach(rid => { try { db.functions.invoke("notify", { body: { action: "rated", rating_id: rid } }).catch(() => {}); } catch (e) { /* saved either way */ } });
     // the brew's own stars stay the average of everyone who rated it; the comments are the brew's
     const rs = rows.map(t => t.rating).filter(v => v != null);
     const up = await db.from("brews").update({ rating: rs.length ? Math.round(rs.reduce((a, c) => a + c, 0) / rs.length * 2) / 2 : null, notes }).eq("id", b.id);
