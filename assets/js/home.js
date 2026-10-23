@@ -200,9 +200,15 @@
             var cs = hid ? db.from("coffees").select("*").eq("household_id", hid).order("created_at", { ascending: false }) : Promise.resolve({ data: null });
             return cs.then(function (r) {
               var list = r && !r.error && Array.isArray(r.data) ? r.data : null;
-              var ids = (list || (shelf && shelf.coffees) || []).filter(function (c) { return c.open_date && !c.finished_at && !c.archived; }).map(function (c) { return c.id; });
-              var bq = ids.length ? db.from("brews").select("coffee_id,dose_g").in("coffee_id", ids) : Promise.resolve({ data: [] });
-              return bq.then(function (b) { return { data: b && b.data, error: b && b.error, coffees: list }; });
+              // every bag not finished: one with a brew counts as open, even if nobody marked it (it opened on the day of its first brew)
+              var cl = list || (shelf && shelf.coffees) || [];
+              var ids = cl.filter(function (c) { return !c.finished_at && !c.archived; }).map(function (c) { return c.id; });
+              var bq = ids.length ? db.from("brews").select("coffee_id,dose_g,brewed_at").in("coffee_id", ids).order("brewed_at") : Promise.resolve({ data: [] });
+              return bq.then(function (b) {
+                var first = {}; ((b && b.data) || []).forEach(function (x) { if (!first[x.coffee_id]) first[x.coffee_id] = x.brewed_at; });
+                if (list) list.forEach(function (c) { if (!c.open_date && !c.finished_at && first[c.id]) c.open_date = String(first[c.id]).slice(0, 10); });
+                return { data: b && b.data, error: b && b.error, coffees: list };
+              });
             });
           })(),
           db.from("sleep_logs").select("night,quality").gte("night", since2.slice(0, 10)),   // the sleep check (supabase/31_sleep.sql; before that: an error, left out)
