@@ -381,6 +381,10 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .fi .rr .av{width:20px;height:20px;font-size:11px}
 .fi .rr .rn{font-weight:600;color:var(--ink)}
 .fi .rr .rt.wide{grid-column:2 / -1}
+.fi .rr .rcm{grid-column:3;margin-top:-5px;color:var(--mut);font-style:italic;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fi .note .nl,.bc .bnote .nl{color:var(--mut);font-style:normal}
+.bc .tcm{margin:6px 0 0;font-style:italic;color:var(--ink)}
+.bnote{margin:10px 0 0;padding:8px 12px;border-radius:10px;background:var(--bg);font-size:14px;color:var(--ink)}
 .fi .note{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fe{display:flex;align-items:flex-start;gap:10px;line-height:21px;padding:7px 4px 7px 8px;margin-bottom:6px;font-size:14px;color:var(--mut);text-decoration:none;border-radius:10px}
 .fe:hover{background:var(--card)}
@@ -714,9 +718,11 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
         <div id="notebox"></div>
         <div class="addnote"><input id="b-newnote" placeholder="Another note, e.g. jasmine" autocomplete="off" aria-label="Add a tasting note"><button type="button" class="btn ghost" id="b-addnote"></button></div>
         </div>
+        <label id="tnlab">Your comment<textarea id="b-tnote" rows="3" maxlength="1000" placeholder="What you thought of your cup"></textarea></label>
         </div>
         </div>
-        <label>Comments<textarea id="b-notes" rows="3" placeholder="Anything else about this brew"></textarea></label>
+        <p class="bnote" id="bnoteshow" hidden></p>
+        <label id="bnlab">Brew comment<textarea id="b-notes" rows="3" placeholder="About the brew itself: the grind, what to change next time"></textarea></label>
         <button class="go" id="bsave">Save brew</button>
         <button class="lnk" id="bcancel" type="button" hidden>Cancel</button>
       </form>
@@ -1631,7 +1637,7 @@ function brewChanges(old, row) {
   if (!(auto(old) && auto(row)) && (old.recipe || "") !== (row.recipe || "")) out.push(["Recipe name", auto(row) ? "" : row.recipe, auto(old) ? "" : old.recipe]);
   // ratings: per taster, their stars and each taste score; tasters added or removed get one line
   const tkey = t => t.guest ? "g:" + (t.guest_name || "").toLowerCase() : "u:" + t.rater_id;
-  const before = tastersOf(old), after = tasterRows().map(x => ({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name, rating: x.rating, balance: x.balance, drink: x.drink, milk: x.milk, drank: x.drank_at, scores: x.scores }));
+  const before = tastersOf(old), after = tasterRows().map(x => ({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name, rating: x.rating, balance: x.balance, drink: x.drink, milk: x.milk, drank: x.drank_at, scores: x.scores , note: x.note}));
   const several = before.length > 1 || after.length > 1;
   const brief = t => [t.rating == null ? null : Stars.text(t.rating), t.balance == null ? null : "balance " + SCALE.balanceText(t.balance), Object.keys(t.scores || {}).length ? Object.keys(t.scores).length + (Object.keys(t.scores).length === 1 ? " score" : " scores") : null].filter(Boolean).join(", ") || "not rated yet";
   const label = (t, what) => several ? tName(t) + ": " + what : what;
@@ -1648,6 +1654,7 @@ function brewChanges(old, row) {
     if ((t.drink || "") !== (o.drink || "")) out.push([label(t, "Drink"), drinkName(t.drink), drinkName(o.drink)]);
     if ((t.milk || "") !== (o.milk || "")) out.push([label(t, "Milk"), milkName(t.milk), milkName(o.milk)]);
     const dk = x => x ? Math.round(Date.parse(x) / 60e3) : null;
+    if ((t.note || "") !== (o.note || "")) out.push([label(t, "Comment"), t.note || "", o.note || ""]);
     if (dk(t.drank) !== dk(o.drank)) out.push([label(t, "Drank it"), t.drank ? fmtDT(new Date(t.drank)) : "with the brew", o.drank ? fmtDT(new Date(o.drank)) : "with the brew"]);
     [...new Set(Object.keys(o.scores || {}).concat(Object.keys(t.scores || {})))].forEach(k => {
       const a = (o.scores || {})[k], b = (t.scores || {})[k];
@@ -2092,6 +2099,7 @@ function stashTaster() {
   t.rating = rating; t.balance = balance; t.scores = { ...scores };
   const dv = $("b-drink").value; t.drink = dv === "__own" ? ($("b-drink-own").value.trim() || null) : (dv || null); t.milk = $("milklab").hidden ? null : ($("b-milk").value || null);
   if (t.guest) t.guest_name = $("b-guest").value.trim() || null;
+  t.note = $("b-tnote").value.trim() || null;
   const dv2 = $("b-drank").value, dd = dv2 ? new Date(dv2) : null; t.drank = dd && isFinite(dd) ? dd.toISOString() : null;
 }
 // When this person drank it: with the brew (empty), now, or another time. For iced coffee made the night before.
@@ -2124,6 +2132,7 @@ function showTaster(i) {
   $("b-drink").value = own ? "__own" : (t.drink || ""); $("b-drink-own").value = own ? t.drink : ""; $("b-milk").value = t.milk || ""; syncMilk();
   delete $("b-drank").dataset.q; $("b-drank").value = t.drank ? localDT(new Date(t.drank)) : ""; renderDrank();
   $("ovlab").textContent = tasters.length > 1 ? "Overall, for " + tName(t) : "Overall";
+  $("b-tnote").value = t.note || ""; $("tnlab").firstChild.textContent = !t.guest && me && t.rater_id === me.id ? "Your comment" : "Comment, by " + tName(t);
   renderTasters();
 }
 function setTasters(list, act) { tasters = list && list.length ? list : [meTaster()]; showTaster(act || 0); }
@@ -2165,7 +2174,7 @@ $("b-guest").addEventListener("input", () => { renderTasters(); $("ovlab").textC
 function tastersOf(b) {
   const sc = b.brew_scores || [], rs = (b.brew_ratings || []).slice().sort((x, y) => String(x.created_at || "").localeCompare(String(y.created_at || "")) || String(x.id).localeCompare(String(y.id)));
   const sco = list => { const o = {}; list.forEach(x => { o[x.attribute] = x.score; }); return o; };
-  if (rs.length) return rs.map(r => ({ id: r.id, rater_id: r.is_guest ? null : r.rater_id, guest: !!r.is_guest, guest_name: r.guest_name || null, rating: r.rating == null ? null : Number(r.rating), balance: r.balance == null ? null : Number(r.balance), drink: r.drink || null, milk: r.milk || null, drank: r.drank_at || null, scores: sco(sc.filter(x => x.rating_id === r.id)) }));
+  if (rs.length) return rs.map(r => ({ id: r.id, rater_id: r.is_guest ? null : r.rater_id, guest: !!r.is_guest, guest_name: r.guest_name || null, rating: r.rating == null ? null : Number(r.rating), balance: r.balance == null ? null : Number(r.balance), drink: r.drink || null, milk: r.milk || null, drank: r.drank_at || null, note: r.note || null, scores: sco(sc.filter(x => x.rating_id === r.id)) }));
   if (b.rating != null || sc.length) return [{ rater_id: b.made_by || b.created_by || null, guest: false, guest_name: null, rating: b.rating == null ? null : Number(b.rating), balance: null, drink: null, milk: null, scores: sco(sc) }];
   return [];
 }
@@ -2184,7 +2193,7 @@ function brewAvg(b) {
 function tasterRows() {
   stashTaster();
   return tasters   // everyone the brew is for, also before they rated it (an empty rating = "to rate")
-    .map(t => ({ id: t.id || null, rater_id: t.guest ? null : t.rater_id, is_guest: !!t.guest, guest_name: t.guest ? (t.guest_name || null) : null, rating: t.rating, balance: t.balance == null ? null : t.balance, drink: t.drink || null, milk: t.drink && (!drinkOf(t.drink) || drinkOf(t.drink).milk) ? (t.milk || null) : null, drank_at: t.drank || null, scores: { ...t.scores } }));
+    .map(t => ({ id: t.id || null, rater_id: t.guest ? null : t.rater_id, is_guest: !!t.guest, guest_name: t.guest ? (t.guest_name || null) : null, rating: t.rating, balance: t.balance == null ? null : t.balance, drink: t.drink || null, milk: t.drink && (!drinkOf(t.drink) || drinkOf(t.drink).milk) ? (t.milk || null) : null, drank_at: t.drank || null, note: t.note || null, scores: { ...t.scores } }));
 }
 
 // One text for the settings of a brew. It is also the automatic recipe name.
@@ -2306,7 +2315,7 @@ $("b-device-new").addEventListener("change", () => { applyType(); });
 
 // ----- drafts: whatever you type is kept on this phone until you save or cancel
 function saveDraft() {
-  if (bmode === "rate" && editingBrew && edited) { stashTaster(); store.set("alto.draft.rate." + editingBrew.id, JSON.stringify({ tasters, act: tAct, notes: $("b-notes").value, t: Date.now() })); return; }
+  if (bmode === "rate" && editingBrew && edited) { stashTaster(); store.set("alto.draft.rate." + editingBrew.id, JSON.stringify({ tasters, act: tAct, t: Date.now() })); return; }
   if (!cur || editingBrew || !edited) return;
   const f = {}; BF.forEach(i => { f[i] = $(i).value; });
   stashTaster();
@@ -2376,6 +2385,7 @@ const isPending = t => t && t.rating == null && t.balance == null && !Object.key
 function setBMode(m) {
   bmode = m; const rate = m === "rate";
   $("brewpart").hidden = rate; $("ratepart").hidden = !rate; $("ratehead").hidden = !rate;
+  $("bnlab").hidden = rate; if (!rate) $("bnoteshow").hidden = true;   // rating: your own comment (above); the brew's comment is only shown
   $("brewsum").textContent = rate ? "Rate the cup" : m === "edit" ? "Edit brew" : "Log a brew";
   $("bsave").textContent = rate ? "Save rating" : m === "edit" ? "Save changes" : "Save brew";
   $("bcancel").hidden = m === "brew";
@@ -2441,9 +2451,10 @@ function startRate(b, rid) {
   if (i < 0 && !rid) { ts.push(meTaster()); i = ts.length - 1; }   // you drank it too, but it was not for you: you are added
   rateOrig = JSON.stringify(ts.map(rateSig));
   $("b-notes").value = b.notes || "";
+  $("bnoteshow").hidden = !b.notes; $("bnoteshow").textContent = b.notes ? "Brew comment: " + b.notes : "";
   // an unfinished rating of this brew from earlier on this phone
   let d = null; try { d = JSON.parse(store.get("alto.draft.rate." + b.id) || "null"); } catch (e) {}
-  if (d && Array.isArray(d.tasters) && Date.now() - d.t < 7 * 864e5) { setTasters(d.tasters, d.act || 0); if (d.notes != null) $("b-notes").value = d.notes; edited = true; say("Your unsaved rating is back."); }
+  if (d && Array.isArray(d.tasters) && Date.now() - d.t < 7 * 864e5) { setTasters(d.tasters, d.act || 0); edited = true; say("Your unsaved rating is back."); }
   else setTasters(ts, Math.max(0, i));
   const h = $("ratehead"); h.textContent = "";
   const by = nameOf(b.made_by || b.created_by), when = fmtDT(new Date(b.brewed_at));
@@ -2451,7 +2462,7 @@ function startRate(b, rid) {
   $("brewbox").open = true; $("calcbox").open = false; syncNewBrew();
   requestAnimationFrame(scrollToForm);
 }
-const rateSig = t => JSON.stringify([t.id || null, t.rater_id || null, !!t.guest, t.guest_name || null, t.rating ?? null, t.balance ?? null, t.drink || null, t.milk || null, t.drank || t.drank_at || null, Object.entries(t.scores || {}).sort()]);
+const rateSig = t => JSON.stringify([t.id || null, t.rater_id || null, !!t.guest, t.guest_name || null, t.rating ?? null, t.balance ?? null, t.drink || null, t.milk || null, t.drank || t.drank_at || null, t.note || null, Object.entries(t.scores || {}).sort()]);
 
 // When you had it: empty = now (the moment you save). A little later? "15 min ago". Anything else: pick the day and time. It counts for the caffeine on Home.
 const WHEN = [["Now", 0], ["15 min ago", 15], ["Pick a time\u2026", null]];
@@ -2641,8 +2652,8 @@ async function loadFeed() {
   const rg = whenRange("r");   // a time frame: everything in it (no "Show older")
   if (ids.length) {
     const [rb, rc] = await Promise.all([
-      (rg ? db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,created_at)").in("coffee_id", ids).gte("brewed_at", rg.a.toISOString()).lt("brewed_at", rg.b.toISOString()).order("brewed_at", { ascending: false }).limit(1000)
-        : db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,created_at)").in("coffee_id", ids).order("brewed_at", { ascending: false }).limit(feedN + 1)),
+      (rg ? db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,note,created_at)").in("coffee_id", ids).gte("brewed_at", rg.a.toISOString()).lt("brewed_at", rg.b.toISOString()).order("brewed_at", { ascending: false }).limit(1000)
+        : db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,note,created_at)").in("coffee_id", ids).order("brewed_at", { ascending: false }).limit(feedN + 1)),
       db.from("cuppings").select("session_id,coffee_id,cupped_at,cupper_id,is_guest,guest_name,total").in("coffee_id", ids).order("cupped_at", { ascending: false }).limit(500)
     ]);
     if (my !== feedId) return;
@@ -2705,11 +2716,12 @@ function personTag(t, bold) {
   const n = tName(t), s = el("span", "pt"); s.append(avatar(t.guest ? null : t.rater_id, t.guest ? (t.guest_name || "Guest") : n), el(bold ? "b" : "span", "", n)); return s;
 }
 // one rating line on a feed or My brews card: stars | face | "Name, drink…" (the text wraps in its own column, under itself)
-function rateLine(rr, rating, label, t, rest) {
+function rateLine(rr, rating, label, t, rest, note) {
   rr.appendChild(rating != null ? Stars.row(rating, label) : el("span"));
   if (t) rr.appendChild(avatar(t.guest ? null : t.rater_id, t.guest ? (t.guest_name || "Guest") : tName(t)));
   const tx = el("span", "rt"); if (t) tx.appendChild(el("span", "rn", tName(t))); tx.appendChild(document.createTextNode(rest)); rr.appendChild(tx);
   if (!t) tx.classList.add("wide");
+  if (note) rr.appendChild(el("span", "rcm", "\u201C" + note + "\u201D"));   // their comment, in the text column
 }
 function feedCard(x) {
   const line = (href, icon, parts, time, c) => {   // a short line: added, opened, finished, cupped
@@ -2734,10 +2746,10 @@ function feedCard(x) {
     if (ts.length) {
       const rr = el("div", "rr");
       ts.forEach(t => rateLine(rr, t.rating, tName(t) + ": " + Stars.text(t.rating) + " of 5", t,
-        isPending(t) ? ": to rate" : (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.balance != null ? ", balance " + SCALE.balanceText(t.balance) : "") + (t.rating == null ? ", taste only" : "")));
+        isPending(t) ? ": to rate" : (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.balance != null ? ", balance " + SCALE.balanceText(t.balance) : "") + (t.rating == null ? ", taste only" : ""), t.note));
       a.appendChild(rr);
     } else a.appendChild(el("p", "", "Not rated yet"));
-    if (b.notes) a.appendChild(el("p", "note", b.notes));
+    if (b.notes) { const n = el("p", "note"); n.append(el("span", "nl", "Brew comment: "), document.createTextNode(b.notes)); a.appendChild(n); }
     return a;
   }
   const who = id => id ? tName({ rater_id: id }) : null;
@@ -2766,7 +2778,7 @@ async function loadMine() {
   mineCoffees = {}; cs.forEach(c => { mineCoffees[c.id] = c; });
   const ids = cs.map(c => c.id);
   if (!ids.length) { mineRaw = []; renderMine(); return; }
-  const { data, error: e2 } = await db.from("brews").select("id,coffee_id,brewed_at,device,dose_g,yield_g,water_g,time_s,is_dialin,made_by,created_by,recipe, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk), brew_scores(attribute,score,rating_id)")
+  const { data, error: e2 } = await db.from("brews").select("id,coffee_id,brewed_at,device,dose_g,yield_g,water_g,time_s,is_dialin,made_by,created_by,recipe, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,note), brew_scores(attribute,score,rating_id)")
     .in("coffee_id", ids).order("brewed_at", { ascending: false }).limit(1000);
   if (my !== mineId) return;
   if (e2) { say("Could not load your brews: " + e2.message); return; }
@@ -2996,9 +3008,9 @@ function mineCard(x) {
     if (ts.length) {
       const rr = el("div", "rr");
       ts.forEach(t => {
-        const tt = { rater_id: t.rater_id, guest: t.is_guest, guest_name: t.guest_name };
+        const tt = { rater_id: t.rater_id, guest: t.is_guest, guest_name: t.guest_name, note: t.note || null };
         const open = t.rating == null && t.balance == null && !(b.brew_scores || []).some(s => s.rating_id === t.id);
-        rateLine(rr, t.rating != null ? Number(t.rating) : null, tName(tt) + ": " + Stars.text(Number(t.rating)), tt, open ? ": to rate" : (t.balance != null ? ", balance " + SCALE.balanceText(t.balance) : "") + (t.rating == null ? ", taste only" : ""));
+        rateLine(rr, t.rating != null ? Number(t.rating) : null, tName(tt) + ": " + Stars.text(Number(t.rating)), tt, open ? ": to rate" : (t.balance != null ? ", balance " + SCALE.balanceText(t.balance) : "") + (t.rating == null ? ", taste only" : ""), tt.note);
       });
       a.appendChild(rr);
     } else a.appendChild(el("p", "", "Not rated yet."));
@@ -3010,7 +3022,7 @@ function mineCard(x) {
     const go = el("a", "btn", "Rate your cup"); go.href = "#c=" + b.coffee_id + "&b=" + b.id + "&rate=" + x.r.id; p.appendChild(go); a.appendChild(p);
   }
   else {
-    if (x.r.rating != null && x.p === "me") { const s = el("div", "rr"); rateLine(s, Number(x.r.rating), "Your stars: " + Stars.text(Number(x.r.rating)), null, "Your stars" + (x.r.drink ? ", " + drinkText(x.r.drink, x.r.milk).toLowerCase() : "")); a.appendChild(s); }
+    if (x.r.rating != null && x.p === "me") { const s = el("div", "rr"); rateLine(s, Number(x.r.rating), "Your stars: " + Stars.text(Number(x.r.rating)), null, "Your stars" + (x.r.drink ? ", " + drinkText(x.r.drink, x.r.milk).toLowerCase() : ""), x.r.note); a.appendChild(s); }
     const row = el("div", "mine-bal"), seg = el("div", "bal"), ok = el("span", "ok");
     row.append(el("span", "lb", "Your Balance"), seg, ok);
     if (x.r.balance != null) seg.classList.add("set");
@@ -3173,6 +3185,8 @@ function dayN(iso, when) {
   return n >= 0 ? n : null;
 }
 
+// a taster's comment on a brew card, right under their stars: "Sweeter than yesterday"
+function tComment(t) { return el("p", "tcm", "\u201C" + t.note + "\u201D"); }
 function brewCard(b) {
   const a = el("article", "bc"), when = new Date(b.brewed_at); a.dataset.bid = b.id;
   const hd = el("div", "hd"); hd.appendChild(el("h3", "", fmtDT(when))); a.appendChild(hd);
@@ -3237,6 +3251,7 @@ function brewCard(b) {
   if (rated.length === 1 && ts.length === 1) {
     if (avg == null) { const r = el("p", "age", "Rated by "); r.appendChild(personTag(ts[0], true)); r.appendChild(document.createTextNode(", taste only")); a.appendChild(r); }
     const t = chips(ts[0].scores, ts[0].balance); if (t) a.appendChild(t);
+    if (ts[0].note) a.appendChild(tComment(ts[0]));
   }
   else if (rated.length) {   // several tasters: each with their stars and taste
     const box = el("div", "rts");
@@ -3244,11 +3259,11 @@ function brewCard(b) {
       const r = el("div", "rt"), h = el("div", "rh");
       if (t.rating != null) h.appendChild(Stars.row(t.rating, tName(t) + ": " + Stars.text(t.rating) + " of 5"));
       const rn = el("span", "rn"); rn.append(personTag(t), document.createTextNode((t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.rating == null ? ", taste only" : ""))); h.appendChild(rn);
-      r.appendChild(h); const c = chips(t.scores, t.balance); if (c) r.appendChild(c); box.appendChild(r);
+      r.appendChild(h); const c = chips(t.scores, t.balance); if (c) r.appendChild(c); if (t.note) r.appendChild(tComment(t)); box.appendChild(r);
     });
     a.appendChild(box);
   }
-  if (b.notes) a.appendChild(el("p", "", b.notes));
+  if (b.notes) { const n = el("p", "bnote"); n.append(el("span", "nl", "Brew comment: "), document.createTextNode(b.notes)); a.appendChild(n); }
   // one pencil, two things to change: the brew itself, or your rating of it
   const menu = el("div", "pmenu"); menu.hidden = true; menu.setAttribute("role", "menu");
   const mi = (t, fn) => { const x = el("button", "", t); x.type = "button"; x.setAttribute("role", "menuitem"); x.onclick = () => { menu.hidden = true; fn(); }; menu.appendChild(x); };
@@ -3269,7 +3284,7 @@ function brewCard(b) {
 
 async function loadBrews() {
   const my = ++brewLoadId;
-  const { data, error } = await db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,created_at,drank_at), brew_scores(attribute,score,rating_id)").eq("coffee_id", cur.id).order("brewed_at", { ascending: false });
+  const { data, error } = await db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,note,created_at,drank_at), brew_scores(attribute,score,rating_id)").eq("coffee_id", cur.id).order("brewed_at", { ascending: false });
   if (my !== brewLoadId) return;
   if (error) { say("Could not load brews: " + error.message); return; }
   brewData = data;
@@ -3309,12 +3324,12 @@ function renderBrews() {
 async function saveRate() {
   const b = editingBrew; if (!b) return;
   stashTaster();
-  const rows = tasterRows(), notes = $("b-notes").value.trim() || null;
+  const rows = tasterRows();
   if (rows.some(t => t.drank_at && Date.parse(t.drank_at) > Date.now() + 10 * 60e3)) { say("Could not save: the time you drank it is in the future."); return; }
   const orig = JSON.parse(rateOrig || "[]"), changed = rows.filter(t => !t.id || !orig.includes(rateSig({ ...t, guest: t.is_guest, drank: t.drank_at })));
   const gone = tastersOf(b).filter(o => o.id && !rows.some(t => t.id === o.id));   // taken away with the x
-  const ch = brewChanges(b, { ...b, notes });
-  if (!changed.length && !gone.length && (b.notes || null) === notes) { nothingChanged(() => { store.del("alto.draft.rate." + b.id); newBrewSetup(); $("brewbox").open = false; say("Closed, nothing was changed."); }); return; }
+  const ch = brewChanges(b, b);
+  if (!changed.length && !gone.length) { nothingChanged(() => { store.del("alto.draft.rate." + b.id); newBrewSetup(); $("brewbox").open = false; say("Closed, nothing was changed."); }); return; }
   if (!(await confirmSave("Save this rating?", ch.length ? ch : [["Rating", "saved again"]], "Save rating"))) return;
   savingB = true; $("bsave").disabled = true; say("Saving...");
   try {
@@ -3324,7 +3339,7 @@ async function saveRate() {
     }
     const tell = [];   // your own cup, rated for the first time: the one who made the brew gets a notification
     for (const t of changed) {
-      const f = { rating: t.rating, balance: t.balance, drink: t.drink || null, milk: t.milk || null, drank_at: t.drank_at || null };
+      const f = { rating: t.rating, balance: t.balance, drink: t.drink || null, milk: t.milk || null, drank_at: t.drank_at || null, ...(t.note || (t.id && tastersOf(b).some(o => o.id === t.id && o.note)) ? { note: t.note || null } : {}) };
       let rid = t.id;
       const was = rid ? tastersOf(b).find(o => o.id === rid) : null, first = !was || (was.rating == null && was.balance == null);
       if (rid) { const { error } = await db.from("brew_ratings").update(f).eq("id", rid); if (error) throw error; const d = await db.from("brew_scores").delete().eq("rating_id", rid); if (d.error) throw d.error; }
@@ -3334,9 +3349,9 @@ async function saveRate() {
       if (first && me && !t.is_guest && t.rater_id === me.id && (t.rating != null || t.balance != null)) tell.push(rid);
     }
     tell.forEach(rid => { try { db.functions.invoke("notify", { body: { action: "rated", rating_id: rid } }).catch(() => {}); } catch (e) { /* saved either way */ } });
-    // the brew's own stars stay the average of everyone who rated it; the comments are the brew's
+    // the brew's own stars stay the average of everyone who rated it (each taster's comment is on their rating)
     const rs = rows.map(t => t.rating).filter(v => v != null);
-    const up = await db.from("brews").update({ rating: rs.length ? Math.round(rs.reduce((a, c) => a + c, 0) / rs.length * 2) / 2 : null, notes }).eq("id", b.id);
+    const up = await db.from("brews").update({ rating: rs.length ? Math.round(rs.reduce((a, c) => a + c, 0) / rs.length * 2) / 2 : null }).eq("id", b.id);
     if (up.error) throw up.error;
     store.del("alto.draft.rate." + b.id);
     try { const sh = JSON.parse(localStorage.getItem(SHELF) || "null"); if (sh && Array.isArray(sh.tr)) { sh.tr = sh.tr.filter(x => x.b !== b.id); localStorage.setItem(SHELF, JSON.stringify(sh)); } } catch (e) {}   // Home: no longer to rate
