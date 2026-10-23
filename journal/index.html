@@ -550,7 +550,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
     <input id="flt-q" type="search" placeholder="Search name, roaster, origin" aria-label="Search coffees">
     <select id="flt-process" aria-label="Filter by process"></select>
     <select id="flt-roast" aria-label="Filter by roast level"></select>
-    <select id="flt-open" aria-label="Filter by opened"><option value="">Opened or not</option><option value="open">Opened</option><option value="closed">Not opened yet</option></select>
+    <select id="flt-open" aria-label="Filter by bag"><option value="">Any bag</option><option value="open">Open now</option><option value="closed">Not opened yet</option><option value="done">Finished</option></select>
   </div>
   <div id="list" class="clist"></div>
   <div id="archived"></div>
@@ -1215,14 +1215,15 @@ function fillFilter(id, label, values) {
   s.value = values.includes(keep) ? keep : "";
 }
 
-function passCoffee(c) {
+function passCoffee(c, g) {
   const q = $("flt-q").value.trim().toLowerCase();
   if (q && ![c.name, c.roaster, c.origin, c.variety, ...(c.flavour_tags || [])].filter(Boolean).join(" ").toLowerCase().includes(q)) return false;
   const p = $("flt-process").value, r = $("flt-roast").value, o = $("flt-open").value;
   if (p && c.process !== p) return false;
   if (r && c.roast_level !== r) return false;
-  if (o === "open" && !c.open_date) return false;
+  if (o === "open" && (!c.open_date || c.finished_at)) return false;   // the bag on the shelf: opened and not finished yet
   if (o === "closed" && c.open_date) return false;
+  if (o === "done" && !(g || [c]).some(x => x.finished_at)) return false;   // a finished bag of this coffee (also an earlier one)
   return true;
 }
 
@@ -1259,7 +1260,7 @@ function renderCoffees() {
   // one card per coffee, showing its newest bag; the data arrives newest first
   const groups = new Map();
   active.forEach(c => { const k = gk(c); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(c); });
-  const shown = [...groups.values()].filter(g => passCoffee(g[0]));
+  const shown = [...groups.values()].filter(g => passCoffee(g[0], g));
   if (!shown.length) { list.appendChild(el("p", "hint", "No coffees match these filters.")); return; }
   shown.forEach(g => list.appendChild(card(g[0], coffeeUrls[g[0].photo_path], coffeeCounts[g[0].id] || 0, coffeeRates[g[0].id] || [], g, coffeeThumbs[g[0].photo_path])));   // the stars of the current bag
 }
