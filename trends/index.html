@@ -41,6 +41,22 @@ ul.rank .rt{height:6px;border-radius:3px;background:var(--one-track);overflow:hi
 ul.rank .rf{display:block;height:100%;border-radius:3px;background:var(--one)}
 ul.rank .rv{font-size:14px;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
 ul.rank .di{width:22px;height:22px;fill:none;stroke:var(--one);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+/* What you like: your coffee type, one tile per kind, something to try next */
+.typecard{margin:6px 0 14px;padding:16px 16px 14px;border-radius:14px;background:var(--one-track)}
+.typecard .tk{margin:0;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);font-weight:600}
+.typecard .tt{margin:6px 0 4px;font-size:21px;line-height:1.3;font-weight:600;color:var(--ink)}
+.typecard .ts{margin:0;font-size:13.5px;color:var(--mut)}
+.wtiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0 0 6px}
+.wt{padding:12px 12px 10px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.wt .wh{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mut)}
+.wt .wi{width:18px;height:18px;fill:none;stroke:var(--one);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.wt b{display:block;margin-top:6px;font-size:17px;line-height:1.25}
+.wt .wv{margin:3px 0 0;font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}
+.wt .wv strong{font-size:15px;color:var(--ink);margin-right:2px}
+.wt .wv .up{color:var(--ink)}
+.wt .wr{margin:2px 0 0;font-size:12.5px;color:var(--mut)}
+.wt.close{border-style:dashed}
+.trynext{margin:12px 0 0;padding:10px 12px;border-radius:12px;background:var(--bg);font-size:14.5px}
 .likes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 28px}
 .likes h3{margin:16px 0 0;font-size:15px}
 .av{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin-right:8px;border-radius:50%;color:#fff;font-size:12.5px;font-weight:600;flex:none}
@@ -435,34 +451,57 @@ function viewFresh() {
 // ---------- 4 + 5: what you like, flavour fingerprint ----------
 function viewTaste() {
   const list = filtered(false).filter(b => b.rating && !b.dialin);
-  const m = card("What you like", "Your average stars by kind of coffee (dial-ins left out), best first. The number is how many rated brews it is based on.");
-  const groups = [
-    ["Process", c => c.process],
-    ["Roast level", c => c.roast_level],
-    ["Origin", c => { const o = splitOrigin(c.origin); return o.countries.length > 1 ? "Several countries" : o.countries[0] || o.country; }],   // by country, however the origin was written
-    ["Region", c => { const o = splitOrigin(c.origin); return o.region && o.countries.length < 2 ? o.region.split(",")[0].trim() + " (" + (o.countries[0] || o.country) + ")" : null; }],
-    ["Altitude", c => { const a = c.altitude_max_m != null ? (c.altitude_min_m + c.altitude_max_m) / 2 : c.altitude_min_m; if (a == null) return null; return a < 1200 ? "Below 1,200 m" : a < 1500 ? "1,200 to 1,500 m" : a < 1800 ? "1,500 to 1,800 m" : a < 2100 ? "1,800 to 2,100 m" : "2,100 m and up"; }]
+  const m = card("What you like", "From your rated brews (dial-ins left out): which kinds of coffee get your best stars.");
+  const groups = [   // title, how to read it in the headline, icon, the kind of a coffee
+    ["Process", x => x.toLowerCase(), "M12 3c3 4 5 6.5 5 9.5a5 5 0 01-10 0C7 9.5 9 7 12 3z", c => c.process],
+    ["Roast", x => x.toLowerCase() + " roast", "M12 3c1 3 4 4.5 4 8.5a4 4 0 01-8 0c0-1.8.8-3 2-4 0 1.5.6 2.5 1.6 2.5C11.6 7.5 11 5 12 3z M7 20h10", c => c.roast_level],
+    ["Origin", x => x, "M12 21s-6-5.5-6-10a6 6 0 1112 0c0 4.5-6 10-6 10z M12 9v.01", c => { const o = splitOrigin(c.origin); return o.countries.length > 1 ? "Several countries" : o.countries[0] || o.country; }],
+    ["Altitude", x => /^Below/.test(x) ? "low-grown" : /2,100|1,800/.test(x) ? "high-grown" : null, "M3 19l6-10 4 6 2-3 6 7z", c => { const a = c.altitude_max_m != null ? (c.altitude_min_m + c.altitude_max_m) / 2 : c.altitude_min_m; if (a == null) return null; return a < 1200 ? "Below 1,200 m" : a < 1500 ? "1,200 to 1,500 m" : a < 1800 ? "1,500 to 1,800 m" : a < 2100 ? "1,800 to 2,100 m" : "2,100 m and up"; }],
+    ["Region", x => null, "M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2z M9 4v14 M15 6v14", c => { const o = splitOrigin(c.origin); return o.region && o.countries.length < 2 ? o.region.split(",")[0].trim() + " (" + (o.countries[0] || o.country) + ")" : null; }]
   ];
-  if (!list.length) empty(m, "Rate a few brews (outside dial-ins) to see what you like.");
+  if (!list.length) { empty(m, "Rate a few brews (outside dial-ins) to see what you like."); }
   else {
-    const tbl = [], best = [], body = el("div", "likes");
-    groups.forEach(([title, key]) => {
+    const all = avg(list.map(b => b.rating)), res = [];
+    groups.forEach(([title, word, icon, key]) => {
       const by = {};
       list.forEach(b => { const c = coffeeOf(b.coffeeId); const k = c && key(c); if (k) (by[k] = by[k] || []).push(b.rating); });
       const rows = Object.keys(by).map(k => ({ label: k, value: avg(by[k]), n: by[k].length })).sort((x, y) => y.value - x.value || y.n - x.n);
-      if (!rows.length) return;   // not filled in on your coffees: no empty group
-      rows.forEach(r => tbl.push([title, r.label, r1(r.value).toFixed(1), r.n]));
-      // a favourite only counts when there is something to compare and enough brews behind it
-      if (rows.length > 1 && rows[0].n >= 2 && rows[0].value - rows[1].value >= 0.25) best.push([title, rows[0].label]);
-      const g = el("div", "lg"); g.appendChild(el("h3", "", title));
-      g.appendChild(rankList(rows.map(r => ({ label: r.label, sub: "(" + r.n + ")", value: r.value, max: 5, text: r1(r.value).toFixed(1) + "\u2605" }))));
-      body.appendChild(g);
+      if (rows.length) res.push({ title, word, icon, rows, clear: rows.length > 1 && rows[0].n >= 2 && rows[0].value - rows[1].value >= 0.25 });
     });
-    // one clear sentence first: what you like best, as far as it shows yet
-    const say = { Process: x => x.toLowerCase() + " process", "Roast level": x => x.toLowerCase() + " roasts", Origin: x => "coffee from " + x, Region: x => x, Altitude: x => x.toLowerCase() };
-    m.appendChild(el("p", "take", best.length ? "So far you like " + andList(best.slice(0, 3).map(([g, x]) => (say[g] || (y => y))(x))) + " best." : "No clear favourite yet: the kinds of coffee you rated are close, or there are only a few brews of each."));
-    m.appendChild(body);
-    numbers(m, ["Group", "Kind", "Average stars", "Brews"], tbl);
+    // 1. the headline: what kind of coffee person you are, as far as it shows yet
+    const pick = t => res.find(g => g.title === t && g.clear), adj = ["Process", "Roast", "Altitude"].map(t => pick(t)).filter(Boolean).map(g => g.word(g.rows[0].label)).filter(Boolean);
+    const org = pick("Origin"), who = adj.join(", ") + (org && org.rows[0].label !== "Several countries" ? (adj.length ? " " : "") + org.rows[0].label : "");
+    const hl = el("div", "typecard");
+    hl.appendChild(el("p", "tk", "Your coffee type"));
+    hl.appendChild(el("p", "tt", who ? "You\u2019re a " + who + " coffee person." : "Still making up your mind: no clear favourite yet."));
+    hl.appendChild(el("p", "ts", "Your average: " + r1(all).toFixed(1) + "\u2605 over " + list.length + (list.length === 1 ? " rated brew." : " rated brews.")));
+    m.appendChild(hl);
+    // 2. one tile per kind of coffee with more than one kind: the winner, how far ahead of your average, and the runner-up
+    const tiles = el("div", "wtiles");
+    res.filter(g => g.rows.length > 1 && g.title !== "Region").forEach(g => {
+      const w = g.rows[0], d = w.value - all, t = el("div", "wt" + (g.clear ? "" : " close"));
+      const NS = "http://www.w3.org/2000/svg", sv = document.createElementNS(NS, "svg"), pa = document.createElementNS(NS, "path");
+      sv.setAttribute("viewBox", "0 0 24 24"); sv.setAttribute("class", "wi"); sv.setAttribute("aria-hidden", "true"); pa.setAttribute("d", g.icon); sv.appendChild(pa);
+      const hd = el("div", "wh"); hd.append(sv, el("span", "", g.title)); t.appendChild(hd);
+      t.appendChild(el("b", "", w.label));
+      const wv = el("p", "wv"); wv.appendChild(el("strong", "", r1(w.value).toFixed(1) + "\u2605"));
+      if (Math.abs(d) >= 0.05) wv.appendChild(el("span", d > 0 ? "up" : "", " " + (d > 0 ? "+" : "\u2212") + r1(Math.abs(d)).toFixed(1) + "\u2605 vs your average"));
+      t.appendChild(wv);
+      t.appendChild(el("p", "wr", g.clear ? "ahead of " + g.rows[1].label + " (" + r1(g.rows[1].value).toFixed(1) + "\u2605)" : "close race with " + g.rows[1].label + " (" + r1(g.rows[1].value).toFixed(1) + "\u2605)"));
+      tiles.appendChild(t);
+    });
+    if (tiles.children.length) m.appendChild(tiles);
+    // everything else, folded away
+    const more = el("details", "num"); more.appendChild(el("summary", "", "Show all kinds"));
+    const body = el("div", "likes");
+    res.forEach(g => { const d = el("div", "lg"); d.appendChild(el("h3", "", g.title)); d.appendChild(rankList(g.rows.map(r => ({ label: r.label, sub: "(" + r.n + ")", value: r.value, max: 5, text: r1(r.value).toFixed(1) + "\u2605" })))); body.appendChild(d); });
+    more.appendChild(body); m.appendChild(more);
+    // 4. something to try next: a kind you liked but had only once, or a big coffee country you have not had yet
+    const tries = [];
+    res.filter(g => g.title !== "Region" && g.title !== "Altitude").forEach(g => g.rows.filter(r => r.n === 1 && r.value >= all).forEach(r => tries.push("You\u2019ve had " + (g.title === "Origin" ? "coffee from " + r.label : g.word(r.label)) + " only once so far (" + r1(r.value).toFixed(1) + "\u2605). Worth another try?")));
+    const had = new Set((res.find(g => g.title === "Origin") || { rows: [] }).rows.map(r => r.label));
+    ["Ethiopia", "Kenya", "Colombia", "Guatemala", "Rwanda", "Costa Rica", "Panama", "Brazil", "Burundi", "Honduras"].filter(c => !had.has(c)).slice(0, 3).forEach(c => tries.push("Nothing from " + c + " yet. Maybe the next bag?"));
+    if (tries.length) { const tn = el("p", "trynext"); tn.append(el("b", "", "Try next: "), document.createTextNode(tries[Math.floor(Date.now() / 864e5) % tries.length])); m.appendChild(tn); }
   }
 
   sweetSpot();
