@@ -299,16 +299,31 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .lhead .big{display:flex;align-items:baseline;gap:8px;margin:6px 0 2px;flex-wrap:wrap}
 .lhead .big b{font-size:34px;line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
 .lhead .big span{color:var(--mut);font-size:15px}
-.wk{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:14px 0 2px}
-.wk .d svg{display:block;width:100%;max-width:56px;margin:0 auto;overflow:visible}
+.wk{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin:14px -4px 0}
+.wk button{display:flex;flex-direction:column;align-items:center;min-width:0;padding:4px 0 6px;border:0;border-radius:10px;background:none;font:inherit;color:var(--mut);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.wk button.on{background:var(--bg)}
+.wk svg{display:block;width:100%;max-width:54px;overflow:visible}
+.wk .n{font-weight:600;color:var(--ink);font-size:12.5px;line-height:1.3;margin-top:1px}
+.wk .dl{font-size:11.5px;line-height:1.3}
+.wk .today .dl{color:var(--ink);font-weight:600}
 .wk .in{fill:var(--bg)}
-.wk .ol,.wk .steam{fill:none;stroke:var(--mut);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.wk .ol{opacity:.75}
-.wk .today .ol{stroke:var(--ink);stroke-width:1.9;opacity:1}
+.wk .sc{fill:var(--line);stroke:var(--mut);stroke-width:1.2;opacity:.85}
+.wk .rim{fill:var(--line);stroke:var(--mut);stroke-width:1.5;opacity:.9}
+.wk .crema{fill:#fff;opacity:.28}
+.wk .ol,.wk .steam{fill:none;stroke:var(--mut);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.wk .today .ol,.wk .today .rim,.wk .today .sc{stroke:var(--ink);stroke-width:1.8}
 .wk .steam{opacity:.6;stroke-width:1.4}
-.wkl{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;font-size:11.5px;color:var(--mut);text-align:center}
-.wkl .n{display:block;font-weight:600;color:var(--ink);font-size:12.5px}
-.wkl > span:last-child{color:var(--ink);font-weight:600}
+.wleg .wtip{margin-left:auto;font-size:12px}
+.wkp{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--bg);font-size:14px;color:var(--mut)}
+.wkp .wkh{display:block;color:var(--ink);font-weight:600;margin-bottom:6px}
+.wkp p{margin:0}
+.wkr{display:flex;align-items:flex-start;gap:8px;margin:4px 0;line-height:20px}
+.wkr .av{width:20px;height:20px;font-size:11px}
+.wkr b{color:var(--ink);font-weight:600}
+.wkp .wgo{display:block;margin-top:8px;padding:4px 0;border:0;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.when2{display:flex;gap:8px;margin:-8px 0 16px}
+.when2 label{flex:1;min-width:0;font-size:13px;color:var(--mut);margin:0}
+.when2 input{display:block;width:100%;min-width:0;box-sizing:border-box;margin-top:4px}
 .wleg{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:10px;font-size:13px;color:var(--mut)}
 .wleg span{display:inline-flex;align-items:center;gap:6px}.wleg i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .fun{display:flex;align-items:flex-start;gap:10px;width:100%;overflow:hidden;touch-action:pan-y;user-select:none;-webkit-user-select:none;margin:12px 0 0;padding:10px 12px;border:0;border-radius:12px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px;line-height:1.4;text-align:left;cursor:pointer}
@@ -575,7 +590,9 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
     <div class="filters" id="rfilters">
       <select id="rflt-kind" aria-label="What to show"><option value="">Everything</option><option value="brew">Brews</option><option value="bag">Coffees and bags</option><option value="cup">Cuppings</option></select>
       <select id="rflt-who" aria-label="Who"></select>
+      <select id="rflt-when" aria-label="When"><option value="">Any time</option><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="month">This month</option><option value="custom">Dates…</option></select>
     </div>
+    <div class="when2" id="rwhen" hidden><label>From<input type="date" id="rw-from"></label><label>To<input type="date" id="rw-to"></label></div>
     <div id="feed"></div>
     <button type="button" class="btn ghost" id="rmore" hidden>Show older</button>
   </div>
@@ -587,7 +604,9 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
       <select id="mflt-person" aria-label="Whose brews"></select>
       <select id="mflt-who" aria-label="Which brews"><option value="">Made or rated</option><option value="torate">To rate</option><option value="rated">Rated by me</option><option value="made">Made by me</option></select>
       <select id="mflt-bal" aria-label="Balance"><option value="">Any Balance</option><option value="none">Balance not rated</option><option value="old">From the old slider</option></select>
+      <select id="mflt-when" aria-label="When"><option value="">Any time</option><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="month">This month</option><option value="custom">Dates…</option></select>
     </div>
+    <div class="when2" id="mwhen" hidden><label>From<input type="date" id="mw-from"></label><label>To<input type="date" id="mw-to"></label></div>
     <p class="hint" id="mcount"></p>
     <div id="mlist"></div>
     <button type="button" class="btn ghost" id="mmore" hidden>Show more</button>
@@ -762,11 +781,15 @@ const GREY = ["#F1EFE8","#2C2C2A","#5F5E5A","#B4B2A9","#444441","#D3D1C7"];
 
 // Dropdowns: the fixed list, plus everything used before, plus "Other (add new)".
 // Brewing devices: the ones from the atlas chapter (data/devices.js) plus any you added in lists.js.
-function deviceList() {
+function deviceList(every) {
   const out = [], add = x => { if (x && !out.includes(x)) out.push(x); };
   ((window.DEVICES && window.DEVICES.D) || []).forEach(d => (d.logAs || [d.name]).forEach(add));
   (window.LISTS.device || []).forEach(add);
-  return out;   // plain names, no sizes: your own ("French press (1 l)") come with "Other (add new)" and stay in the list once used
+  // only the devices you own, if you ticked some in Settings (kept on the phone too, so it is right from the start)
+  let own = (myPrefs().devices || []);
+  if (!own.length) { try { own = JSON.parse(store.get("alto.mydevs") || "[]"); } catch (e) { own = []; } }
+  const mine = out.filter(d => own.includes(d));
+  return mine.length && !every ? mine : out;   // plain names, no sizes: your own ("French press (1 l)") come with "Other (add new)" and stay in the list once used
 }
 function fill(id, base, used, fixed) {   // fixed: only the base list, no "Other" (roast levels)
   const s = $(id), keep = s.value;
@@ -966,7 +989,7 @@ const ICONS = {
   natural: "M8 12a4 4 0 108 0 4 4 0 10-8 0 M12 2.5v2 M12 19.5v2 M2.5 12h2 M19.5 12h2 M5.3 5.3l1.4 1.4 M17.3 17.3l1.4 1.4 M5.3 18.7l1.4-1.4 M17.3 6.7l1.4-1.4",
   honey: "M12 3l6.5 3.75v7.5L12 18l-6.5-3.75v-7.5z M12 18v3.5",
   pulped: "M3.5 15.5a3.5 3.5 0 107 0 3.5 3.5 0 10-7 0 M12.5 16.5a3.5 3.5 0 107 0 3.5 3.5 0 10-7 0 M7 12c1-4 3.5-6.5 8-8 M16 13c-.6-3-1-6-1-9",
-  addcoffee: "M5.5 4h9v3h-9z M5.5 7L4 20.5a1 1 0 001 1h10a1 1 0 001-1L14.5 7 M10 10.6a1.4 1.4 0 110 2.8 1.4 1.4 0 010-2.8z M7.5 17h5 M19 2.5v6 M16 5.5h6",   // a coffee bag with a plus: add a coffee (next to the Coffee Shelf title)
+  addcoffee: "M4.5 4h9v3h-9z M4.5 7L3 20.5a1 1 0 001 1h10a1 1 0 001-1L13.5 7 M9 10.6a1.4 1.4 0 110 2.8 1.4 1.4 0 010-2.8z M6.5 17h5 M20 1.5v6 M17 4.5h6",   // a coffee bag with a plus: add a coffee (next to the Coffee Shelf title)
   semi: "M12 3.5c3.5 4.3 6 7.6 6 10.5a6 6 0 01-12 0c0-2.9 2.5-6.2 6-10.5z M6 14h12"
 };
 function ico(name, size) {
@@ -2507,6 +2530,7 @@ function route() {
   $("addc").hidden = $("listview").hidden;
   // the household (name, members, invites, switching) has its own page, reached from Settings
   $("hhpage").hidden = !isHH; $("ptitle").textContent = isHH ? "Household" : isRecent ? "Recent activity" : isMine ? "My brews" : "Coffee Shelf";
+  document.title = (isHH ? "Household" : isRecent ? "Recent Activity" : isMine ? "My Brews" : isLog ? "Log a Brew" : add ? "New Coffee" : "Coffee Shelf") + " | Alto Andino";   // the coffee's own page puts its name (openCoffee)
   if (isHH && $("hhbox").parentNode !== $("hhhost")) $("hhhost").appendChild($("hhbox"));
   if (isHH) { renderHousehold(); $("hhbox").open = true; }
   $("recentview").hidden = !isRecent;
@@ -2551,6 +2575,35 @@ function dayLabel(d) {
   if (n > 1 && n < 7) return x.toLocaleDateString("en-GB", { weekday: "long" });
   return x.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", ...(x.getFullYear() !== t.getFullYear() ? { year: "numeric" } : {}) });
 }
+// "When": any time, a few ready time frames, one day (from a cup in This week) or dates you pick. A range from a (incl.) to b (excl.)
+function whenRange(k) {   // k = "r" (Recent activity) or "m" (My brews)
+  const v = $(k + "flt-when").value, t0 = dayStart(new Date(), 0), plus = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  if (!v) return null;
+  if (v === "today") return { a: t0, b: plus(t0, 1) };
+  if (v === "yesterday") return { a: plus(t0, -1), b: t0 };
+  if (v === "7" || v === "30") return { a: plus(t0, 1 - Number(v)), b: plus(t0, 1) };
+  if (v === "month") { const a = new Date(t0); a.setDate(1); return { a, b: plus(t0, 1) }; }
+  const day = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+  if (v.startsWith("d:")) { const a = day(v.slice(2)); return { a, b: plus(a, 1) }; }
+  const f = $(k + "w-from").value, to = $(k + "w-to").value;   // custom: either end may be open
+  if (!f && !to) return null;
+  return { a: f ? day(f) : new Date(2000, 0, 1), b: to ? plus(day(to), 1) : plus(t0, 1) };
+}
+const inWhen = (r, t) => !r || (t >= r.a && t < r.b);
+function setWhenDay(k, d) {   // one day, as its own option ("Thu 22 Oct")
+  const sel = $(k + "flt-when"); [...sel.options].filter(o => o.value.startsWith("d:")).forEach(o => o.remove());
+  const o = el("option", "", WD[d.getDay()] + " " + d.getDate() + " " + d.toLocaleDateString("en-GB", { month: "short" }));
+  o.value = "d:" + d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  sel.insertBefore(o, sel.options[1]); sel.value = o.value; $(k + "when").hidden = true;
+}
+function whenUi(k, redo) {
+  $(k + "flt-when").addEventListener("change", () => {
+    const c = $(k + "flt-when").value === "custom"; $(k + "when").hidden = !c;
+    if (c && !$(k + "w-from").value) { const a = dayStart(new Date(), 6); $(k + "w-from").value = a.getFullYear() + "-" + String(a.getMonth() + 1).padStart(2, "0") + "-" + String(a.getDate()).padStart(2, "0"); }
+    redo();
+  });
+  [k + "w-from", k + "w-to"].forEach(id => $(id).addEventListener("change", redo));
+}
 async function loadFeed() {
   const my = ++feedId;
   const { data: cs, error } = await inHH(db.from("coffees").select("*")).order("created_at", { ascending: false });
@@ -2558,9 +2611,11 @@ async function loadFeed() {
   if (error) { say("Could not load the activity: " + error.message); return; }
   const ids = cs.map(c => c.id), byId = {}; cs.forEach(c => { byId[c.id] = c; });
   let brews = [], cups = [];
+  const rg = whenRange("r");   // a time frame: everything in it (no "Show older")
   if (ids.length) {
     const [rb, rc] = await Promise.all([
-      db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,created_at)").in("coffee_id", ids).order("brewed_at", { ascending: false }).limit(feedN + 1),
+      (rg ? db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,created_at)").in("coffee_id", ids).gte("brewed_at", rg.a.toISOString()).lt("brewed_at", rg.b.toISOString()).order("brewed_at", { ascending: false }).limit(1000)
+        : db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,created_at)").in("coffee_id", ids).order("brewed_at", { ascending: false }).limit(feedN + 1)),
       db.from("cuppings").select("session_id,coffee_id,cupped_at,cupper_id,is_guest,guest_name,total").in("coffee_id", ids).order("cupped_at", { ascending: false }).limit(500)
     ]);
     if (my !== feedId) return;
@@ -2569,7 +2624,7 @@ async function loadFeed() {
   }
   drawWeek(ids, byId, my);
   // only as far back as the brews go: older coffees and cuppings come with "Show older"
-  feedMore = brews.length > feedN; if (feedMore) brews = brews.slice(0, feedN);
+  feedMore = !rg && brews.length > feedN; if (feedMore) brews = brews.slice(0, feedN);
   const cutoff = feedMore ? new Date(brews[brews.length - 1].brewed_at) : null;
   const items = [];
   brews.forEach(b => items.push({ k: "brew", t: new Date(b.brewed_at), b, c: byId[b.coffee_id], who: [b.made_by || b.created_by, ...(b.brew_ratings || []).filter(r => !r.is_guest).map(r => r.rater_id)] }));
@@ -2591,7 +2646,7 @@ async function loadFeed() {
     if (r.total != null && (s.best == null || Number(r.total) > s.best)) s.best = Number(r.total);
   });
   Object.values(ses).forEach(s => { s.cs = s.coffees.map(id => byId[id]).filter(Boolean); items.push(s); });
-  feedItems = items.filter(x => !cutoff || x.t >= cutoff).sort((x, y) => y.t - x.t);
+  feedItems = items.filter(x => (!cutoff || x.t >= cutoff) && inWhen(rg, x.t)).sort((x, y) => y.t - x.t);
   // who: everyone in the household who shows up in the activity
   const ppl = hhPeople(), s = $("rflt-who"), keep = s.value; s.textContent = "";
   opt0(s, "", "Everyone"); ppl.forEach(id => opt0(s, id, me && id === me.id ? (names[id] ? names[id] + " (you)" : "You") : nameOf(id) || "Someone"));
@@ -2604,6 +2659,7 @@ function renderFeed() {
   const list = feedItems.filter(x => (!kind || KIND[kind].includes(x.k)) && (!who || x.who.includes(who)));
   const box = $("feed"); box.textContent = "";
   $("rmore").hidden = !feedMore;
+  if (!feedItems.length && whenRange("r")) { box.appendChild(el("p", "hint", "Nothing happened in this time frame.")); return; }
   if (!feedItems.length) { box.appendChild(el("p", "hint", "Nothing here yet. Brews, new coffees and bags, and cuppings show up here, newest first.")); return; }
   if (!list.length) { box.appendChild(el("p", "hint", feedMore ? "Nothing matches in the latest activity. \"Show older\" looks further back." : "Nothing matches these filters.")); return; }
   let day = "";
@@ -2671,6 +2727,7 @@ function feedCard(x) {
   return line("../cupping/#s=" + x.sid, "cup", parts, hhmm(x.t), cs[0]);
 }
 ["rflt-kind", "rflt-who"].forEach(id => $(id).addEventListener("change", renderFeed));
+whenUi("r", () => loadFeed());
 
 // ---------- My brews: every brew you made or rated, to go through them (and change your Balance on the spot) ----------
 let mineData = [], mineRaw = [], mineCoffees = {}, mineShow = 30, mineId = 0;
@@ -2720,7 +2777,8 @@ function renderMine() {
   drawMonth();
   mineData = mineRows();
   const p = $("mflt-person").value, who = p === "all" ? "" : $("mflt-who").value, bal = $("mflt-bal").value;
-  const list = mineData.filter(x => (!who || (who === "torate" ? x.pend : who === "rated" ? !!x.pr && !x.ppend : x.made)) && (!bal || (bal === "none" ? x.r && !x.pend && x.r.balance == null : x.old != null)));
+  const rg = whenRange("m");
+  const list = mineData.filter(x => inWhen(rg, new Date(x.b.brewed_at)) && (!who || (who === "torate" ? x.pend : who === "rated" ? !!x.pr && !x.ppend : x.made)) && (!bal || (bal === "none" ? x.r && !x.pend && x.r.balance == null : x.old != null)));
   const box = $("mlist"); box.textContent = "";
   $("mhint").textContent = p === "me" ? "Every brew you made or rated, newest first. You can give your Balance right here; changing one you already gave asks first. For anything else, open the brew."
     : p === "all" ? "Every brew of the household, newest first, with everyone's stars. Your own Balance can be given right here." : "Every brew " + (nameOf(p) || "they") + " made or rated, newest first. Your own Balance (where you tasted too) can be given right here.";
@@ -2777,34 +2835,64 @@ async function drawWeek(ids, byId, my) {
   box.appendChild(el("div", "lk", "This week"));
   const big = el("div", "big"); big.append(el("b", "", String(week.length)), el("span", "", (week.length === 1 ? "brew" : "brews") + " in the last 7 days" + (before ? (week.length > before ? ", " + (week.length - before) + " more than the week before" : week.length < before ? ", " + (before - week.length) + " fewer than the week before" : ", as many as the week before") : "")));
   box.appendChild(big);
-  // one little cup per day, filled up with that day's brews in the colours of who brewed (full at the busiest day, at least 3)
+  // one little cup per day, filled up with that day's brews in the colours of who brewed (full at the busiest day, at least 3).
+  // Tap a cup: who made how many that day. Tap it again (or the button): those brews, below.
   const who = b => b.made_by || b.created_by || null, ppl = [...new Set(week.map(who))];
   const days = [...Array(7)].map((_, k) => { const d0 = dayStart(new Date(), 6 - k), d1 = dayStart(new Date(), 5 - k); return { d: d0, list: week.filter(b => { const t = new Date(b.brewed_at); return t >= d0 && t < d1; }) }; });
   const max = Math.max(3, ...days.map(x => x.list.length));
-  const bars = el("div", "wk"), labs = el("div", "wkl");
-  bars.setAttribute("role", "img"); bars.setAttribute("aria-label", days.map(x => WD[x.d.getDay()] + " " + x.list.length).join(", "));
+  const cupsRow = el("div", "wk"), panel = el("div", "wkp"); panel.hidden = true;
   const NS = "http://www.w3.org/2000/svg", mk = (n, a) => { const e = document.createElementNS(NS, n); Object.entries(a).forEach(([k, v]) => e.setAttribute(k, v)); return e; };
-  const BODY = "M4 9H30L27.6 31.5Q27 36 22.5 36H11.5Q7 36 6.4 31.5Z", TOP = 11, BOT = 36;
+  // the cup sits in the middle of a 44 wide picture (its saucer centred under the number and the day), the handle sticks out to the right
+  const RIM = 13, BOT = 35, FULL = 15.5, hw = y => 12 - 2.2 * Math.max(0, y - RIM) / (BOT - RIM);   // half the width of the cup at height y
+  const BODY = "M10 13L12.2 30.5Q12.9 35 17.5 35H26.5Q31.1 35 31.8 30.5L34 13Z";
+  let sel = -1;
+  const showDay = x => {   // the brews of that day in the list below
+    setWhenDay("r", x.d); $("rflt-kind").value = "brew";
+    loadFeed().then(() => { const f = $("rfilters"); if (f) f.scrollIntoView({ behavior: "smooth", block: "start" }); });
+  };
+  const fillPanel = x => {
+    panel.textContent = ""; panel.hidden = false;
+    panel.appendChild(el("b", "wkh", (x.d.getTime() === dayStart(new Date(), 0).getTime() ? "Today" : WDL[x.d.getDay()]) + ", " + x.d.getDate() + " " + x.d.toLocaleDateString("en-GB", { month: "long" })));
+    if (!x.list.length) { panel.appendChild(el("p", "", "No brews that day.")); return; }
+    ppl.forEach(id => {
+      const mine = x.list.filter(b => who(b) === id); if (!mine.length) return;
+      const r = el("div", "wkr"), by = {}; mine.forEach(b => { const c = byId[b.coffee_id], n = c ? c.name : "a coffee"; by[n] = (by[n] || 0) + 1; });
+      const tx = el("span"); tx.append(el("b", "", id ? tName({ rater_id: id }) : "Not set"), document.createTextNode(" made " + mine.length + (mine.length === 1 ? " brew: " : " brews: ") + Object.entries(by).map(([n, k]) => n + (k > 1 ? " \u00D7" + k : "")).join(", ")));
+      r.append(avatar(id, id ? tName({ rater_id: id }) : "?"), tx); panel.appendChild(r);
+    });
+    const go = el("button", "wgo", "Show " + (x.list.length === 1 ? "this brew" : "these " + x.list.length + " brews") + " \u2193"); go.type = "button"; go.onclick = () => showDay(x); panel.appendChild(go);
+  };
   days.forEach((x, k) => {
-    const c = el("div", "d" + (k === 6 ? " today" : "")), cid = "wkc" + k + "-" + my;
-    const s = mk("svg", { viewBox: "0 0 40 40", "aria-hidden": "true" });
+    const c = el("button", "d" + (k === 6 ? " today" : "")), cid = "wkc" + k + "-" + my; c.type = "button";
+    c.setAttribute("aria-label", (k === 6 ? "Today" : WDL[x.d.getDay()]) + ": " + x.list.length + (x.list.length === 1 ? " brew" : " brews"));
+    const s = mk("svg", { viewBox: "3 2 38 39", "aria-hidden": "true" });
     const cp = mk("clipPath", { id: cid }); cp.appendChild(mk("path", { d: BODY })); s.appendChild(cp);
+    s.appendChild(mk("ellipse", { cx: 22, cy: 36.6, rx: 16.5, ry: 2.7, class: "sc" }));   // the saucer, the cup stands on it
     s.appendChild(mk("path", { d: BODY, class: "in" }));
-    const g = mk("g", { "clip-path": "url(#" + cid + ")" }); let y = BOT;
+    const g = mk("g", { "clip-path": "url(#" + cid + ")" }); let y = BOT, topCol = null;
     ppl.forEach(id => {
       const n = x.list.filter(b => who(b) === id).length; if (!n) return;
-      const h = (BOT - TOP) * n / max; y -= h;
-      const r = mk("rect", { x: 0, y: y, width: 40, height: h + 0.4, fill: id ? personColor(id) : "var(--mut)" });
-      const t = mk("title", {}); t.textContent = (nameOf(id) || "Not set") + ": " + n; r.appendChild(t); g.appendChild(r);
+      const h = (BOT - FULL) * n / max; y -= h; topCol = id ? personColor(id) : "var(--mut)";
+      g.appendChild(mk("rect", { x: 0, y: y, width: 44, height: h + 0.4, fill: topCol }));
     });
     s.appendChild(g);
-    s.appendChild(mk("path", { d: BODY + "M29.4 14.5H31.5A4.5 4.5 0 0131.5 23.5H28.6 M1.5 38.6H33", class: "ol" }));
-    if (k === 6 && x.list.length) s.appendChild(mk("path", { d: "M14 6.5c-1.6-1.6 1.6-2.4 0-4.5 M20 6.5c-1.6-1.6 1.6-2.4 0-4.5", class: "steam" }));   // today's cup is still warm
-    c.appendChild(s); bars.appendChild(c);
-    const l = el("span", "", k === 6 ? "Today" : WD[x.d.getDay()]); l.prepend(el("span", "n", String(x.list.length))); labs.appendChild(l);
+    if (topCol) {   // the coffee's surface, with a little crema
+      s.appendChild(mk("ellipse", { cx: 22, cy: y, rx: hw(y), ry: 1.6, fill: topCol }));
+      s.appendChild(mk("ellipse", { cx: 22, cy: y, rx: hw(y) - 0.6, ry: 1.2, class: "crema" }));
+    }
+    s.appendChild(mk("ellipse", { cx: 22, cy: RIM, rx: 12, ry: 2, class: "rim" }));
+    s.appendChild(mk("path", { d: "M10 13L12.2 30.5Q12.9 35 17.5 35H26.5Q31.1 35 31.8 30.5L34 13 M33.6 17H35.3A4.4 4.4 0 0135.3 25.8H32.6", class: "ol" }));
+    if (k === 6 && x.list.length) s.appendChild(mk("path", { d: "M19 9c-1.6-1.6 1.6-2.6 0-4.8 M25 9c-1.6-1.6 1.6-2.6 0-4.8", class: "steam" }));   // today's cup is still warm
+    c.append(s, el("span", "n", String(x.list.length)), el("span", "dl", k === 6 ? "Today" : WD[x.d.getDay()]));
+    c.onclick = () => {
+      if (sel === k && x.list.length) { showDay(x); return; }
+      sel = k; cupsRow.querySelectorAll("button").forEach((bt, j) => bt.classList.toggle("on", j === k)); fillPanel(x);
+    };
+    cupsRow.appendChild(c);
   });
-  box.append(bars, labs);
-  if (ppl.length) { const lg = el("div", "wleg"); ppl.forEach(id => { const s = el("span"), i = el("i"); i.style.background = id ? personColor(id) : "var(--mut)"; s.append(i, document.createTextNode(id ? tName({ rater_id: id }) : "Not set")); lg.appendChild(s); }); box.appendChild(lg); }
+  box.appendChild(cupsRow);
+  if (ppl.length) { const lg = el("div", "wleg"); ppl.forEach(id => { const s = el("span"), i = el("i"); i.style.background = id ? personColor(id) : "var(--mut)"; s.append(i, document.createTextNode(id ? tName({ rater_id: id }) : "Not set")); lg.appendChild(s); }); lg.appendChild(el("span", "wtip", "Tap a cup")); box.appendChild(lg); }
+  box.appendChild(panel);
   // the fun lines
   const lines = [];
   if (week.length >= 3 && ppl.filter(Boolean).length >= 2) {
@@ -2847,9 +2935,9 @@ function drawMonth() {
   while (days.has(dk(d))) { streak++; d.setDate(d.getDate() - 1); }
   const t = el("div", "stt");
   const tile = (v, lab, extra) => { const x = el("div"); x.append(el("b", "", v), el("span", "", lab)); if (extra) x.appendChild(extra); t.appendChild(x); };
+  if (stars.length) { const a = stars.reduce((x, y) => x + y, 0) / stars.length; tile(a.toFixed(1) + "\u2605", "average stars", Stars.row(a, a.toFixed(1) + " of 5")); }
   tile(String(cups), cups === 1 ? "cup drunk" : "cups drunk");
   tile(String(made.length), made.length === 1 ? "brew made" : "brews made");
-  if (stars.length) { const a = stars.reduce((x, y) => x + y, 0) / stars.length; tile(a.toFixed(1) + "\u2605", "average stars", Stars.row(a, a.toFixed(1) + " of 5")); }
   tile(String(streak), streak === 1 ? "day in a row" : "days in a row");
   box.appendChild(t);
   // the fun lines: favourite coffee, usual time, the device, the best cup
@@ -2923,6 +3011,7 @@ function mineCard(x) {
   return a;
 }
 ["mflt-person", "mflt-who", "mflt-bal"].forEach(id => $(id).addEventListener("change", () => { mineShow = 30; renderMine(); }));
+whenUi("m", () => { mineShow = 30; renderMine(); });
 $("mmore").onclick = () => { mineShow += 30; renderMine(); };
 $("rmore").onclick = () => { feedN += 40; loadFeed(); };
 
@@ -2990,7 +3079,7 @@ async function openCoffee(id, dev, wantForm, rid) {
   const fx = $("dfacts"); fx.textContent = ""; fx.appendChild(factsBlock(c, true));
   const da = $("darch"); da.textContent = ""; da.hidden = !c.archived;
   if (c.archived) { da.append(document.createTextNode("This bag is archived. Its brews still count in Trends.")); da.appendChild(abtn("btn ghost", "Restore", "check", async () => { if (await setArchived(c, false)) openCoffee(c.id); })); }
-  $("dname").textContent = c.name;
+  $("dname").textContent = c.name; document.title = c.name + " | Alto Andino";
   drawFriendShare(c);
   if (!$("dedit")) { const eb = ibtn("Edit coffee", "edit", () => { $("dedithost").appendChild($("addbox")); startEdit(cur); }); eb.id = "dedit"; eb.classList.add("dedit"); $("dhead").appendChild(eb); }
   if (c.photo_path && !coffeeUrls[c.photo_path]) { const got = await photoLinks([c.photo_path]); coffeeUrls = Object.assign({}, coffeeUrls, got.full); coffeeThumbs = Object.assign({}, coffeeThumbs, got.thumb); }   // opened straight from a link
@@ -3003,7 +3092,9 @@ async function openCoffee(id, dev, wantForm, rid) {
   bagActions(c, () => { load(); openCoffee(c.id); }).forEach(x => bx.appendChild(x));
   const t = $("dtags"); t.textContent = "";
   (c.flavour_tags || []).forEach(x => t.appendChild(el("span", "chip", x)));
-  fill("b-device", deviceList(), [...new Set((dv || []).map(b => DEV_OLD[b.device] || b.device).filter(Boolean))]);
+  // devices you do not own (ticked in Settings) stay out, even if used for this coffee before; your own names ("French press (1 l)") stay in
+  const std = deviceList(true), devs = deviceList(), owns = devs.length < std.length;
+  fill("b-device", devs, [...new Set((dv || []).map(b => DEV_OLD[b.device] || b.device).filter(Boolean))].filter(d => !owns || !std.includes(d)));
   otherBox("b-device");
   newBrewSetup(dev);
   // From "Brews" on a card: the form stays folded into one line, so the brews are right below the coffee.
@@ -3468,7 +3559,11 @@ async function loadNames() {
   (data || []).forEach(p => { names[p.id] = p.display_name; prefsOf[p.id] = p.prefs || {}; });
   if (me && names[me.id]) store.set("alto.myname", names[me.id]);   // for the greeting on Home
   // Settings: the form mode once per visit (the toggle in the form still works for now)
-  if (!prefsApplied) { prefsApplied = true; const fm = myPrefs().formmode; if (fm === "simple" || fm === "all") setFormMode(fm); }
+  if (!prefsApplied) {
+    prefsApplied = true; const fm = myPrefs().formmode; if (fm === "simple" || fm === "all") setFormMode(fm);
+    const own = myPrefs().devices; if (own && own.length) store.set("alto.mydevs", JSON.stringify(own)); else store.del("alto.mydevs");   // the devices you own, for next time
+    if (!$("pickview").hidden) renderPick();
+  }
   showName();
   fillMadeBy(editingBrew ? (editingBrew.made_by || editingBrew.created_by || "") : ($("b-madeby").value || (me && me.id)));
   if (tasters.length && !editingBrew && !edited) refreshAutoDrinks(); else if (tasters.length) renderTasters();   // names (and usual drinks) arrived

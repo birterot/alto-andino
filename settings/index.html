@@ -22,6 +22,9 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .set{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:6px 18px 20px;margin:0 0 16px;max-width:560px}
 .set h2{font-size:19px;margin:14px 0 2px}
 .set .hint{margin:2px 0 0;color:var(--mut);font-size:14px;max-width:52ch}
+.devs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.devs button{min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
+.devs button[aria-pressed=true]{border-color:var(--act);background:var(--act);color:var(--on-act)}
 .seg{display:inline-flex;margin-top:8px;border:1px solid var(--line);border-radius:999px;overflow:hidden}
 .seg button{font:inherit;font-size:14.5px;min-height:42px;padding:0 18px;border:0;background:var(--card);color:var(--mut);cursor:pointer}
 .seg button+button{border-left:1px solid var(--line)}
@@ -99,6 +102,9 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
 
   <section class="set">
     <h2>New brews start with</h2>
+    <p class="lab" id="devslab">Devices you own</p>
+    <div class="devs" id="s-devs" role="group" aria-labelledby="devslab"></div>
+    <p class="hint" id="devshint">Tick the ones you have at home: Log a brew then only offers these. Nothing ticked: all of them.</p>
     <p class="hint">"The last one used" means: whatever you logged last on this phone.</p>
     <label>Device<select id="s-device"></select></label>
     <label>Grinder<select id="s-grinder"></select></label>
@@ -194,6 +200,8 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
 const db = supabase.createClient(SUPA.url, SUPA.key);
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
+let syncDevs = () => {};   // set once the device list is built
+const ownedDevs = () => [...document.querySelectorAll("#s-devs button[aria-pressed=true]")].map(b => b.dataset.d);
 const opt = (s, v, t) => { const o = el("option", "", t); o.value = v; s.appendChild(o); return o; };
 let hasProfile = false, photoPath = null;
 let me = null, profile = null, fm = "", color = "", others = [], cafMode = "", cafDay = "", cafLine = "", cafShow = "", sleepOn = "";
@@ -323,6 +331,14 @@ $("s-name").addEventListener("input", renderColors);
   ((window.LISTS && window.LISTS.device) || []).forEach(add);
   const list = out;
   const s = $("s-device"); opt(s, "", "The last one used"); list.forEach(d => opt(s, d, d));
+  // the devices you own: chips to tick; the Device above only offers those (plus the one already chosen)
+  const box = $("s-devs");
+  list.forEach(d => { const b = el("button", "", d); b.type = "button"; b.dataset.d = d; b.setAttribute("aria-pressed", "false"); b.onclick = () => { b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true")); syncDevs(); }; box.appendChild(b); });
+  syncDevs = () => {
+    const own = ownedDevs(), keep = s.value;   // rebuilt, not hidden: the iPhone shows hidden options anyway
+    s.textContent = ""; opt(s, "", "The last one used"); list.filter(d => !own.length || own.includes(d) || d === keep).forEach(d => opt(s, d, d)); s.value = keep;
+    $("devshint").textContent = own.length ? "Log a brew offers " + (own.length === 1 ? "only this one" : "these " + own.length) + ". Tap one again to untick it." : "Tick the ones you have at home: Log a brew then only offers these. Nothing ticked: all of them.";
+  };
   const g = $("s-grinder"); opt(g, "", "The last one used"); ((window.DEFAULTS && DEFAULTS.GRINDERS) || []).forEach(x => opt(g, x.name, x.name));
   // drinks: espresso-based for espresso, filter-based for filter coffee
   const DR = window.DRINKS.D, groups = window.DRINKS.groups;
@@ -389,6 +405,7 @@ async function load() {
   if (hasProfile) { $("s-about").value = (data && data.about) || ""; $("s-prof").href = "../friends/index.html#p=" + me.id; photoPath = (data && data.photo_path) || null; drawFace(); }
   const pick = (id, v) => { const s = $(id); s.value = v || ""; if (s.value !== (v || "")) s.value = ""; };
   pick("s-device", p.device); pick("s-grinder", p.grinder); pick("s-drink-esp", p.drink_esp); pick("s-drink-filter", p.drink_filter); pick("s-milk", p.milk);
+  document.querySelectorAll("#s-devs button").forEach(b => b.setAttribute("aria-pressed", String((p.devices || []).includes(b.dataset.d)))); syncDevs();
   setFm(p.formmode || "");
   color = (DEFAULTS.COLORS || []).some(c => c[0] === p.color) ? p.color : ""; renderColors();
   cafMode = p.caf_mode === "high" ? "high" : ""; cafDay = p.caf_day === "midnight" ? "midnight" : ""; setSeg("s-cafmode", cafMode); setSeg("s-cafday", cafDay);
@@ -407,6 +424,8 @@ $("sf").onsubmit = async e => {
   if (!name) { $("msg").textContent = "Please put in a name first: it is shown on your brews."; $("s-name").focus(); return; }
   const prefs = Object.assign({}, (profile && profile.prefs) || {});
   [["device", "s-device"], ["grinder", "s-grinder"], ["drink_esp", "s-drink-esp"], ["drink_filter", "s-drink-filter"], ["milk", "s-milk"]].forEach(([k, id]) => { if ($(id).value) prefs[k] = $(id).value; else delete prefs[k]; });
+  const own = ownedDevs(); if (own.length) prefs.devices = own; else delete prefs.devices;
+  try { if (own.length) localStorage.setItem("alto.mydevs", JSON.stringify(own)); else localStorage.removeItem("alto.mydevs"); } catch (e) { /* only a shortcut for Log a brew */ }
   if (fm) prefs.formmode = fm; else delete prefs.formmode;
   if (color) prefs.color = color; else delete prefs.color;
   if (cafMode) prefs.caf_mode = cafMode; else delete prefs.caf_mode;
