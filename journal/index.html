@@ -970,6 +970,9 @@ const ICONS = {
   bag: "M6.5 8h11l1 12.5h-13z M9 8V6.5a3 3 0 016 0V8",
   zoom: "M10.5 17a6.5 6.5 0 100-13 6.5 6.5 0 000 13z M15.2 15.2L20 20 M10.5 8v5 M8 10.5h5",
   plus: "M12 5v14 M5 12h14",
+  calday: "M5 6h14a1 1 0 011 1v12a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1z M4 10h16 M8.5 3.5v4 M15.5 3.5v4 M12 13v4.5 M9.8 15.3h4.4",   // a calendar page with a plus: set a date (opened today)
+  flag: "M6 21V4 M6 4.5h11l-2.5 4 2.5 4H6",   // a finish flag: the bag is done
+  undo: "M9 7L4.5 11.5 9 16 M5 11.5h9.5a5 5 0 010 10H12",   // an arrow back
   lock: "M6 11h12v9H6z M8.5 11V8a3.5 3.5 0 017 0v3",
   friends: "M9 11a3.5 3.5 0 100-7 3.5 3.5 0 000 7z M2.5 20a6.5 6.5 0 0113 0 M16 4.3a3.5 3.5 0 010 6.4 M17.5 14a6.5 6.5 0 014 6",
   brew: "M3.5 11h12v3.5a5 5 0 01-5 5h-2a5 5 0 01-5-5V11z M15.5 12.5h1.3a2.3 2.3 0 010 4.6h-1.6 M3 22h14 M19 2.5v6 M16 5.5h6",   // a cup with a plus: log a new brew (as in the header, Home and the calculator)
@@ -1086,7 +1089,7 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
   if (c.notes) b.appendChild(el("p", "", c.notes));
   const acts = el("div", "acts");
   // the coffee's page (logging a brew is the cup in the top bar, or the button on that page)
-  acts.appendChild(abtn("btn", nBrews ? "Brews (" + nBrews + ")" : "Details", "brew", () => { location.hash = "c=" + c.id; }));
+  acts.appendChild(abtn("btn", nBrews ? "Brews (" + nBrews + ")" : "Brews", "brew", () => { location.hash = "c=" + c.id; }));
   const bl = buyLink(c); if (bl) acts.appendChild(bl);
   acts.appendChild(abtn("btn ghost", "New bag", "plus", () => startNewBag(c)));
   bagActions(c, load).forEach(x => acts.appendChild(x));
@@ -1517,11 +1520,11 @@ function bagActions(c, done) {
     if (msg) say(msg); done();
   };
   // buttons say what they do ("Mark as …"), the card's text above says how the bag is now
-  if (!c.open_date) out.push(abtn("btn ghost", "Mark as opened today", "bag", () => set({ open_date: todayIso() }, "Marked as opened today.")));
-  if (c.open_date && !c.finished_at) out.push(abtn("btn ghost", "Mark as finished", "bag", () => {
+  if (!c.open_date) out.push(abtn("btn ghost", "Mark as opened today", "calday", () => set({ open_date: todayIso() }, "Marked as opened today.")));
+  if (c.open_date && !c.finished_at) out.push(abtn("btn ghost", "Mark as finished", "flag", () => {
     if (confirm("Mark this bag of \"" + c.name + "\" as finished? The grams left are no longer shown. You can undo it.")) set({ finished_at: todayIso() }, "Marked as finished. Time for a new bag?");
   }));
-  if (c.finished_at) out.push(abtn("btn ghost", "Undo finished", "close", () => set({ finished_at: null }, "Not finished after all.")));
+  if (c.finished_at) out.push(abtn("btn ghost", "Undo finished", "undo", () => set({ finished_at: null }, "Not finished after all.")));
   return out;
 }
 // on a coffee's page: whether friends see it (on their side: its photo, stars, notes and best recipe)
