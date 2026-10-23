@@ -210,6 +210,7 @@ h3.sh{font-size:16px;margin:26px 0 2px}
 .bc .rt .rh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .bc .rt .rn{font-size:14px;color:var(--mut)}
 .bc .rt .tags{margin-top:4px}
+.bc .rt .npills{margin-top:6px;padding-top:6px}
 .bc .rby{font-size:14px;color:var(--mut);margin-left:8px}
 .bc .rby .pt{margin-left:3px}
 .fi .rr span.rx{display:inline;gap:0}
@@ -374,6 +375,10 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .bc p{margin:4px 0 0;font-size:14px}
 .bc .age,.bc .set{color:var(--mut)}
 .bc .tags{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:10px}
+.bc .tags.core{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px 12px}
+.bc .npills{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.bc .npills svg{color:var(--mut);flex:none;margin-right:2px}
+.bc .np{font-size:13.5px;line-height:1.2;padding:4px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--ink)}
 .bc .acts{display:flex;gap:8px;margin-top:6px}
 .bc .ib{color:var(--mut)}
 .bc .ibs{position:relative}
@@ -2999,14 +3004,26 @@ function brewCard(b) {
     const pts = pressurePts(b.preinfusion_bar, b.preinfusion_s, b.pressure_profile, null, null);
     if (pts.length) { const w = el("div", "curve"); w.appendChild(curveSvg(pts)); a.appendChild(w); }
   }
+  // the taste: Balance and the sliders in a tidy grid, then the tasting notes that were there (by name only; "none" is left out)
   const chips = (sc, bal) => {
-    const list = Object.entries(sc || {}).filter(([k]) => !(k === "balance" && bal != null))   // an old balance score is shown only while there is no new Balance (26_balance_from_old.sql converts them)
-      .sort(([x], [y]) => { const i = k => CORE.includes(k) ? CORE.indexOf(k) : 99; return i(x) - i(y); });
-    if (!list.length && bal == null) return null;
-    const t = el("div", "tags");
-    if (bal != null) { const ch = el("span", "chip balc"); ch.style.setProperty("--ac", attrColor("balance")); ch.title = SCALE.balanceName(bal); ch.append(ico("balance", 14), document.createTextNode("balance " + SCALE.balanceText(bal))); t.appendChild(ch); }
-    list.forEach(([k, v]) => { const ch = el("span", "chip"); ch.style.setProperty("--ac", attrColor(k)); ch.append(ico(attrIcon(k), 14), document.createTextNode((k === "balance" ? "balance (old scale) " : k + " ") + SCALE.text(k, v))); t.appendChild(ch); });
-    return t;
+    const all = Object.entries(sc || {}).filter(([k]) => !(k === "balance" && bal != null));   // an old balance score is shown only while there is no new Balance (26_balance_from_old.sql converts them)
+    const core = all.filter(([k]) => SCALE.isCore(k)).sort(([x], [y]) => CORE.indexOf(x) - CORE.indexOf(y));
+    const notes = all.filter(([k, v]) => !SCALE.isCore(k) && SCALE.levelOf(v) > 0).map(([k]) => k).sort();
+    if (!core.length && !notes.length && bal == null) return null;
+    const box = el("div", "taste");
+    if (core.length || bal != null) {
+      const t = el("div", "tags core");
+      if (bal != null) { const ch = el("span", "chip balc"); ch.style.setProperty("--ac", attrColor("balance")); ch.title = SCALE.balanceName(bal); ch.append(ico("balance", 14), document.createTextNode("balance " + SCALE.balanceText(bal))); t.appendChild(ch); }
+      core.forEach(([k, v]) => { const ch = el("span", "chip"); ch.style.setProperty("--ac", attrColor(k)); ch.append(ico(attrIcon(k), 14), document.createTextNode((k === "balance" ? "balance (old scale) " : k + " ") + SCALE.text(k, v))); t.appendChild(ch); });
+      box.appendChild(t);
+    }
+    if (notes.length) {
+      const n = el("div", "npills"); n.appendChild(ico("leaf", 15));
+      notes.forEach(k => n.appendChild(el("span", "np", k)));
+      n.setAttribute("aria-label", "Tasting notes: " + notes.join(", "));
+      box.appendChild(n);
+    }
+    return box;
   };
   // who still has to rate (their cup is listed, nothing rated yet), with a button for your own cup and for guests
   const pend = ts.filter(isPending), rated = ts.filter(t => !isPending(t)), mine = ts.find(t => !t.guest && me && t.rater_id === me.id);
