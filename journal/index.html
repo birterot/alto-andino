@@ -1062,7 +1062,7 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
   if (c.notes) b.appendChild(el("p", "", c.notes));
   const acts = el("div", "acts");
   // the coffee's page (logging a brew is the cup in the top bar, or the button on that page)
-  acts.appendChild(abtn("btn", nBrews ? "Brews (" + nBrews + ")" : "Open", "cup", () => { location.hash = "c=" + c.id; }));
+  acts.appendChild(abtn("btn", nBrews ? "Brews (" + nBrews + ")" : "Open", "brew", () => { location.hash = "c=" + c.id; }));
   const bl = buyLink(c); if (bl) acts.appendChild(bl);
   acts.appendChild(abtn("btn ghost", "New bag", "plus", () => startNewBag(c)));
   bagActions(c, load).forEach(x => acts.appendChild(x));
@@ -1973,7 +1973,7 @@ function buildScores(c, extra) {
   scores = {}; ctl = {}; noteNames = [];
   $("scorebox").textContent = ""; $("notebox").textContent = "";
   SCALE.PROFILE.forEach(a => addCore(a));
-  addCore("body", "Body: minus is watery or thin, plus is heavy or too strong. With sour and bitter it places the cup on the brewing chart in Trends.");
+  addCore("body", "Body: how the coffee feels in your mouth. Minus is watery or thin, like tea. Plus is full, thick or syrupy, which can be lovely and is not the same as too strong. With sour and bitter it places the cup on the brewing chart in Trends.");
   [...(c.flavour_tags || []), ...(extra || [])].forEach(addNote);
 }
 function setScore(a, v) {

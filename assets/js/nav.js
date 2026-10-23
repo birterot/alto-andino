@@ -185,6 +185,7 @@
   // "Bean to cup" keeps its chapters folded away (open inside the book, or with the little arrow)
   var subs = null;
   ITEMS.forEach(function (it) {
+    if (it[0] === "log" || it[0] === "calc") return;   // not in the menu: both are buttons in the top bar (still section tabs and Home tiles)
     addLink(it[0], it[1], it[2], false, it[0]);
     if (it[0] === "book") {
       var a = links[links.length - 1], row = document.createElement("div"); row.className = "mrow";
