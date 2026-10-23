@@ -370,8 +370,8 @@ function viewDial() {
     numbers(m, ["Date", "Grind", "Time", "Ratio", "Stars", "Balance", "Made by"], pts.slice().sort((a, b) => a.t - b.t).map(b => [fmtDate(b.t) + (b.dialin ? " (dial-in)" : ""), b.grind, timeText(b), ratioOf(b) ? "1:" + r1(ratioOf(b)) : null, b.rating ? stars(b.rating) : null, b.balance != null ? balText(b.balance) : null, nameOf(b.who)]));
   }
 
-  // the brewing chart: extraction (sour to bitter) against strength (watery to heavy), each with its own fix
-  const bc = card("Brewing chart", "Left is sour (underextracted), right is bitter (overextracted): change the grind, time or temperature. Down is watery, up is heavy: change the ratio. The box in the middle is where you want to be. The line follows your last eight brews, the ringed dot is the newest.");
+  // the brewing chart: extraction (sour to bitter) against body (watery to full), each with its own fix
+  const bc = card("Brewing chart", "Left is sour (underextracted), right is bitter (overextracted): change the grind, time or temperature. Down is watery, up is full: if it feels too strong, change the ratio. The box in the middle is where you want to be. The line follows your last eight brews, the ringed dot is the newest.");
   const bp = list.map(b => {
     const so = b.scores.sour, bi = b.scores.bitter, bo = b.scores.body;
     if ((so == null && bi == null) || bo == null) return null;
@@ -383,15 +383,15 @@ function viewDial() {
     const box = chartBox(bc);
     Charts.scatter({
       box, height: 320, xDomain: [-5, 5], xTicks: [-5, 0, 5], xFmt: v => v === 0 ? "just right" : v < 0 ? "sour" : "bitter", xGrid: true, xBase: 0,
-      yDomain: [-5, 5], yTicks: [-5, 0, 5], yFmt: v => v === 0 ? "just right" : v < 0 ? "watery" : "heavy", yLabel: "Body", yBase: 0,
+      yDomain: [-5, 5], yTicks: [-5, 0, 5], yFmt: v => v === 0 ? "just right" : v < 0 ? "watery" : "full", yLabel: "Body", yBase: 0,
       zones: [{ x0: -1, x1: 1, y0: -1, y1: 1 }], corner: ["finer, more water", "coarser, more water", "finer, less water", "coarser, less water"],
       path: true, last: true, trailFrom: Math.max(0, bp.length - 8),
-      points: bp.map((p, i) => ({ faded: i < bp.length - 8, x: p.x, y: p.y, color: p.b.rating ? RCOL(p.b.rating) : "var(--mut)", hollow: !p.b.rating, tip: () => brewTip(p.b, [{ value: p.x === 0 ? "just right" : (p.x < 0 ? "sour " : "bitter ") + r1(Math.abs(p.x)), label: "taste" }, { value: p.y === 0 ? "just right" : (p.y < 0 ? "watery " : "heavy ") + r1(Math.abs(p.y)), label: "body" }]) }))
+      points: bp.map((p, i) => ({ faded: i < bp.length - 8, x: p.x, y: p.y, color: p.b.rating ? RCOL(p.b.rating) : "var(--mut)", hollow: !p.b.rating, tip: () => brewTip(p.b, [{ value: p.x === 0 ? "just right" : (p.x < 0 ? "sour " : "bitter ") + r1(Math.abs(p.x)), label: "taste" }, { value: p.y === 0 ? "just right" : (p.y < 0 ? "watery " : "full ") + r1(Math.abs(p.y)), label: "body" }]) }))
     });
     starRamp(bc, bp.some(p => !p.b.rating));
-    const L = bp[bp.length - 1], ex = Math.abs(L.x) <= 1 ? null : L.x < 0 ? "grind finer (or brew longer or hotter)" : "grind coarser (or brew shorter or cooler)", st = Math.abs(L.y) <= 1 ? null : L.y < 0 ? "use less water for the coffee (a shorter ratio)" : "use more water for the coffee (a longer ratio)";
-    bc.appendChild(el("p", "take", !ex && !st ? "Your newest brew is in the box: neither sour nor bitter, and the body is right." : "Your newest brew is " + [L.x < -1 ? "sour" : L.x > 1 ? "bitter" : null, L.y < -1 ? "watery" : L.y > 1 ? "heavy" : null].filter(Boolean).join(" and ") + ". Next time: " + [ex, st].filter(Boolean).join(", and ") + "."));
-    numbers(bc, ["Date", "Taste (sour - / bitter +)", "Body (watery - / heavy +)", "Ratio", "Stars"], bp.map(p => [fmtDate(p.b.t), r1(p.x), r1(p.y), ratioOf(p.b) ? "1:" + r1(ratioOf(p.b)) : null, p.b.rating ? stars(p.b.rating) : null]));
+    const L = bp[bp.length - 1], ex = Math.abs(L.x) <= 1 ? null : L.x < 0 ? "grind finer (or brew longer or hotter)" : "grind coarser (or brew shorter or cooler)", st = Math.abs(L.y) <= 1 ? null : L.y < 0 ? "use less water for the coffee (a shorter ratio)" : "if it felt too strong, use more water for the coffee (a longer ratio)";
+    bc.appendChild(el("p", "take", !ex && !st ? "Your newest brew is in the box: neither sour nor bitter, and the body is right." : "Your newest brew is " + [L.x < -1 ? "sour" : L.x > 1 ? "bitter" : null, L.y < -1 ? "watery" : L.y > 1 ? "full" : null].filter(Boolean).join(" and ") + ". Next time: " + [ex, st].filter(Boolean).join(", and ") + "."));
+    numbers(bc, ["Date", "Taste (sour - / bitter +)", "Body (watery - / full +)", "Ratio", "Stars"], bp.map(p => [fmtDate(p.b.t), r1(p.x), r1(p.y), ratioOf(p.b) ? "1:" + r1(ratioOf(p.b)) : null, p.b.rating ? stars(p.b.rating) : null]));
   }
 
   const k = card("Ratio and taste", "Your ratio against sour or bitter. Up is a shorter ratio (stronger), down a longer one. More water pulls a little more out of the coffee, so a sour cup often moves right with a longer ratio, especially with espresso. The line follows your last eight brews, the ringed dot is the newest.");
