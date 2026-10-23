@@ -34,6 +34,7 @@ input[type=checkbox]{width:20px;height:20px;padding:0;margin:0;accent-color:var(
 .nums>label.wide{grid-column:1/-1}
 label.chk{display:flex;align-items:center;gap:10px;color:var(--ink);font-size:15px;margin-top:16px}
 label.chk input{width:20px;height:20px;margin:0;flex:none}
+label.chk input.untildate{width:auto;height:40px;margin:0 0 0 4px;padding:0 10px;flex:0 1 auto}
 .go,.lnk{font:inherit;cursor:pointer;border-radius:6px}
 .go{margin-top:20px;height:48px;padding:0 24px;border-radius:12px;border:1px solid var(--act);background:var(--act);color:var(--on-act);font-size:16px}
 .lnk{padding:2px 10px;border:1px solid var(--line);background:none;color:var(--mut);font-size:13px}
@@ -114,6 +115,8 @@ details.add summary{cursor:pointer;font-weight:600}
 .arow .an strong{display:block;font-size:15px}
 .arow .an small{color:var(--mut);font-size:13px}
 .arow .btn{min-height:36px;padding:6px 12px;font-size:13.5px}
+.frshare{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin:10px 0 0;font-size:13.5px;color:var(--mut)}
+.frshare svg{flex:none}
 .darch{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0 0;padding:8px 12px;border-radius:10px;background:var(--bg);color:var(--ink);font-size:14px}
 dialog.dlg{border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);padding:22px 20px 16px;max-width:360px;width:calc(100% - 32px);box-shadow:0 18px 50px rgba(20,14,10,.3)}
 dialog.dlg::backdrop{background:rgba(20,14,10,.45)}
@@ -578,7 +581,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
 
   <div id="detail" hidden>
     <a class="back" id="dback" href="#">All coffees</a>
-    <section id="dhead" class="cc"><button type="button" class="phb" id="dphotob" hidden><img id="dphoto" alt=""></button><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><div class="acts" id="dacts"><span id="dbuy"></span><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button></div><p class="darch" id="darch" hidden></p></div></section>
+    <section id="dhead" class="cc"><button type="button" class="phb" id="dphotob" hidden><img id="dphoto" alt=""></button><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><div class="acts" id="dacts"><span id="dbuy"></span><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button></div><p class="darch" id="darch" hidden></p><p class="frshare" id="frshare" hidden></p></div></section>
     <div id="dedithost"></div>
     <details class="add" id="brewbox">
       <summary id="brewsum">Log a brew</summary>
@@ -931,6 +934,8 @@ const ICONS = {
   bag: "M6.5 8h11l1 12.5h-13z M9 8V6.5a3 3 0 016 0V8",
   zoom: "M10.5 17a6.5 6.5 0 100-13 6.5 6.5 0 000 13z M15.2 15.2L20 20 M10.5 8v5 M8 10.5h5",
   plus: "M12 5v14 M5 12h14",
+  lock: "M6 11h12v9H6z M8.5 11V8a3.5 3.5 0 017 0v3",
+  friends: "M9 11a3.5 3.5 0 100-7 3.5 3.5 0 000 7z M2.5 20a6.5 6.5 0 0113 0 M16 4.3a3.5 3.5 0 010 6.4 M17.5 14a6.5 6.5 0 014 6",
   brew: "M3.5 11h12v3.5a5 5 0 01-5 5h-2a5 5 0 01-5-5V11z M15.5 12.5h1.3a2.3 2.3 0 010 4.6h-1.6 M3 22h14 M19 2.5v6 M16 5.5h6",   // a cup with a plus: log a new brew (as in the header, Home and the calculator)
   check: "M4.5 12.5l5 5L19.5 7",
   cup: "M5 9h11v5a5 5 0 01-5 5h-1a5 5 0 01-5-5V9z M16 10h2a2 2 0 010 4h-2 M8 3v3 M12 3v3",
@@ -1246,7 +1251,11 @@ function renderCoffees() {
   const active = coffeeData.filter(c => !c.archived);
   renderArchived(coffeeData.filter(c => c.archived));
   $("cfilters").hidden = active.length < 2;
-  if (!active.length) { list.appendChild(el("p", "hint", coffeeData.length ? "All bags are archived. Add a new coffee above." : "No coffees yet. Add your first one above.")); return; }
+  if (!active.length) {
+    const p = el("p", "hint", coffeeData.length ? "All bags are archived. Add a new coffee above." : "No coffees yet. Add your first one above.");
+    if (!coffeeData.length && friends.length) { p.append(" Or see what your friends drink, and add one of theirs: "); const a = el("a", "", "their shelves \u2192"); a.href = "../friends/index.html"; p.appendChild(a); }
+    list.appendChild(p); return;
+  }
   // one card per coffee, showing its newest bag; the data arrives newest first
   const groups = new Map();
   active.forEach(c => { const k = gk(c); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(c); });
@@ -1473,6 +1482,23 @@ function confirmSave(title, rows, okText, note) {
     $("sd-ok").onclick = () => end(true); $("sd-back").onclick = () => end(false); d.oncancel = () => done(false);
     if (d.showModal) d.showModal(); else done(confirm(title));
   });
+}
+// on a coffee's page: whether friends see it (on their side: its photo, stars, notes and best recipe)
+function drawFriendShare(c) {
+  const p = $("frshare"); p.textContent = "";
+  p.hidden = !("friends_hidden" in c) || !friends.length;   // only after supabase/34_friends_more.sql, and once you have friends
+  if (p.hidden) return;
+  const hid = !!c.friends_hidden;
+  p.append(ico(hid ? "lock" : "friends", 16), el("span", "", hid ? "Hidden from your friends." : "Your friends see this coffee and its best recipe."));
+  const b = el("button", "lnk", hid ? "Show it to them" : "Hide from friends"); b.type = "button";
+  b.onclick = async () => {
+    b.disabled = true;
+    const { error } = await db.from("coffees").update({ friends_hidden: !hid }).eq(c.group_id ? "group_id" : "id", c.group_id || c.id);   // all bags of this coffee
+    b.disabled = false;
+    if (error) { say("Could not change it: " + error.message); return; }
+    c.friends_hidden = !hid; drawFriendShare(c); say(hid ? "Your friends see it again." : "Hidden from your friends.");
+  };
+  p.appendChild(b);
 }
 // The bag photo, full screen (assets/js/photoview.js): pinch or double-tap to zoom, tap next to it or Close to go back.
 function showPhoto(url, name) { PhotoView.open(url, "Bag of " + (name || "the coffee")); }
@@ -2396,8 +2422,9 @@ function newBrewSetup(dev, plain) {   // plain: no draft and no calculator offer
   if (h) {
     const hp = (id, v) => { if (v !== null && v !== undefined) { $(id).value = v; touched.add(id); } };
     hp("b-dose", h.dose_g); if (!isEsp(typeOf(chosen("b-device")))) hp("b-water", h.water_g); hp("b-yield", h.yield_g); hp("b-temp", h.temp_c); if (isFlair(chosen("b-device"))) hp("b-preheat", h.preheat);
+    if (h.grind != null) hp("b-grind", h.grind);   // a friend's recipe brings its grind too
     if (calc && h.state) calc.load(h.state);   // the calculator in the form shows the same numbers
-    say("Numbers filled in from the calculator.");
+    say(h.from === "friend" ? "Their recipe is filled in. Grind settings differ between grinders, so take the grind as a hint." : "Numbers filled in from the calculator.");
     edited = true; saveDraft();
   }
   $("calcbox").open = false;   // folded: it is there when you want to plan, out of the way when you don't
@@ -2908,6 +2935,7 @@ async function openCoffee(id, dev, wantForm, rid) {
   const da = $("darch"); da.textContent = ""; da.hidden = !c.archived;
   if (c.archived) { da.append(document.createTextNode("This bag is archived. Its brews still count in Trends.")); da.appendChild(abtn("btn ghost", "Restore", "check", async () => { if (await setArchived(c, false)) openCoffee(c.id); })); }
   $("dname").textContent = c.name;
+  drawFriendShare(c);
   if (!$("dedit")) { const eb = ibtn("Edit coffee", "edit", () => { $("dedithost").appendChild($("addbox")); startEdit(cur); }); eb.id = "dedit"; eb.classList.add("dedit"); $("dhead").appendChild(eb); }
   if (c.photo_path && !coffeeUrls[c.photo_path]) { const got = await photoLinks([c.photo_path]); coffeeUrls = Object.assign({}, coffeeUrls, got.full); coffeeThumbs = Object.assign({}, coffeeThumbs, got.thumb); }   // opened straight from a link
   const ph = $("dphoto"), pu = c.photo_path ? coffeeUrls[c.photo_path] : null, pt = c.photo_path ? (coffeeThumbs[c.photo_path] || pu) : null;
@@ -3246,8 +3274,10 @@ const joinUrl = code => location.origin + cleanPath() + "#join=" + encodeURIComp
 const pendingJoin = () => { try { return localStorage.getItem("alto.join"); } catch (e) { return null; } };
 async function loadHouseholds() {
   // one request: everyone in your households (you only see households you are in), with the household names
-  const { data, error } = await db.from("household_members").select("household_id,user_id,role,joined_at,households(id,name)").order("joined_at");
+  let { data, error } = await db.from("household_members").select("household_id,user_id,role,joined_at,until,households(id,name)").order("joined_at");
+  if (error) ({ data, error } = await db.from("household_members").select("household_id,user_id,role,joined_at,households(id,name)").order("joined_at"));   // before supabase/34_friends_more.sql
   if (error) { hhOk = false; hhs = []; hh = null; $("hhbox").hidden = true; return; }
+  data = data.filter(m => !m.until || new Date(m.until) > new Date());   // a membership for a while that is over
   hhOk = true;
   const seen = new Set();
   hhs = data.filter(r => r.user_id === me.id && r.households && !seen.has(r.household_id) && seen.add(r.household_id)).map(r => ({ id: r.household_id, name: r.households.name, role: r.role }));
@@ -3267,6 +3297,7 @@ async function loadFriends() {
   friends = (data || []).filter(f => !inHH.has(f.user_id));
   friends.forEach(f => { fnames[f.user_id] = f.name; });
   if (!$("forchips").closest("[hidden]") && document.querySelector("#forchips .fc")) renderFor();
+  if (cur && !$("detail").hidden) drawFriendShare(cur);   // the coffee page was drawn before the friends came
 }
 async function tryPendingJoin() {
   const code = pendingJoin(); if (!code) return;
@@ -3302,8 +3333,13 @@ function renderHousehold() {
   const ms = sec("Members"), mine = (hhMembers[hh] || []).find(m => m.user_id === me.id);
   (hhMembers[hh] || []).forEach(m => {
     const r = el("div", "mem"), t = el("span", "", (names[m.user_id] || "Someone") + (m.user_id === me.id ? " (you)" : ""));
-    t.appendChild(el("small", "", m.role === "owner" ? "  owner" : ""));
+    t.appendChild(el("small", "", m.role === "owner" ? "  owner" : m.until ? "  until " + fmtD(m.until.slice(0, 10)) : ""));
     r.appendChild(t);
+    if (m.until && m.user_id !== me.id) {   // a member for a while: make them a full member
+      const f = el("button", "lnk", "Keep for good"); f.type = "button";
+      f.onclick = () => hhAction("set_member_until", { p_household: hh, p_user: m.user_id, p_until: null }, () => say((names[m.user_id] || "They") + " stay for good now."));
+      r.appendChild(f);
+    }
     if (mine && mine.role === "owner" && m.user_id !== me.id) {
       const x = el("button", "lnk", "Remove"); x.type = "button";
       x.onclick = () => { if (confirm("Remove " + (names[m.user_id] || "this person") + " from " + cur.name + "? They will no longer see its coffees.")) hhAction("remove_member", { p_household: hh, p_user: m.user_id }); };
@@ -3313,8 +3349,14 @@ function renderHousehold() {
   });
   const inv = sec("Invite someone");
   inv.appendChild(el("p", "hint", "Creates a link for one person, valid for 14 days. They create an account (or sign in) and join " + cur.name + "."));
+  // a guest or a flatmate for a few weeks: they leave the household by themselves on that day
+  const tl = el("label", "chk"), tc = el("input"), td = el("input"); tc.type = "checkbox"; td.type = "date"; td.hidden = true; td.className = "untildate";
+  const d14 = new Date(Date.now() + 14 * 864e5); td.min = new Date(Date.now() + 864e5).toISOString().slice(0, 10); td.value = d14.toISOString().slice(0, 10);
+  tl.append(tc, document.createTextNode("Only for a while, until"), td); tc.onchange = () => { td.hidden = !tc.checked; };
+  inv.appendChild(tl);
   const ib = abtn("btn", "Create invite link", "plus", async () => {
-    const { data, error } = await db.rpc("create_invite", { p_household: hh });
+    const until = tc.checked && td.value ? new Date(td.value + "T23:59:00").toISOString() : null;
+    const { data, error } = await db.rpc("create_invite", until ? { p_household: hh, p_until: until } : { p_household: hh });
     if (error) { say(error.message); return; }
     const wrap = el("div", "invlink"), li = el("input"); li.readOnly = true; li.value = joinUrl(data); li.setAttribute("aria-label", "Invite link");
     const sh = abtn("btn ghost", navigator.share ? "Share" : "Copy", "check", async () => {
@@ -3323,7 +3365,7 @@ function renderHousehold() {
     });
     wrap.append(li, sh); ib.replaceWith(wrap); li.select();
   });
-  inv.appendChild(ib);
+  ib.style.marginTop = "12px"; inv.appendChild(ib);
   const more = sec("More");
   const add = (label, fn, cls) => { const b = el("button", "lnk" + (cls ? " " + cls : ""), label); b.type = "button"; b.onclick = fn; more.appendChild(b); more.appendChild(document.createTextNode(" ")); };
   add("Start another household", () => { const n = prompt("Name of the new household"); if (n) hhAction("create_household", { p_name: n }, id => { store.set("alto.household", id); }); });

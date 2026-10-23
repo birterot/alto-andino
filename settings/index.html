@@ -35,6 +35,9 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .foot{display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--mut);font-size:14px;max-width:560px}
 .out{max-width:560px}
 .lab{margin:18px 0 0;font-size:13.5px;color:var(--mut)}
+.me{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:10px 0 4px}
+.me .face{flex:none;display:grid;place-items:center;width:64px;height:64px;border-radius:50%;color:#fff;font-size:26px;font-weight:600;background:var(--mut) center/cover no-repeat}
+.me .mebtns{display:flex;gap:8px;flex-wrap:wrap}
 #colorhint{margin-top:12px}
 .own{max-width:220px}
 .ownrow{display:flex;align-items:center;gap:8px;margin-top:6px}
@@ -79,10 +82,17 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
 </section>
 
 <form id="sf" hidden>
-  <section class="set">
+  <section class="set" id="you">
     <h2>You</h2>
+    <div class="me" id="mebox" hidden>
+      <span class="face" id="s-face" aria-hidden="true"></span>
+      <div class="mebtns"><button type="button" class="lnk" id="s-photo">Add a photo</button><button type="button" class="lnk" id="s-photo-x" hidden>Remove</button><input type="file" id="s-photo-f" accept="image/*" hidden></div>
+      <span class="hint" id="photomsg" role="status"></span>
+    </div>
     <label>Your name, shown on the brews you make and rate<input id="s-name" maxlength="40" autocomplete="nickname" placeholder="e.g. Birte"></label>
-    <p class="lab" id="colorlab">Your colour, for your initial in Recent activity</p>
+    <label id="aboutlab" hidden>One line about you (optional), shown on your profile<input id="s-about" maxlength="140" placeholder="e.g. Espresso every morning, V60 on Sundays"></label>
+    <p class="hint" id="proflink" hidden>Your household and your friends see your profile: <a id="s-prof" href="../friends/index.html">See your profile</a>.</p>
+    <p class="lab" id="colorlab">Your colour, for your initial everywhere in the app</p>
     <div class="sw" id="s-color" role="radiogroup" aria-labelledby="colorlab"></div>
     <p class="hint" id="colorhint"></p>
   </section>
@@ -186,6 +196,7 @@ const db = supabase.createClient(SUPA.url, SUPA.key);
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
 const opt = (s, v, t) => { const o = el("option", "", t); o.value = v; s.appendChild(o); return o; };
+let hasProfile = false, photoPath = null;
 let me = null, profile = null, fm = "", color = "", others = [], cafMode = "", cafDay = "", cafLine = "", cafShow = "", sleepOn = "";
 const TILES = [   // the same keys and names as on Home (index.html, data-k) and in the section tabs (nav.js, SECTIONS)
   ["shelf", "Coffee Shelf"], ["recent", "Recent activity"], ["mine", "My brews"], ["trends", "Trends"], ["calc", "Calculator"], ["cupping", "Cupping"], ["friends", "Friends"], ["book", "Bean to Cup"]];
@@ -264,6 +275,7 @@ $("delgo").onclick = async () => {
       const paths = [...new Set((cs || []).map(c => c.photo_path).filter(Boolean))].flatMap(p => [p, String(p).replace(/\.jpe?g$/i, "") + "-t.jpg"]);   // the photo and its small copy
       if (paths.length) await db.storage.from("bag-photos").remove(paths);
     }
+    try { const { data: av } = await db.storage.from("avatars").list(me.id); const ps = (av || []).map(x => me.id + "/" + x.name); if (ps.length) await db.storage.from("avatars").remove(ps); } catch (e) {}   // your profile photo
     const { data: fb } = await db.from("feedback").select("photo_path").eq("user_id", me.id);
     const shots = (fb || []).map(f => f.photo_path).filter(Boolean);
     if (shots.length) await db.storage.from("feedback").remove(shots);
@@ -289,6 +301,7 @@ $("s-cafline-n").addEventListener("input", () => {
 });
 // your colour: tap one; tap it again for "automatic". The initials of the others show which colours they use.
 function renderColors() {
+  if (hasProfile) drawFace();   // the circle next to your photo button takes your colour
   const box = $("s-color"); box.textContent = "";
   const ini = (($("s-name").value || (profile && profile.display_name) || "?").trim()[0] || "?").toUpperCase();
   (DEFAULTS.COLORS || []).forEach(([k, hex, label]) => {
@@ -329,11 +342,52 @@ $("s-name").addEventListener("input", renderColors);
 function setFm(m) { fm = m; document.querySelectorAll("#s-fm button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.m === m))); }
 document.querySelectorAll("#s-fm button").forEach(b => { b.onclick = () => setFm(fm === b.dataset.m ? "" : b.dataset.m); });
 
+function drawFace() {
+  const f = $("s-face"), n = ($("s-name").value || (profile && profile.display_name) || "?").trim();
+  const c = (DEFAULTS.COLORS || []).find(x => x[0] === color);
+  f.style.backgroundColor = c ? c[1] : "var(--mut)"; f.style.backgroundImage = ""; f.textContent = (n[0] || "?").toUpperCase();
+  $("s-photo").textContent = photoPath ? "Change photo" : "Add a photo"; $("s-photo-x").hidden = !photoPath;
+  if (photoPath) db.storage.from("avatars").createSignedUrl(photoPath, 3600).then(({ data }) => { if (data && data.signedUrl) { f.textContent = ""; f.style.backgroundImage = "url(\"" + data.signedUrl + "\")"; } });
+}
+function smallJpeg(file, size) {
+  return new Promise((ok, no) => {
+    const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = () => {
+      const s = Math.min(img.width, img.height), c = document.createElement("canvas"); c.width = c.height = size;
+      c.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);   // a square from the middle
+      URL.revokeObjectURL(u); c.toBlob(b => b ? ok(b) : no(new Error("could not read the photo")), "image/jpeg", 0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(u); no(new Error("this file is not a photo")); };
+    img.src = u;
+  });
+}
+$("s-photo").onclick = () => $("s-photo-f").click();
+$("s-photo-f").onchange = async () => {
+  const f = $("s-photo-f").files[0]; $("s-photo-f").value = ""; if (!f) return;
+  $("photomsg").textContent = "Uploading...";
+  try {
+    const blob = await smallJpeg(f, 320), path = me.id + "/" + Date.now() + ".jpg";
+    const up = await db.storage.from("avatars").upload(path, blob, { contentType: "image/jpeg" }); if (up.error) throw up.error;
+    const { error } = await db.from("profiles").update({ photo_path: path }).eq("id", me.id); if (error) throw error;
+    if (photoPath) db.storage.from("avatars").remove([photoPath]).catch(() => {});
+    photoPath = path; if (profile) profile.photo_path = path; drawFace(); $("photomsg").textContent = "Saved.";
+  } catch (e) { $("photomsg").textContent = "Could not save the photo: " + e.message; }
+};
+$("s-photo-x").onclick = async () => {
+  if (!photoPath || !confirm("Remove your photo? Your initial is shown instead.")) return;
+  const { error } = await db.from("profiles").update({ photo_path: null }).eq("id", me.id);
+  if (error) { $("photomsg").textContent = "Could not remove it: " + error.message; return; }
+  db.storage.from("avatars").remove([photoPath]).catch(() => {}); photoPath = null; if (profile) profile.photo_path = null; drawFace(); $("photomsg").textContent = "Removed.";
+};
 async function load() {
-  let { data, error } = await db.from("profiles").select("id,display_name,prefs").eq("id", me.id).maybeSingle();
+  let { data, error } = await db.from("profiles").select("id,display_name,prefs,about,photo_path").eq("id", me.id).maybeSingle();
+  hasProfile = !error;
+  if (error) ({ data, error } = await db.from("profiles").select("id,display_name,prefs").eq("id", me.id).maybeSingle());   // before supabase/34_friends_more.sql
   if (error) { $("msg").textContent = "Could not load your settings: " + error.message; return; }
   profile = data; const p = (data && data.prefs) || {};
   $("s-name").value = data ? data.display_name : "";
+  $("mebox").hidden = $("aboutlab").hidden = $("proflink").hidden = !hasProfile;
+  if (hasProfile) { $("s-about").value = (data && data.about) || ""; $("s-prof").href = "../friends/index.html#p=" + me.id; photoPath = (data && data.photo_path) || null; drawFace(); }
   const pick = (id, v) => { const s = $(id); s.value = v || ""; if (s.value !== (v || "")) s.value = ""; };
   pick("s-device", p.device); pick("s-grinder", p.grinder); pick("s-drink-esp", p.drink_esp); pick("s-drink-filter", p.drink_filter); pick("s-milk", p.milk);
   setFm(p.formmode || "");
@@ -370,12 +424,14 @@ $("sf").onsubmit = async e => {
   if (homeHide.length) prefs.home_hide = homeHide; else delete prefs.home_hide;
   if (homeOrder.join() !== TILES.map(t => t[0]).join()) prefs.home_order = homeOrder.slice(); else delete prefs.home_order;
   const same = (x, y) => JSON.stringify(Object.keys(x).sort().map(k => [k, x[k]])) === JSON.stringify(Object.keys(y).sort().map(k => [k, y[k]]));
-  if (profile && profile.display_name === name && same(prefs, profile.prefs || {})) { flash("Nothing changed, your settings are as they were."); return; }
+  const aboutNow = $("s-about").value.trim().slice(0, 140) || null;
+  if (profile && profile.display_name === name && same(prefs, profile.prefs || {}) && (!hasProfile || (profile.about || null) === aboutNow)) { flash("Nothing changed, your settings are as they were."); return; }
   $("save").disabled = true; $("msg").textContent = "Saving...";
-  const { error } = await db.from("profiles").upsert({ id: me.id, display_name: name, prefs, updated_at: new Date().toISOString() });
+  const about = $("s-about").value.trim().slice(0, 140) || null;
+  const { error } = await db.from("profiles").upsert({ id: me.id, display_name: name, prefs, ...(hasProfile ? { about } : {}), updated_at: new Date().toISOString() });
   $("save").disabled = false;
   if (error) { $("msg").textContent = "Could not save: " + error.message; return; }
-  profile = { id: me.id, display_name: name, prefs };
+  profile = { id: me.id, display_name: name, prefs, about: hasProfile ? about : undefined, photo_path: photoPath };
   if (fm) try { localStorage.setItem("alto.formmode", fm); } catch (e2) {}
   try { localStorage.setItem("alto.homehide", JSON.stringify(homeHide)); localStorage.setItem("alto.homeorder", JSON.stringify(homeOrder)); } catch (e2) {}
   try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: cafMode, day: cafDay, line: cafLine ? Number(cafLine) : null, bed: $("s-bed").value || "", show: cafShow, sleep: sleepOn && sleepConsent ? "on" : "" })); } catch (e2) {}   // Home uses it at once

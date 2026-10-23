@@ -123,7 +123,7 @@
   var sleepLogs = shelf && Array.isArray(shelf.sl) ? shelf.sl : null;
 
   // one note at a time: your caffeine first (when there was coffee today), then to do, Friends, the fact of the day
-  var notes = [], cafNote = null, rateNote = null, tipNote = null, todoNote = null;
+  var notes = [], cafNote = null, rateNote = null, tipNote = null, todoNote = null, trendNote = null;
   function todoOf(n) { return n > 0 ? { k: "To do", text: n + (n === 1 ? " of your brews still needs" : " of your brews still need") + " a Balance rating.", href: "journal/index.html#nobal", go: "Rate them" } : null; }
   var tr = session && shelf ? toRate(shelf.tr, shelf.nm) : null;
   if (tr) notes.push(rateNote = tr);
@@ -200,7 +200,9 @@
           db.from("sleep_logs").select("night,quality").gte("night", since2.slice(0, 10)),   // the sleep check (supabase/31_sleep.sql; before that: an error, left out)
           db.rpc("my_guest_cups"),   // cups friends made you at their place (supabase/33_friend_guests.sql; before that: an error, left out)
           // your rated brews without a Balance (the To do note), counted fresh; brews!inner leaves out cups at friends' (you cannot see their brews)
-          db.from("brew_ratings").select("id,brews!inner(id)", { count: "exact", head: true }).eq("rater_id", my).eq("is_guest", false).is("balance", null).not("rating", "is", null)
+          db.from("brew_ratings").select("id,brews!inner(id)", { count: "exact", head: true }).eq("rater_id", my).eq("is_guest", false).is("balance", null).not("rating", "is", null),
+          // what is trending among your friends (supabase/34_friends_more.sql; before that: an error, left out)
+          get("alto.household") ? db.rpc("friend_trending", { p_household: get("alto.household") }) : Promise.resolve({ data: [] })
         ]).then(function (res) {
           var q = res[0]; if (q.error || !Array.isArray(q.data)) return;
           var nm = {}; ((res[1] && res[1].data) || []).forEach(function (p) { nm[p.id] = p.display_name; if (p.id === my && p.prefs) savePref(p.prefs); });
@@ -236,6 +238,8 @@
           if (sh) drawBags(sh);
           showStat(mine); showRate(pend, nm); showCaffeine(rows);
           if (nob != null) todoNote = swapNote(todoNote, todoOf(nob), false);
+          var tr = res[6] && !res[6].error && Array.isArray(res[6].data) ? res[6].data[0] : null;
+          trendNote = swapNote(trendNote, tr ? { k: "From your friends", text: "Trending among your friends: " + tr.name + (tr.roaster ? " from " + tr.roaster : "") + ", " + (Math.round(tr.stars * 10) / 10).toFixed(1) + "\u2605 at " + tr.household_name + ".", href: "friends/index.html#f=" + tr.household + "&c=" + tr.id, go: "Their recipe" } : null, false);
           if (logs) { sleepLogs = logs; drawAsk(); showTip(tip); }
         });
       });

@@ -91,6 +91,44 @@ input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .take{margin:10px 0 0;font-size:14.5px}
 p.off{color:var(--mut);font-size:14px;font-style:italic}
 #msg{min-height:1.4em;color:var(--mut);font-size:14px}
+/* coffees as tiles: their shelf and trending */
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-top:10px}
+.ctile{display:flex;flex-direction:column;gap:2px;color:inherit;text-decoration:none;min-width:0}
+.ctile .cph{position:relative;display:grid;place-items:center;aspect-ratio:4/3;border-radius:12px;background:var(--bg) center/cover no-repeat;border:1px solid var(--line);margin-bottom:6px;overflow:hidden}
+.ctile .ci{width:34px;height:34px;fill:none;stroke:var(--them);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.ctile .now{position:absolute;left:6px;top:6px;font-size:11px;padding:2px 7px;border-radius:999px;background:var(--act);color:var(--on-act)}
+.ctile strong{font-size:14.5px;line-height:1.25}
+.ctile small{color:var(--mut);font-size:12.5px}
+.ctile .cst{font-size:13px;color:var(--mut);display:flex;align-items:center;gap:2px}
+.ctile small.by{margin-top:2px}
+/* one coffee */
+.cvimg{display:block;width:100%;max-width:420px;aspect-ratio:4/3;object-fit:cover;border-radius:14px;border:1px solid var(--line);margin:0 0 12px}
+.cvh{font-size:26px;margin:0}
+.cvst{display:flex;align-items:center;gap:6px;margin:10px 0 0;font-size:14.5px;color:var(--mut)}
+.recipe{margin-top:16px}
+.kv2{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:10px 0 4px;font-size:15px}
+.kv2 dt{color:var(--mut)}.kv2 dd{margin:0;font-weight:600}
+.kv2 dd a{color:var(--ink)}
+/* the barista board */
+.brow{display:flex;align-items:center;gap:12px;padding:10px 2px;border-top:1px solid var(--line);color:inherit;text-decoration:none}
+.brow:first-of-type{border-top:0}
+.brow .rk{width:26px;text-align:center;font-weight:700;color:var(--mut);font-variant-numeric:tabular-nums}
+.brow div{flex:1;min-width:0}.brow strong{display:block}.brow small{color:var(--mut);font-size:12.5px}
+.brow .bst{font-variant-numeric:tabular-nums}
+.brow.me strong::after{content:" (you)";font-weight:400;color:var(--mut);font-size:12.5px}
+/* a face: photo or initial */
+.face{flex:none;display:inline-grid;place-items:center;border-radius:50%;color:#fff;font-weight:600;background-size:cover;background-position:center}
+/* a profile */
+.phead{display:flex;align-items:center;gap:16px;margin:4px 0 16px}
+.phead h2{margin:0;font-size:26px}
+.phead .about{margin:4px 0 0;font-size:15px}
+.phead .who{margin:6px 0 0}
+.phead .who a,#fwho a{color:inherit}
+.ptiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:0 0 14px}
+.ptiles div{padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+.ptiles b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.ptiles span{font-size:13px;color:var(--mut)}
+.ptiles .stars-row{display:flex;font-size:14px;margin-top:4px}
 /* cups friends made for you, and rating one */
 .cup{display:flex;align-items:center;gap:12px;padding:12px 2px;border-top:1px solid var(--line);color:inherit;text-decoration:none}
 .cup:first-of-type{border-top:0}
@@ -119,7 +157,7 @@ p.off{color:var(--mut);font-size:14px;font-style:italic}
 <body>
 <main>
 <h1>Friends</h1>
-<p class="sub" id="lead">Befriend other households and see a few fun stats of each other: who brews more, favourite coffees, what you like. Friends never see your coffees, brews or notes themselves, only a cup you make for them.</p>
+<p class="sub" id="lead">Befriend other households: see what they drink and their best recipes, what is trending among your friends, and who is the best barista. Each household chooses what friends see.</p>
 
 <section class="box" id="signedout" hidden>
   <h2>Sign in first</h2>
@@ -138,6 +176,16 @@ p.off{color:var(--mut);font-size:14px;font-style:italic}
 </section>
 
 <div id="listview" hidden>
+  <section class="box" id="trendbox" hidden>
+    <h2>Trending Among Your Friends</h2>
+    <p class="hint">Their best rated coffees of the last 30 days. Tap one for their recipe.</p>
+    <div class="cgrid" id="trend"></div>
+  </section>
+  <section class="box" id="boardbox" hidden>
+    <h2>Barista Board</h2>
+    <p class="hint">Everyone in your household and your friends' households: the average stars of the brews they made in the last 90 days (at least 3 rated brews).</p>
+    <div id="board"></div>
+  </section>
   <section class="box" id="cupsbox" hidden>
     <h2>Cups friends made you</h2>
     <p class="hint">Rate them here. Your rating goes to their household, like everyone else's.</p>
@@ -163,6 +211,7 @@ p.off{color:var(--mut);font-size:14px;font-style:italic}
       <label class="sw"><span>Fun stats<small>How many brews, who brews more, coffee used, devices, days in a row, when you brew</small></span><input type="checkbox" data-k="stats"></label>
       <label class="sw"><span>Favourite coffees<small>Your five best rated coffees, with roaster and the shop link</small></span><input type="checkbox" data-k="favourites"></label>
       <label class="sw"><span>Taste profile<small>How your favourite brews taste, their tasting notes, and everyone's usual drink</small></span><input type="checkbox" data-k="taste"></label>
+      <label class="sw"><span>Coffees and recipes<small>Your shelf with photos and the recipe of each coffee's best brew. A single coffee can be hidden on its page.</small></span><input type="checkbox" data-k="coffees"></label>
     </div>
     <div class="btns"><a class="lnk" id="preview" href="#">See your page as friends see it</a></div>
   </section>
@@ -174,6 +223,14 @@ p.off{color:var(--mut);font-size:14px;font-style:italic}
   <p class="who" id="fwho"></p>
   <ul class="heads" id="heads"></ul>
   <div id="fbody"></div>
+</div>
+<div id="coffeeview" hidden>
+  <a class="back" id="cvback" href="#">&lsaquo; Back</a>
+  <div id="cvbody"></div>
+</div>
+<div id="personview" hidden>
+  <a class="back" id="pvback" href="#">&lsaquo; Back</a>
+  <div id="pvbody"></div>
 </div>
 <div id="rateview" hidden>
   <a class="back" href="#">&lsaquo; Friends</a>
@@ -201,6 +258,8 @@ p.off{color:var(--mut);font-size:14px;font-style:italic}
 <script src="../assets/js/theme.js"></script>
 <script src="../assets/js/stars.js"></script>
 <script src="../data/drinks.js"></script>
+<script src="../data/defaults.js"></script>
+<script src="../assets/js/people.js"></script>
 <script src="../assets/js/scales.js"></script>
 <script src="../assets/js/nav.js" defer></script>
 <script>
@@ -239,10 +298,14 @@ async function stat(id, fresh) {
 
 async function route() {
   if (!me) return;
-  ["listview", "friendview", "accept", "nosql", "rateview"].forEach(i => { $(i).hidden = true; });
+  ["listview", "friendview", "accept", "nosql", "rateview", "coffeeview", "personview"].forEach(i => { $(i).hidden = true; });
   $("lead").hidden = false;
   if (!hh) { $("signedout").hidden = false; $("soText").textContent = "Friends are households, and you are not in one yet. Start yours (or join one) on the Coffee Shelf, then come back here."; return; }
   if (pending()) { if (await showAccept()) return; }
+  const cm = location.hash.match(/^#f=([0-9a-f-]{36})&c=([0-9a-f-]{36})$/);
+  if (cm) return showCoffee(cm[1], cm[2]);
+  const pm = location.hash.match(/^#p=([0-9a-f-]{36})$/);
+  if (pm) return showPerson(pm[1]);
   const rm = location.hash.match(/^#rate=([0-9a-f-]{36})$/);
   if (rm) return showRate(rm[1]);
   const m = location.hash.match(/^#f=([0-9a-f-]{36})$/);
@@ -291,13 +354,172 @@ async function showList() {
     const d = el("div"); d.append(el("strong", "", f.name), el("small", "", "Friends since " + new Date(f.since).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })));
     a.append(d, chev()); box.appendChild(a);
   });
-  showCups();
+  showCups(); showMore();
   $("hhname").textContent = mine.name;
   const sh = mine.share || {};
   document.querySelectorAll("#shares input").forEach(i => { i.checked = sh[i.dataset.k] !== false; });
   $("preview").href = "#f=" + hh;
   const c = await db.rpc("friend_code", { p_household: hh });
   if (!c.error) showCode(c.data);
+}
+// ---------- more with friends: their shelf, a coffee with its best recipe, trending, the barista board, profiles ----------
+const isDone = e => e && /function .* does not exist|Could not find the function/i.test(e.message || "");   // before supabase/34_friends_more.sql
+const dn = id => { const d = ((window.DRINKS && DRINKS.D) || []).find(x => x.id === id); return d ? d.name.replace(/ \((traditional|common), \d shots?\)$/, "") : id; };
+const mn = id => { const m = ((window.DRINKS && DRINKS.MILKS) || []).find(x => x[0] === id); return m ? m[1].replace(/ \(.*\)$/, "").toLowerCase() : id; };
+const mmss = s => s == null ? null : s < 90 ? s + " s" : Math.floor(s / 60) + ":" + String(Math.round(s % 60)).padStart(2, "0") + " min";
+const ratioOf = b => b && b.dose ? (b.yield ? "1:" + r1(b.yield / b.dose) : b.water ? "1:" + r1(b.water / b.dose) : null) : null;
+// signed links for photos (bag photos and profile photos), kept for the visit
+const urls = {};
+async function signed(bucket, paths) {
+  const want = [...new Set(paths.filter(p => p && !urls[bucket + ":" + p]))];
+  if (want.length) { try { const { data } = await db.storage.from(bucket).createSignedUrls(want, 3600); (data || []).forEach(x => { if (x.signedUrl) urls[bucket + ":" + x.path] = x.signedUrl; }); } catch (e) {} }
+  return p => urls[bucket + ":" + p] || null;
+}
+function cupIcon() { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("aria-hidden", "true"); s.setAttribute("class", "ci"); const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", "M4 9h13v4a6 6 0 01-6 6h-1a6 6 0 01-6-6V9z M17 10.5h1.2a2.8 2.8 0 010 5.6H16.3 M3 21h16"); s.appendChild(p); return s; }
+// a person's face: their photo, or their initial in their colour
+function face(p, size) {
+  const s = el("span", "face"); s.style.width = s.style.height = (size || 40) + "px"; s.style.fontSize = Math.round((size || 40) * 0.42) + "px";
+  const col = PEOPLE.color(p.id, p.name, p.color ? { [p.id]: { color: p.color } } : {}, []);
+  s.style.background = col; s.textContent = (String(p.name || "?").trim()[0] || "?").toUpperCase();
+  if (p.photo) signed("avatars", [p.photo]).then(u => { const x = u(p.photo); if (x) { s.textContent = ""; s.style.backgroundImage = "url(\"" + x + "\")"; s.classList.add("ph"); } });
+  return s;
+}
+let shelfCache = {};
+async function friendShelf(id) {
+  if (shelfCache[id]) return shelfCache[id];
+  const { data, error } = await db.rpc("friend_coffees", { p_household: id });
+  if (error) return (shelfCache[id] = isDone(error) ? null : []);
+  return (shelfCache[id] = data || []);
+}
+const thumbOf = p => p ? String(p).replace(/\.jpe?g$/i, "") + "-t.jpg" : null;   // the small copy every bag photo has
+function coffeeTile(c, href, photoUrl) {
+  const a = el("a", "ctile"); a.href = href;
+  const ph = el("span", "cph"), pu = c.photo && photoUrl(thumbOf(c.photo)); if (pu) ph.style.backgroundImage = "url(\"" + pu + "\")"; else ph.appendChild(cupIcon());
+  if (c.open) ph.appendChild(el("span", "now", "On the shelf"));
+  a.appendChild(ph);
+  a.appendChild(el("strong", "", c.name));
+  if (c.roaster) a.appendChild(el("small", "", c.roaster));
+  if (c.stars != null) { const s = el("span", "cst"); s.append(Stars.row(Number(c.stars), Stars.text(c.stars)), document.createTextNode(" " + r1(c.stars).toFixed(1))); a.appendChild(s); }
+  return a;
+}
+// their shelf, in the friend view
+async function shelfSection(body, id, self, them) {
+  const list = await friendShelf(id);
+  if (list === null) return;   // before the SQL: nothing to show yet
+  const b = el("section", "box"); body.insertBefore(b, body.firstChild);
+  b.appendChild(el("h2", "", self ? "Your Shelf, as Friends See It" : "Their Shelf"));
+  if (self && (mine.share || {}).coffees === false) { b.appendChild(el("p", "off", "You keep your coffees and recipes to yourselves (switch below, under What your friends see).")); return; }
+  if (!list.length) { b.appendChild(el("p", "off", self ? "No coffees to show yet." : them.name + " have no coffees to show yet, or keep them to themselves.")); return; }
+  b.appendChild(el("p", "hint", self ? "Coffees you hid from friends are left out." : "What " + them.name + " have been drinking, with their best recipe. Tap a coffee."));
+  const u = await signed("bag-photos", list.map(c => thumbOf(c.photo)));
+  const g = el("div", "cgrid"); b.appendChild(g);
+  list.slice(0, 12).forEach(c => g.appendChild(coffeeTile(c, "#f=" + id + "&c=" + c.id, u)));
+  if (list.length > 12) { const more = el("button", "lnk", "Show all " + list.length); more.type = "button"; more.onclick = () => { list.slice(12).forEach(c => g.appendChild(coffeeTile(c, "#f=" + id + "&c=" + c.id, u))); more.remove(); }; b.appendChild(more); }
+}
+// one of their coffees: photo, facts, stars and notes, the best recipe, and "Add to my shelf" / "Brew their recipe"
+async function showCoffee(hid, cid) {
+  $("coffeeview").hidden = false; $("lead").hidden = true; say("Loading...");
+  const [list, them] = await Promise.all([friendShelf(hid), stat(hid).catch(() => null)]);
+  say("");
+  const c = (list || []).find(x => x.id === cid), box = $("cvbody"); box.textContent = "";
+  $("cvback").href = "#f=" + hid; $("cvback").textContent = them ? them.name : "Back";
+  if (!c) { box.appendChild(el("p", "off", "This coffee is not shared (any more).")); return; }
+  window.scrollTo(0, 0);
+  const u = await signed("bag-photos", [c.photo]);
+  if (c.photo && u(c.photo)) { const im = el("img", "cvimg"); im.src = u(c.photo); im.alt = "Bag of " + c.name; box.appendChild(im); }
+  box.appendChild(el("h2", "cvh", c.name));
+  if (c.roaster) box.appendChild(el("p", "who", c.roaster));
+  const facts = el("div", "rfacts");
+  [c.origin, c.process, c.roast ? c.roast.replace(/^./, x => x.toUpperCase()) + " roast" : null, c.variety, c.alt_min ? (c.alt_max && c.alt_max !== c.alt_min ? c.alt_min + "–" + c.alt_max : c.alt_min) + " m" : null, c.decaf ? "Decaf" : null]
+    .filter(Boolean).forEach(t => facts.appendChild(el("span", "", t)));
+  if (facts.children.length) box.appendChild(facts);
+  if (c.stars != null) { const s = el("p", "cvst"); s.append(Stars.row(Number(c.stars), Stars.text(c.stars)), document.createTextNode(" " + r1(c.stars).toFixed(1) + "★ from " + c.n + (c.n === 1 ? " brew" : " brews"))); box.appendChild(s); }
+  if (c.notes && c.notes.length) { const n = el("div", "notes"); c.notes.forEach(x => n.appendChild(el("span", "", x))); box.appendChild(n); }
+  const r = c.best;
+  if (r) {
+    const rb = el("section", "box recipe"); rb.appendChild(el("h2", "", "Their Best Recipe"));
+    const rows = [["Device", r.device], ["Grind", r.grind], ["Dose", r.dose != null ? r1(r.dose) + " g" : null], [r.yield != null ? "Yield" : "Water", r.yield != null ? r1(r.yield) + " g" : r.water != null ? r1(r.water) + " g" : null],
+      ["Ratio", ratioOf(r)], ["Time", mmss(r.time)], ["Water temp", r.temp != null ? r.temp + " °C" : null]].filter(x => x[1] != null && x[1] !== "");
+    const dl = el("dl", "kv2"); rows.forEach(([k, v]) => { dl.append(el("dt", "", k), el("dd", "", String(v))); }); rb.appendChild(dl);
+    const by = el("p", "hint"); by.textContent = "Brewed by " + r.maker + (r.stars != null ? ", " + r1(r.stars).toFixed(1) + "★" : "") + (r.recipe ? ". " + r.recipe : ""); rb.appendChild(by);
+    box.appendChild(rb);
+  }
+  // make it yours: the same coffee on your shelf (not opened yet), then their recipe in your brew form
+  const acts = el("div", "btns"); box.appendChild(acts);
+  const own = await ownCopy(c);
+  const brewIt = id => { if (r) { try { localStorage.setItem("alto.handoff", JSON.stringify({ t: Date.now(), device: r.device, dose_g: r.dose, water_g: r.water, yield_g: r.yield, temp_c: r.temp, grind: r.grind, from: "friend" })); } catch (e) {} } location.href = "../journal/index.html#c=" + id + "&new"; };
+  if (own) {
+    const b1 = el("button", "go", r ? "Brew their recipe" : "Log a brew"); b1.type = "button"; b1.onclick = () => brewIt(own.id); acts.appendChild(b1);
+    acts.appendChild(el("span", "hint", "It is on your shelf already."));
+  } else if (hid !== hh) {
+    const b2 = el("button", "go", "Add to my shelf"); b2.type = "button";
+    b2.onclick = async () => {
+      b2.disabled = true;
+      const row = { name: c.name, roaster: c.roaster || null, origin: c.origin || null, process: c.process || null, roast_level: c.roast || null, variety: c.variety || null,
+        altitude_min_m: c.alt_min || null, altitude_max_m: c.alt_max || null, buy_url: c.url || null, is_decaf: !!c.decaf, household_id: hh };
+      const { data, error } = await db.from("coffees").insert(row).select("id").single();
+      b2.disabled = false;
+      if (error) { say("Could not add it: " + error.message); return; }
+      say("Added to your shelf (not opened yet)."); b2.remove();
+      const b3 = el("button", "go", r ? "Brew their recipe" : "Log a brew"); b3.type = "button"; b3.onclick = () => brewIt(data.id); acts.prepend(b3);
+    };
+    acts.appendChild(b2);
+  }
+  if (c.url && /^https?:\/\//i.test(c.url)) { const a = el("a", "lnk", "Where to buy"); a.href = c.url; a.target = "_blank"; a.rel = "noopener"; acts.appendChild(a); }
+}
+async function ownCopy(c) {
+  const { data } = await db.from("coffees").select("id,name,roaster").eq("household_id", hh);
+  const k = x => (String(x.name || "").trim() + "|" + String(x.roaster || "").trim()).toLowerCase();
+  return (data || []).find(x => k(x) === k(c)) || null;
+}
+// the list page: trending among your friends, and the barista board
+async function showMore() {
+  const [tr, bb] = await Promise.all([db.rpc("friend_trending", { p_household: hh }), db.rpc("barista_board", { p_household: hh })]);
+  const tb = $("trendbox"), t = $("trend"); t.textContent = "";
+  const tl = !tr.error && Array.isArray(tr.data) ? tr.data : [];
+  tb.hidden = !tl.length;
+  if (tl.length) { const u = await signed("bag-photos", tl.map(x => thumbOf(x.photo))); tl.forEach(x => { const a = coffeeTile(x, "#f=" + x.household + "&c=" + x.id, u); a.appendChild(el("small", "by", x.household_name + " · " + x.n + " ratings")); t.appendChild(a); }); }
+  const bx = $("boardbox"), bl = $("board"); bl.textContent = "";
+  const list = !bb.error && Array.isArray(bb.data) ? bb.data : [];
+  bx.hidden = list.length < 2;
+  list.slice(0, 10).forEach((p, i) => {
+    const a = el("a", "brow" + (me && p.id === me.id ? " me" : "")); a.href = "#p=" + p.id;
+    a.append(el("span", "rk", i === 0 ? "🏆" : String(i + 1)), face(p, 36));
+    const d = el("div"); d.append(el("strong", "", p.name), el("small", "", p.household_name + " · " + p.n + " rated brews")); a.appendChild(d);
+    a.appendChild(el("b", "bst", r1(p.stars).toFixed(1) + "★"));
+    bl.appendChild(a);
+  });
+}
+// a person's profile
+async function showPerson(uid) {
+  $("personview").hidden = false; $("lead").hidden = true; say("Loading...");
+  const { data: p, error } = await db.rpc("person_profile", { p_user: uid, p_tz: TZ });
+  say("");
+  const box = $("pvbody"); box.textContent = ""; window.scrollTo(0, 0);
+  if (error || !p) { box.appendChild(el("p", "off", isDone(error) ? "Profiles need a small database update first (supabase/34_friends_more.sql)." : "This profile is not one you can see.")); return; }
+  const hd = el("div", "phead"); hd.appendChild(face(p, 76));
+  const t = el("div"); t.appendChild(el("h2", "", p.name));
+  if (p.about) t.appendChild(el("p", "about", p.about));
+  const hs = el("p", "who"); (p.households || []).forEach((h, i) => { if (i) hs.append(", "); const a = el("a", "", h.name); a.href = h.friend ? "#f=" + h.id : "#f=" + h.id; hs.appendChild(a); if (h.until) hs.append(" (until " + new Date(h.until).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + ")"); });
+  t.appendChild(hs); hd.appendChild(t); box.appendChild(hd);
+  const tiles = el("div", "ptiles");
+  const tile = (v, l, extra) => { const d = el("div"); d.append(el("b", "", v), el("span", "", l)); if (extra) d.appendChild(extra); tiles.appendChild(d); };
+  tile(String(p.brews_30 || 0), "brews made, last 30 days");
+  if (p.barista != null) tile(r1(p.barista).toFixed(1) + "★", "as a barista (" + p.barista_n + " rated brews)", Stars.row(Number(p.barista), Stars.text(p.barista)));
+  tile(String(p.cups || 0), (p.cups === 1 ? "cup" : "cups") + " rated");
+  tile(String(p.brews || 0), "brews made in all");
+  box.appendChild(tiles);
+  const facts = el("dl", "kv2");
+  const fact = (k, v) => { if (v) facts.append(el("dt", "", k), el("dd", "", v)); };
+  if (p.fav) { const a = el("a", "", p.fav.name + (p.fav.roaster ? " (" + p.fav.roaster + ")" : "") + ", " + r1(p.fav.stars).toFixed(1) + "★"); a.href = p.fav.household === hh ? "../journal/index.html#c=" + p.fav.id : "#f=" + p.fav.household + "&c=" + p.fav.id; facts.append(el("dt", "", "Favourite coffee")); const dd = el("dd"); dd.appendChild(a); facts.appendChild(dd); }
+  fact("Favourite device", p.device);
+  const hasMilk = id => { const d = ((window.DRINKS && DRINKS.D) || []).find(x => x.id === id); return !d || d.milk; };
+  fact("Usual drink", [p.drink_esp ? dn(p.drink_esp) + (p.milk && hasMilk(p.drink_esp) ? " with " + mn(p.milk) + " milk" : "") : null, p.drink_filter ? dn(p.drink_filter) : null].filter(Boolean).join(" \u00B7 "));
+  fact("Usually brews", p.hour != null ? "around " + p.hour + ":00" : null);
+  fact("Here since", p.since ? new Date(p.since).toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : null);
+  if (facts.children.length) box.appendChild(facts);
+  if (p.me) { const a = el("a", "lnk", "Change your photo or line in Settings"); a.href = "../settings/index.html#you"; const d = el("div", "btns"); d.appendChild(a); box.appendChild(d); }
+  $("pvback").href = (p.households || [])[0] ? "#f=" + p.households[0].id : "#";
 }
 // ---------- cups friends made for you ----------
 let cups = null;
@@ -408,7 +630,8 @@ async function showFriend(id) {
   const self = id === hh;
   if (self) them = asFriendsSee(them);
   $("fname").textContent = self ? "Your page, as friends see it" : them.name;
-  $("fwho").textContent = (self ? them.name + ": " : "") + andList(them.members.map(m => m.name));
+  const fw = $("fwho"); fw.textContent = self ? them.name + ": " : "";
+  them.members.forEach((m, i) => { if (i) fw.append(i === them.members.length - 1 ? " and " : ", "); const a = el("a", "", m.name); a.href = "#p=" + m.id; fw.appendChild(a); });
   const body = $("fbody"); body.textContent = ""; const heads = $("heads"); heads.textContent = "";
   const nm = (h, uid) => { const m = (h.members || []).find(x => x.id === uid); return m ? m.name : "Someone"; };
   const tn = them.name, Y = !self && you;
@@ -431,6 +654,7 @@ async function showFriend(id) {
   // the first headline about a friend, for Home ("From Friends: ...")
   if (!self && heads.firstChild) { try { localStorage.setItem("alto.friendline", JSON.stringify({ t: Date.now(), id, text: heads.firstChild.textContent })); } catch (e) {} }
 
+  await shelfSection(body, id, self, them);
   if (them.stats) funStats(body, them, Y && you.stats ? you : null, nm);
   else body.appendChild(offBox("Fun Stats", tn + " keep their fun stats to themselves."));
   if (them.favourites) favourites(body, them, self);
