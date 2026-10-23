@@ -1046,24 +1046,11 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
   if (c.bag_size_g && c.open_date && !c.finished_at) b.appendChild(bagMeter(c, Math.max(0, c.bag_size_g - (coffeeUsed[c.id] || 0))));
   if (c.notes) b.appendChild(el("p", "", c.notes));
   const acts = el("div", "acts");
-  acts.appendChild(abtn("btn", nBrews ? "Brews (" + nBrews + ")" : "Log a brew", "cup", () => { location.hash = "c=" + c.id + (nBrews ? "" : "&new"); }));
+  // the coffee's page (logging a brew is the cup in the top bar, or the button on that page)
+  acts.appendChild(abtn("btn", nBrews ? "Brews (" + nBrews + ")" : "Open", "cup", () => { location.hash = "c=" + c.id; }));
   const bl = buyLink(c); if (bl) acts.appendChild(bl);
   acts.appendChild(abtn("btn ghost", "New bag", "plus", () => startNewBag(c)));
-  if (!c.open_date) {
-    acts.appendChild(abtn("btn ghost", "Opened today", "check", async () => {
-      const { error } = await db.from("coffees").update({ open_date: todayIso() }).eq("id", c.id);
-      if (error) say("Could not update: " + error.message); else load();
-    }));
-  }
-  if (c.open_date && !c.finished_at) acts.appendChild(abtn("btn ghost", "Finished", "check", async () => {
-    if (!confirm("Mark this bag of \"" + c.name + "\" as finished? The grams left are no longer shown. You can undo it.")) return;
-    const { error } = await db.from("coffees").update({ finished_at: todayIso() }).eq("id", c.id);
-    if (error) say("Could not update: " + error.message + (/finished_at/.test(error.message) ? " (run supabase/17_purchase_finished.sql first)" : "")); else { say("Marked as finished. Time for a new bag?"); load(); }
-  }));
-  if (c.finished_at) acts.appendChild(abtn("btn ghost", "Not finished", "close", async () => {
-    const { error } = await db.from("coffees").update({ finished_at: null }).eq("id", c.id);
-    if (error) say("Could not update: " + error.message); else load();
-  }));
+  bagActions(c, load).forEach(x => acts.appendChild(x));
   const del = ibtn("Archive or delete", "trash", async () => {
     const what = await askRemove(c, coffeeCounts[c.id] || 0);
     if (what === "archive") { if (await setArchived(c, true)) load(); }
@@ -1482,6 +1469,20 @@ function confirmSave(title, rows, okText, note) {
     $("sd-ok").onclick = () => end(true); $("sd-back").onclick = () => end(false); d.oncancel = () => done(false);
     if (d.showModal) d.showModal(); else done(confirm(title));
   });
+}
+// the bag: opened today, finished, or not finished after all (on the card and on the coffee's page; done() draws again)
+function bagActions(c, done) {
+  const out = [], set = async (row, msg) => {
+    const { error } = await db.from("coffees").update(row).eq("id", c.id);
+    if (error) { say("Could not update: " + error.message); return; }
+    if (msg) say(msg); done();
+  };
+  if (!c.open_date) out.push(abtn("btn ghost", "Opened today", "check", () => set({ open_date: todayIso() }, "Opened today.")));
+  if (c.open_date && !c.finished_at) out.push(abtn("btn ghost", "Finished", "check", () => {
+    if (confirm("Mark this bag of \"" + c.name + "\" as finished? The grams left are no longer shown. You can undo it.")) set({ finished_at: todayIso() }, "Marked as finished. Time for a new bag?");
+  }));
+  if (c.finished_at) out.push(abtn("btn ghost", "Not finished", "close", () => set({ finished_at: null }, "Not finished after all.")));
+  return out;
 }
 // on a coffee's page: whether friends see it (on their side: its photo, stars, notes and best recipe)
 function drawFriendShare(c) {
@@ -2944,6 +2945,7 @@ async function openCoffee(id, dev, wantForm, rid) {
   $("dmeta").textContent = [c.is_decaf ? "Decaf" : null, c.roaster, originText(c), c.variety, altText(c)].filter(Boolean).join(", ") +
     (c.roast_date ? ". Roasted " + fmtD(c.roast_date) : c.purchase_date ? ". Bought " + fmtD(c.purchase_date) + " (roast date unknown)" : "") + (c.open_date ? ", opened " + fmtD(c.open_date) : "") + (c.finished_at ? ", finished " + fmtD(c.finished_at) : "") + ".";
   const bx = $("dbuy"); bx.textContent = ""; const bl = buyLink(c); if (bl) bx.appendChild(bl);
+  bagActions(c, () => { load(); openCoffee(c.id); }).forEach(x => bx.appendChild(x));
   const t = $("dtags"); t.textContent = "";
   (c.flavour_tags || []).forEach(x => t.appendChild(el("span", "chip", x)));
   fill("b-device", deviceList(), [...new Set((dv || []).map(b => DEV_OLD[b.device] || b.device).filter(Boolean))]);
