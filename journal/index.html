@@ -338,7 +338,7 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .addc[hidden]{display:none}
 .addc .ico{stroke-width:1.6}
 #listhost > #addbox:not([open]){display:none}
-#listview:not(:has(#listhost > #addbox[open])) > h2:first-of-type{margin-top:18px}
+#cfilters{margin-top:16px}
 /* Recent activity: one day after the other, newest first */
 #feed h3.day{margin:24px 0 8px;font-size:14px;font-weight:600;color:var(--mut)}
 #feed h3.day:first-child{margin-top:4px}
@@ -559,7 +559,6 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
     <summary id="hhsum">Household</summary>
     <div id="hhbody"></div>
   </details>
-  <h2>Your coffees</h2>
   <div class="filters" id="cfilters" hidden>
     <input id="flt-q" type="search" placeholder="Search name, roaster, origin" aria-label="Search coffees">
     <select id="flt-process" aria-label="Filter by process"></select>
