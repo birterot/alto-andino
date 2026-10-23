@@ -27,6 +27,7 @@ input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .code{display:flex;gap:8px;align-items:center;margin-top:12px;padding:10px 14px;border-radius:12px;background:var(--bg);border:1px dashed var(--line);font-size:14px;overflow:hidden}
 .code b{font-size:18px;letter-spacing:.12em;font-variant-numeric:tabular-nums}
 .code span{color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+#rnote{display:block;width:100%;max-width:520px;margin-top:6px;padding:10px 14px;font:inherit;font-size:16px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);box-sizing:border-box;resize:vertical}
 .row2{display:flex;gap:8px;align-items:flex-end}.row2 label{flex:1;font-size:13.5px;color:var(--mut)}
 .fr{display:flex;align-items:center;gap:12px;padding:12px 2px;border-top:1px solid var(--line);color:inherit;text-decoration:none}
 .fr:first-of-type{border-top:0}
@@ -248,6 +249,8 @@ p.off{color:var(--mut);font-size:14px;font-style:italic}
     <div class="slax"><span></span><span><span>too little</span><span>just right</span><span>too much</span></span><span></span></div>
     <span class="lab">Drank it</span>
     <div class="chips" id="rwhen" role="group" aria-label="Drank it"></div>
+    <span class="lab">Your comment <small>(optional)</small></span>
+    <textarea id="rnote" rows="3" maxlength="1000" placeholder="What you thought of your cup" aria-label="Your comment"></textarea>
     <div class="btns" style="margin-top:20px"><button class="go" id="rsave" type="button">Save rating</button><a class="lnk" href="#">Cancel</a></div>
   </section>
 </div>
@@ -578,6 +581,7 @@ async function showRate(rid) {
     row.append(el("span", "", lab), r, out); host.appendChild(row); draw();
   });
   // drank it: with the brew, or now (for a cup taken along or drunk later)
+  $("rnote").value = c.note || "";
   let drank = c.drank_at || null; const wb = $("rwhen"); wb.textContent = "";
   const opts = [["With the brew", null], ["Now", "now"]];
   if (drank) opts.push([dayTime(drank), drank]);
@@ -586,7 +590,7 @@ async function showRate(rid) {
   $("rsave").onclick = async () => {
     $("rsave").disabled = true;
     const { error } = await db.rpc("rate_guest_cup", { p_rating: rid, p_stars: stars, p_balance: bal, p_drink: c.drink || null,
-      p_drank_at: pick === "now" ? new Date().toISOString() : pick, p_scores: sc });
+      p_drank_at: pick === "now" ? new Date().toISOString() : pick, p_scores: sc, p_note: $("rnote").value.trim() || null });
     $("rsave").disabled = false;
     if (error) { say("Could not save: " + error.message); return; }
     if (c.rating == null && c.balance == null) try { db.functions.invoke("notify", { body: { action: "rated", rating_id: rid } }).catch(() => {}); } catch (e) { /* the rating is saved either way */ }   // first time: tell who made it
