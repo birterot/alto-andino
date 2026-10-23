@@ -121,12 +121,12 @@ dialog.dlg h3{margin:0 0 6px;font-size:18px}
 dialog.dlg p{margin:0 0 4px;font-size:14.5px;color:var(--mut)}
 .sum{margin:10px 0 0;padding:0;list-style:none;font-size:14.5px}
 .sum li{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line)}
-.sum li span{color:var(--mut)}
+.sum li>span:first-child{color:var(--mut);flex:none;max-width:48%}
 .sum li b{font-weight:600;text-align:right;overflow-wrap:anywhere}
-.sum li.chg{flex-direction:column;gap:2px}
-.sum li.chg b{text-align:left}
-.sum li.chg .was{color:var(--mut);font-size:13.5px}
-.sum li.chg .was s{text-decoration-thickness:1px}
+.sum li .rv{text-align:right;min-width:0}
+.sum li .rv b{display:block}
+.sum li .was{display:block;color:var(--mut);font-size:12.5px}
+.sum li .was s{text-decoration-thickness:1px}
 .dlgacts{display:flex;flex-direction:column;gap:8px;margin-top:16px}
 .dlgacts .go,.dlgacts .btn{margin:0;width:100%;justify-content:center;height:48px}
 .dlgacts .lnk{border:0;min-height:44px;font-size:15px;color:var(--mut)}
@@ -618,6 +618,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
           <label id="tsl">Time (s)<input id="b-time" type="number" step="any" inputmode="decimal"></label>
           <label id="tml" hidden>Time (min : s)<span class="mmss"><input id="b-tmin" type="number" inputmode="numeric" min="0" step="1" placeholder="min" aria-label="Minutes"><span aria-hidden="true">:</span><input id="b-tsec" type="number" inputmode="numeric" min="0" step="1" placeholder="ss" aria-label="Seconds"></span></label>
         </div>
+        <p class="hint" id="wyhint" hidden>Water and yield go together: type one and the other is worked out, because about 2 g of water per gram of coffee stays in the grounds. If you weigh the cup, type in what you weighed.</p>
         <p class="hint"><span class="adv" id="temphint">Water temp is the temperature from the kettle. </span>Time is the total, pre-infusion included, as your scale shows it.</p>
         <div id="espbox" class="adv">
         <h3 class="sh">Pressure</h3>
@@ -1442,15 +1443,27 @@ function confirmSave(title, rows, okText, note) {
     const d = $("savedlg"), list = $("sdlist");
     $("sdtitle").textContent = title; $("sd-ok").textContent = okText || "Save"; list.textContent = "";
     $("sdnote").hidden = !note; $("sdnote").textContent = note || "";
+    // kept short: something new (it was empty before) is one line like a summary, a tasting note left at "none" is
+    // left out, the new tasting notes go on one line, and a real change shows the old value small and struck through
+    const blank = x => x === null || x === undefined || x === "" || x === "not rated" || x === "with the brew";
+    const out = [], notes = {};
     rows.forEach(r => {
-      const [k, v] = r, chg = r.length > 2;
-      if (!chg && (v === null || v === undefined || v === "")) return;
-      const li = el("li", chg ? "chg" : "");
-      if (!chg) { li.append(el("span", "", k), el("b", "", String(v))); list.appendChild(li); return; }
-      li.append(el("span", "", k), el("b", "", v === "" || v == null ? "(removed)" : String(v)));
-      const w = el("span", "was"); w.append(document.createTextNode("was: "));
-      if (r[2] === "" || r[2] == null) w.append(document.createTextNode("empty")); else w.append(el("s", "", String(r[2])));
-      li.appendChild(w); list.appendChild(li);
+      let [k, v] = r; const chg = r.length > 2 && !blank(r[2]);
+      if (!chg && (blank(v) || v === "none")) return;
+      const tn = !chg && (String(k).match(/^(.*?)Tasting note: (.+)$/) || String(k).match(/^(.*?)(Sour|Sweet|Bitter|Body)$/));
+      if (tn) {   // the new taste scores on one line, the new tasting notes on another
+        const note = /Tasting note/.test(k), key = tn[1] + (note ? "Tasting notes" : "Taste");
+        if (!notes[key]) out.push(notes[key] = [key, []]);
+        notes[key][1].push((note ? tn[2] : tn[2].toLowerCase()) + " " + v); return;
+      }
+      out.push(chg ? [k, v, r[2]] : [k, v]);
+    });
+    out.forEach(r => {
+      const li = el("li"), v = Array.isArray(r[1]) ? r[1].join(", ") : r[1];
+      li.appendChild(el("span", "", r[0]));
+      const rv = el("span", "rv"); rv.appendChild(el("b", "", blank(v) ? "(removed)" : String(v)));
+      if (r.length > 2) { const w = el("small", "was"); w.append(document.createTextNode("was "), el("s", "", String(r[2]))); rv.appendChild(w); }
+      li.appendChild(rv); list.appendChild(li);
     });
     const end = v => { if (d.open) d.close(); done(v); };
     $("sd-ok").onclick = () => end(true); $("sd-back").onclick = () => end(false); d.oncancel = () => done(false);
@@ -1670,6 +1683,19 @@ const D = window.DEFAULTS || {};
 const CORE = SCALE.CORE;
 let cur = null, scores = {}, ctl = {}, savingB = false, brewLoadId = 0, editingBrew = null, brewData = [], rating = null, balance = null;
 let draftWasRestored = false, touched = new Set(), prof = [], calc = null, edited = false, noteNames = [];
+// Filter and other non-espresso brews: water and yield follow each other (the grounds keep about 2 g of water per gram
+// of coffee). Whichever you typed last leads; changing the dose updates the other one.
+const HOLD = 2;
+let wyLead = null;
+function wyFollow() {
+  if (isEsp(typeOf(chosen("b-device"))) || !wyLead) return;
+  const dose = numOf("b-dose"), r1 = x => String(Math.round(x));
+  if (dose == null) return;
+  if (wyLead === "water") { const w = numOf("b-water"); $("b-yield").value = w == null ? "" : r1(Math.max(0, w - HOLD * dose)); }
+  else { const y = numOf("b-yield"); $("b-water").value = y == null ? "" : r1(y + HOLD * dose); }
+}
+["b-water", "b-yield"].forEach(id => $(id).addEventListener("input", e => { if (!e.isTrusted) return; wyLead = id === "b-water" ? "water" : "yield"; wyFollow(); }));
+$("b-dose").addEventListener("input", e => { if (e.isTrusted) wyFollow(); });
 const BF = ["b-when", "b-madeby", "b-device", "b-preheat", "b-device-new", "b-grinder", "b-grind", "b-feel", "b-pressure", "b-pibar", "b-pis", "b-dose", "b-water", "b-yield", "b-temp", "b-time", "b-recipe", "b-notes"];
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
@@ -2112,7 +2138,7 @@ function applyType() {
     const i = $(id); i.disabled = !esp; i.closest("label").classList.toggle("off", !esp);
     if (!esp) { i.value = ""; touched.delete(id); }
   });
-  $("wlab").hidden = esp; if (esp) { $("b-water").value = ""; touched.delete("b-water"); }
+  $("wlab").hidden = esp; $("wyhint").hidden = esp; if (esp) { $("b-water").value = ""; touched.delete("b-water"); }
   $("espbox").hidden = !esp;
   $("tsl").hidden = !esp; $("tml").hidden = esp; timeToParts();
   const fl = isFlair(chosen("b-device"));
@@ -2347,6 +2373,7 @@ function renderWhen() {
 $("b-when").addEventListener("change", () => { delete $("b-when").dataset.q; touched.add("b-when"); renderWhen(); });
 function whenISO() { const v = $("b-when").value; if (!v) return null; const d = new Date(v); return isFinite(d) ? d.toISOString() : null; }
 function newBrewSetup(dev, plain) {   // plain: no draft and no calculator offer (the rate view starts from here)
+  wyLead = null;
   editingBrew = null; touched = new Set(); prof = []; edited = false; renderProf();
   $("bf").reset(); setRating(null); delete $("b-when").dataset.q; renderWhen();
   $("b-device-new").hidden = true; $("b-device-new").required = false;
@@ -3073,7 +3100,7 @@ async function saveRate() {
   const orig = JSON.parse(rateOrig || "[]"), changed = rows.filter(t => !t.id || !orig.includes(rateSig({ ...t, guest: t.is_guest, drank: t.drank_at })));
   const ch = brewChanges(b, { ...b, notes });
   if (!changed.length && (b.notes || null) === notes) { nothingChanged(() => { store.del("alto.draft.rate." + b.id); newBrewSetup(); $("brewbox").open = false; say("Closed, nothing was changed."); }); return; }
-  if (!(await confirmSave("Save this rating?", ch.length ? ch : [["Rating", "saved again"]], "Save rating", ch.length === 1 ? "One thing:" : ch.length + " things:"))) return;
+  if (!(await confirmSave("Save this rating?", ch.length ? ch : [["Rating", "saved again"]], "Save rating"))) return;
   savingB = true; $("bsave").disabled = true; say("Saving...");
   try {
     for (const t of changed) {
@@ -3143,7 +3170,7 @@ $("bf").onsubmit = async e => {
     } else ok = await confirmSave("Save this brew?", [
       ["Coffee", cur && cur.name], ["When", row.brewed_at ? fmtDT(new Date(row.brewed_at)) : null], ["Device", dev], ["Made by", !$("mblab").hidden && $("b-madeby").value ? names[$("b-madeby").value] : null],
       ["Grind", v("b-grind") ? v("b-grind") + (v("b-feel") ? " (" + v("b-feel") + ")" : "") : null],
-      ["Dose", v("b-dose") ? v("b-dose") + " g" : null], [esp ? "Yield" : "Water", esp ? (v("b-yield") ? v("b-yield") + " g" : null) : (v("b-water") ? v("b-water") + " g" : null)],
+      ["Dose", v("b-dose") ? v("b-dose") + " g" : null], [esp ? "Yield" : "Water", esp ? (v("b-yield") ? v("b-yield") + " g" : null) : (v("b-water") ? v("b-water") + " g" + (v("b-yield") ? ", " + v("b-yield") + " g in the cup" : "") : null)],
       ["Time", t === null ? null : esp && t < 90 ? t + " s" : mmss(t) + " min"],
       ["For", tr.length ? tr.map(x => tName({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name })).join(", ") : "nobody (no one rates it)"]
     ], "Save brew");
@@ -3330,6 +3357,7 @@ async function loadNames() {
   showName();
   fillMadeBy(editingBrew ? (editingBrew.made_by || editingBrew.created_by || "") : ($("b-madeby").value || (me && me.id)));
   if (tasters.length && !editingBrew && !edited) refreshAutoDrinks(); else if (tasters.length) renderTasters();   // names (and usual drinks) arrived
+  if (document.querySelector("#forchips .fc")) renderFor();   // the "For" chips were drawn before the names came: now with names and colours
 }
 // A name equal to the start of the email was filled in automatically (supabase/13_household_names.sql), so we still ask once.
 const autoName = () => me && me.email ? me.email.split("@")[0].slice(0, 40) : null;

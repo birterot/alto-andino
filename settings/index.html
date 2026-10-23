@@ -39,7 +39,8 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .own{max-width:220px}
 .ownrow{display:flex;align-items:center;gap:8px;margin-top:6px}
 .ownrow input{margin:0;width:110px}
-.ownrow input[type=time]{width:130px}
+.ownrow input[type=time]{width:130px;height:46px;line-height:46px;padding:0 14px;-webkit-appearance:none;appearance:none;text-align:left;box-sizing:border-box}
+.ownrow input::-webkit-date-and-time-value{text-align:left;margin:0}   /* iPhone: the time sits in the field, without the empty space under it */
 .tchk{display:grid;gap:0;margin-top:10px;max-width:420px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .tchk .trow{display:flex;align-items:center;gap:4px;padding:4px 6px 4px 14px;border-top:1px solid var(--line);background:var(--card)}
 .tchk .trow:first-child{border-top:0}
@@ -142,6 +143,18 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
     <p><button type="button" class="lnk" id="sleepdel">Delete my sleep answers</button> <span class="hint" id="sleepdelmsg" role="status"></span></p>
   </section>
 
+  <div class="bar"><button class="go" id="save" type="submit">Save settings</button><p id="msg" role="status"></p></div>
+  <section class="set">
+    <h2>Household</h2>
+    <p class="hint" id="hhname">The coffees, brews and people you share.</p>
+    <p><a class="lnk" href="../journal/index.html#household">Name, members and invites &rarr;</a></p>
+  </section>
+  <section class="set" id="pushset">
+    <h2>Notifications</h2>
+    <p class="hint">On this phone: a notification when someone logs a brew for you, so you can rate your cup. Each phone is turned on by itself.</p>
+    <p class="pstate" id="pstate" role="status">Checking...</p>
+    <div class="pbtns"><button type="button" class="go" id="pon" hidden>Turn on notifications</button><button type="button" class="lnk" id="ptest" hidden>Send a test</button><button type="button" class="lnk" id="poff" hidden>Turn off</button></div>
+  </section>
   <section class="set" id="dataset">
     <h2>Your data</h2>
     <p class="hint">What the app stores and who helps run it: <a href="../privacy.html">Privacy</a>.</p>
@@ -156,19 +169,7 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
     </div>
   </section>
 
-  <section class="set" id="pushset">
-    <h2>Notifications</h2>
-    <p class="hint">On this phone: a notification when someone logs a brew for you, so you can rate your cup. Each phone is turned on by itself.</p>
-    <p class="pstate" id="pstate" role="status">Checking...</p>
-    <div class="pbtns"><button type="button" class="go" id="pon" hidden>Turn on notifications</button><button type="button" class="lnk" id="ptest" hidden>Send a test</button><button type="button" class="lnk" id="poff" hidden>Turn off</button></div>
-  </section>
 
-  <div class="bar"><button class="go" id="save" type="submit">Save settings</button><p id="msg" role="status"></p></div>
-  <section class="set">
-    <h2>Household</h2>
-    <p class="hint" id="hhname">The coffees, brews and people you share.</p>
-    <p><a class="lnk" href="../journal/index.html#household">Name, members and invites &rarr;</a></p>
-  </section>
   <p class="foot"><span id="who"></span> <button class="lnk" id="tour" type="button">Show the tour again</button> <button class="lnk" id="out" type="button">Sign out</button></p>
 </form>
 </main>
