@@ -59,7 +59,7 @@
     ".topnav .side{display:flex;align-items:center;gap:4px}.topnav .side.r{justify-content:flex-end}" +
     ".topnav .iconbtn[hidden]{display:none}" +
     "@media (max-width:350px){.topnav .lockup>span{display:none}}" +   // very small phones: the mountain only, so all four buttons fit
-    ".topnav .iconbtn{width:44px;height:44px;display:grid;place-items:center;background:none;border:0;color:inherit;cursor:pointer;border-radius:8px;text-decoration:none;flex:none}" +
+    ".topnav .iconbtn{width:44px;height:44px;display:grid;place-items:center;background:none;border:0;color:var(--brand,#6B4A2E);cursor:pointer;border-radius:8px;text-decoration:none;flex:none}" +
     ".topnav .where{display:flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:0 4px;color:inherit;text-decoration:none}" +
     ".wm{display:block;line-height:0;color:var(--brand,#6B4A2E)}.wm svg{display:block;width:100%;height:auto}" +
     ".topnav .wm{width:112px}.topnav .logo{display:block;height:18px;width:auto;color:var(--brand,#6B4A2E);flex:none}" +
