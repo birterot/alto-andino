@@ -195,9 +195,15 @@
         return Promise.all([
           db.from("brews").select("id,coffee_id,brewed_at,device,dose_g,yield_g,water_g,is_dialin,made_by,created_by,coffees(name,is_decaf,variety,roast_level),brew_ratings(id,rater_id,is_guest,rating,balance,drank_at),brew_scores(rating_id)").gte("brewed_at", since2).order("brewed_at"),
           db.from("profiles").select("id,display_name,prefs"),
-          (function () {   // all brews of the open bags (for the cups left), however old
-            var ids = ((shelf && shelf.coffees) || []).filter(function (c) { return c.open_date && !c.finished_at && !c.archived; }).map(function (c) { return c.id; });
-            return ids.length ? db.from("brews").select("coffee_id,dose_g").in("coffee_id", ids) : Promise.resolve({ data: [] });
+          (function () {   // the coffees, fresh (a bag opened on its own page, or by someone else, shows at once), then all brews of the open bags (for the cups left)
+            var hid = (shelf && shelf.hh) || get("alto.household");
+            var cs = hid ? db.from("coffees").select("*").eq("household_id", hid).order("created_at", { ascending: false }) : Promise.resolve({ data: null });
+            return cs.then(function (r) {
+              var list = r && !r.error && Array.isArray(r.data) ? r.data : null;
+              var ids = (list || (shelf && shelf.coffees) || []).filter(function (c) { return c.open_date && !c.finished_at && !c.archived; }).map(function (c) { return c.id; });
+              var bq = ids.length ? db.from("brews").select("coffee_id,dose_g").in("coffee_id", ids) : Promise.resolve({ data: [] });
+              return bq.then(function (b) { return { data: b && b.data, error: b && b.error, coffees: list }; });
+            });
           })(),
           db.from("sleep_logs").select("night,quality").gte("night", since2.slice(0, 10)),   // the sleep check (supabase/31_sleep.sql; before that: an error, left out)
           db.rpc("my_guest_cups"),   // cups friends made you at their place (supabase/33_friend_guests.sql; before that: an error, left out)
@@ -236,7 +242,7 @@
           var logs = res[3] && !res[3].error && Array.isArray(res[3].data) ? res[3].data.map(function (x) { return { n: x.night, q: x.quality }; }) : null;
           var used = null; if (res[2] && Array.isArray(res[2].data)) { used = {}; res[2].data.forEach(function (x) { used[x.coffee_id] = (used[x.coffee_id] || 0) + (Number(x.dose_g) || 0); }); }
           var tip = logs ? sleepTip(logs, all) : null;
-          var sh = null; try { sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === my) { sh.cb = rows; sh.cbt = Date.now(); sh.my = mine; sh.tr = pend; sh.nm = nm; if (nob != null) sh.nob = nob; if (used) sh.used = Object.assign({}, sh.used || {}, used); if (logs) { sh.sl = logs; sh.stip = tip; } localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } else sh = null; } catch (e) { sh = null; }
+          var sh = null; try { sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === my) { sh.cb = rows; sh.cbt = Date.now(); sh.my = mine; sh.tr = pend; sh.nm = nm; if (nob != null) sh.nob = nob; if (used) sh.used = Object.assign({}, sh.used || {}, used); if (res[2] && res[2].coffees) sh.coffees = res[2].coffees; if (logs) { sh.sl = logs; sh.stip = tip; } localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } else sh = null; } catch (e) { sh = null; }
           if (sh) drawBags(sh);
           showStat(mine); showRate(pend, nm); showCaffeine(rows);
           if (nob != null) todoNote = swapNote(todoNote, todoOf(nob), PR.todo);
