@@ -34,6 +34,7 @@ input[type=checkbox]{width:20px;height:20px;padding:0;margin:0;accent-color:var(
 .nums>label.wide{grid-column:1/-1}
 label.chk{display:flex;align-items:center;gap:10px;color:var(--ink);font-size:15px;margin-top:16px}
 label.chk input{width:20px;height:20px;margin:0;flex:none}
+.chkrow{display:flex;flex-wrap:wrap;gap:0 28px}.chkrow label.chk{margin-top:12px}
 label.chk input.untildate{width:auto;height:40px;margin:0 0 0 4px;padding:0 10px;flex:0 1 auto}
 .go,.lnk{font:inherit;cursor:pointer;border-radius:6px}
 .go{margin-top:20px;height:48px;padding:0 24px;border-radius:12px;border:1px solid var(--act);background:var(--act);color:var(--on-act);font-size:16px}
@@ -216,7 +217,6 @@ h3.sh{font-size:16px;margin:26px 0 2px}
 .bc .rt .tags.notes{margin-top:6px}
 .bc .rby{font-size:14px;color:var(--mut);margin-left:8px}
 .bc .rby .pt{margin-left:3px}
-.fi .rr span.rx{display:inline;gap:0}
 /* a person: their initial in their colour, then the name */
 .pt{display:inline-flex;align-items:center;gap:5px;vertical-align:middle}
 .pt .av{width:20px;height:20px;font-size:11px}
@@ -299,12 +299,16 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .lhead .big{display:flex;align-items:baseline;gap:8px;margin:6px 0 2px;flex-wrap:wrap}
 .lhead .big b{font-size:34px;line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
 .lhead .big span{color:var(--mut);font-size:15px}
-.wk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:84px;margin:14px 0 4px}
-.wk .d{display:flex;flex-direction:column-reverse;height:100%;border-radius:6px;background:var(--bg);overflow:hidden}
-.wk .d i{display:block;flex:none}
-.wk .d.today{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.wk{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:14px 0 2px}
+.wk .d svg{display:block;width:100%;max-width:56px;margin:0 auto;overflow:visible}
+.wk .in{fill:var(--bg)}
+.wk .ol,.wk .steam{fill:none;stroke:var(--mut);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.wk .ol{opacity:.75}
+.wk .today .ol{stroke:var(--ink);stroke-width:1.9;opacity:1}
+.wk .steam{opacity:.6;stroke-width:1.4}
 .wkl{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;font-size:11.5px;color:var(--mut);text-align:center}
 .wkl .n{display:block;font-weight:600;color:var(--ink);font-size:12.5px}
+.wkl > span:last-child{color:var(--ink);font-weight:600}
 .wleg{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:10px;font-size:13px;color:var(--mut)}
 .wleg span{display:inline-flex;align-items:center;gap:6px}.wleg i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .fun{display:flex;align-items:flex-start;gap:10px;width:100%;margin:12px 0 0;padding:10px 12px;border:0;border-radius:12px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px;line-height:1.4;text-align:left;cursor:pointer}
@@ -327,6 +331,14 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .fi .open{display:inline-block;margin-top:8px;font-size:13.5px;color:var(--ink)}
 .modes a{display:inline-flex;align-items:center;font-size:14px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none}
 .modes a.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
+/* the Coffee Shelf title, with the bag+ button (add a coffee) on the right; the closed "Add a coffee" bar is not needed then */
+.ptrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.addc{flex:none;width:46px;height:46px;display:grid;place-items:center;margin-right:-6px;border:0;border-radius:12px;background:none;color:var(--brand,var(--ink));cursor:pointer}
+.addc:hover{background:var(--card)}
+.addc[hidden]{display:none}
+.addc .ico{stroke-width:1.6}
+#listhost > #addbox:not([open]){display:none}
+#listview:not(:has(#listhost > #addbox[open])) > h2:first-of-type{margin-top:18px}
 /* Recent activity: one day after the other, newest first */
 #feed h3.day{margin:24px 0 8px;font-size:14px;font-weight:600;color:var(--mut)}
 #feed h3.day:first-child{margin-top:4px}
@@ -343,12 +355,15 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .av{flex:none;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;color:#fff;font-size:15px;font-weight:600;letter-spacing:0}
 .fi time,.fe time{flex:none;font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}
 .fi p{margin:3px 0 0;font-size:14px;color:var(--mut)}
-.fi .rr{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:7px;font-size:14px}
-.fi .rr span{display:inline-flex;align-items:center;gap:6px}
+.fi .rr{display:grid;grid-template-columns:auto auto 1fr;gap:7px 7px;align-items:start;margin-top:8px;font-size:14px;line-height:20px}
+.fi .rr .stars-row{height:20px;align-items:center;font-size:13px;margin-right:3px}
+.fi .rr .av{width:20px;height:20px;font-size:11px}
+.fi .rr .rn{font-weight:600;color:var(--ink)}
+.fi .rr .rt.wide{grid-column:2 / -1}
 .fi .note{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fe{display:flex;align-items:center;gap:10px;padding:7px 4px 7px 8px;margin-bottom:6px;font-size:14px;color:var(--mut);text-decoration:none;border-radius:10px}
+.fe{display:flex;align-items:flex-start;gap:10px;line-height:21px;padding:7px 4px 7px 8px;margin-bottom:6px;font-size:14px;color:var(--mut);text-decoration:none;border-radius:10px}
 .fe:hover{background:var(--card)}
-.fe svg{flex:none;color:var(--s,var(--accent))}
+.fe svg{flex:none;margin-top:.5px;color:var(--s,var(--accent))}
 .fe > span{flex:1;min-width:0}
 .fe b{font-weight:600;color:var(--ink)}
 #rmore{margin-top:8px}
@@ -431,7 +446,7 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 </head>
 <body>
 <main>
-<h1 id="ptitle">Coffee Shelf</h1>
+<div class="ptrow"><h1 id="ptitle">Coffee Shelf</h1><button type="button" class="addc" id="addc" aria-label="Add a coffee" title="Add a coffee" hidden></button></div>
 
 <form id="login" hidden>
   <div class="modes" id="authmodes"><button type="button" data-m="in" class="on">Sign in</button><button type="button" data-m="up">Create account</button></div>
@@ -495,6 +510,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
       <p class="hint">Specialty coffee: the roaster and the coffee's name. Supermarket coffee: the brand and the product name.</p>
       <div class="row2"><label>Country<input id="f-country" list="countrylist" placeholder="e.g. Colombia" autocomplete="off" autocapitalize="words"></label><label>Region (optional)<input id="f-region" placeholder="e.g. Huila" autocomplete="off" autocapitalize="words"></label></div>
       <input id="f-origin" type="hidden"><datalist id="countrylist"></datalist>
+      <div class="chkrow"><label class="chk"><input type="checkbox" id="f-blend"> Blend</label><label class="chk"><input type="checkbox" id="f-decaf"> Decaf</label></div>
       <div class="vfield adv">
         <span class="vl" id="vlab">Botanical variety</span>
         <div class="vcombo" id="vcombo">
@@ -509,8 +525,6 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
         <label>Altitude from (m)<input id="f-alt-min" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="1700"></label>
         <label>to (m, optional)<input id="f-alt-max" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="1900"></label>
       </div>
-      <label class="chk adv"><input type="checkbox" id="f-blend"> Blend</label>
-      <label class="chk"><input type="checkbox" id="f-decaf"> Decaf</label>
       <label>Process
         <select id="f-process"></select>
         <input id="f-process-new" placeholder="Name of the new process" hidden>
@@ -952,6 +966,7 @@ const ICONS = {
   natural: "M8 12a4 4 0 108 0 4 4 0 10-8 0 M12 2.5v2 M12 19.5v2 M2.5 12h2 M19.5 12h2 M5.3 5.3l1.4 1.4 M17.3 17.3l1.4 1.4 M5.3 18.7l1.4-1.4 M17.3 6.7l1.4-1.4",
   honey: "M12 3l6.5 3.75v7.5L12 18l-6.5-3.75v-7.5z M12 18v3.5",
   pulped: "M3.5 15.5a3.5 3.5 0 107 0 3.5 3.5 0 10-7 0 M12.5 16.5a3.5 3.5 0 107 0 3.5 3.5 0 10-7 0 M7 12c1-4 3.5-6.5 8-8 M16 13c-.6-3-1-6-1-9",
+  addcoffee: "M5.5 4h9v3h-9z M5.5 7L4 20.5a1 1 0 001 1h10a1 1 0 001-1L14.5 7 M10 10.6a1.4 1.4 0 110 2.8 1.4 1.4 0 010-2.8z M7.5 17h5 M19 2.5v6 M16 5.5h6",   // a coffee bag with a plus: add a coffee (next to the Coffee Shelf title)
   semi: "M12 3.5c3.5 4.3 6 7.6 6 10.5a6 6 0 01-12 0c0-2.9 2.5-6.2 6-10.5z M6 14h12"
 };
 function ico(name, size) {
@@ -1239,7 +1254,7 @@ function renderCoffees() {
   renderArchived(coffeeData.filter(c => c.archived));
   $("cfilters").hidden = active.length < 2;
   if (!active.length) {
-    const p = el("p", "hint", coffeeData.length ? "All bags are archived. Add a new coffee above." : "No coffees yet. Add your first one above.");
+    const p = el("p", "hint", coffeeData.length ? "All bags are archived. Add a new coffee with the bag and plus at the top." : "No coffees yet. Add your first one with the bag and plus at the top.");
     if (!coffeeData.length && friends.length) { p.append(" Or see what your friends drink, and add one of theirs: "); const a = el("a", "", "their shelves \u2192"); a.href = "../friends/index.html"; p.appendChild(a); }
     list.appendChild(p); return;
   }
@@ -1409,7 +1424,7 @@ function syncBlend() {   // a blend: several countries in the country field
   $("f-country").previousSibling.textContent = b ? "Countries" : "Country";
   $("f-country").placeholder = b ? "e.g. Brazil, Ethiopia" : "e.g. Colombia";
 }
-$("f-blend").addEventListener("change", syncBlend);
+$("f-blend").addEventListener("change", () => { syncBlend(); if ($("f-blend").checked) $("f-country").focus(); });
 const CF = ["f-name", "f-roaster", "f-origin", "f-variety", "f-alt-min", "f-alt-max", "f-process", "f-process-new", "f-roast", "f-roast-new", "f-tags", "f-rd", "f-od", "f-notes", "f-url", "f-bag", "f-pd"];
 function saveCoffeeDraft() {
   if (editing || newBagOf || !me) return;
@@ -1986,7 +2001,7 @@ const DR = (window.DRINKS && window.DRINKS.D) || [], MILKS = (window.DRINKS && w
 const drinkOf = id => DR.find(d => d.id === id) || null;
 const drinkName = id => { const d = drinkOf(id); return d ? d.name : id || ""; };
 const milkName = id => { const m = MILKS.find(x => x[0] === id); return m ? m[1].replace(/ \(.*\)$/, "") : id || ""; };
-const drinkText = (dk, mk) => !dk ? "" : drinkName(dk).replace(/ \((traditional|common), \d shots?\)$/, "") + (mk && (!drinkOf(dk) || drinkOf(dk).milk) ? ", " + milkName(mk).toLowerCase() : "");
+const drinkText = (dk, mk) => { if (!dk) return ""; const wm = mk && (!drinkOf(dk) || drinkOf(dk).milk), n = drinkName(dk).replace(/ \((traditional|common), \d shots?\)$/, ""); return (wm ? n.replace(/ with milk$/, "") + ", " + milkName(mk).toLowerCase() : n); };   // "Filter coffee, whole milk", not "Filter coffee with milk, whole milk"
 let prefsOf = {};   // everyone's settings (profiles.prefs), by person
 function defDrink(personId) {
   const ty = typeOf(chosen("b-device")), pf = (personId && prefsOf[personId]) || {}, esp = isEsp(ty) || ty === "moka";   // moka coffee is drunk like espresso
@@ -2483,12 +2498,13 @@ function route() {
   if (!me) return;
   const noHH = hhOk && !hhs.length;   // signed in, but not in a household yet: start or join one first
   $("hhview").hidden = !noHH;
-  if (noHH) { ["listview", "recentview", "mineview", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); return; }
+  if (noHH) { $("addc").hidden = true; ["listview", "recentview", "mineview", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); return; }
   if (store.get("alto.friend")) { location.href = "../friends/index.html"; return; }   // came with a friend link: back to it, now signed in
   const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)((?:&[^&]*)*)$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/), isRecent = hash === "#recent", isMine = hash === "#mine" || hash === "#torate" || hash === "#nobal", isHH = hash === "#household";
   if (hash === "#torate") { $("mflt-person").value = "me"; $("mflt-who").value = "torate"; $("mflt-bal").value = ""; history.replaceState(null, "", location.pathname + location.search + "#mine"); }
   if (hash === "#nobal") { $("mflt-person").value = "me"; $("mflt-who").value = ""; $("mflt-bal").value = "none"; history.replaceState(null, "", location.pathname + location.search + "#mine"); }
   $("listview").hidden = !!m || isLog || !!add || isRecent || isMine || isHH;
+  $("addc").hidden = $("listview").hidden;
   // the household (name, members, invites, switching) has its own page, reached from Settings
   $("hhpage").hidden = !isHH; $("ptitle").textContent = isHH ? "Household" : isRecent ? "Recent activity" : isMine ? "My brews" : "Coffee Shelf";
   if (isHH && $("hhbox").parentNode !== $("hhhost")) $("hhhost").appendChild($("hhbox"));
@@ -2605,6 +2621,13 @@ const avatar = (id, name) => PEOPLE.avatar(id, name && name !== "You" ? name : (
 function personTag(t, bold) {
   const n = tName(t), s = el("span", "pt"); s.append(avatar(t.guest ? null : t.rater_id, t.guest ? (t.guest_name || "Guest") : n), el(bold ? "b" : "span", "", n)); return s;
 }
+// one rating line on a feed or My brews card: stars | face | "Name, drink…" (the text wraps in its own column, under itself)
+function rateLine(rr, rating, label, t, rest) {
+  rr.appendChild(rating != null ? Stars.row(rating, label) : el("span"));
+  if (t) rr.appendChild(avatar(t.guest ? null : t.rater_id, t.guest ? (t.guest_name || "Guest") : tName(t)));
+  const tx = el("span", "rt"); if (t) tx.appendChild(el("span", "rn", tName(t))); tx.appendChild(document.createTextNode(rest)); rr.appendChild(tx);
+  if (!t) tx.classList.add("wide");
+}
 function feedCard(x) {
   const line = (href, icon, parts, time, c) => {   // a short line: added, opened, finished, cupped
     const a = el("a", "fe"); a.href = href; if (c) applyLook(a, c);
@@ -2627,13 +2650,8 @@ function feedCard(x) {
     const ts = tastersOf(b);
     if (ts.length) {
       const rr = el("div", "rr");
-      ts.forEach(t => {
-        const sp = el("span");
-        if (t.rating != null) sp.appendChild(Stars.row(t.rating, tName(t) + ": " + Stars.text(t.rating) + " of 5"));
-        const rx = el("span", "rx"); sp.appendChild(rx);
-        rx.append(personTag(t), document.createTextNode(isPending(t) ? ": to rate" : (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.balance != null ? ", balance " + SCALE.balanceText(t.balance) : "") + (t.rating == null ? ", taste only" : "")));
-        rr.appendChild(sp);
-      });
+      ts.forEach(t => rateLine(rr, t.rating, tName(t) + ": " + Stars.text(t.rating) + " of 5", t,
+        isPending(t) ? ": to rate" : (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.balance != null ? ", balance " + SCALE.balanceText(t.balance) : "") + (t.rating == null ? ", taste only" : "")));
       a.appendChild(rr);
     } else a.appendChild(el("p", "", "Not rated yet"));
     if (b.notes) a.appendChild(el("p", "note", b.notes));
@@ -2738,16 +2756,30 @@ async function drawWeek(ids, byId, my) {
   box.appendChild(el("div", "lk", "This week"));
   const big = el("div", "big"); big.append(el("b", "", String(week.length)), el("span", "", (week.length === 1 ? "brew" : "brews") + " in the last 7 days" + (before ? (week.length > before ? ", " + (week.length - before) + " more than the week before" : week.length < before ? ", " + (before - week.length) + " fewer than the week before" : ", as many as the week before") : "")));
   box.appendChild(big);
-  // one bar per day, in the colours of who brewed
+  // one little cup per day, filled up with that day's brews in the colours of who brewed (full at the busiest day, at least 3)
   const who = b => b.made_by || b.created_by || null, ppl = [...new Set(week.map(who))];
   const days = [...Array(7)].map((_, k) => { const d0 = dayStart(new Date(), 6 - k), d1 = dayStart(new Date(), 5 - k); return { d: d0, list: week.filter(b => { const t = new Date(b.brewed_at); return t >= d0 && t < d1; }) }; });
   const max = Math.max(3, ...days.map(x => x.list.length));
   const bars = el("div", "wk"), labs = el("div", "wkl");
   bars.setAttribute("role", "img"); bars.setAttribute("aria-label", days.map(x => WD[x.d.getDay()] + " " + x.list.length).join(", "));
+  const NS = "http://www.w3.org/2000/svg", mk = (n, a) => { const e = document.createElementNS(NS, n); Object.entries(a).forEach(([k, v]) => e.setAttribute(k, v)); return e; };
+  const BODY = "M4 9H30L27.6 31.5Q27 36 22.5 36H11.5Q7 36 6.4 31.5Z", TOP = 11, BOT = 36;
   days.forEach((x, k) => {
-    const c = el("div", "d" + (k === 6 ? " today" : ""));
-    ppl.forEach(id => { const n = x.list.filter(b => who(b) === id).length; if (!n) return; const i = el("i"); i.style.height = (100 * n / max) + "%"; i.style.background = id ? personColor(id) : "var(--mut)"; i.title = (nameOf(id) || "Not set") + ": " + n; c.appendChild(i); });
-    bars.appendChild(c);
+    const c = el("div", "d" + (k === 6 ? " today" : "")), cid = "wkc" + k + "-" + my;
+    const s = mk("svg", { viewBox: "0 0 40 40", "aria-hidden": "true" });
+    const cp = mk("clipPath", { id: cid }); cp.appendChild(mk("path", { d: BODY })); s.appendChild(cp);
+    s.appendChild(mk("path", { d: BODY, class: "in" }));
+    const g = mk("g", { "clip-path": "url(#" + cid + ")" }); let y = BOT;
+    ppl.forEach(id => {
+      const n = x.list.filter(b => who(b) === id).length; if (!n) return;
+      const h = (BOT - TOP) * n / max; y -= h;
+      const r = mk("rect", { x: 0, y: y, width: 40, height: h + 0.4, fill: id ? personColor(id) : "var(--mut)" });
+      const t = mk("title", {}); t.textContent = (nameOf(id) || "Not set") + ": " + n; r.appendChild(t); g.appendChild(r);
+    });
+    s.appendChild(g);
+    s.appendChild(mk("path", { d: BODY + "M29.4 14.5H31.5A4.5 4.5 0 0131.5 23.5H28.6 M1.5 38.6H33", class: "ol" }));
+    if (k === 6 && x.list.length) s.appendChild(mk("path", { d: "M14 6.5c-1.6-1.6 1.6-2.4 0-4.5 M20 6.5c-1.6-1.6 1.6-2.4 0-4.5", class: "steam" }));   // today's cup is still warm
+    c.appendChild(s); bars.appendChild(c);
     const l = el("span", "", k === 6 ? "Today" : WD[x.d.getDay()]); l.prepend(el("span", "n", String(x.list.length))); labs.appendChild(l);
   });
   box.append(bars, labs);
@@ -2828,12 +2860,9 @@ function mineCard(x) {
     if (ts.length) {
       const rr = el("div", "rr");
       ts.forEach(t => {
-        const tt = { rater_id: t.rater_id, guest: t.is_guest, guest_name: t.guest_name }, sp = el("span");
-        if (t.rating != null) sp.appendChild(Stars.row(Number(t.rating), tName(tt) + ": " + Stars.text(Number(t.rating))));
+        const tt = { rater_id: t.rater_id, guest: t.is_guest, guest_name: t.guest_name };
         const open = t.rating == null && t.balance == null && !(b.brew_scores || []).some(s => s.rating_id === t.id);
-        const rx = el("span", "rx"); sp.appendChild(rx);
-        rx.append(personTag(tt), document.createTextNode(open ? ": to rate" : (t.balance != null ? ", balance " + SCALE.balanceText(t.balance) : "") + (t.rating == null ? ", taste only" : "")));
-        rr.appendChild(sp);
+        rateLine(rr, t.rating != null ? Number(t.rating) : null, tName(tt) + ": " + Stars.text(Number(t.rating)), tt, open ? ": to rate" : (t.balance != null ? ", balance " + SCALE.balanceText(t.balance) : "") + (t.rating == null ? ", taste only" : ""));
       });
       a.appendChild(rr);
     } else a.appendChild(el("p", "", "Not rated yet."));
@@ -2845,7 +2874,7 @@ function mineCard(x) {
     const go = el("a", "btn", "Rate your cup"); go.href = "#c=" + b.coffee_id + "&b=" + b.id + "&rate=" + x.r.id; p.appendChild(go); a.appendChild(p);
   }
   else {
-    if (x.r.rating != null && x.p === "me") { const s = el("div", "rr"), sp = el("span"); sp.append(Stars.row(Number(x.r.rating), "Your stars: " + Stars.text(Number(x.r.rating))), document.createTextNode("Your stars" + (x.r.drink ? ", " + drinkText(x.r.drink, x.r.milk).toLowerCase() : ""))); s.appendChild(sp); a.appendChild(s); }
+    if (x.r.rating != null && x.p === "me") { const s = el("div", "rr"); rateLine(s, Number(x.r.rating), "Your stars: " + Stars.text(Number(x.r.rating)), null, "Your stars" + (x.r.drink ? ", " + drinkText(x.r.drink, x.r.milk).toLowerCase() : "")); a.appendChild(s); }
     const row = el("div", "mine-bal"), seg = el("div", "bal"), ok = el("span", "ok");
     row.append(el("span", "lb", "Your Balance"), seg, ok);
     if (x.r.balance != null) seg.classList.add("set");
@@ -2917,6 +2946,8 @@ function renderPick() {
   const nc = $("newcoffee"); nc.textContent = ""; nc.append(ico("plus", 16), el("span", "", "New coffee"));
   nc.onclick = () => { location.hash = "addcoffee" + (dev ? "&d=" + encodeURIComponent(dev) : ""); };
 }
+$("addc").append(ico("addcoffee", 28));
+$("addc").onclick = () => { const b = $("addbox"); b.open = true; b.scrollIntoView({ behavior: "smooth", block: "start" }); setTimeout(() => $("f-roaster").focus({ preventScroll: true }), 350); };
 $("logmodes").querySelectorAll("button").forEach(b => { b.onclick = () => { logMode = b.dataset.m; store.set("alto.logmode", logMode); renderPick(); }; });
 window.addEventListener("hashchange", route);
 document.addEventListener("click", e => { if (!e.target.closest(".pmenu")) document.querySelectorAll(".pmenu").forEach(m => { m.hidden = true; }); });
