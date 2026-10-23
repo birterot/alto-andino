@@ -32,9 +32,9 @@
 #f-coffee{flex-basis:100%}
 .ctl button{flex:0 0 auto;padding:0 16px;cursor:pointer;color:var(--mut)}
 ul.rank{list-style:none;margin:6px 0 0;padding:0}
-ul.rank li{display:grid;grid-template-columns:auto minmax(0,1fr) 64px auto;align-items:center;gap:4px 10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:15px}
+ul.rank li{display:grid;grid-template-columns:auto minmax(0,1fr) 64px var(--vw,auto);align-items:center;gap:4px 10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:15px}
 ul.rank li:last-child{border-bottom:0}
-ul.rank li:not(:has(svg)){grid-template-columns:minmax(0,1fr) 64px auto}
+ul.rank li:not(:has(svg)){grid-template-columns:minmax(0,1fr) 64px var(--vw,auto)}
 ul.rank .rn{min-width:0;overflow-wrap:anywhere}
 ul.rank .rn small{color:var(--mut);font-size:12.5px}
 ul.rank .rt{height:6px;border-radius:3px;background:var(--one-track);overflow:hidden}
@@ -254,6 +254,8 @@ function rangeOf() {
 // A ranked list in plain HTML: icon (optional), the name (wraps, never cut off), a thin bar, the number
 function rankList(rows) {
   const ul = el("ul", "rank");
+  // the numbers column is as wide as its longest number on every row, so the bars line up
+  ul.style.setProperty("--vw", Math.max(...rows.map(r => String(r.text).length), 1) * 0.6 + 0.4 + "em");
   rows.forEach(r => {
     const li = el("li"); if (r.icon) li.appendChild(r.icon);
     const nm = el("span", "rn", r.label); if (r.sub) nm.appendChild(el("small", "", " " + r.sub));
