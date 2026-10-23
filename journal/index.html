@@ -311,7 +311,8 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .wkl > span:last-child{color:var(--ink);font-weight:600}
 .wleg{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:10px;font-size:13px;color:var(--mut)}
 .wleg span{display:inline-flex;align-items:center;gap:6px}.wleg i{width:10px;height:10px;border-radius:3px;display:inline-block}
-.fun{display:flex;align-items:flex-start;gap:10px;width:100%;margin:12px 0 0;padding:10px 12px;border:0;border-radius:12px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px;line-height:1.4;text-align:left;cursor:pointer}
+.fun{display:flex;align-items:flex-start;gap:10px;width:100%;overflow:hidden;touch-action:pan-y;user-select:none;-webkit-user-select:none;margin:12px 0 0;padding:10px 12px;border:0;border-radius:12px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px;line-height:1.4;text-align:left;cursor:pointer}
+.fun > span{flex:1;min-width:0;will-change:transform}
 .fun small{margin-left:auto;flex:none;color:var(--mut);font-size:12px;padding-top:2px}
 .stt{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:12px}
 .stt div{padding:10px 12px;border-radius:12px;background:var(--bg)}
@@ -338,7 +339,7 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .addc[hidden]{display:none}
 .addc .ico{stroke-width:1.6}
 #listhost > #addbox:not([open]){display:none}
-#listview:not(:has(#listhost > #addbox[open])) > h2:first-of-type{margin-top:18px}
+#cfilters{margin-top:16px}
 /* Recent activity: one day after the other, newest first */
 #feed h3.day{margin:24px 0 8px;font-size:14px;font-weight:600;color:var(--mut)}
 #feed h3.day:first-child{margin-top:4px}
@@ -559,7 +560,6 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
     <summary id="hhsum">Household</summary>
     <div id="hhbody"></div>
   </details>
-  <h2>Your coffees</h2>
   <div class="filters" id="cfilters" hidden>
     <input id="flt-q" type="search" placeholder="Search name, roaster, origin" aria-label="Search coffees">
     <select id="flt-process" aria-label="Filter by process"></select>
@@ -2734,13 +2734,34 @@ function renderMine() {
 const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], WDL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const dayStart = (d, back) => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - (back || 0)); return x; };
 // one fun line at a time; tap it for the next (a different first one every day)
-function funLine(box, lines) {
+function funLine(box, lines) {   // the fun facts: swipe left or right (or tap) to go through them
   if (!lines.length) return;
   let i = Math.floor(Date.now() / 864e5) % lines.length;
-  const b = el("button", "fun"); b.type = "button"; b.setAttribute("aria-label", "A fun fact, tap for the next");
+  const b = el("button", "fun"); b.type = "button"; b.setAttribute("aria-label", "A fun fact, swipe or tap for the next");
   const t = el("span"), n = el("small");
   const draw = () => { t.textContent = lines[i]; n.textContent = lines.length > 1 ? (i + 1) + "/" + lines.length : ""; };
-  b.onclick = () => { i = (i + 1) % lines.length; draw(); };
+  const slide = (x, o, ms) => { t.style.transition = ms ? "transform " + ms + "ms ease, opacity " + ms + "ms ease" : "none"; t.style.transform = x ? "translateX(" + x + "px)" : ""; t.style.opacity = o; };
+  const go = d => {   // d = 1: the next one comes in from the right, d = -1: the one before from the left
+    if (lines.length < 2) { slide(0, 1, 150); return; }
+    slide(-d * 60, 0, 130);
+    setTimeout(() => { i = (i + d + lines.length) % lines.length; draw(); slide(d * 60, 0, 0); void t.offsetWidth; slide(0, 1, 170); }, 130);
+  };
+  let x0 = null, y0 = 0, dx = 0, drag = false, swiped = false;
+  b.addEventListener("pointerdown", e => { x0 = e.clientX; y0 = e.clientY; dx = 0; drag = false; swiped = false; });
+  b.addEventListener("pointermove", e => {
+    if (x0 == null) return;
+    dx = e.clientX - x0;
+    if (!drag && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(e.clientY - y0)) { drag = true; try { b.setPointerCapture(e.pointerId); } catch (_) { /* fine without */ } }
+    if (drag) slide(dx, 1 - Math.min(0.7, Math.abs(dx) / 220), 0);
+  });
+  const end = () => {
+    if (x0 == null) return; x0 = null;
+    if (!drag) return;
+    swiped = true;
+    if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); else slide(0, 1, 150);
+  };
+  b.addEventListener("pointerup", end); b.addEventListener("pointercancel", end);
+  b.onclick = () => { if (swiped) { swiped = false; return; } go(1); };
   b.append(t, n); draw(); box.appendChild(b);
 }
 async function drawWeek(ids, byId, my) {
