@@ -125,13 +125,13 @@
   // one note at a time: your caffeine first (when there was coffee today), then to do, Friends, the fact of the day
   var notes = [], cafNote = null, rateNote = null, tipNote = null, todoNote = null, trendNote = null;
   function todoOf(n) { return n > 0 ? { k: "To do", text: n + (n === 1 ? " of your brews still needs" : " of your brews still need") + " a Balance rating.", href: "journal/index.html#nobal", go: "Rate them", tap: true } : null; }
-  // the order on Home: your cup to rate, the caffeine, a Balance to give, the sleep tip, then the rest (friends, a bag running low, a fact)
-  var PR = { rate: 0, caf: 1, todo: 2, tip: 3, trend: 4 };
+  // the order on Home: what is open to rate (a cup, then a Balance to give), the caffeine, the sleep tip, then the rest (friends, a bag running low, a fact)
+  var PR = { rate: 0, todo: 1, caf: 2, tip: 3, trend: 4 };
   var tr = session && shelf ? toRate(shelf.tr, shelf.nm) : null;
   if (tr) { tr.pr = PR.rate; notes.push(rateNote = tr); }
   var caf = session ? caffeine(shelf && shelf.cb) : null;
-  if (caf) { caf.pr = PR.caf; notes.push(cafNote = caf); }
   if (shelf && shelf.nob > 0) { todoNote = todoOf(shelf.nob); todoNote.pr = PR.todo; notes.push(todoNote); }
+  if (caf) { caf.pr = PR.caf; notes.push(cafNote = caf); }
   var tip0 = session && cafPref().sleep === "on" && shelf && shelf.stip ? tipToNote(shelf.stip) : null;
   if (tip0) { tip0.pr = PR.tip; notes.push(tipNote = tip0); }
   if (shelf) {
