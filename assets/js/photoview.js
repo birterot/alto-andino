@@ -94,5 +94,5 @@ window.PhotoView = (function () {
     setTimeout(function () { lay.hidden = true; img.removeAttribute("src"); }, 180);
     if (back && back.focus) try { back.focus({ preventScroll: true }); } catch (x) {}
   }
-  return { open: open, close: close };
+  return { open: open };
 })();

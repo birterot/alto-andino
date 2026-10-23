@@ -569,7 +569,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
   <div id="mineview" hidden>
     <section class="lhead" id="mhead" hidden></section>
     <p class="hint" style="margin-top:0" id="mhint">Every brew you made or rated, newest first. You can give your Balance right here; changing one you already gave asks first. For anything else, open the brew.</p>
-    <div class="filters" id="mfilters">
+    <div class="filters">
       <select id="mflt-person" aria-label="Whose brews"></select>
       <select id="mflt-who" aria-label="Which brews"><option value="">Made or rated</option><option value="torate">To rate</option><option value="rated">Rated by me</option><option value="made">Made by me</option></select>
       <select id="mflt-bal" aria-label="Balance"><option value="">Any Balance</option><option value="none">Balance not rated</option><option value="old">From the old slider</option></select>
@@ -581,7 +581,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
 
   <div id="detail" hidden>
     <a class="back" id="dback" href="#">All coffees</a>
-    <section id="dhead" class="cc"><button type="button" class="phb" id="dphotob" hidden><img id="dphoto" alt=""></button><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><div class="acts" id="dacts"><span id="dbuy"></span><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button></div><p class="darch" id="darch" hidden></p><p class="frshare" id="frshare" hidden></p></div></section>
+    <section id="dhead" class="cc"><button type="button" class="phb" id="dphotob" hidden><img id="dphoto" alt=""></button><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><div class="acts"><span id="dbuy"></span><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button></div><p class="darch" id="darch" hidden></p><p class="frshare" id="frshare" hidden></p></div></section>
     <div id="dedithost"></div>
     <details class="add" id="brewbox">
       <summary id="brewsum">Log a brew</summary>
@@ -613,7 +613,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
           <label class="adv">Feel<input id="b-feel" list="feel-list" placeholder="fine" autocomplete="off"></label>
         </div>
         <datalist id="feel-list"></datalist>
-        <p class="hint adv" id="feelhint">The feel word follows the setting. Type your own if you like.</p>
+        <p class="hint adv">The feel word follows the setting. Type your own if you like.</p>
         <h3 class="sh">Recipe</h3>
         <div class="nums">
           <label>Dose (g)<input id="b-dose" type="number" step="any" inputmode="decimal"></label>
@@ -634,7 +634,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
           <label>Pressure (bar)<input id="b-pressure" type="number" step="any" inputmode="decimal"></label>
         </div>
         <div class="curve" id="curve" hidden></div>
-        <details class="add calcbox" id="profbox">
+        <details class="add calcbox">
           <summary>Pressure profile with several stages</summary>
           <p class="hint">After the pre-infusion. Each stage has a pressure and how long it lasts. With stages, the single pressure above is not used.</p>
           <div id="profrows"></div>
@@ -728,7 +728,6 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
 <script src="../assets/js/scales.js"></script>
 <script src="../assets/js/caffeine.js"></script>
 <script src="../assets/js/stars.js"></script>
-<script src="../assets/js/theme.js"></script>
 <script src="../data/devices.js"></script>
 <script src="../data/processing.js"></script>
 <script src="../data/defaults.js"></script>
@@ -2296,6 +2295,8 @@ function renderDrafts() {
     box.appendChild(a);
   });
 }
+// a number from the calculator or a friend's recipe into the brew form (only what is there; it counts as typed)
+function hp(id, v) { if (v !== null && v !== undefined) { $(id).value = v; touched.add(id); } }
 function readHandoff() {
   let h = null;
   try { h = JSON.parse(localStorage.getItem("alto.handoff")); localStorage.removeItem("alto.handoff"); if (h) localStorage.removeItem("alto.calc.last"); } catch (e) {}
@@ -2421,7 +2422,6 @@ function newBrewSetup(dev, plain) {   // plain: no draft and no calculator offer
   applyType(); autoFill(); refreshAutoDrinks();
   const restored = plain ? false : restoreDraft(); draftWasRestored = restored;
   if (h) {
-    const hp = (id, v) => { if (v !== null && v !== undefined) { $(id).value = v; touched.add(id); } };
     hp("b-dose", h.dose_g); if (!isEsp(typeOf(chosen("b-device")))) hp("b-water", h.water_g); hp("b-yield", h.yield_g); hp("b-temp", h.temp_c); if (isFlair(chosen("b-device"))) hp("b-preheat", h.preheat);
     if (h.grind != null) hp("b-grind", h.grind);   // a friend's recipe brings its grind too
     if (calc && h.state) calc.load(h.state);   // the calculator in the form shows the same numbers
@@ -2444,7 +2444,6 @@ function offerCalc(skip) {
   use.onclick = () => {
     if (c.device) { setSel("b-device", c.device); applyType(); autoFill(); }
     if (calc && c.state) calc.load(c.state);
-    const hp = (id, v) => { if (v !== null && v !== undefined) { $(id).value = v; touched.add(id); } };
     hp("b-dose", c.dose_g); if (!isEsp(typeOf(chosen("b-device")))) hp("b-water", c.water_g && Math.round(c.water_g * 10) / 10); hp("b-yield", c.yield_g && Math.round(c.yield_g * 10) / 10); hp("b-temp", c.temp_c); if (isFlair(chosen("b-device"))) hp("b-preheat", c.preheat);
     box.hidden = true; say("Numbers filled in from the calculator."); edited = true; saveDraft(); refreshAutoDrinks();
   };
@@ -2993,10 +2992,6 @@ function scrollToForm() {
   const bar = document.querySelector(".topnav"), y = $("brewbox").getBoundingClientRect().top + window.scrollY - (bar ? bar.offsetHeight : 0) - 12;
   window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
 }
-function scrollToBrews() {
-  const bar = document.querySelector(".topnav"), y = $("brewbox").getBoundingClientRect().top + window.scrollY - (bar ? bar.offsetHeight : 0) - 12;
-  window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
-}
 
 function dayN(iso, when) {
   const n = Math.floor((when - new Date(iso + "T00:00:00")) / 864e5);
@@ -3014,7 +3009,7 @@ function brewCard(b) {
   if (age) a.appendChild(el("p", "age", age));
   if (b.is_dialin) a.appendChild(el("p", "age", "Dial-in brew, not counted in the rating"));
   // stars on top: the one rating, or the average of everyone who tasted it
-  const ts = tastersOf(b), avg = brewAvg(b), maker = b.made_by || b.created_by;
+  const ts = tastersOf(b), avg = brewAvg(b);
   if (avg != null) {
     const s = el("p", "starsum"); s.appendChild(Stars.row(avg, "Rated " + Stars.text(avg) + " of 5"));
     if (ts.length > 1) s.appendChild(el("span", "rby", "average of " + ts.length + " tasters"));
@@ -3204,8 +3199,6 @@ $("bf").onsubmit = async e => {
   {
     const dev = chosen("b-device"), esp = isEsp(typeOf(dev)), v = id => $(id).value.trim();
     const t = numOf("b-time"), tr = tasterRows();
-    const rated = tr.map(x => tName({ rater_id: x.rater_id, guest: x.is_guest, guest_name: x.guest_name }) + " " + (x.rating == null ? "(taste only)" : Stars.text(x.rating)) + (x.balance != null ? ", balance " + SCALE.balanceText(x.balance) : "") + (x.drink ? " (" + drinkText(x.drink, x.milk).toLowerCase() + ")" : "") + (x.drank_at ? ", drank it " + fmtDT(new Date(x.drank_at)) : "")).join(", ");
-    const tasted = tr.reduce((a, x) => a + Object.keys(x.scores).length, 0);
     let ok;
     if (editingBrew) {   // editing: show exactly what changed, old next to new
       const ch = brewChanges(editingBrew, row);

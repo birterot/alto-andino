@@ -35,8 +35,7 @@ try { if (!sessionStorage.getItem("alto.intro") && !(window.matchMedia && matchM
 html.intro .hero .mark{visibility:hidden}
 html.intro .hero h1,html.intro #today,html.intro .tiles,html.intro nav.small,html.intro .topnav{opacity:.001;will-change:opacity,transform}   /* .001, not 0: painted up front, so fading in costs nothing */
 html.intro body::before{opacity:0}
-.hero{display:flex;flex-direction:column;align-items:center;gap:14px;margin:4px 0 26px;text-align:center}
-.hero{gap:18px}
+.hero{display:flex;flex-direction:column;align-items:center;gap:18px;margin:4px 0 26px;text-align:center}
 .hero .mark{width:168px;color:var(--brand)}.hero .mark svg{display:block;width:100%;height:auto}
 .hero h1.wm{width:220px;margin:0}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}

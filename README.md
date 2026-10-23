@@ -1,6 +1,6 @@
 # Alto Andino
 
-Our coffee app: the "Bean to cup" chapters (notes from The World Atlas of Coffee), a brew journal, a calculator and trends. Plain HTML, CSS and JavaScript, no build step. The journal and trends keep their data in Supabase, shared per household.
+Our coffee app: the Coffee Shelf (coffees, bags, brews and ratings), Recent activity, My brews, Trends with Insights, a calculator, cupping, friends, and the "Bean to cup" chapters (notes from The World Atlas of Coffee). Plain HTML, CSS and JavaScript, no build step. The data lives in Supabase, shared per household; friends see only what a household shares.
 
 Live at https://alto-andino.com (the old address birterot.github.io/alto-andino redirects there). Domain and DNS at Cloudflare, password emails through Resend (Supabase custom SMTP), hello@alto-andino.com forwarded by Cloudflare Email Routing.
 
@@ -8,17 +8,22 @@ Live at https://alto-andino.com (the old address birterot.github.io/alto-andino 
 
 ```
 alto-andino/
-  index.html               home
-  chapters/                Bean to cup: processing, roasting, freshness, devices
-  journal/index.html       the Coffee shelf: coffees, bags and brews (Supabase)
-  trends/index.html        charts of our brews
-  calc/index.html          brew calculator
-  data/processing.js       all content of chapter 1 (edit this)
-  data/defaults.js         brewing defaults, grinders, captcha site key
-  supabase/                SQL migrations, run in order in the Supabase SQL Editor
-  assets/css/base.css      colours, layout, components for every chapter
-  assets/js/shared.js      icons and the cup illustration
-  assets/js/chapter.js     builds a chapter page from its data file
+  index.html                 Home: greeting, open bags, notes (caffeine, to rate, friends), shortcuts
+  journal/index.html         the Coffee Shelf, Recent activity, My brews, the brew form, the household page
+  trends/index.html          charts: over time, dial-in, freshness, taste, insights, household
+  friends/index.html         friends: their shelves and recipes, trending, barista board, profiles, cups to rate
+  calc/index.html            brew calculator
+  cupping/index.html         cupping sessions (SCA scores)
+  settings/index.html        settings, your data; settings/caffeine.html how caffeine is worked out
+  feedback/index.html        feedback and wishes
+  privacy.html               the privacy page
+  chapters/                  Bean to cup: processing, roasting, freshness, devices, drinks
+  data/                      content and defaults: chapters, devices, drinks, facts, defaults.js, world.js (map)
+  supabase/                  SQL files, run in order in the Supabase SQL Editor; functions/notify (notifications)
+  assets/css/                base.css (every page), chapter2.css (chapters)
+  assets/js/                 shared parts: nav.js (top bar, menu, tabs, search), home.js, charts.js, caffeine.js,
+                             people.js (colours), stars.js, scales.js, calcui.js, lists.js, chapter renderers
+  sw.js                      service worker, only for notifications
 ```
 
 ## Preview locally
@@ -27,13 +32,12 @@ Double-click `index.html`, or run `python3 -m http.server 8000` in this folder a
 
 ## Edit content
 
-Everything you read on a chapter page lives in `data/<chapter>.js`: methods, cup notes, facts, steps, glossary. Gauge values are set by tapping on the page. They and the tasting notes are stored in that browser only.
+Everything you read on a chapter page lives in `data/<chapter>.js`: methods, cup notes, facts, steps, glossary. The gauges on the processing page show the book's values (`G` in `data/processing.js`); your own tasting goes into your brews.
 
-## Add a chapter (for example roasting)
+## Add a chapter
 
-1. Copy `data/processing.js` to `data/roasting.js` and replace the content. Change `slug`, `title`, `sub`, the colours in `c`, and the entries in `D` (one per roast level) and `R` (steps).
-2. Copy `chapters/processing.html` to `chapters/roasting.html` and change the `data/processing.js` script line to `data/roasting.js`.
-3. In `index.html`, turn the "Roasting" card into a link: `<a class="chcard" href="chapters/roasting.html">`.
+1. Add its content as `data/<chapter>.js` and its page as `chapters/<chapter>.html` (copy the closest existing pair).
+2. Add it to `CHAPTERS` in `assets/js/nav.js` (menu, breadcrumbs, previous and next) and as a card in `chapters/index.html`.
 
 ## Publish
 

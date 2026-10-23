@@ -8,12 +8,12 @@
 // You do not have to edit this file to use a new process or roast level:
 // pick "Other (add new)" in the app and it is remembered for next time (in grey).
 window.LISTS = {
-  process: {
-    "Washed": ["#E1F5EE","#04342C","#0F6E56","#5DCAA5","#085041","#9FE1CB"],
-    "Pulped natural": ["#EAF3DE","#173404","#3B6D11","#97C459","#27500A","#C0DD97"],
-    "Honey": ["#FAEEDA","#412402","#854F0B","#EF9F27","#633806","#FAC775"],
-    "Natural": ["#FAECE7","#4A1B0C","#993C1D","#F0997B","#712B13","#F5C4B3"],
-    "Semi-washed": ["#E6F1FB","#042C53","#185FA5","#85B7EB","#0C447C","#B5D4F4"]
+  process: {   // Japandi colours: [fill light, fill dark, line light, line dark, text light, text dark]
+    "Washed":         ["#E4EAE0", "#243026", "#4F6B55", "#9DB8A1", "#34493A", "#C5D6C7"],
+    "Pulped natural": ["#E9EBD9", "#2B2E1B", "#6B7442", "#B4BC83", "#4B5230", "#D3D8B0"],
+    "Honey":          ["#F0E6D0", "#3A2E17", "#8F6A2B", "#D6AE6A", "#6B4F1F", "#EBD3A3"],
+    "Natural":        ["#EFDDD2", "#3C261D", "#94512F", "#D79A7A", "#6E3A22", "#EDC4AE"],
+    "Semi-washed":    ["#E0E5E8", "#232B31", "#4F6572", "#9DB1BD", "#364651", "#C4D2DB"]
   },
   roast: ["Light", "Medium-light", "Medium", "Medium-dark", "Dark"],
   // extra devices for the brew form, besides the ones in data/devices.js (French press, AeroPress, V60, Chemex,

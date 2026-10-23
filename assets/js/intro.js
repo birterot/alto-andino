@@ -24,7 +24,7 @@
   // Light on the phone: the mountain, the plant and a backing (the mountain filled with the page colour, so the plant
   // can hide behind it) are ready-made pictures (assets/brand/intro). Pictures can be moved, turned, scaled and faded
   // by the graphics chip without being redrawn. Only the first line drawing is vector: one simple outline.
-  var NS = "http://www.w3.org/2000/svg", W = 599, H = 397, BOXW = 200;
+  var NS = "http://www.w3.org/2000/svg", W = 599, BOXW = 200;   // W: the width of the mark's drawing
   function sv(t, a) { var e = document.createElementNS(NS, t); for (var k in a) e.setAttribute(k, a[k]); return e; }
   var bg = getComputedStyle(document.body).backgroundColor.match(/\d+/g) || [255, 255, 255];
   var theme = (0.299 * bg[0] + 0.587 * bg[1] + 0.114 * bg[2]) / 255 < 0.5 ? "dark" : "light";
@@ -52,7 +52,7 @@
 
   // the move to where the real mark sits on the page (measured from the box's own place in the middle, untransformed)
   function moveFrames() {
-    var a = lay.getBoundingClientRect(), b = target.getBoundingClientRect(), w = BOXW, h = BOXW * H / W;
+    var a = lay.getBoundingClientRect(), b = target.getBoundingClientRect(), w = BOXW;
     var cx = a.left + a.width / 2, cy = a.top + a.height / 2;   // the box is centred in the overlay
     var dx = b.left + b.width / 2 - cx, dy = b.top + b.height / 2 - cy, sc = b.width / w;
     return [{ transform: "translate3d(0px,0px,0) scale(1)" }, { transform: "translate3d(" + dx.toFixed(1) + "px," + dy.toFixed(1) + "px,0) scale(" + sc.toFixed(4) + ")" }];
@@ -89,8 +89,6 @@
     setTimeout(function () { if (!window.__introPaused) finish(); }, END);
   }
   var END = 5000;
-  // for checking frame by frame (scratch tests): window.__introSeek(ms)
-  window.__introSeek = function (t) { anims.forEach(function (an) { an.pause(); an.currentTime = t; }); };
   // start when the page has finished loading and the pictures are ready, then wait two frames so the first frame of the
   // animation is not also the frame that sets everything up (at the latest after a second and a half)
   var ready = [plant, back, mountain].map(function (i) { return i.decode ? i.decode().catch(function () {}) : Promise.resolve(); });

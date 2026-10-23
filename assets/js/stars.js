@@ -37,5 +37,5 @@ window.Stars = (function () {
     ".star .on{position:absolute;left:0;top:0;height:100%;overflow:hidden}" +
     ".star .full{fill:currentColor}";
   document.head.appendChild(css);
-  return { row: row, fill: fill, text: text, half: half };
+  return { row: row, fill: fill, text: text };
 })();

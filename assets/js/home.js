@@ -10,7 +10,7 @@
   // Signed in? The login is kept in the browser (Supabase's "sb-...-auth-token"). Without it, or for another person,
   // Home shows nothing personal, and says right away that you are signed out.
   var session = null;
-  try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (/^sb-.+-auth-token$/.test(k)) { var v = JSON.parse(localStorage.getItem(k) || "null"); if (v && (v.refresh_token || v.access_token) && v.user) session = v; } } } catch (e) {}
+  try { for (var j = 0; j < localStorage.length; j++) { var k = localStorage.key(j); if (/^sb-.+-auth-token$/.test(k)) { var v = JSON.parse(localStorage.getItem(k) || "null"); if (v && (v.refresh_token || v.access_token) && v.user) session = v; } } } catch (e) {}
   var shelf = null; try { shelf = JSON.parse(get("alto.shelf.v1") || "null"); } catch (e) {}
   if (shelf && (!Array.isArray(shelf.coffees) || Date.now() - shelf.t > 60 * 864e5)) shelf = null;
   if (!session || (shelf && shelf.u && shelf.u !== session.user.id)) shelf = null;

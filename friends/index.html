@@ -199,7 +199,7 @@ p.off{color:var(--mut);font-size:14px;font-style:italic}
   <section class="box">
     <h2>Invite friends</h2>
     <p class="hint">Send this link to friends. When they open it and accept, you are friends both ways. The link works for 30 days, for everyone you send it to.</p>
-    <div class="code" id="codebox"><b id="code">........</b><span id="codeurl"></span></div>
+    <div class="code"><b id="code">........</b><span id="codeurl"></span></div>
     <div class="btns"><button class="go" id="share" type="button">Send link</button><button class="lnk" id="copy" type="button">Copy</button><button class="lnk" id="renew" type="button">New link</button></div>
     <div class="row2" style="margin-top:16px"><label>Got a code from a friend?<input id="codein" maxlength="12" autocomplete="off" autocapitalize="characters" placeholder="e.g. 6A5FDBAA"></label><button class="go" id="codego" type="button">Add</button></div>
   </section>
@@ -255,7 +255,6 @@ p.off{color:var(--mut);font-size:14px;font-style:italic}
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script src="../assets/js/config.js"></script>
-<script src="../assets/js/theme.js"></script>
 <script src="../assets/js/stars.js"></script>
 <script src="../data/drinks.js"></script>
 <script src="../data/defaults.js"></script>
@@ -366,6 +365,7 @@ async function showList() {
 const isDone = e => e && /function .* does not exist|Could not find the function/i.test(e.message || "");   // before supabase/34_friends_more.sql
 const dn = id => { const d = ((window.DRINKS && DRINKS.D) || []).find(x => x.id === id); return d ? d.name.replace(/ \((traditional|common), \d shots?\)$/, "") : id; };
 const mn = id => { const m = ((window.DRINKS && DRINKS.MILKS) || []).find(x => x[0] === id); return m ? m[1].replace(/ \(.*\)$/, "").toLowerCase() : id; };
+const hasMilk = id => { const d = ((window.DRINKS && DRINKS.D) || []).find(x => x.id === id); return !d || d.milk; };   // a drink with milk in it (or one we do not know)
 const mmss = s => s == null ? null : s < 90 ? s + " s" : Math.floor(s / 60) + ":" + String(Math.round(s % 60)).padStart(2, "0") + " min";
 const ratioOf = b => b && b.dose ? (b.yield ? "1:" + r1(b.yield / b.dose) : b.water ? "1:" + r1(b.water / b.dose) : null) : null;
 // signed links for photos (bag photos and profile photos), kept for the visit
@@ -513,7 +513,6 @@ async function showPerson(uid) {
   const fact = (k, v) => { if (v) facts.append(el("dt", "", k), el("dd", "", v)); };
   if (p.fav) { const a = el("a", "", p.fav.name + (p.fav.roaster ? " (" + p.fav.roaster + ")" : "") + ", " + r1(p.fav.stars).toFixed(1) + "★"); a.href = p.fav.household === hh ? "../journal/index.html#c=" + p.fav.id : "#f=" + p.fav.household + "&c=" + p.fav.id; facts.append(el("dt", "", "Favourite coffee")); const dd = el("dd"); dd.appendChild(a); facts.appendChild(dd); }
   fact("Favourite device", p.device);
-  const hasMilk = id => { const d = ((window.DRINKS && DRINKS.D) || []).find(x => x.id === id); return !d || d.milk; };
   fact("Usual drink", [p.drink_esp ? dn(p.drink_esp) + (p.milk && hasMilk(p.drink_esp) ? " with " + mn(p.milk) + " milk" : "") : null, p.drink_filter ? dn(p.drink_filter) : null].filter(Boolean).join(" \u00B7 "));
   fact("Usually brews", p.hour != null ? "around " + p.hour + ":00" : null);
   fact("Here since", p.since ? new Date(p.since).toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : null);
@@ -823,11 +822,8 @@ function taste(body, them, you, nm) {
   }
   if (t.drinks && t.drinks.length) {
     b.appendChild(el("h3", "", "Usual drinks")).style.cssText = "font-size:15px;margin:16px 0 0";
-    const D = (window.DRINKS && window.DRINKS.D) || [], M = (window.DRINKS && window.DRINKS.MILKS) || [];
-    const dn = id => { const d = D.find(x => x.id === id); return d ? d.name.replace(/ \((traditional|common), \d shots?\)$/, "") : id; };
-    const mn = id => { const m = M.find(x => x[0] === id); return m ? m[1].replace(/ \(.*\)$/, "").toLowerCase() : id; };
     const ul = el("div", "bars");
-    t.drinks.forEach(x => { const d = D.find(y => y.id === x.drink); ul.appendChild(el("p", "", nm(them, x.id) + ": " + dn(x.drink) + (x.milk && (!d || d.milk) ? " with " + mn(x.milk) + " milk" : ""))).style.margin = "4px 0 0"; });
+    t.drinks.forEach(x => { ul.appendChild(el("p", "", nm(them, x.id) + ": " + dn(x.drink) + (x.milk && hasMilk(x.drink) ? " with " + mn(x.milk) + " milk" : ""))).style.margin = "4px 0 0"; });
     b.appendChild(ul);
   }
 }

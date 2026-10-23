@@ -304,5 +304,5 @@ window.Charts = (function () {
     return t;
   }
 
-  return { scatter: scatter, lines: lines, hbars: hbars, divbars: divbars, stacked: stacked, dumbbell: dumbbell, table: table, ticks: ticks, hideTip: hideTip, showTip: showTip };
+  return { scatter: scatter, lines: lines, hbars: hbars, divbars: divbars, stacked: stacked, dumbbell: dumbbell, table: table, hideTip: hideTip, showTip: showTip };
 })();

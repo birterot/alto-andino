@@ -34,7 +34,7 @@ window.altoCalc = (function () {
       if (!p.dose) { s.known = "water"; s.value = p.water; }
       return s;
     }
-    function load() { if (!o.storageKey) return null; try { var s = JSON.parse(localStorage.getItem(o.storageKey)); if (s && byId(s.id)) return s; } catch (e) {} return null; }
+    function saved() { if (!o.storageKey) return null; try { var s = JSON.parse(localStorage.getItem(o.storageKey)); if (s && byId(s.id)) return s; } catch (e) {} return null; }
     function save() { if (o.storageKey) try { localStorage.setItem(o.storageKey, JSON.stringify(st)); } catch (e) {} }
 
     root.textContent = ""; if (o.compact) root.classList.add("compact");
@@ -110,11 +110,11 @@ window.altoCalc = (function () {
     kf.addEventListener("input", function () { var v = num(kf.value); if (v >= 0) { st.f = v; render(kf); } });
     reset.addEventListener("click", function () { setPreset(sel.value); });
 
-    st = (o.start && byId(o.start) && fresh(byId(o.start))) || load() || fresh(byId(presets[0].id));
+    st = (o.start && byId(o.start) && fresh(byId(o.start))) || saved() || fresh(byId(presets[0].id));
     sel.value = st.id; tempLine(); render();
     // take over what you worked out elsewhere (the Calculator page), so both show the same numbers
     function load(s) { if (!s || !byId(s.id)) return; st = { id: s.id, basis: s.basis, R: +s.R, a: +s.a, f: +s.f, known: s.known, value: +s.value }; sel.value = st.id; tempLine(); render(); }
     return { numbers: numbers, setPreset: setPreset, load: load, preset: function () { return byId(st.id); } };
   }
-  return { mount: mount, solve: solve };
+  return { mount: mount };
 })();

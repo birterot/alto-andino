@@ -52,7 +52,7 @@ details.after summary{cursor:pointer;padding:10px 0 10px 28px;color:var(--mut);f
 .seg.ro span.on{border:1px solid var(--s);background:var(--s)}
 .gv{font-size:13px;color:var(--mut);text-align:right}
 .chips{display:flex;flex-wrap:wrap;gap:4px 16px}
-.fact{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:3px 12px;border-radius:999px;background:var(--f);color:var(--t);border:1px solid var(--line)}
+.fact{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:5px 10px 5px 8px;border-radius:6px;background:none;color:var(--ink);border:1px solid var(--line);align-self:flex-start}
 /* A .chip is a note you can read, not a button: no pill, just a small marker. Tappable things keep the pill look. */
 .chip{display:inline-flex;align-items:center;gap:7px;font-size:14px;padding:0;border:0;background:none;color:inherit}
 .chip::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--s,currentColor);opacity:.75;flex:none}
@@ -60,7 +60,6 @@ details.after summary{cursor:pointer;padding:10px 0 10px 28px;color:var(--mut);f
 .chip.bad::before{background:none;border:1px solid var(--s)}
 .chip.todo{color:var(--mut);font-style:italic}
 .facts{display:flex;flex-direction:column;gap:6px}
-.fact{background:none;color:var(--ink);border-color:var(--line);border-radius:6px;padding:5px 10px 5px 8px;align-self:flex-start}
 .fact svg{width:16px;height:16px;flex:none;color:var(--s)}
 textarea{width:100%;min-height:76px;resize:vertical;padding:10px 12px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-size:14px}
 .strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px}
