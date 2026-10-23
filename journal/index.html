@@ -349,7 +349,7 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .fe{display:flex;align-items:center;gap:10px;padding:7px 4px 7px 8px;margin-bottom:6px;font-size:14px;color:var(--mut);text-decoration:none;border-radius:10px}
 .fe:hover{background:var(--card)}
 .fe svg{flex:none;color:var(--s,var(--accent))}
-.fe span{flex:1;min-width:0}
+.fe > span{flex:1;min-width:0}
 .fe b{font-weight:600;color:var(--ink)}
 #rmore{margin-top:8px}
 .bc.hl{animation:bchl 2.6s ease-out}
@@ -3408,8 +3408,10 @@ function fillMadeBy(want) {
 let prefsApplied = false;
 const myPrefs = () => (me && prefsOf[me.id]) || {};
 async function loadNames() {
-  let { data, error } = await db.from("profiles").select("id,display_name,prefs");
+  let { data, error } = await db.from("profiles").select("id,display_name,prefs,photo_path");
+  if (error) ({ data, error } = await db.from("profiles").select("id,display_name,prefs"));   // before supabase/34_friends_more.sql
   if (error) ({ data, error } = await db.from("profiles").select("id,display_name"));   // before supabase/20_drinks_settings.sql
+  if (!error) { const ph = {}; (data || []).forEach(p => { if ("photo_path" in p) ph[p.id] = p.photo_path; }); PEOPLE.photos(db, ph); }   // profile photos for the avatars
   namesOk = !error; names = {}; prefsOf = {};
   (data || []).forEach(p => { names[p.id] = p.display_name; prefsOf[p.id] = p.prefs || {}; });
   if (me && names[me.id]) store.set("alto.myname", names[me.id]);   // for the greeting on Home

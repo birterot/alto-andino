@@ -378,10 +378,9 @@ async function signed(bucket, paths) {
 function cupIcon() { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("aria-hidden", "true"); s.setAttribute("class", "ci"); const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", "M4 9h13v4a6 6 0 01-6 6h-1a6 6 0 01-6-6V9z M17 10.5h1.2a2.8 2.8 0 010 5.6H16.3 M3 21h16"); s.appendChild(p); return s; }
 // a person's face: their photo, or their initial in their colour
 function face(p, size) {
-  const s = el("span", "face"); s.style.width = s.style.height = (size || 40) + "px"; s.style.fontSize = Math.round((size || 40) * 0.42) + "px";
-  const col = PEOPLE.color(p.id, p.name, p.color ? { [p.id]: { color: p.color } } : {}, []);
-  s.style.background = col; s.textContent = (String(p.name || "?").trim()[0] || "?").toUpperCase();
-  if (p.photo) signed("avatars", [p.photo]).then(u => { const x = u(p.photo); if (x) { s.textContent = ""; s.style.backgroundImage = "url(\"" + x + "\")"; s.classList.add("ph"); } });
+  if ("photo" in p) PEOPLE.photos(db, { [p.id]: p.photo });
+  const s = PEOPLE.avatar(p.id, p.name, PEOPLE.color(p.id, p.name, p.color ? { [p.id]: { color: p.color } } : {}, []));
+  s.classList.add("face"); s.style.width = s.style.height = (size || 40) + "px"; s.style.fontSize = Math.round((size || 40) * 0.42) + "px";
   return s;
 }
 let shelfCache = {};
@@ -481,6 +480,7 @@ async function showMore() {
   if (tl.length) { const u = await signed("bag-photos", tl.map(x => thumbOf(x.photo))); tl.forEach(x => { const a = coffeeTile(x, "#f=" + x.household + "&c=" + x.id, u); a.appendChild(el("small", "by", x.household_name + " · " + x.n + " ratings")); t.appendChild(a); }); }
   const bx = $("boardbox"), bl = $("board"); bl.textContent = "";
   const list = !bb.error && Array.isArray(bb.data) ? bb.data : [];
+  PEOPLE.photos(db, Object.fromEntries(list.map(p => [p.id, p.photo || null])));   // all photos of the board in one request
   bx.hidden = list.length < 2;
   list.slice(0, 10).forEach((p, i) => {
     const a = el("a", "brow" + (me && p.id === me.id ? " me" : "")); a.href = "#p=" + p.id;

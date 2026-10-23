@@ -108,13 +108,14 @@ async function loadAll() {
   const [cs, cp, ps, mm] = await Promise.all([
     (hh ? cq.eq("household_id", hh) : cq).order("created_at", { ascending: false }),
     db.from("cuppings").select("*").order("cupped_at", { ascending: false }),
-    db.from("profiles").select("id,display_name,prefs"),
+    db.from("profiles").select("id,display_name,prefs,photo_path").then(r => r.error ? db.from("profiles").select("id,display_name,prefs") : r),   // photos: after supabase/34_friends_more.sql
     hh ? db.from("household_members").select("user_id").eq("household_id", hh) : Promise.resolve({ data: [] })
   ]);
   say("");
   if (cs.error) { say("Could not load the coffees: " + cs.error.message); return false; }
   if (cp.error) { say(/cuppings/.test(cp.error.message) ? "Cupping needs a small database update first (supabase/21_sca_cupping.sql)." : "Could not load cuppings: " + cp.error.message); return false; }
   coffees = cs.data; names = {}; prefsOf = {}; (ps.data || []).forEach(p => { names[p.id] = p.display_name; prefsOf[p.id] = p.prefs || {}; });
+  const ph = {}; (ps.data || []).forEach(p => { if ("photo_path" in p) ph[p.id] = p.photo_path; }); PEOPLE.photos(db, ph);
   members = [...new Set([me.id, ...((mm.data || []).map(m => m.user_id))])];
   const ids = new Set(coffees.map(c => c.id)); cups = cp.data.filter(r => ids.has(r.coffee_id));
   return true;
