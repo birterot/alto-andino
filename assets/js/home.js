@@ -125,14 +125,16 @@
   // one note at a time: your caffeine first (when there was coffee today), then to do, Friends, the fact of the day
   var notes = [], cafNote = null, rateNote = null, tipNote = null, todoNote = null, trendNote = null;
   function todoOf(n) { return n > 0 ? { k: "To do", text: n + (n === 1 ? " of your brews still needs" : " of your brews still need") + " a Balance rating.", href: "journal/index.html#nobal", go: "Rate them", tap: true } : null; }
+  // the order on Home: what is open to rate (a cup, then a Balance to give), the caffeine, the sleep tip, then the rest (friends, a bag running low, a fact)
+  var PR = { rate: 0, todo: 1, caf: 2, tip: 3, trend: 4 };
   var tr = session && shelf ? toRate(shelf.tr, shelf.nm) : null;
-  if (tr) notes.push(rateNote = tr);
+  if (tr) { tr.pr = PR.rate; notes.push(rateNote = tr); }
   var caf = session ? caffeine(shelf && shelf.cb) : null;
-  if (caf) notes.push(cafNote = caf);
+  if (shelf && shelf.nob > 0) { todoNote = todoOf(shelf.nob); todoNote.pr = PR.todo; notes.push(todoNote); }
+  if (caf) { caf.pr = PR.caf; notes.push(cafNote = caf); }
   var tip0 = session && cafPref().sleep === "on" && shelf && shelf.stip ? tipToNote(shelf.stip) : null;
-  if (tip0) notes.push(tipNote = tip0);
+  if (tip0) { tip0.pr = PR.tip; notes.push(tipNote = tip0); }
   if (shelf) {
-    if (shelf.nob > 0) notes.push(todoNote = todoOf(shelf.nob));
     shelf.coffees.forEach(function (c) {
       if (!c.open_date || c.finished_at || c.archived || !c.bag_size_g) return;
       var left = c.bag_size_g - ((shelf.used || {})[c.id] || 0), dose = (shelf.dose || {})[c.id] || 18;
@@ -237,9 +239,9 @@
           var sh = null; try { sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === my) { sh.cb = rows; sh.cbt = Date.now(); sh.my = mine; sh.tr = pend; sh.nm = nm; if (nob != null) sh.nob = nob; if (used) sh.used = Object.assign({}, sh.used || {}, used); if (logs) { sh.sl = logs; sh.stip = tip; } localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } else sh = null; } catch (e) { sh = null; }
           if (sh) drawBags(sh);
           showStat(mine); showRate(pend, nm); showCaffeine(rows);
-          if (nob != null) todoNote = swapNote(todoNote, todoOf(nob), false);
+          if (nob != null) todoNote = swapNote(todoNote, todoOf(nob), PR.todo);
           var tr = res[6] && !res[6].error && Array.isArray(res[6].data) ? res[6].data[0] : null;
-          trendNote = swapNote(trendNote, tr ? { k: "From your friends", text: "Trending among your friends: " + tr.name + (tr.roaster ? " from " + tr.roaster : "") + ", " + (Math.round(tr.stars * 10) / 10).toFixed(1) + "\u2605 at " + tr.household_name + ".", href: "friends/index.html#f=" + tr.household + "&c=" + tr.id, go: "Their recipe" } : null, false);
+          trendNote = swapNote(trendNote, tr ? { k: "From your friends", text: "Trending among your friends: " + tr.name + (tr.roaster ? " from " + tr.roaster : "") + ", " + (Math.round(tr.stars * 10) / 10).toFixed(1) + "\u2605 at " + tr.household_name + ".", href: "friends/index.html#f=" + tr.household + "&c=" + tr.id, go: "Their recipe" } : null, PR.trend);
           if (logs) { sleepLogs = logs; drawAsk(); showTip(tip); }
         });
       });
@@ -260,16 +262,19 @@
     card.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " " || e.key === "ArrowRight") { e.preventDefault(); go(1); } else if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); } });
     card.tabIndex = 0; card.setAttribute("aria-label", "Notes: tap or swipe for the next one");
   }
-  // a note that comes, changes or goes when the fresh brews arrive (first = it goes to the top)
-  function swapNote(old, nu, first) {
+  // a note that comes, changes or goes when the fresh brews arrive; a new one goes to its place in the order (PR)
+  function swapNote(old, nu, pr) {
     var at = old ? notes.indexOf(old) : -1;
-    if (nu && at >= 0) notes[at] = nu; else if (nu) { if (first) notes.unshift(nu); else notes.splice(rateNote && notes[0] === rateNote ? 1 : 0, 0, nu); } else if (at >= 0) notes.splice(at, 1);
+    if (nu) nu.pr = pr;
+    if (nu && at >= 0) notes[at] = nu;
+    else if (nu) { var j = notes.findIndex(function (n) { return (n.pr == null ? 9 : n.pr) > pr; }); notes.splice(j < 0 ? notes.length : j, 0, nu); }
+    else if (at >= 0) notes.splice(at, 1);
     if (!card) return nu;
     i = 0;
     if (notes.length) draw();
     return nu;
   }
-  function showRate(list, nm) { rateNote = swapNote(rateNote, toRate(list, nm), true); }
+  function showRate(list, nm) { rateNote = swapNote(rateNote, toRate(list, nm), PR.rate); }
   // your cups still to rate: one = which one (and who made it), several = how many, to My brews
   function toRate(list, nm) {
     if (!Array.isArray(list) || !list.length) return null;
@@ -282,7 +287,7 @@
     var allG = list.every(function (y) { return y.g; });
     return { k: "To rate", text: list.length + " of your cups are waiting for your rating. The latest: " + what + ", " + when + (by ? ", made by " + by : "") + ".", href: allG ? "friends/index.html" : x.g ? href : "journal/index.html#torate", go: allG ? "Rate them" : x.g ? "Rate this one" : "Rate them", tap: true };
   }
-  function showCaffeine(rows) { cafNote = swapNote(cafNote, caffeine(rows), false); }
+  function showCaffeine(rows) { cafNote = swapNote(cafNote, caffeine(rows), PR.caf); }
 
   // ---------- sleep check: how did you sleep, and what your coffee may have to do with it ----------
   function ymd(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
@@ -345,7 +350,7 @@
       : "From " + t.n + " nights so far, your sleep does not seem to depend on your coffee: good and bad nights had about the same.";
     return { k: "Sleep", text: text, href: t.k === "mg" ? "settings/index.html#cafset" : null, go: "Sleep line" };
   }
-  function showTip(t) { tipNote = swapNote(tipNote, cafPref().sleep === "on" ? tipToNote(t) : null, false); }
+  function showTip(t) { tipNote = swapNote(tipNote, cafPref().sleep === "on" ? tipToNote(t) : null, PR.tip); }
 
   // ---------- caffeine: the note and its curve (the numbers come from assets/js/caffeine.js) ----------
   // A brew counts for everyone it was for (split between them, rated or not yet), at the time they drank it if they said,
