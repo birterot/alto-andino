@@ -247,7 +247,7 @@ const nameOf = id => (id && state.names[id]) || null;
 const people = () => Object.keys(state.names).sort((a, b) => state.names[a].localeCompare(state.names[b]));
 // each person's colour: the one they chose in Settings, otherwise the same automatic one as in Recent activity
 const personCol = id => PEOPLE.color(id, nameOf(id), state.prefs, Object.keys(state.names));
-const avatar = id => { const n = nameOf(id) || "?", a = el("span", "av", n.trim()[0].toUpperCase()); a.style.background = personCol(id); a.setAttribute("aria-hidden", "true"); return a; };
+const avatar = id => PEOPLE.avatar(id, nameOf(id) || "?", personCol(id));   // their photo, or their initial in their colour
 const shown = (a, v) => SCALE.isCore(a) ? v - 5 : v;   // stored -> -5..+5 for the four core flavours
 
 // Several people can rate one brew. With "Rated by" set, a brew counts with that person's stars and taste
@@ -1070,7 +1070,7 @@ async function loadMine() {
   const [cs, bs, ps, sl] = await Promise.all([
     (hh ? cq.eq("household_id", hh) : cq).order("created_at", { ascending: false }),
     db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,drank_at), brew_scores(attribute,score,rating_id)").order("brewed_at"),
-    db.from("profiles").select("id,display_name,prefs"),
+    db.from("profiles").select("id,display_name,prefs,photo_path").then(r => r.error ? db.from("profiles").select("id,display_name,prefs") : r),   // photos: after supabase/34_friends_more.sql
     db.from("sleep_logs").select("night,quality")   // your own answers to the Sleep check (only you can read them); before supabase/31_sleep.sql: an error, left out
   ]);
   $("msg").textContent = "";
@@ -1078,6 +1078,7 @@ async function loadMine() {
   state.coffees = cs.data.map(c => Object.assign({}, c, { bag_g: c.bag_size_g || null }));
   state.names = {}; state.prefs = {};
   (ps.data || []).forEach(p => { state.names[p.id] = p.display_name; state.prefs[p.id] = p.prefs || {}; });
+  const ph = {}; (ps.data || []).forEach(p => { if ("photo_path" in p) ph[p.id] = p.photo_path; }); PEOPLE.photos(db, ph);
   const ids = new Set(state.coffees.map(c => c.id));
   state.raw = bs.data.filter(b => ids.has(b.coffee_id));
   state.brews = shape(state.raw, state.coffees);
