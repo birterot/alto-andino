@@ -5,6 +5,8 @@
 //   { action: "test" }                             -> a test notification to your own phones
 //   { action: "brew", brew_id, ratings: [ids] }    -> "Andrés made you a coffee" to the people the brew is for
 //   { action: "rated", rating_id }                 -> "Birte rated your coffee" to the person who made the brew (supabase/35)
+//   { action: "event", kind, ref, what }           -> household and friends news (supabase/35): a brew (kind "brewed": the household
+//                                                     and friends), a coffee or bag, the household changing, a new friend
 // Secrets (Supabase > Edge Functions > Secrets): VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:...)
 // The encryption is written out here (RFC 8291 and 8292) with the browser's own crypto, so nothing else is needed.
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -99,6 +101,25 @@ if (globalThis.Deno) Deno.serve(async req => {
       title: t.rater + " rated your coffee" + (t.rating != null ? ": " + stars(t.rating) : ""),
       body: (t.coffee_name || "A coffee") + dev(t.device) + (t.balance != null ? ", balance " + t.balance + "/5" : "") + ". Tap to see it.",
       url: site + "journal/index.html#c=" + t.coffee_id + "&b=" + t.brew_id, tag: "rated-" + q.rating_id } }));
+  } else if (q.action === "event" && q.kind && q.ref) {
+    const kinds = q.kind === "brewed" ? ["hhbrew", "friendbrew"] : [q.kind];
+    const dev = d => !d ? "" : " on the " + (/^(Manual|Semi-automatic|Moka|French|Pour|Cold|Filter|Fully)\b/.test(d) ? d[0].toLowerCase() + d.slice(1) : d);
+    const J = site + "journal/index.html", HH = J + "#household";
+    const say = (k, t) => {
+      if (k === "hhbrew") return { title: t.actor + " brewed a coffee", body: (t.item || "A coffee") + dev(t.extra) + ".", url: J + "#c=" + t.coffee_id + "&b=" + t.brew_id };
+      if (k === "friendbrew") return { title: t.actor + " (" + t.place + ") brewed a coffee", body: (t.item || "A coffee") + dev(t.extra) + ". Tap to see their coffee.", url: site + "friends/index.html#f=" + t.household_id + "&c=" + t.coffee_id };
+      if (k === "coffee") return { title: { added: t.actor + " added a coffee", bag: t.actor + " got a new bag", opened: t.actor + " opened a bag", finished: t.actor + " finished a bag" }[t.extra] || t.actor + " changed a coffee",
+        body: (t.item || "A coffee") + ({ added: " is on your shelf now.", bag: " is on your shelf again.", opened: ": the first cups are waiting.", finished: " is empty. Time for a new one?" }[t.extra] || "."), url: J + "#c=" + t.coffee_id };
+      if (k === "household") return { title: { joined: t.actor + " joined " + t.place, left: t.actor + " left " + t.place, renamed: t.actor + " renamed your household", sharing: t.actor + " changed what your friends see", until: t.actor + " changed how long someone stays" }[t.extra] || t.place + " changed",
+        body: { joined: "Say hello with a coffee.", left: "Their brews stay on the shelf.", renamed: "It is now called " + t.place + ".", sharing: "In " + t.place + ". Have a look at the sharing switches.", until: "In " + t.place + ". See the members." }[t.extra] || "", url: t.extra === "sharing" ? site + "friends/index.html" : HH };
+      if (k === "friend") return { title: t.place + " are now your friends", body: t.actor + " used your friend link. See what they brew.", url: site + "friends/index.html#f=" + t.household_id };
+      return null;
+    };
+    for (const k of kinds) {
+      const { data, error } = await db.rpc("push_event_targets", { p_kind: k, p_ref: q.ref, p_what: q.what || null });
+      if (error) return json({ error: error.message }, 500);
+      (data || []).forEach(t => { const m = say(k, t); if (m) targets.push({ s: t, msg: { ...m, tag: k + "-" + q.ref + (q.what ? "-" + q.what : "") } }); });
+    }
   } else return json({ error: "Unknown action." }, 400);
   await Promise.all(targets.map(async t => {
     try {

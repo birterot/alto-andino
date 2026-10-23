@@ -1531,13 +1531,13 @@ function confirmSave(title, rows, okText, note) {
 function bagActions(c, done) {
   const out = [], set = async (row, msg) => {
     const { error } = await db.from("coffees").update(row).eq("id", c.id);
-    if (error) { say("Could not update: " + error.message); return; }
-    if (msg) say(msg); done();
+    if (error) { say("Could not update: " + error.message); return false; }
+    if (msg) say(msg); done(); return true;
   };
   // buttons say what they do ("Mark as …"), the card's text above says how the bag is now
-  if (!c.open_date) out.push(abtn("btn ghost", "Mark as opened today", "calday", () => set({ open_date: todayIso() }, "Marked as opened today.")));
+  if (!c.open_date) out.push(abtn("btn ghost", "Mark as opened today", "calday", () => set({ open_date: todayIso() }, "Marked as opened today.").then(ok => ok && tell("coffee", c.id, "opened"))));
   if (c.open_date && !c.finished_at) out.push(abtn("btn ghost", "Mark as finished", "flag", () => {
-    if (confirm("Mark this bag of \"" + c.name + "\" as finished? The grams left are no longer shown. You can undo it.")) set({ finished_at: todayIso() }, "Marked as finished. Time for a new bag?");
+    if (confirm("Mark this bag of \"" + c.name + "\" as finished? The grams left are no longer shown. You can undo it.")) set({ finished_at: todayIso() }, "Marked as finished. Time for a new bag?").then(ok => ok && tell("coffee", c.id, "finished"));
   }));
   if (c.finished_at) out.push(abtn("btn ghost", "Undo finished", "undo", () => set({ finished_at: null }, "Not finished after all.")));
   return out;
@@ -1756,6 +1756,7 @@ $("cf").onsubmit = async e => {
       const { data: made, error } = await db.from("coffees").insert(row).select().single();
       if (error) throw error;
       newId = made && made.id;
+      if (newId) tell("coffee", newId, newBagOf ? "bag" : "added");
     }
     const after = logAfter;
     const onPage = $("addbox").parentNode === $("dedithost") && cur;
@@ -1786,6 +1787,8 @@ function wyFollow() {
 ["b-water", "b-yield"].forEach(id => $(id).addEventListener("input", e => { if (!e.isTrusted) return; wyLead = id === "b-water" ? "water" : "yield"; wyFollow(); }));
 $("b-dose").addEventListener("input", e => { if (e.isTrusted) wyFollow(); });
 const BF = ["b-when", "b-madeby", "b-device", "b-preheat", "b-device-new", "b-grinder", "b-grind", "b-feel", "b-pressure", "b-pibar", "b-pis", "b-dose", "b-water", "b-yield", "b-temp", "b-time", "b-recipe", "b-notes"];
+// news for the others (household and friends): a notification on their phones, if they want that kind (Settings); never in the way
+const tell = (kind, ref, what) => { try { return db.functions.invoke("notify", { body: { action: "event", kind, ref, what: what || null } }).catch(() => {}); } catch (e) { return Promise.resolve(); } };
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
@@ -3420,6 +3423,7 @@ $("bf").onsubmit = async e => {
     } catch (err) { if (!editingBrew) await db.from("brews").delete().eq("id", id); throw err; }
     // the others it is for get a notification on their phones (if they turned them on); never in the way of saving
     if (told.length) try { db.functions.invoke("notify", { body: { action: "brew", brew_id: id, ratings: told } }).catch(() => {}); } catch (e) {}
+    if (!editingBrew) tell("brewed", id);   // the rest of the household (and friends) who asked for it
     store.del(draftKey()); store.del("alto.calc.last");   // used up
     if (device) store.set("alto.device", device);
     if (row.grinder) store.set("alto.grinder", row.grinder);
@@ -3475,13 +3479,16 @@ async function tryPendingJoin() {
   try { localStorage.removeItem("alto.join"); } catch (e) {}
   const { data, error } = await db.rpc("join_household", { p_code: code });
   if (error) { say("Could not join: " + error.message); return; }
-  store.set("alto.household", data);
+  store.set("alto.household", data); tell("household", data, "joined");
   await loadHouseholds();
   say("You joined " + ((hhs.find(x => x.id === data) || {}).name || "the household") + ".");
 }
 async function hhAction(fn, args, done) {
+  if (fn === "leave_household") await Promise.race([tell("household", args.p_household, "left"), new Promise(ok => setTimeout(ok, 4000))]);   // before: afterwards you are not in it any more
   const { data, error } = await db.rpc(fn, args);
   if (error) { say(error.message); return null; }
+  const news = { join_household: "joined", rename_household: "renamed", set_member_until: "until" }[fn];
+  if (news) tell("household", fn === "join_household" ? data : args.p_household, news);
   await loadHouseholds(); await loadNames(); if (done) done(data);
   renderHousehold(); route();
   return data;

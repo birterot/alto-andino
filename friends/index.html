@@ -330,6 +330,7 @@ async function showAccept() {
     const r = await db.rpc("befriend", { p_household: hh, p_code: code });
     $("acYes").disabled = false;
     if (r.error) { say(r.error.message); return; }
+    tell("friend", r.data);   // their household hears about it (if they want)
     store.del("alto.friend"); say("You are now friends with " + data.name + ".");
     location.hash = "f=" + r.data; route();
   };
@@ -593,6 +594,8 @@ async function showRate(rid) {
     say("Saved. " + c.maker + " sees your rating now.");
   };
 }
+// news for the others: a notification on their phones, if they want that kind (Settings); never in the way
+function tell(kind, ref, what) { try { db.functions.invoke("notify", { body: { action: "event", kind, ref, what: what || null } }).catch(() => {}); } catch (e) { /* fine without */ } }
 function chev() { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("width", 20); s.setAttribute("height", 20); s.setAttribute("aria-hidden", "true"); const p = document.createElementNS("http://www.w3.org/2000/svg", "path"); p.setAttribute("d", "M9 6l6 6-6 6"); p.setAttribute("fill", "none"); p.setAttribute("stroke", "currentColor"); p.setAttribute("stroke-width", "1.8"); p.setAttribute("stroke-linecap", "round"); s.appendChild(p); return s; }
 let linkUrl = "";
 function showCode(code) {
@@ -616,7 +619,7 @@ document.querySelectorAll("#shares input").forEach(i => i.addEventListener("chan
   const want = {}; document.querySelectorAll("#shares input").forEach(x => { want[x.dataset.k] = x.checked; });
   const r = await db.rpc("set_sharing", { p_household: hh, p_share: want });
   if (r.error) { say("Could not save: " + r.error.message); i.checked = !i.checked; return; }
-  mine.share = r.data; delete stats[hh];
+  mine.share = r.data; delete stats[hh]; tell("household", hh, "sharing");
   say(i.checked ? "Friends can see this now." : "Friends no longer see this.");
 }));
 

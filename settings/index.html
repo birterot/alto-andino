@@ -173,12 +173,11 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
   </section>
   <section class="set" id="pushset" data-tab="notify">
     <h2>Notifications</h2>
-    <p class="hint">On this phone: a notification when someone makes you a coffee (so you can rate your cup), or rates one you made. Each phone is turned on by itself.</p>
+    <p class="hint">On this phone: news from your household and your friends, like a coffee made for you to rate. Each phone is turned on by itself; below you choose what for.</p>
     <p class="pstate" id="pstate" role="status">Checking...</p>
     <div class="pbtns"><button type="button" class="go" id="pon" hidden>Turn on notifications</button><button type="button" class="lnk" id="ptest" hidden>Send a test</button><button type="button" class="lnk" id="poff" hidden>Turn off</button></div>
     <p class="lab">Tell me when</p>
-    <label class="chk"><input type="checkbox" id="n-rate" checked> Someone made me a coffee to rate</label>
-    <label class="chk"><input type="checkbox" id="n-rated" checked> Someone rated a coffee I made</label>
+    <div id="nkinds"></div>
     <p class="hint" id="nmsg" role="status">For all your phones with notifications on. Saved right away.</p>
   </section>
   <section class="set" id="dataset" data-tab="account">
@@ -435,7 +434,7 @@ async function load() {
   if (hasProfile) { $("s-about").value = (data && data.about) || ""; $("s-prof").href = "../friends/index.html#p=" + me.id; photoPath = (data && data.photo_path) || null; drawFace(); }
   const pick = (id, v) => { const s = $(id); s.value = v || ""; if (s.value !== (v || "")) s.value = ""; };
   pick("s-device", p.device); pick("s-grinder", p.grinder); pick("s-drink-esp", p.drink_esp); pick("s-drink-filter", p.drink_filter); pick("s-milk", p.milk);
-  $("n-rate").checked = !(p.notify && p.notify.rate === false); $("n-rated").checked = !(p.notify && p.notify.rated === false);
+  setNotifyBoxes(p.notify);
   document.querySelectorAll("#s-devs button").forEach(b => b.setAttribute("aria-pressed", String((p.devices || []).includes(b.dataset.d)))); syncDevs();
   setFm(p.formmode || "");
   color = (DEFAULTS.COLORS || []).some(c => c[0] === p.color) ? p.color : ""; renderColors();
@@ -516,16 +515,23 @@ async function pushCheck() {
   if (sub) pushUI("On for this phone.", true); else pushUI("Off on this phone.", false);
   if (!pushKey) pushNotify({ action: "key" }).then(d => { pushKey = d && d.key; }).catch(() => {});   // ready before you tap (the iPhone wants the question right away)
 }
-// which notifications you want (for all your phones): saved into your settings at once
-["n-rate", "n-rated"].forEach(id => $(id).addEventListener("change", async () => {
+// which notifications you want (for all your phones): saved into your settings at once. Only what differs from the default is kept.
+const NKINDS = [   // key (as in supabase/35_notify_more.sql), label, on by default
+  ["rate", "Someone made me a coffee to rate", true], ["rated", "Someone rated a coffee I made", true],
+  ["hhbrew", "Someone in my household brewed a coffee", false], ["coffee", "A coffee was added, or a bag bought, opened or finished", true],
+  ["household", "My household changed: someone joined or left, a new name, what friends see", true],
+  ["friend", "We have a new friend household", true], ["friendbrew", "A friend brewed a coffee (one they share)", false]];
+NKINDS.forEach(([k, t, d]) => { const l = el("label", "chk"), i = el("input"); i.type = "checkbox"; i.id = "n-" + k; i.checked = d; l.append(i, document.createTextNode(" " + t)); $("nkinds").appendChild(l); });
+const setNotifyBoxes = n => NKINDS.forEach(([k, , d]) => { $("n-" + k).checked = n && typeof n[k] === "boolean" ? n[k] : d; });
+NKINDS.forEach(([k]) => $("n-" + k).addEventListener("change", async () => {
   if (!profile) { $("nmsg").textContent = "Save your name under \u201CYou\u201D first, then choose here."; return; }
   const prefs = Object.assign({}, profile.prefs || {}), n = {};
-  if (!$("n-rate").checked) n.rate = false; if (!$("n-rated").checked) n.rated = false;
+  NKINDS.forEach(([key, , d]) => { if ($("n-" + key).checked !== d) n[key] = $("n-" + key).checked; });
   if (Object.keys(n).length) prefs.notify = n; else delete prefs.notify;
   $("nmsg").textContent = "Saving...";
   const { error } = await db.from("profiles").update({ prefs }).eq("id", me.id);
   if (error) { $("nmsg").textContent = "Could not save: " + error.message; return; }
-  profile.prefs = prefs; $("nmsg").textContent = "Saved. " + (n.rate && n.rated ? "No notifications from the app for now." : "For all your phones with notifications on.");
+  profile.prefs = prefs; $("nmsg").textContent = "Saved. " + (NKINDS.every(([key]) => !$("n-" + key).checked) ? "No notifications from the app for now." : "For all your phones with notifications on.");
 }));
 $("pon").onclick = async () => {
   try {
