@@ -1080,12 +1080,13 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
   if (c.roast_date) b.appendChild(el("p", "", "Roasted " + ago(c.roast_date) + " (" + fmtD(c.roast_date) + ")"));
   else if (c.purchase_date) b.appendChild(el("p", "", "Bought " + ago(c.purchase_date) + " (" + fmtD(c.purchase_date) + "), roast date unknown"));
   if (c.open_date) b.appendChild(el("p", "", "Opened " + ago(c.open_date) + " (" + fmtD(c.open_date) + ")"));
+  else b.appendChild(el("p", "", "Not opened yet"));
   if (c.finished_at) b.appendChild(el("p", "fin", "Finished on " + fmtD(c.finished_at)));
   if (c.bag_size_g && c.open_date && !c.finished_at) b.appendChild(bagMeter(c, Math.max(0, c.bag_size_g - (coffeeUsed[c.id] || 0))));
   if (c.notes) b.appendChild(el("p", "", c.notes));
   const acts = el("div", "acts");
   // the coffee's page (logging a brew is the cup in the top bar, or the button on that page)
-  acts.appendChild(abtn("btn", nBrews ? "Brews (" + nBrews + ")" : "Open", "brew", () => { location.hash = "c=" + c.id; }));
+  acts.appendChild(abtn("btn", nBrews ? "Brews (" + nBrews + ")" : "Details", "brew", () => { location.hash = "c=" + c.id; }));
   const bl = buyLink(c); if (bl) acts.appendChild(bl);
   acts.appendChild(abtn("btn ghost", "New bag", "plus", () => startNewBag(c)));
   bagActions(c, load).forEach(x => acts.appendChild(x));
@@ -1515,11 +1516,12 @@ function bagActions(c, done) {
     if (error) { say("Could not update: " + error.message); return; }
     if (msg) say(msg); done();
   };
-  if (!c.open_date) out.push(abtn("btn ghost", "Opened today", "check", () => set({ open_date: todayIso() }, "Opened today.")));
-  if (c.open_date && !c.finished_at) out.push(abtn("btn ghost", "Finished", "check", () => {
+  // buttons say what they do ("Mark as …"), the card's text above says how the bag is now
+  if (!c.open_date) out.push(abtn("btn ghost", "Mark as opened today", "bag", () => set({ open_date: todayIso() }, "Marked as opened today.")));
+  if (c.open_date && !c.finished_at) out.push(abtn("btn ghost", "Mark as finished", "bag", () => {
     if (confirm("Mark this bag of \"" + c.name + "\" as finished? The grams left are no longer shown. You can undo it.")) set({ finished_at: todayIso() }, "Marked as finished. Time for a new bag?");
   }));
-  if (c.finished_at) out.push(abtn("btn ghost", "Not finished", "close", () => set({ finished_at: null }, "Not finished after all.")));
+  if (c.finished_at) out.push(abtn("btn ghost", "Undo finished", "close", () => set({ finished_at: null }, "Not finished after all.")));
   return out;
 }
 // on a coffee's page: whether friends see it (on their side: its photo, stars, notes and best recipe)
