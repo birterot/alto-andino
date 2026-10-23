@@ -210,7 +210,7 @@ h3.sh{font-size:16px;margin:26px 0 2px}
 .bc .rt .rh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .bc .rt .rn{font-size:14px;color:var(--mut)}
 .bc .rt .tags{margin-top:4px}
-.bc .rt .npills{margin-top:6px;padding-top:6px}
+.bc .rt .tags.notes{margin-top:6px;padding-top:6px}
 .bc .rby{font-size:14px;color:var(--mut);margin-left:8px}
 .bc .rby .pt{margin-left:3px}
 .fi .rr span.rx{display:inline;gap:0}
@@ -376,9 +376,7 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .bc .age,.bc .set{color:var(--mut)}
 .bc .tags{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:10px}
 .bc .tags.core{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px 12px}
-.bc .npills{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
-.bc .npills svg{color:var(--mut);flex:none;margin-right:2px}
-.bc .np{font-size:13.5px;line-height:1.2;padding:4px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--ink)}
+.bc .tags.notes{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
 .bc .acts{display:flex;gap:8px;margin-top:6px}
 .bc .ib{color:var(--mut)}
 .bc .ibs{position:relative}
@@ -3017,10 +3015,9 @@ function brewCard(b) {
       core.forEach(([k, v]) => { const ch = el("span", "chip"); ch.style.setProperty("--ac", attrColor(k)); ch.append(ico(attrIcon(k), 14), document.createTextNode((k === "balance" ? "balance (old scale) " : k + " ") + SCALE.text(k, v))); t.appendChild(ch); });
       box.appendChild(t);
     }
-    if (notes.length) {
-      const n = el("div", "npills"); n.appendChild(ico("leaf", 15));
-      notes.forEach(k => n.appendChild(el("span", "np", k)));
-      n.setAttribute("aria-label", "Tasting notes: " + notes.join(", "));
+    if (notes.length) {   // like in the form: the leaf and the name
+      const n = el("div", "tags core notes"); n.setAttribute("aria-label", "Tasting notes");
+      notes.forEach(k => { const ch = el("span", "chip"); ch.style.setProperty("--ac", attrColor(k)); ch.append(ico(attrIcon(k), 14), document.createTextNode(k)); n.appendChild(ch); });
       box.appendChild(n);
     }
     return box;
