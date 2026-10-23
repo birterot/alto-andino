@@ -27,6 +27,16 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .stabs button{flex:none;min-height:40px;padding:0 16px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font:inherit;font-size:14.5px;cursor:pointer;white-space:nowrap}
 .stabs button[aria-current=true]{border-color:var(--act);background:var(--act);color:var(--on-act);font-weight:600}
 [data-tab][hidden],.bar[hidden]{display:none}
+.cropdlg{border:0;border-radius:18px;padding:18px 18px 16px;width:min(92vw,380px);background:var(--card);color:var(--ink)}
+.cropdlg::backdrop{background:rgba(0,0,0,.55)}
+.cropdlg h3{margin:0 0 4px;font-size:19px}
+.cropstage{position:relative;width:100%;aspect-ratio:1;margin-top:12px;border-radius:12px;overflow:hidden;background:#222;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.cropstage:active{cursor:grabbing}
+.cropstage canvas{position:absolute;inset:0;width:100%;height:100%}
+.cropring{position:absolute;inset:6%;border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.85);pointer-events:none}
+.cropzoom{display:flex;align-items:center;gap:12px;margin-top:14px}
+.cropzoom input{flex:1;height:auto;margin:0;padding:0;border:0;background:none;accent-color:var(--act)}
+.cropbtns{display:flex;align-items:center;gap:12px;margin-top:14px}
 .devs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .devs button{min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
 .devs button[aria-pressed=true]{border-color:var(--act);background:var(--act);color:var(--on-act)}
@@ -66,6 +76,9 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
 .lnk.danger{color:#b0412e;border-color:#e3b9ae}
 .delbox{margin-top:10px;padding:12px 14px;border:1px solid #e3b9ae;border-radius:12px;max-width:52ch}
 .delbox p{font-size:14.5px;line-height:1.45}
+#ddlist label.chk{margin-top:10px}
+#ddlist .warn{display:block;color:#b0412e;font-size:13px;margin-top:2px}
+#ddlist .n{color:var(--mut);font-size:13.5px}
 .dangerbtn{background:#b0412e;border-color:#b0412e;color:#fff}
 .dangerbtn:disabled{opacity:.45}
 .pstate{margin:12px 0 0;font-size:15px;max-width:52ch}
@@ -184,7 +197,15 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
     <h2>Your data</h2>
     <p class="hint">What the app stores and who helps run it: <a href="../privacy.html">Privacy</a>.</p>
     <p><button type="button" class="lnk" id="export">Download my data</button> <span class="hint" id="exportmsg" role="status"></span></p>
-    <p><button type="button" class="lnk danger" id="delacc">Delete my account&hellip;</button></p>
+    <p><button type="button" class="lnk danger" id="deldata">Delete some of my data&hellip;</button> <button type="button" class="lnk danger" id="delacc">Delete my account&hellip;</button></p>
+    <div class="delbox" id="ddbox" hidden>
+      <p><strong>Your account stays.</strong> Tick what should go; your login, your name and your households stay. This cannot be undone.</p>
+      <div id="ddlist"></div>
+      <p class="hint">Want a copy first? “Download my data” above.</p>
+      <label>Type <b>delete</b> to confirm<input id="ddword" autocomplete="off" autocapitalize="none"></label>
+      <p><button type="button" class="go dangerbtn" id="ddgo" disabled>Delete what I ticked</button> <button type="button" class="lnk" id="ddno">Keep everything</button></p>
+      <p class="hint" id="ddmsg" role="status"></p>
+    </div>
     <div class="delbox" id="delbox" hidden>
       <p><strong>This cannot be undone.</strong> Your login, your name and settings, your sleep answers, your notification phones and your feedback go. So does every household you are the only member of, with all its coffees, photos and brews. In households you share, the coffees and brews stay for the others, without your name.</p>
       <p class="hint">Want a copy first? “Download my data” above.</p>
@@ -198,6 +219,13 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
   <p class="foot" data-tab="account"><span id="who"></span> <button class="lnk" id="tour" type="button">Show the tour again</button> <button class="lnk" id="out" type="button">Sign out</button></p>
 </form>
 </main>
+<dialog class="cropdlg" id="cropdlg" aria-labelledby="croph">
+  <h3 id="croph">Fit your photo</h3>
+  <p class="hint">Drag to move it. Pinch, or use the slider, to zoom. What is in the circle is your photo.</p>
+  <div class="cropstage" id="cropstage"><canvas id="cropc"></canvas><div class="cropring" aria-hidden="true"></div></div>
+  <label class="cropzoom">Zoom<input type="range" id="cropz" min="1" max="4" step="0.01" value="1"></label>
+  <div class="cropbtns"><button type="button" class="go" id="cropok">Use this photo</button><button type="button" class="lnk" id="cropno">Cancel</button></div>
+</dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script src="../assets/js/config.js"></script>
 <script src="../assets/js/lists.js"></script>
@@ -296,7 +324,7 @@ $("export").onclick = async () => {
     $("exportmsg").textContent = "Done: " + out.coffees.length + " coffees, " + out.brews.length + " brews.";
   } catch (e) { $("exportmsg").textContent = "Could not collect it: " + e.message; }
 };
-$("delacc").onclick = () => { $("delbox").hidden = false; $("delword").value = ""; $("delgo").disabled = true; $("delword").focus(); };
+$("delacc").onclick = () => { $("ddbox").hidden = true; $("delbox").hidden = false; $("delword").value = ""; $("delgo").disabled = true; $("delword").focus(); };
 $("delno").onclick = () => { $("delbox").hidden = true; };
 $("delword").addEventListener("input", () => { $("delgo").disabled = $("delword").value.trim().toLowerCase() !== "delete"; });
 $("delgo").onclick = async () => {
@@ -322,6 +350,67 @@ $("delgo").onclick = async () => {
     await db.auth.signOut().catch(() => {});
     location.replace("../journal/index.html#deleted");
   } catch (e) { $("delmsg").textContent = "Could not delete: " + (e.message || e) + (/function|schema cache/.test(e.message || "") ? " (supabase/32_privacy.sql has not run yet)" : ""); $("delgo").disabled = false; }
+};
+// Delete some of your data, keep the account (supabase/36_delete_my_data.sql)
+const DD = [   // key, label, a warning when it also takes things from the others
+  ["ratings", "My ratings: stars, Balance and tasting notes", null], ["sleep", "My sleep answers", null],
+  ["brews", "The brews I made", "Also gone for the others in your household, with their ratings of them."],
+  ["coffees", "The coffees I added", "Also gone for the others in your household, with all their brews and photos."],
+  ["cuppings", "My cupping scores", null], ["feedback", "What I sent with Feedback", null],
+  ["profile", "My profile photo and the line about me", null], ["settings", "My settings (my name stays)", null], ["phones", "My phones with notifications", null]];
+DD.forEach(([k, t, w]) => {
+  const l = el("label", "chk"), i = el("input"), sp = el("span"); i.type = "checkbox"; i.id = "dd-" + k;
+  sp.append(document.createTextNode(t + " "), el("span", "n", "")); if (w) sp.appendChild(el("span", "warn", w));
+  l.append(i, sp); $("ddlist").appendChild(l);
+  i.addEventListener("change", ddReady);
+});
+function ddReady() { $("ddgo").disabled = !(DD.some(([k]) => $("dd-" + k).checked) && $("ddword").value.trim().toLowerCase() === "delete"); }
+$("ddword").addEventListener("input", ddReady);
+$("ddno").onclick = () => { $("ddbox").hidden = true; };
+$("deldata").onclick = async () => {
+  $("ddbox").hidden = false; $("delbox").hidden = true; $("ddword").value = ""; $("ddmsg").textContent = ""; DD.forEach(([k]) => { $("dd-" + k).checked = false; }); ddReady();
+  // how much there is of each (left out where it cannot be counted)
+  const cnt = q => q.then(r => r.error ? null : r.count, () => null), H = { count: "exact", head: true }, id = me.id;
+  const [ra, sl, br, co, cu, fb, ph] = await Promise.all([
+    cnt(db.from("brew_ratings").select("id", H).eq("rater_id", id).eq("is_guest", false)),
+    cnt(db.from("sleep_logs").select("night", H).eq("user_id", id)),
+    cnt(db.from("brews").select("id", H).or("made_by.eq." + id + ",and(made_by.is.null,created_by.eq." + id + ")")),
+    cnt(db.from("coffees").select("id", H).eq("created_by", id)),
+    cnt(db.from("cuppings").select("id", H).eq("cupper_id", id).eq("is_guest", false)),
+    cnt(db.from("feedback").select("id", H).eq("user_id", id)),
+    cnt(db.from("push_subscriptions").select("endpoint", H))]);
+  const n = { ratings: ra, sleep: sl, brews: br, coffees: co, cuppings: cu, feedback: fb, phones: ph };
+  DD.forEach(([k]) => { const s = $("dd-" + k).parentNode.querySelector(".n"); s.textContent = typeof n[k] === "number" ? "(" + n[k] + ")" : ""; });
+};
+$("ddgo").onclick = async () => {
+  const what = DD.map(([k]) => k).filter(k => $("dd-" + k).checked); if (!what.length) return;
+  $("ddgo").disabled = true; $("ddmsg").textContent = "Deleting...";
+  try {
+    // the photo files first (the database does not remove files)
+    if (what.includes("coffees")) {
+      const { data: cs } = await db.from("coffees").select("photo_path,created_by").not("photo_path", "is", null);
+      const keep = new Set((cs || []).filter(c => c.created_by !== me.id).map(c => c.photo_path));   // a new bag can share the photo of an older one
+      const paths = [...new Set((cs || []).filter(c => c.created_by === me.id && !keep.has(c.photo_path)).map(c => c.photo_path))].flatMap(p => [p, String(p).replace(/\.jpe?g$/i, "") + "-t.jpg"]);
+      if (paths.length) await db.storage.from("bag-photos").remove(paths);
+    }
+    if (what.includes("profile")) { try { const { data: av } = await db.storage.from("avatars").list(me.id); const ps = (av || []).map(x => me.id + "/" + x.name); if (ps.length) await db.storage.from("avatars").remove(ps); } catch (e) { /* the photo link goes anyway */ } }
+    if (what.includes("feedback")) { const { data: f } = await db.from("feedback").select("photo_path").eq("user_id", me.id); const shots = (f || []).map(x => x.photo_path).filter(Boolean); if (shots.length) await db.storage.from("feedback").remove(shots); }
+    if (what.includes("phones")) { try { const reg = await navigator.serviceWorker.getRegistration("../"); const sub = reg && await reg.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); } catch (e) { /* this phone may have none */ } }
+    const { data, error } = await db.rpc("delete_my_data", { p_what: what });
+    if (error) throw error;
+    // what this phone keeps for itself
+    try {
+      const drop = k => localStorage.removeItem(k);
+      if (what.includes("settings")) ["alto.cafpref", "alto.homehide", "alto.homeorder", "alto.mydevs", "alto.formmode", "alto.device", "alto.grinder"].forEach(drop);
+      if (["ratings", "sleep", "brews", "coffees"].some(k => what.includes(k))) drop("alto.shelf.v1");   // Home builds it again
+    } catch (e) { /* only shortcuts */ }
+    const L = { ratings: ["rating", "ratings"], sleep: ["sleep answer", "sleep answers"], brews: ["brew", "brews"], coffees: ["coffee", "coffees"], cuppings: ["cupping score", "cupping scores"], feedback: ["feedback", "feedback"], phones: ["phone", "phones"] };
+    const said = Object.entries(data || {}).filter(([k]) => L[k]).map(([k, v]) => v + " " + L[k][v === 1 ? 0 : 1]);
+    if (what.includes("profile")) said.push("your photo and line"); if (what.includes("settings")) said.push("your settings");
+    $("ddmsg").textContent = "Deleted: " + (said.join(", ") || "nothing was there") + ".";
+    $("ddword").value = ""; DD.forEach(([k]) => { $("dd-" + k).checked = false; }); ddReady();
+    load(); if (what.includes("phones")) pushCheck();
+  } catch (e) { $("ddmsg").textContent = "Could not delete: " + (e.message || e) + (/function|schema cache/.test(e.message || "") ? " (supabase/36_delete_my_data.sql has not run yet)" : ""); $("ddgo").disabled = false; }
 };
 $("sleepdel").onclick = async () => {
   if (!confirm("Delete all your sleep answers? The Sleep check starts again from zero.")) return;
@@ -393,24 +482,70 @@ function drawFace() {
   $("s-photo").textContent = photoPath ? "Change photo" : "Add a photo"; $("s-photo-x").hidden = !photoPath;
   if (photoPath) db.storage.from("avatars").createSignedUrl(photoPath, 3600).then(({ data }) => { if (data && data.signedUrl) { f.textContent = ""; f.style.backgroundImage = "url(\"" + data.signedUrl + "\")"; } });
 }
-function smallJpeg(file, size) {
+// Fit the photo to the circle: drag it, pinch or slide to zoom; what is inside the ring becomes a square photo (the circle cuts it the same everywhere)
+function cropPhoto(file, size) {
   return new Promise((ok, no) => {
     const img = new Image(), u = URL.createObjectURL(file);
-    img.onload = () => {
-      const s = Math.min(img.width, img.height), c = document.createElement("canvas"); c.width = c.height = size;
-      c.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);   // a square from the middle
-      URL.revokeObjectURL(u); c.toBlob(b => b ? ok(b) : no(new Error("could not read the photo")), "image/jpeg", 0.85);
-    };
     img.onerror = () => { URL.revokeObjectURL(u); no(new Error("this file is not a photo")); };
+    img.onload = () => {
+      const dlg = $("cropdlg"), stage = $("cropstage"), cv = $("cropc"), zs = $("cropz");
+      dlg.showModal();
+      const S = stage.clientWidth, dpr = window.devicePixelRatio || 1, R = 0.06 * S;   // the ring sits 6% in from each side
+      cv.width = Math.round(S * dpr); cv.height = Math.round(S * dpr);
+      const g = cv.getContext("2d"), W = img.naturalWidth, H = img.naturalHeight;
+      const base = (S - 2 * R) / Math.min(W, H);   // zoom 1: the photo just fills the ring
+      let z = 1, x = 0, y = 0;
+      const sc = () => base * z;
+      const clamp = () => {   // the ring always stays covered
+        const w = W * sc(), h = H * sc();
+        x = Math.min(R, Math.max(S - R - w, x)); y = Math.min(R, Math.max(S - R - h, y));
+      };
+      const draw = () => { g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, S, S); g.drawImage(img, x, y, W * sc(), H * sc()); };
+      const zoomTo = (nz, cx, cy) => {   // zoom about a point (the middle, or between two fingers)
+        nz = Math.min(4, Math.max(1, nz)); const k = nz / z;
+        x = cx - (cx - x) * k; y = cy - (cy - y) * k; z = nz; clamp(); zs.value = String(z); draw();
+      };
+      x = (S - W * sc()) / 2; y = (S - H * sc()) / 2; zs.value = "1"; clamp(); draw();
+      const pts = new Map(); let last = null;
+      const pos = e => { const r = stage.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+      const pinch = () => { const [a, b] = [...pts.values()]; return { d: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 }; };
+      const down = e => { stage.setPointerCapture(e.pointerId); pts.set(e.pointerId, pos(e)); last = pts.size === 2 ? pinch() : null; };
+      const move = e => {
+        if (!pts.has(e.pointerId)) return;
+        const p0 = pts.get(e.pointerId), p = pos(e); pts.set(e.pointerId, p);
+        if (pts.size === 1) { x += p.x - p0.x; y += p.y - p0.y; clamp(); draw(); }
+        else if (pts.size === 2 && last) { const n = pinch(); zoomTo(z * n.d / last.d, n.cx, n.cy); last = n; }
+      };
+      const up = e => { pts.delete(e.pointerId); last = pts.size === 2 ? pinch() : null; };
+      const wheel = e => { e.preventDefault(); const p = pos(e); zoomTo(z * Math.exp(-e.deltaY / 400), p.x, p.y); };
+      const slide = () => zoomTo(Number(zs.value), S / 2, S / 2);
+      stage.addEventListener("pointerdown", down); stage.addEventListener("pointermove", move);
+      stage.addEventListener("pointerup", up); stage.addEventListener("pointercancel", up); stage.addEventListener("wheel", wheel, { passive: false });
+      zs.addEventListener("input", slide);
+      const done = blob => {
+        stage.removeEventListener("pointerdown", down); stage.removeEventListener("pointermove", move);
+        stage.removeEventListener("pointerup", up); stage.removeEventListener("pointercancel", up); stage.removeEventListener("wheel", wheel);
+        zs.removeEventListener("input", slide); dlg.onclose = null; if (dlg.open) dlg.close(); URL.revokeObjectURL(u); ok(blob);
+      };
+      $("cropno").onclick = () => done(null);
+      dlg.onclose = () => done(null);   // Esc
+      $("cropok").onclick = () => {
+        const out = document.createElement("canvas"); out.width = out.height = size;
+        const s = sc(); out.getContext("2d").drawImage(img, (R - x) / s, (R - y) / s, (S - 2 * R) / s, (S - 2 * R) / s, 0, 0, size, size);
+        out.toBlob(b => done(b), "image/jpeg", 0.88);
+      };
+    };
     img.src = u;
   });
 }
 $("s-photo").onclick = () => $("s-photo-f").click();
 $("s-photo-f").onchange = async () => {
   const f = $("s-photo-f").files[0]; $("s-photo-f").value = ""; if (!f) return;
+  let fitted; try { fitted = await cropPhoto(f, 320); } catch (e) { $("photomsg").textContent = "Could not read the photo: " + e.message; return; }
+  if (!fitted) { $("photomsg").textContent = "No new photo."; return; }
   $("photomsg").textContent = "Uploading...";
   try {
-    const blob = await smallJpeg(f, 320), path = me.id + "/" + Date.now() + ".jpg";
+    const blob = fitted, path = me.id + "/" + Date.now() + ".jpg";
     const up = await db.storage.from("avatars").upload(path, blob, { contentType: "image/jpeg" }); if (up.error) throw up.error;
     const { error } = await db.from("profiles").update({ photo_path: path }).eq("id", me.id); if (error) throw error;
     if (photoPath) db.storage.from("avatars").remove([photoPath]).catch(() => {});

@@ -1155,6 +1155,10 @@ async function load() {
   coffeeCups = {}; cupRows.forEach(r => { if (r.total != null) (coffeeCups[r.coffee_id] = coffeeCups[r.coffee_id] || []).push(Number(r.total)); });
   const uniq = k => [...new Set(data.map(c => c[k]).filter(Boolean))];
   fill("f-process", Object.keys(PAL), uniq("process")); fill("f-roast", window.LISTS.roast, [], true);
+  // bags that were brewed with but never marked as opened (from before this was automatic): opened on the day of their first brew
+  const first = {}; (bs || []).forEach(b => { if (b.brewed_at && !first[b.coffee_id]) first[b.coffee_id] = b.brewed_at; });   // brews come oldest first
+  const late = data.filter(c => !c.open_date && !c.finished_at && !c.archived && first[c.id]);
+  late.forEach(c => { const d = new Date(first[c.id]); c.open_date = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); db.from("coffees").update({ open_date: c.open_date }).eq("id", c.id).is("open_date", null).then(() => {}, () => {}); });
   coffeeData = data; coffeeCounts = counts; coffeeRates = rates; coffeeUsed = used;
   // the brews of the last day and a half, for the caffeine on Home (assets/js/caffeine.js; they count for whoever they were for)
   const byId = {}, since = Date.now() - 36 * 3600e3; data.forEach(c => { byId[c.id] = c; });
@@ -3410,6 +3414,12 @@ $("bf").onsubmit = async e => {
       const { data: b, error } = await db.from("brews").insert({ ...row, coffee_id: cur.id, created_by: me.id }).select().single();
       if (error) throw error;
       id = b.id;
+      // the first brew of a bag nobody marked as opened: it is open now (from the day of that brew), so Home and the shelf show it
+      if (!cur.open_date && !cur.finished_at) {
+        const d = new Date(b.brewed_at || Date.now()), day = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+        const u = await db.from("coffees").update({ open_date: day }).eq("id", cur.id).is("open_date", null);
+        if (!u.error) cur.open_date = day;
+      }
     }
     try {
       for (const t of tasterRows()) {   // one rating per taster (empty: still to rate), then that taster's scores
