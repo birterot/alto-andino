@@ -931,6 +931,7 @@ const ICONS = {
   bag: "M6.5 8h11l1 12.5h-13z M9 8V6.5a3 3 0 016 0V8",
   zoom: "M10.5 17a6.5 6.5 0 100-13 6.5 6.5 0 000 13z M15.2 15.2L20 20 M10.5 8v5 M8 10.5h5",
   plus: "M12 5v14 M5 12h14",
+  brew: "M3.5 11h12v3.5a5 5 0 01-5 5h-2a5 5 0 01-5-5V11z M15.5 12.5h1.3a2.3 2.3 0 010 4.6h-1.6 M3 22h14 M19 2.5v6 M16 5.5h6",   // a cup with a plus: log a new brew (as in the header, Home and the calculator)
   check: "M4.5 12.5l5 5L19.5 7",
   cup: "M5 9h11v5a5 5 0 01-5 5h-1a5 5 0 01-5-5V9z M16 10h2a2 2 0 010 4h-2 M8 3v3 M12 3v3",
   cart: "M3 4h2.5l2 11h10.5l2-8H6.8 M9.5 19.5h.01 M17 19.5h.01",
@@ -2951,7 +2952,7 @@ function syncNewBrew() {
   const open = $("brewbox").open, b = $("newbrew"); b.textContent = "";
   b.setAttribute("aria-expanded", String(open));
   if (open) b.append(ico("close", 16), el("span", "", editingBrew ? "Close without saving" : "Close form"));
-  else b.append(ico("plus", 16), el("span", "", draftWasRestored && !editingBrew ? "Continue your brew" : "Log a brew"));
+  else b.append(ico("brew", 16), el("span", "", draftWasRestored && !editingBrew ? "Continue your brew" : "Log a brew"));
 }
 $("newbrew").onclick = () => {
   if ($("brewbox").open) { if (editingBrew) newBrewSetup(); $("brewbox").open = false; }
