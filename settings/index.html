@@ -27,6 +27,16 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .stabs button{flex:none;min-height:40px;padding:0 16px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font:inherit;font-size:14.5px;cursor:pointer;white-space:nowrap}
 .stabs button[aria-current=true]{border-color:var(--act);background:var(--act);color:var(--on-act);font-weight:600}
 [data-tab][hidden],.bar[hidden]{display:none}
+.cropdlg{border:0;border-radius:18px;padding:18px 18px 16px;width:min(92vw,380px);background:var(--card);color:var(--ink)}
+.cropdlg::backdrop{background:rgba(0,0,0,.55)}
+.cropdlg h3{margin:0 0 4px;font-size:19px}
+.cropstage{position:relative;width:100%;aspect-ratio:1;margin-top:12px;border-radius:12px;overflow:hidden;background:#222;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.cropstage:active{cursor:grabbing}
+.cropstage canvas{position:absolute;inset:0;width:100%;height:100%}
+.cropring{position:absolute;inset:6%;border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.85);pointer-events:none}
+.cropzoom{display:flex;align-items:center;gap:12px;margin-top:14px}
+.cropzoom input{flex:1;height:auto;margin:0;padding:0;border:0;background:none;accent-color:var(--act)}
+.cropbtns{display:flex;align-items:center;gap:12px;margin-top:14px}
 .devs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .devs button{min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
 .devs button[aria-pressed=true]{border-color:var(--act);background:var(--act);color:var(--on-act)}
@@ -198,6 +208,13 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
   <p class="foot" data-tab="account"><span id="who"></span> <button class="lnk" id="tour" type="button">Show the tour again</button> <button class="lnk" id="out" type="button">Sign out</button></p>
 </form>
 </main>
+<dialog class="cropdlg" id="cropdlg" aria-labelledby="croph">
+  <h3 id="croph">Fit your photo</h3>
+  <p class="hint">Drag to move it. Pinch, or use the slider, to zoom. What is in the circle is your photo.</p>
+  <div class="cropstage" id="cropstage"><canvas id="cropc"></canvas><div class="cropring" aria-hidden="true"></div></div>
+  <label class="cropzoom">Zoom<input type="range" id="cropz" min="1" max="4" step="0.01" value="1"></label>
+  <div class="cropbtns"><button type="button" class="go" id="cropok">Use this photo</button><button type="button" class="lnk" id="cropno">Cancel</button></div>
+</dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script src="../assets/js/config.js"></script>
 <script src="../assets/js/lists.js"></script>
@@ -393,24 +410,70 @@ function drawFace() {
   $("s-photo").textContent = photoPath ? "Change photo" : "Add a photo"; $("s-photo-x").hidden = !photoPath;
   if (photoPath) db.storage.from("avatars").createSignedUrl(photoPath, 3600).then(({ data }) => { if (data && data.signedUrl) { f.textContent = ""; f.style.backgroundImage = "url(\"" + data.signedUrl + "\")"; } });
 }
-function smallJpeg(file, size) {
+// Fit the photo to the circle: drag it, pinch or slide to zoom; what is inside the ring becomes a square photo (the circle cuts it the same everywhere)
+function cropPhoto(file, size) {
   return new Promise((ok, no) => {
     const img = new Image(), u = URL.createObjectURL(file);
-    img.onload = () => {
-      const s = Math.min(img.width, img.height), c = document.createElement("canvas"); c.width = c.height = size;
-      c.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);   // a square from the middle
-      URL.revokeObjectURL(u); c.toBlob(b => b ? ok(b) : no(new Error("could not read the photo")), "image/jpeg", 0.85);
-    };
     img.onerror = () => { URL.revokeObjectURL(u); no(new Error("this file is not a photo")); };
+    img.onload = () => {
+      const dlg = $("cropdlg"), stage = $("cropstage"), cv = $("cropc"), zs = $("cropz");
+      dlg.showModal();
+      const S = stage.clientWidth, dpr = window.devicePixelRatio || 1, R = 0.06 * S;   // the ring sits 6% in from each side
+      cv.width = Math.round(S * dpr); cv.height = Math.round(S * dpr);
+      const g = cv.getContext("2d"), W = img.naturalWidth, H = img.naturalHeight;
+      const base = (S - 2 * R) / Math.min(W, H);   // zoom 1: the photo just fills the ring
+      let z = 1, x = 0, y = 0;
+      const sc = () => base * z;
+      const clamp = () => {   // the ring always stays covered
+        const w = W * sc(), h = H * sc();
+        x = Math.min(R, Math.max(S - R - w, x)); y = Math.min(R, Math.max(S - R - h, y));
+      };
+      const draw = () => { g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, S, S); g.drawImage(img, x, y, W * sc(), H * sc()); };
+      const zoomTo = (nz, cx, cy) => {   // zoom about a point (the middle, or between two fingers)
+        nz = Math.min(4, Math.max(1, nz)); const k = nz / z;
+        x = cx - (cx - x) * k; y = cy - (cy - y) * k; z = nz; clamp(); zs.value = String(z); draw();
+      };
+      x = (S - W * sc()) / 2; y = (S - H * sc()) / 2; zs.value = "1"; clamp(); draw();
+      const pts = new Map(); let last = null;
+      const pos = e => { const r = stage.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+      const pinch = () => { const [a, b] = [...pts.values()]; return { d: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 }; };
+      const down = e => { stage.setPointerCapture(e.pointerId); pts.set(e.pointerId, pos(e)); last = pts.size === 2 ? pinch() : null; };
+      const move = e => {
+        if (!pts.has(e.pointerId)) return;
+        const p0 = pts.get(e.pointerId), p = pos(e); pts.set(e.pointerId, p);
+        if (pts.size === 1) { x += p.x - p0.x; y += p.y - p0.y; clamp(); draw(); }
+        else if (pts.size === 2 && last) { const n = pinch(); zoomTo(z * n.d / last.d, n.cx, n.cy); last = n; }
+      };
+      const up = e => { pts.delete(e.pointerId); last = pts.size === 2 ? pinch() : null; };
+      const wheel = e => { e.preventDefault(); const p = pos(e); zoomTo(z * Math.exp(-e.deltaY / 400), p.x, p.y); };
+      const slide = () => zoomTo(Number(zs.value), S / 2, S / 2);
+      stage.addEventListener("pointerdown", down); stage.addEventListener("pointermove", move);
+      stage.addEventListener("pointerup", up); stage.addEventListener("pointercancel", up); stage.addEventListener("wheel", wheel, { passive: false });
+      zs.addEventListener("input", slide);
+      const done = blob => {
+        stage.removeEventListener("pointerdown", down); stage.removeEventListener("pointermove", move);
+        stage.removeEventListener("pointerup", up); stage.removeEventListener("pointercancel", up); stage.removeEventListener("wheel", wheel);
+        zs.removeEventListener("input", slide); dlg.onclose = null; if (dlg.open) dlg.close(); URL.revokeObjectURL(u); ok(blob);
+      };
+      $("cropno").onclick = () => done(null);
+      dlg.onclose = () => done(null);   // Esc
+      $("cropok").onclick = () => {
+        const out = document.createElement("canvas"); out.width = out.height = size;
+        const s = sc(); out.getContext("2d").drawImage(img, (R - x) / s, (R - y) / s, (S - 2 * R) / s, (S - 2 * R) / s, 0, 0, size, size);
+        out.toBlob(b => done(b), "image/jpeg", 0.88);
+      };
+    };
     img.src = u;
   });
 }
 $("s-photo").onclick = () => $("s-photo-f").click();
 $("s-photo-f").onchange = async () => {
   const f = $("s-photo-f").files[0]; $("s-photo-f").value = ""; if (!f) return;
+  let fitted; try { fitted = await cropPhoto(f, 320); } catch (e) { $("photomsg").textContent = "Could not read the photo: " + e.message; return; }
+  if (!fitted) { $("photomsg").textContent = "No new photo."; return; }
   $("photomsg").textContent = "Uploading...";
   try {
-    const blob = await smallJpeg(f, 320), path = me.id + "/" + Date.now() + ".jpg";
+    const blob = fitted, path = me.id + "/" + Date.now() + ".jpg";
     const up = await db.storage.from("avatars").upload(path, blob, { contentType: "image/jpeg" }); if (up.error) throw up.error;
     const { error } = await db.from("profiles").update({ photo_path: path }).eq("id", me.id); if (error) throw error;
     if (photoPath) db.storage.from("avatars").remove([photoPath]).catch(() => {});
