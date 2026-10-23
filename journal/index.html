@@ -2072,9 +2072,12 @@ function renderTasters() {
     if (r != null) b.append(el("small", "", Stars.text(r)));
     b.onclick = () => { if (on) return; stashTaster(); showTaster(i); };
     box.appendChild(b);
-    if (on && tasters.length > 1 && bmode !== "rate") {
+    if (on && tasters.length > 1) {   // take someone away (in "Rate the cup" too: their rating goes when you save)
       const x = el("button", "tx"); x.type = "button"; x.setAttribute("aria-label", "Remove " + tName(shown) + " as taster"); x.appendChild(ico("close", 15));
-      x.onclick = () => { tasters.splice(i, 1); showTaster(i - 1); userChanged(); };
+      x.onclick = () => {
+        if (bmode === "rate" && t.id && !confirm("Take " + tName(shown) + " away from this brew? Their rating goes when you save.")) return;
+        tasters.splice(i, 1); showTaster(Math.max(0, i - 1)); userChanged();
+      };
       box.appendChild(x);
     }
   });
@@ -3139,11 +3142,16 @@ async function saveRate() {
   const rows = tasterRows(), notes = $("b-notes").value.trim() || null;
   if (rows.some(t => t.drank_at && Date.parse(t.drank_at) > Date.now() + 10 * 60e3)) { say("Could not save: the time you drank it is in the future."); return; }
   const orig = JSON.parse(rateOrig || "[]"), changed = rows.filter(t => !t.id || !orig.includes(rateSig({ ...t, guest: t.is_guest, drank: t.drank_at })));
+  const gone = tastersOf(b).filter(o => o.id && !rows.some(t => t.id === o.id));   // taken away with the x
   const ch = brewChanges(b, { ...b, notes });
-  if (!changed.length && (b.notes || null) === notes) { nothingChanged(() => { store.del("alto.draft.rate." + b.id); newBrewSetup(); $("brewbox").open = false; say("Closed, nothing was changed."); }); return; }
+  if (!changed.length && !gone.length && (b.notes || null) === notes) { nothingChanged(() => { store.del("alto.draft.rate." + b.id); newBrewSetup(); $("brewbox").open = false; say("Closed, nothing was changed."); }); return; }
   if (!(await confirmSave("Save this rating?", ch.length ? ch : [["Rating", "saved again"]], "Save rating"))) return;
   savingB = true; $("bsave").disabled = true; say("Saving...");
   try {
+    for (const o of gone) {
+      const d1 = await db.from("brew_scores").delete().eq("rating_id", o.id); if (d1.error) throw d1.error;
+      const d2 = await db.from("brew_ratings").delete().eq("id", o.id); if (d2.error) throw d2.error;
+    }
     for (const t of changed) {
       const f = { rating: t.rating, balance: t.balance, drink: t.drink || null, milk: t.milk || null, drank_at: t.drank_at || null };
       let rid = t.id;
