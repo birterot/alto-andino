@@ -11,6 +11,11 @@ Ideas for after the basics have settled. Nothing here is promised; it is the lis
 - Cup card with our latest tastings per processing method.
 - Chapters still to write: tasting and extraction ("coming soon" on Bean to cup), how to dial in a coffee.
 
+## Social: a coffee feed with friends
+- **Post a brew:** after a brew, post it with a photo, and friends can comment on it (and react). More interactive than the stats and shelves friends see now.
+- **Kept a bit separate** from the journal: how it fits into the app is still open (its own tab or page, rather than mixed into the Coffee Shelf and Recent activity).
+- To think about when we get there: who sees a post (friends only, or chosen ones), whether posting is always a choice per brew (never automatic), comments and reactions, notifications for them (Settings already has the kinds), and taking a post down again.
+
 ## App
 - **Language setting** (English / German / Spanish). Means moving all texts into one file per language.
 - **Offline use:** open the app and log brews without a connection, saved once back online.
