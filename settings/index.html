@@ -37,6 +37,12 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .cropzoom{display:flex;align-items:center;gap:12px;margin-top:14px}
 .cropzoom input{flex:1;height:auto;margin:0;padding:0;border:0;background:none;accent-color:var(--act)}
 .cropbtns{display:flex;align-items:center;gap:12px;margin-top:14px}
+.grs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.grs .gr{display:inline-flex;align-items:center;gap:2px;min-height:38px;padding:0 4px 0 14px;border:1px solid var(--act);border-radius:999px;background:var(--act);color:var(--on-act);font-size:14px}
+.grs .grx{width:30px;height:30px;border:0;border-radius:50%;background:none;color:inherit;font:inherit;font-size:18px;line-height:1;cursor:pointer}
+.gradd{display:flex;gap:8px;align-items:center;margin-top:10px;max-width:420px}
+.gradd input{margin:0;flex:1}
+.gradd .lnk{min-height:44px}
 .devs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .devs button{min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
 .devs button[aria-pressed=true]{border-color:var(--act);background:var(--act);color:var(--on-act)}
@@ -126,7 +132,12 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
     <p class="hint" id="devshint">Tick the ones you have at home: Log a brew then only offers these. Nothing ticked: all of them.</p>
     <p class="hint">"The last one used" means: whatever you logged last on this phone.</p>
     <label>Device<select id="s-device"></select></label>
-    <label>Grinder<select id="s-grinder"></select></label>
+    <p class="lab" id="grlab">Your grinders</p>
+    <div class="grs" id="s-grs" role="list" aria-labelledby="grlab"></div>
+    <div class="gradd"><input id="s-gr-new" list="grnames" placeholder="Add a grinder, e.g. Comandante C40" autocomplete="off" aria-label="Add a grinder"><button type="button" class="lnk" id="s-gr-add">Add</button></div>
+    <datalist id="grnames"></datalist>
+    <p class="hint" id="grhint">The grinders you have: Log a brew offers these, with your default chosen. Nothing added: the app's own list.</p>
+    <label>Default grinder<select id="s-grinder"></select></label>
     <label id="fmlab">Fields in the brew form</label>
     <div class="seg" id="s-fm" role="group" aria-labelledby="fmlab">
       <button type="button" data-m="simple">Simple</button><button type="button" data-m="all">All</button>
@@ -257,6 +268,27 @@ function tabFromHash() {   // #brew, or a part of a page: #cafset (from Home), #
   showTab(sec ? sec.dataset.tab : tab); if (n) setTimeout(() => n.scrollIntoView({ block: "start" }), 60);
 }
 window.addEventListener("hashchange", tabFromHash);
+let myGrinders = [];
+function drawGrinders() {
+  const box = $("s-grs"), g = $("s-grinder"), keep = g.value; box.textContent = "";
+  myGrinders.forEach((n, i) => {
+    const r = el("div", "gr"); r.setAttribute("role", "listitem"); r.appendChild(el("span", "", n));
+    const x = el("button", "grx", "\u00D7"); x.type = "button"; x.setAttribute("aria-label", "Remove " + n);
+    x.onclick = () => { myGrinders.splice(i, 1); drawGrinders(); };
+    r.appendChild(x); box.appendChild(r);
+  });
+  const base = myGrinders.length ? myGrinders : ((window.DEFAULTS && DEFAULTS.GRINDERS) || []).map(x => x.name);
+  g.textContent = ""; opt(g, "", "The last one used"); base.forEach(n => opt(g, n, n));
+  g.value = base.includes(keep) ? keep : (myGrinders.length === 1 ? myGrinders[0] : "");
+  $("grhint").textContent = myGrinders.length ? "Log a brew offers " + (myGrinders.length === 1 ? "this grinder" : "these " + myGrinders.length + " grinders") + ", with your default chosen. Remember to save." : "The grinders you have: Log a brew offers these, with your default chosen. Nothing added: the app's own list.";
+}
+function addGrinder() {
+  const n = $("s-gr-new").value.trim().replace(/\s+/g, " ").slice(0, 40); if (!n) return;
+  if (!myGrinders.some(x => x.toLowerCase() === n.toLowerCase())) myGrinders.push(n);
+  $("s-gr-new").value = ""; drawGrinders(); if (myGrinders.length === 1) $("s-grinder").value = n;
+}
+$("s-gr-add").onclick = addGrinder;
+$("s-gr-new").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addGrinder(); } });
 let syncDevs = () => {};   // set once the device list is built
 const ownedDevs = () => [...document.querySelectorAll("#s-devs button[aria-pressed=true]")].map(b => b.dataset.d);
 const opt = (s, v, t) => { const o = el("option", "", t); o.value = v; s.appendChild(o); return o; };
@@ -457,7 +489,8 @@ $("s-name").addEventListener("input", renderColors);
     s.textContent = ""; opt(s, "", "The last one used"); list.filter(d => !own.length || own.includes(d) || d === keep).forEach(d => opt(s, d, d)); s.value = keep;
     $("devshint").textContent = own.length ? "Log a brew offers " + (own.length === 1 ? "only this one" : "these " + own.length) + ". Tap one again to untick it." : "Tick the ones you have at home: Log a brew then only offers these. Nothing ticked: all of them.";
   };
-  const g = $("s-grinder"); opt(g, "", "The last one used"); ((window.DEFAULTS && DEFAULTS.GRINDERS) || []).forEach(x => opt(g, x.name, x.name));
+  // your grinders: a list you add to (any name; a few known ones are suggested); the default grinder is one of them
+  ((window.DEFAULTS && DEFAULTS.GRINDER_NAMES) || []).forEach(n => { const o = el("option"); o.value = n; $("grnames").appendChild(o); });
   // drinks: espresso-based for espresso, filter-based for filter coffee
   const DR = window.DRINKS.D, groups = window.DRINKS.groups;
   const fillDrinks = (s, keep, first) => {
@@ -568,6 +601,7 @@ async function load() {
   $("mebox").hidden = $("aboutlab").hidden = $("proflink").hidden = !hasProfile;
   if (hasProfile) { $("s-about").value = (data && data.about) || ""; $("s-prof").href = "../friends/index.html#p=" + me.id; photoPath = (data && data.photo_path) || null; drawFace(); }
   const pick = (id, v) => { const s = $(id); s.value = v || ""; if (s.value !== (v || "")) s.value = ""; };
+  myGrinders = Array.isArray(p.grinders) ? p.grinders.slice() : []; drawGrinders();
   pick("s-device", p.device); pick("s-grinder", p.grinder); pick("s-drink-esp", p.drink_esp); pick("s-drink-filter", p.drink_filter); pick("s-milk", p.milk);
   setNotifyBoxes(p.notify);
   document.querySelectorAll("#s-devs button").forEach(b => b.setAttribute("aria-pressed", String((p.devices || []).includes(b.dataset.d)))); syncDevs();
@@ -590,6 +624,8 @@ $("sf").onsubmit = async e => {
   const prefs = Object.assign({}, (profile && profile.prefs) || {});
   [["device", "s-device"], ["grinder", "s-grinder"], ["drink_esp", "s-drink-esp"], ["drink_filter", "s-drink-filter"], ["milk", "s-milk"]].forEach(([k, id]) => { if ($(id).value) prefs[k] = $(id).value; else delete prefs[k]; });
   const own = ownedDevs(); if (own.length) prefs.devices = own; else delete prefs.devices;
+  if (myGrinders.length) prefs.grinders = myGrinders.slice(); else delete prefs.grinders;
+  try { if (myGrinders.length) localStorage.setItem("alto.mygrinders", JSON.stringify(myGrinders)); else localStorage.removeItem("alto.mygrinders"); } catch (e) { /* only a shortcut for Log a brew */ }
   try { if (own.length) localStorage.setItem("alto.mydevs", JSON.stringify(own)); else localStorage.removeItem("alto.mydevs"); } catch (e) { /* only a shortcut for Log a brew */ }
   if (fm) prefs.formmode = fm; else delete prefs.formmode;
   if (color) prefs.color = color; else delete prefs.color;

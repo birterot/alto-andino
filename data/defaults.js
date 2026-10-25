@@ -37,6 +37,10 @@ window.DEFAULTS = {
   GRINDERS: [
     { id: "k6", name: "Kingrinder K6", unit: "clicks", feel: [[24, "extra fine"], [59, "fine"], [89, "medium-fine"], [129, "medium"], [9999, "coarse"]] }
   ],
+  // well-known grinders, only as suggestions when you add yours in Settings (any name can be typed)
+  GRINDER_NAMES: ["1Zpresso J-Max", "1Zpresso JX-Pro", "1Zpresso K-Ultra", "1Zpresso ZP6", "Baratza Encore", "Baratza Encore ESP", "Baratza Sette 270", "Baratza Virtuoso+",
+    "Comandante C40", "DF64", "Eureka Mignon Specialita", "Fellow Ode", "Fellow Opus", "Hario Skerton", "Kingrinder K4", "Kingrinder K6", "Lagom P64", "Mahlkönig X54",
+    "Niche Zero", "Option-O Lagom Mini", "Timemore C2", "Timemore C3", "Timemore Chestnut X", "Wilfa Uniform", "Wilfa Svart"],
   PREHEAT: [["low", "Low", 85], ["medium", "Medium", 90], ["high", "High", 95]],
   FLAIR_BY_ROAST: { "light": "flair-light", "medium-light": "flair-light", "medium": "flair-med", "medium-dark": "flair-dark", "dark": "flair-dark" },
   SEMI_BY_ROAST: { "light": "semi-light", "medium-light": "semi-light", "medium": "semi-med", "medium-dark": "semi-dark", "dark": "semi-dark" },

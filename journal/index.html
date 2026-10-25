@@ -651,7 +651,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
         </details>
         <h3 class="sh">Grind</h3>
         <div class="nums">
-          <label class="wide adv">Grinder<select id="b-grinder"></select></label>
+          <label class="wide adv" id="grinderlab">Grinder<select id="b-grinder"></select></label>
           <label>Setting<input id="b-grind" inputmode="decimal" placeholder="25" autocomplete="off"></label>
           <label class="adv">Feel<input id="b-feel" list="feel-list" placeholder="fine" autocomplete="off"></label>
         </div>
@@ -1906,12 +1906,27 @@ const phText = v => { const p = PH.find(x => x[0] === v); return p ? p[1].toLowe
 const GR = D.GRINDERS || [];
 const GR_OLD = { "1Zpresso K6": "Kingrinder K6" };   // names that were wrong in an earlier version
 if (GR_OLD[store.get("alto.grinder")]) store.set("alto.grinder", GR_OLD[store.get("alto.grinder")]);
-(function () {
-  const s = $("b-grinder");
-  GR.forEach(g => { const o = el("option", "", g.name); o.value = g.name; s.appendChild(o); });
+// the grinders to choose from: yours from Settings (kept on the phone too, so they are there at once), else the app's own list
+const prefsNow = () => { try { return myPrefs(); } catch (e) { return {}; } };   // also while the page is still starting (before your settings came)
+function ownGrinders() {
+  let own = prefsNow().grinders;
+  if (!Array.isArray(own) || !own.length) { try { own = JSON.parse(store.get("alto.mygrinders") || "[]"); } catch (e) { own = []; } }
+  return Array.isArray(own) ? own : [];
+}
+const myGrinderList = () => { const own = ownGrinders(); return own.length ? own : GR.map(g => g.name); };
+function fillGrinders() {
+  const s = $("b-grinder"), keep = s.value; s.textContent = "";
+  myGrinderList().forEach(n => { const o = el("option", "", n); o.value = n; s.appendChild(o); });
   const o = el("option", "", "Other grinder"); o.value = ""; s.appendChild(o);
-  const last = store.get("alto.grinder");
-  if (last !== null && [...s.options].some(x => x.value === last)) s.value = last;
+  if (keep && [...s.options].some(x => x.value === keep)) s.value = keep;
+  $("grinderlab").classList.toggle("adv", ownGrinders().length < 2);   // two or more of your own: also in Simple
+}
+function defaultGrinder() {   // your default from Settings, else the last one used on this phone, else the first of yours
+  const list = myGrinderList(), pf = prefsNow().grinder, last = store.get("alto.grinder");
+  return [pf, last, list[0]].find(g => g && list.includes(g)) || "";
+}
+(function () {
+  fillGrinders(); $("b-grinder").value = defaultGrinder();
   const words = []; GR.forEach(g => (g.feel || []).forEach(f => { if (!words.includes(f[1])) words.push(f[1]); }));
   words.forEach(w => { const x = el("option"); x.value = w; $("feel-list").appendChild(x); });
 })();
@@ -2498,7 +2513,7 @@ function newBrewSetup(dev, plain) {   // plain: no draft and no calculator offer
   const want = (h && h.device) || dev || DEV_OLD[myPrefs().device] || myPrefs().device || store.get("alto.device") || "Manual espresso machine";   // Settings first, else the last one used
   if ([...sel.options].some(o => o.value === want)) sel.value = want;
   else { const alt = [...sel.options].find(o => o.value && typeOf(o.value) === typeOf(want) && want.indexOf(o.value) === 0); sel.value = alt ? alt.value : ""; }
-  const g = myPrefs().grinder || store.get("alto.grinder"); if (g !== null && [...$("b-grinder").options].some(o => o.value === g)) $("b-grinder").value = g;
+  fillGrinders(); $("b-grinder").value = defaultGrinder();
   applyType(); autoFill(); refreshAutoDrinks();
   const restored = plain ? false : restoreDraft(); draftWasRestored = restored;
   if (h) {
@@ -3368,7 +3383,7 @@ function brewRow() {
   const keep = id => !isSimple() || touched.has(id);   // in "Simple", hidden fields only count when you filled them in yourself
   const stages = esp ? prof.filter(s => s.s > 0).map(s => ({ s: s.s, bar: s.bar })) : [];
   const row = {
-    device, grinder: $("b-grind").value.trim() ? ($("b-grinder").value || null) : null, grind: $("b-grind").value.trim() || null, grind_feel: $("b-feel").value.trim() || null,
+    device, grinder: $("b-grind").value.trim() || touched.has("b-grinder") ? ($("b-grinder").value || null) : null, grind: $("b-grind").value.trim() || null, grind_feel: $("b-feel").value.trim() || null,
     pressure_bar: esp && keep("b-pressure") ? num("b-pressure") : null, preinfusion_bar: esp && keep("b-pibar") ? num("b-pibar") : null, preinfusion_s: esp && keep("b-pis") ? num("b-pis") : null,
     dose_g: num("b-dose"), water_g: esp ? null : num("b-water"), preheat: isFlair(device) && keep("b-preheat") ? ($("b-preheat").value || null) : null, yield_g: num("b-yield"), temp_c: keep("b-temp") ? num("b-temp") : null, time_s: num("b-time"),
     pressure_profile: stages.length ? stages : null,
@@ -3618,6 +3633,8 @@ async function loadNames() {
   if (!prefsApplied) {
     prefsApplied = true; const fm = myPrefs().formmode; if (fm === "simple" || fm === "all") setFormMode(fm);
     const own = myPrefs().devices; if (own && own.length) store.set("alto.mydevs", JSON.stringify(own)); else store.del("alto.mydevs");   // the devices you own, for next time
+    const grs = myPrefs().grinders; if (grs && grs.length) store.set("alto.mygrinders", JSON.stringify(grs)); else store.del("alto.mygrinders");   // and your grinders
+    if (!editingBrew) { const keep = $("b-grinder").value; fillGrinders(); if (!touched.has("b-grinder")) $("b-grinder").value = defaultGrinder(); else if (keep) setSel("b-grinder", keep); }
     if (!$("pickview").hidden) renderPick();
   }
   showName();
