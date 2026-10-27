@@ -437,6 +437,10 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .prow output{font-size:13px;color:var(--ink);min-width:50px}
 .bc .curve{margin-top:8px}
 .bc{padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--card);margin-bottom:12px}
+.bc.mbc{border-left:4px solid var(--s,var(--line));padding-left:16px}
+.bc.mbc .hd h3{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bc.mbc .open{display:inline-block;margin-top:10px;font-size:14px;color:var(--ink)}
+.bc.mbc .hd .mfav{flex:none;margin:-8px -8px 0 0}
 .bc h3{margin:0;font-size:16px}
 .bc p{margin:4px 0 0;font-size:14px}
 .bc .age,.bc .set{color:var(--mut)}
@@ -2935,13 +2939,13 @@ whenUi("r", () => loadFeed());
 let mineData = [], mineRaw = [], mineCoffees = {}, mineShow = 30, mineId = 0;
 async function loadMine() {
   const my = ++mineId;
-  const { data: cs, error } = await inHH(db.from("coffees").select("id,name,roaster,roast_level,process,group_id"));
+  const { data: cs, error } = await inHH(db.from("coffees").select("id,name,roaster,roast_level,process,group_id,roast_date,open_date,purchase_date"));
   if (my !== mineId) return;
   if (error) { say("Could not load your brews: " + error.message); return; }
   mineCoffees = {}; cs.forEach(c => { mineCoffees[c.id] = c; });
   const ids = cs.map(c => c.id);
   if (!ids.length) { mineRaw = []; renderMine(); return; }
-  const { data, error: e2 } = await db.from("brews").select("id,coffee_id,brewed_at,device,dose_g,yield_g,water_g,time_s,is_dialin,made_by,created_by,recipe, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,note), brew_scores(attribute,score,rating_id)")
+  const { data, error: e2 } = await db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,note,created_at,drank_at), brew_scores(attribute,score,rating_id)")
     .in("coffee_id", ids).order("brewed_at", { ascending: false }).limit(1000);
   if (my !== mineId) return;
   if (e2) { say("Could not load your brews: " + e2.message); return; }
@@ -3159,38 +3163,14 @@ function drawMonth() {
   funLine(box, lines);
 }
 function mineCard(x) {
-  const b = x.b, c = mineCoffees[b.coffee_id], a = el("article", "fi");
-  if (c) applyLook(a, c);
-  const top = el("div", "ft"), fb = favBtn("brew", b.id); fb.classList.add("mfav"); top.append(el("strong", "", c ? c.name : "A coffee"), el("time", "", fmtDT(new Date(b.brewed_at))), fb); a.appendChild(top);
-  const maker = b.made_by || b.created_by, dv = DEV_OLD[b.device] || b.device, dev = dv && /^(Manual|Semi-automatic|Moka|French|Pour|Cold|Turkish|Drip|Filter|Fully)\b/.test(dv) ? dv[0].toLowerCase() + dv.slice(1) : dv;
-  const bl = el("p", "", "Brewed by "); bl.appendChild(personTag({ rater_id: maker }, true));
-  bl.appendChild(document.createTextNode([(dev ? " on the " + dev : ""), b.is_dialin ? "dial-in" : null].filter(Boolean).join(" \u00B7 "))); a.appendChild(bl);
-  // someone else's (or everyone's) brews: their stars, read only
-  if (x.p !== "me") {
-    const ts = (b.brew_ratings || []).filter(t => x.p === "all" || (!t.is_guest && t.rater_id === x.p) || (me && !t.is_guest && t.rater_id === me.id));
-    if (ts.length) {
-      const rr = el("div", "rr");
-      ts.forEach(t => {
-        const tt = { rater_id: t.rater_id, guest: t.is_guest, guest_name: t.guest_name, note: t.note || null };
-        const open = t.rating == null && t.balance == null && !(b.brew_scores || []).some(s => s.rating_id === t.id);
-        rateLine(rr, t.rating != null ? Number(t.rating) : null, tName(tt) + ": " + Stars.text(Number(t.rating)), tt, open ? ": to rate" : (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.rating == null ? ", taste only" : ""), tt.note);
-      });
-      a.appendChild(rr);
-    } else a.appendChild(el("p", "", "Not rated yet."));
-    if (!x.r || x.pend) { const op = el("a", "open", "Open the brew \u2192"); op.href = "#c=" + b.coffee_id + "&b=" + b.id; a.appendChild(op); return a; }
-  }
-  if (!x.r) { a.appendChild(el("p", "", "You did not rate this one.")); }
-  else if (x.pend) {
-    const p = el("div", "pend"); p.appendChild(el("span", "", "Your cup is waiting for your rating."));
-    const go = el("a", "btn", "Rate your cup"); go.href = "#c=" + b.coffee_id + "&b=" + b.id + "&rate=" + x.r.id; p.appendChild(go); a.appendChild(p);
-  }
-  else {
-    if (x.r.rating != null && x.p === "me") { const s = el("div", "rr"); rateLine(s, Number(x.r.rating), "Your stars: " + Stars.text(Number(x.r.rating)), null, "Your stars" + (x.r.drink ? ", " + drinkText(x.r.drink, x.r.milk).toLowerCase() : ""), x.r.note); a.appendChild(s); }
+  const b = x.b, c = mineCoffees[b.coffee_id], a = brewCard(b, { mine: x, coffee: c });
+  if (x.p === "me" && !x.r) a.appendChild(el("p", "age", "You did not rate this one."));
+  else if (x.r && !x.pend) {
     // your Balance: one small line ("Balance 3 · change" or "Add your Balance"); the 0 to 5 buttons open from it
     // (open right away in the list of brews without a Balance, where giving it is the point)
     const row = el("div", "mine-bal"), seg = el("div", "bal"), ok = el("span", "ok"), sum = el("button", "balsum"); sum.type = "button";
     const open = $("mflt-bal").value === "none";
-    const sumText = () => { sum.textContent = x.r.balance != null ? "Balance " + SCALE.balanceText(x.r.balance) + " \u00B7 change" : "Add your Balance"; };
+    const sumText = () => { sum.textContent = x.r.balance != null ? "Change your Balance" : "Add your Balance"; };
     sumText(); seg.hidden = !open; sum.hidden = open;
     sum.onclick = () => { seg.hidden = false; sum.hidden = true; };
     row.append(sum, seg, ok);
@@ -3360,15 +3340,20 @@ function dayN(iso, when) {
 
 // a taster's comment on a brew card, right under their stars: "Sweeter than yesterday"
 function tComment(t) { return el("p", "tcm", "\u201C" + t.note + "\u201D"); }
-function brewCard(b) {
-  const a = el("article", "bc"), when = new Date(b.brewed_at); a.dataset.bid = b.id;
-  const hd = el("div", "hd"); hd.appendChild(el("h3", "", fmtDT(when))); a.appendChild(hd);
+// one brew with everything: on the coffee's page, and in My brews (opt.mine: the coffee's name on top, the time with the
+// coffee's age, the roast colour on the side, and links to the coffee's page instead of the pencil and the bin)
+function brewCard(b, opt) {
+  const inMine = !!(opt && opt.mine), cf = (opt && opt.coffee) || cur || {};
+  const a = el("article", "bc" + (inMine ? " mbc" : "")), when = new Date(b.brewed_at); a.dataset.bid = b.id;
+  if (inMine && opt.coffee) applyLook(a, opt.coffee);
+  const hd = el("div", "hd"); hd.appendChild(el("h3", "", inMine ? (opt.coffee ? opt.coffee.name : "A coffee") : fmtDT(when))); a.appendChild(hd);
   const who = nameOf(b.made_by || b.created_by);
   if (who) { const w = el("p", "age", "Brewed by "); w.appendChild(personTag({ rater_id: b.made_by || b.created_by }, true)); a.appendChild(w); }
-  const dr = cur.roast_date ? dayN(cur.roast_date, when) : null, dop = cur.open_date ? dayN(cur.open_date, when) : null;
-  const dp = !cur.roast_date && cur.purchase_date ? dayN(cur.purchase_date, when) : null;
+  const dr = cf.roast_date ? dayN(cf.roast_date, when) : null, dop = cf.open_date ? dayN(cf.open_date, when) : null;
+  const dp = !cf.roast_date && cf.purchase_date ? dayN(cf.purchase_date, when) : null;
   const age = [dr !== null ? (dr === 0 ? "roast day" : "day " + dr + " after roast") : dp !== null ? (dp === 0 ? "purchase day" : "day " + dp + " after purchase") : null, dop !== null ? (dop === 0 ? "opening day" : "day " + dop + " after opening") : null].filter(Boolean).join(", ");
-  if (age) a.appendChild(el("p", "age", age));
+  const ageLine = inMine ? [fmtDT(when), age].filter(Boolean).join(" \u00B7 ") : age;
+  if (ageLine) { const g = el("p", "age", ageLine); if (inMine) hd.after(g); else a.appendChild(g); }   // My brews: the time right under the coffee's name
   if (b.is_dialin) a.appendChild(el("p", "age", "Dial-in brew, not counted in the rating"));
   // stars on top: the one rating, or the average of everyone who tasted it
   const ts = tastersOf(b), avg = brewAvg(b);
@@ -3416,7 +3401,9 @@ function brewCard(b) {
     p.appendChild(el("span", "", "To rate: " + andList(pend.map(t => mine === t ? "you" : tName(t)))));
     pend.forEach(t => {
       if (t !== mine && !t.guest) return;
-      const go = el("button", "btn" + (t === mine ? "" : " ghost"), t === mine ? "Rate your cup" : "Rate for " + tName(t)); go.type = "button";
+      const txt = t === mine ? "Rate your cup" : "Rate for " + tName(t);
+      if (inMine) { const go = el("a", "btn" + (t === mine ? "" : " ghost"), txt); go.href = "#c=" + b.coffee_id + "&b=" + b.id + "&rate=" + t.id; p.appendChild(go); return; }
+      const go = el("button", "btn" + (t === mine ? "" : " ghost"), txt); go.type = "button";
       go.onclick = () => startRate(b, t.id); p.appendChild(go);
     });
     a.appendChild(p);
@@ -3437,6 +3424,7 @@ function brewCard(b) {
     a.appendChild(box);
   }
   if (b.notes) { const n = el("p", "bnote"); n.append(el("span", "nl", "Brew comment: "), document.createTextNode(b.notes)); a.appendChild(n); }
+  if (inMine) { const fb = favBtn("brew", b.id); fb.classList.add("mfav"); hd.appendChild(fb); return a; }   // My brews: the heart; changes on the coffee's page
   // one pencil, two things to change: the brew itself, or your rating of it
   const menu = el("div", "pmenu"); menu.hidden = true; menu.setAttribute("role", "menu");
   const mi = (t, fn) => { const x = el("button", "", t); x.type = "button"; x.setAttribute("role", "menuitem"); x.onclick = () => { menu.hidden = true; fn(); }; menu.appendChild(x); };
