@@ -32,7 +32,7 @@ try { if (!sessionStorage.getItem("alto.intro") && !(window.matchMedia && matchM
 #introlay .il{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible;backface-visibility:hidden}
 #introlay .plant{transform-origin:55.1% 46.3%;will-change:transform}
 #introlay .line{will-change:clip-path,opacity}
-#introlay .cover{will-change:transform}
+#introlay .inner{will-change:opacity}
 html.intro .hero .mark{visibility:hidden}
 html.intro .hero h1,html.intro #today,html.intro .tiles,html.intro nav.small,html.intro .topnav{opacity:.001;will-change:opacity,transform}   /* .001, not 0: painted up front, so fading in costs nothing */
 html.intro body::before{opacity:0}
