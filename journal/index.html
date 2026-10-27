@@ -437,10 +437,7 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .prow output{font-size:13px;color:var(--ink);min-width:50px}
 .bc .curve{margin-top:8px}
 .bc{padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--card);margin-bottom:12px}
-.bc.mbc{border-left:4px solid var(--s,var(--line));padding-left:16px}
-.bc.mbc .hd h3{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bc.mbc .open{display:inline-block;margin-top:10px;font-size:14px;color:var(--ink)}
-.bc.mbc .hd .mfav{flex:none;margin:-8px -8px 0 0}
+.bc .cofn{display:inline-block;margin-top:4px;font-size:15px;font-weight:600;color:var(--ink);text-decoration:none}
 .bc h3{margin:0;font-size:16px}
 .bc p{margin:4px 0 0;font-size:14px}
 .bc .age,.bc .set{color:var(--mut)}
@@ -2754,8 +2751,12 @@ function route() {
   } else if (m) {
     const ps = new URLSearchParams(m[2].slice(1));
     focusBrew = ps.get("b");
-    const rateIt = ps.has("rate") && ps.get("b");
-    openCoffee(m[1], ps.get("d"), !rateIt && (ps.has("new") || ps.has("d")), rateIt ? ps.get("rate") : null).then(ok => {   // coming to log a brew opens the form, coming to look shows the brews
+    const rateIt = ps.has("rate") && ps.get("b"), editIt = ps.has("edit") && ps.get("b");
+    openCoffee(m[1], ps.get("d"), !rateIt && !editIt && (ps.has("new") || ps.has("d")), rateIt ? ps.get("rate") : null).then(ok => {   // coming to log a brew opens the form, coming to look shows the brews
+      if (editIt && ok !== false) {   // from My brews: change this brew
+        const b = brewData.find(x => x.id === editIt); if (b) startBrewEdit(b); else say("This brew is not there any more.");
+        history.replaceState(null, "", location.pathname + location.search + "#c=" + m[1] + "&b=" + editIt); return;
+      }
       if (!rateIt || ok === false) return;
       const b = brewData.find(x => x.id === rateIt); if (b) startRate(b, ps.get("rate") || null); else say("This brew is not there any more.");
       history.replaceState(null, "", location.pathname + location.search + "#c=" + m[1] + "&b=" + rateIt);   // a reload does not open it again
@@ -3162,43 +3163,7 @@ function drawMonth() {
   if (g >= 30) lines.push("About " + Math.round(g) + " g of beans " + (p === "me" ? "you brewed" : "brewed") + " this month.");
   funLine(box, lines);
 }
-function mineCard(x) {
-  const b = x.b, c = mineCoffees[b.coffee_id], a = brewCard(b, { mine: x, coffee: c });
-  if (x.p === "me" && !x.r) a.appendChild(el("p", "age", "You did not rate this one."));
-  else if (x.r && !x.pend) {
-    // your Balance: one small line ("Balance 3 · change" or "Add your Balance"); the 0 to 5 buttons open from it
-    // (open right away in the list of brews without a Balance, where giving it is the point)
-    const row = el("div", "mine-bal"), seg = el("div", "bal"), ok = el("span", "ok"), sum = el("button", "balsum"); sum.type = "button";
-    const open = $("mflt-bal").value === "none";
-    const sumText = () => { sum.textContent = x.r.balance != null ? "Change your Balance" : "Add your Balance"; };
-    sumText(); seg.hidden = !open; sum.hidden = open;
-    sum.onclick = () => { seg.hidden = false; sum.hidden = true; };
-    row.append(sum, seg, ok);
-    if (x.r.balance != null) seg.classList.add("set");
-    const draw = () => seg.querySelectorAll("button").forEach(btn => btn.setAttribute("aria-checked", String(x.r.balance != null && +btn.dataset.v === Number(x.r.balance))));
-    SCALE.BALANCE.forEach(([v, name]) => {
-      const btn = el("button", "", String(v)); btn.type = "button"; btn.dataset.v = v; btn.title = name;
-      btn.setAttribute("role", "radio"); btn.setAttribute("aria-label", v + ": " + name);
-      btn.onclick = async () => {
-        const nv = x.r.balance != null && Number(x.r.balance) === v ? null : v, was = x.r.balance;
-        // a Balance you already gave is not changed by a stray tap: it asks first
-        if (was != null && !confirm(nv == null ? "Take away your Balance (" + was + ", " + SCALE.balanceName(was).toLowerCase() + ") for this brew?" : "Change your Balance for this brew from " + was + " (" + SCALE.balanceName(was).toLowerCase() + ") to " + nv + " (" + SCALE.balanceName(nv).toLowerCase() + ")?")) return;
-        x.r.balance = nv; draw(); ok.textContent = "Saving...";
-        const { data, error } = await db.from("brew_ratings").update({ balance: nv }).eq("id", x.r.id).select("id");
-        if (error || !data || !data.length) { x.r.balance = was; draw(); ok.textContent = "Not saved" + (error ? ": " + error.message : ""); return; }
-        ok.textContent = nv == null ? "Saved: not rated" : "Saved: " + SCALE.balanceName(nv).toLowerCase();
-        if (!open) setTimeout(() => { seg.hidden = true; sum.hidden = false; sumText(); ok.textContent = ""; }, 1400);   // back to the small line
-        if ($("mflt-bal").value === "none" && nv != null) setTimeout(() => { if ($("mflt-bal").value === "none") renderMine(); }, 1200);   // done: it leaves the "not rated" list
-      };
-      seg.appendChild(btn);
-    });
-    seg.setAttribute("role", "radiogroup"); seg.setAttribute("aria-label", "Your Balance, from 0 to 5"); draw();
-    a.appendChild(row);
-    if (x.old != null) a.appendChild(el("p", "old", "Before the switch: " + (x.old > 0 ? "+" : "") + x.old + " on the old slider"));
-  }
-  const op = el("a", "open", "Open the brew \u2192"); op.href = "#c=" + b.coffee_id + "&b=" + b.id; a.appendChild(op);
-  return a;
-}
+function mineCard(x) { return brewCard(x.b, { mine: x, coffee: mineCoffees[x.b.coffee_id] }); }   // the same card as on the coffee's page
 ["mflt-person", "mflt-who", "mflt-bal"].forEach(id => $(id).addEventListener("change", () => { mineShow = 30; renderMine(); }));
 whenUi("m", () => { mineShow = 30; renderMine(); });
 $("mmore").onclick = () => { mineShow += 30; renderMine(); };
@@ -3340,20 +3305,19 @@ function dayN(iso, when) {
 
 // a taster's comment on a brew card, right under their stars: "Sweeter than yesterday"
 function tComment(t) { return el("p", "tcm", "\u201C" + t.note + "\u201D"); }
-// one brew with everything: on the coffee's page, and in My brews (opt.mine: the coffee's name on top, the time with the
-// coffee's age, the roast colour on the side, and links to the coffee's page instead of the pencil and the bin)
+// one brew with everything: on the coffee's page, and the same in My brews (opt.mine), there with the coffee's name
+// under the time, and the pencil going to the coffee's page to change it
 function brewCard(b, opt) {
   const inMine = !!(opt && opt.mine), cf = (opt && opt.coffee) || cur || {};
-  const a = el("article", "bc" + (inMine ? " mbc" : "")), when = new Date(b.brewed_at); a.dataset.bid = b.id;
-  if (inMine && opt.coffee) applyLook(a, opt.coffee);
-  const hd = el("div", "hd"); hd.appendChild(el("h3", "", inMine ? (opt.coffee ? opt.coffee.name : "A coffee") : fmtDT(when))); a.appendChild(hd);
+  const a = el("article", "bc"), when = new Date(b.brewed_at); a.dataset.bid = b.id;
+  const hd = el("div", "hd"); hd.appendChild(el("h3", "", fmtDT(when))); a.appendChild(hd);
+  if (inMine) { const cn = el("a", "cofn", opt.coffee ? opt.coffee.name : "A coffee"); cn.href = "#c=" + b.coffee_id; a.appendChild(cn); }
   const who = nameOf(b.made_by || b.created_by);
   if (who) { const w = el("p", "age", "Brewed by "); w.appendChild(personTag({ rater_id: b.made_by || b.created_by }, true)); a.appendChild(w); }
   const dr = cf.roast_date ? dayN(cf.roast_date, when) : null, dop = cf.open_date ? dayN(cf.open_date, when) : null;
   const dp = !cf.roast_date && cf.purchase_date ? dayN(cf.purchase_date, when) : null;
   const age = [dr !== null ? (dr === 0 ? "roast day" : "day " + dr + " after roast") : dp !== null ? (dp === 0 ? "purchase day" : "day " + dp + " after purchase") : null, dop !== null ? (dop === 0 ? "opening day" : "day " + dop + " after opening") : null].filter(Boolean).join(", ");
-  const ageLine = inMine ? [fmtDT(when), age].filter(Boolean).join(" \u00B7 ") : age;
-  if (ageLine) { const g = el("p", "age", ageLine); if (inMine) hd.after(g); else a.appendChild(g); }   // My brews: the time right under the coffee's name
+  if (age) a.appendChild(el("p", "age", age));
   if (b.is_dialin) a.appendChild(el("p", "age", "Dial-in brew, not counted in the rating"));
   // stars on top: the one rating, or the average of everyone who tasted it
   const ts = tastersOf(b), avg = brewAvg(b);
@@ -3402,9 +3366,8 @@ function brewCard(b, opt) {
     pend.forEach(t => {
       if (t !== mine && !t.guest) return;
       const txt = t === mine ? "Rate your cup" : "Rate for " + tName(t);
-      if (inMine) { const go = el("a", "btn" + (t === mine ? "" : " ghost"), txt); go.href = "#c=" + b.coffee_id + "&b=" + b.id + "&rate=" + t.id; p.appendChild(go); return; }
       const go = el("button", "btn" + (t === mine ? "" : " ghost"), txt); go.type = "button";
-      go.onclick = () => startRate(b, t.id); p.appendChild(go);
+      go.onclick = () => rateFrom(t.id); p.appendChild(go);
     });
     a.appendChild(p);
   }
@@ -3424,19 +3387,21 @@ function brewCard(b, opt) {
     a.appendChild(box);
   }
   if (b.notes) { const n = el("p", "bnote"); n.append(el("span", "nl", "Brew comment: "), document.createTextNode(b.notes)); a.appendChild(n); }
-  if (inMine) { const fb = favBtn("brew", b.id); fb.classList.add("mfav"); hd.appendChild(fb); return a; }   // My brews: the heart; changes on the coffee's page
   // one pencil, two things to change: the brew itself, or your rating of it
   const menu = el("div", "pmenu"); menu.hidden = true; menu.setAttribute("role", "menu");
   const mi = (t, fn) => { const x = el("button", "", t); x.type = "button"; x.setAttribute("role", "menuitem"); x.onclick = () => { menu.hidden = true; fn(); }; menu.appendChild(x); };
-  mi("Edit brew", () => startBrewEdit(b));
-  mi(!mine ? "Rate it" : isPending(mine) ? "Rate your cup" : "Edit your rating", () => startRate(b, mine ? mine.id : null));
-  if (ts.some(t => t.guest)) mi("Rate for a guest", () => startRate(b, ts.find(t => t.guest).id));
+  // in My brews the form is on the coffee's page: go there and open it
+  const go = (what, id) => { location.hash = "c=" + b.coffee_id + "&b=" + b.id + (what === "edit" ? "&edit" : "&rate=" + (id || "")); };
+  function rateFrom(id) { if (inMine) go("rate", id); else startRate(b, id); }
+  mi("Edit brew", () => { if (inMine) go("edit"); else startBrewEdit(b); });
+  mi(!mine ? "Rate it" : isPending(mine) ? "Rate your cup" : "Edit your rating", () => rateFrom(mine ? mine.id : null));
+  if (ts.some(t => t.guest)) mi("Rate for a guest", () => rateFrom(ts.find(t => t.guest).id));
   const ed = ibtn("Edit", "edit", e => { e.stopPropagation(); const was = menu.hidden; document.querySelectorAll(".pmenu").forEach(m => { m.hidden = true; }); menu.hidden = !was; ed.setAttribute("aria-expanded", String(was)); });
   ed.setAttribute("aria-haspopup", "menu"); ed.setAttribute("aria-expanded", "false");
   const del = ibtn("Delete", "trash", async () => {
     if (!confirm("Delete this brew? This cannot be undone.")) return;
     const { data: gone, error } = await db.from("brews").delete().eq("id", b.id).select();
-    if (error) say("Could not delete: " + error.message); else if (!gone.length) say("Nothing was deleted."); else { loadBrews(); load(); }
+    if (error) say("Could not delete: " + error.message); else if (!gone.length) say("Nothing was deleted."); else if (inMine) loadMine(); else { loadBrews(); load(); }
   }, "del");
   const grp = el("div", "ibs"); grp.append(favBtn("brew", b.id), ed, del, menu);
   hd.appendChild(grp);
