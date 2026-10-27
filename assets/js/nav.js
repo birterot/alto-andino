@@ -21,6 +21,7 @@
     calc: "M7 3h10a1 1 0 011 1v16a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zM8.5 7h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01",
     book: "book",
     cupping: "M4 9h13v4a6 6 0 01-6 6h-1a6 6 0 01-6-6V9z M17 10.5h1.2a2.8 2.8 0 010 5.6H16.3 M3 21h16 M8 2.5c-1 1.5 1 2.5 0 4 M12.5 2.5c-1 1.5 1 2.5 0 4",   // a cup with a handle (ear), saucer and steam
+    analytics: "M4 20h16 M7 20v-6 M11 20V5 M15 20v-9 M19 20v-4",   // bars: how much the app is used
     settings: "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"
   };
   var ITEMS = [               // key, label, link
@@ -35,7 +36,8 @@
     ["friends", "Friends", "friends/index.html"],
     ["book", BOOK, "chapters/index.html"],
     ["settings", "Settings", "settings/index.html"],
-    ["feedback", "Feedback", "feedback/index.html"]
+    ["feedback", "Feedback", "feedback/index.html"],
+    ["analytics", "Analytics", "analytics/index.html"]   // only for the app's admins (see "usage" at the end)
   ];
   var CHAPTERS = [            // file name, label (order = menu order and the previous/next order)
     ["processing", "Processing"],
@@ -47,7 +49,7 @@
 
   var path = location.pathname, file = (path.split("/").pop() || "index.html").replace(/\.html$/, "");
   var inBook = /\/chapters\//.test(path), chapter = inBook && file !== "index" ? file : null;
-  var isHome = !inBook && !/\/(journal|trends|calc|settings|cupping|friends|feedback)\//.test(path) && !/privacy\.html$/.test(path);
+  var isHome = !inBook && !/\/(journal|trends|calc|settings|cupping|friends|feedback|analytics)\//.test(path) && !/privacy\.html$/.test(path);
   var isCalc = /\/calc\//.test(path);
   var NS = "http://www.w3.org/2000/svg";
 
@@ -187,6 +189,7 @@
   var subs = null;
   ITEMS.forEach(function (it) {
     if (it[0] === "log" || it[0] === "calc") return;   // not in the menu: both are buttons in the top bar (still section tabs and Home tiles)
+    if (it[0] === "analytics" && !isAdmin()) return;
     addLink(it[0], it[1], it[2], false, it[0]);
     if (it[0] === "book") {
       var a = links[links.length - 1], row = document.createElement("div"); row.className = "mrow";
@@ -498,4 +501,63 @@
       ".sectabs + .crumbs{margin-top:0}";
     document.head.appendChild(tcss);
   }
+
+  // ----- usage (supabase/40_analytics.sql): each part of the app counts once a day on this phone, sent a moment later in one
+  // small request. Signed out (the book pages) it counts without a name. The answer says whether you are an admin: they get
+  // "Analytics" in the menu.
+  function isAdmin() { try { return localStorage.getItem("alto.admin") === "1"; } catch (e) { return false; } }
+  function pageKey() {
+    if (inBook) return "chapters/" + (chapter || "index");
+    var m = path.match(/\/(journal|trends|calc|settings|cupping|friends|feedback|analytics)\//);
+    if (!m) return /privacy\.html$/.test(path) ? "privacy" : "home";
+    if (m[1] !== "journal") return m[1];
+    var h = location.hash;
+    return /(^#|&)(new|log)(&|$)/.test(h) ? "journal/log" : /(^#|&)rate=/.test(h) ? "journal/rate" : /(^#|&)b=/.test(h) ? "journal/brew"
+      : /(^#|&)c=/.test(h) ? "journal/coffee" : h === "#recent" ? "journal/recent" : /^#(mine|torate|nobal)$/.test(h) ? "journal/mine"
+      : /^#addcoffee/.test(h) ? "journal/addcoffee" : "journal/shelf";
+  }
+  var SEEN = "alto.seen", flushT = null;
+  function dayNow() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+  function seenGet() { var s = null; try { s = JSON.parse(localStorage.getItem(SEEN) || "null"); } catch (e) {} if (!s || s.d !== dayNow() || !s.k || !s.q) s = { d: dayNow(), k: [], q: [] }; return s; }
+  function seenPut(s) { try { localStorage.setItem(SEEN, JSON.stringify(s)); } catch (e) {} }
+  function countPage() {
+    var k = pageKey(), s = seenGet(); if (!/^[a-z0-9/_-]{1,40}$/.test(k) || s.k.indexOf(k) >= 0) return;
+    s.k.push(k); s.q.push(k); seenPut(s);
+    clearTimeout(flushT); flushT = setTimeout(flush, 2500);   // after the page has started (and refreshed its sign-in)
+  }
+  function session() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i); if (!/^sb-.+-auth-token$/.test(key)) continue;
+        var v = JSON.parse(localStorage.getItem(key) || "null"); if (v && (v.refresh_token || v.access_token)) return v;
+      }
+    } catch (e) {}
+    return null;
+  }
+  function withConfig(go) {
+    if (window.SUPA) return go(window.SUPA);
+    var sc = document.createElement("script"); sc.src = root + "assets/js/config.js"; sc.onload = function () { if (window.SUPA) go(window.SUPA); }; document.head.appendChild(sc);
+  }
+  function flush() {
+    var s = seenGet(); if (!s.q.length || !window.fetch) return;
+    var ses = session(), now = Date.now() / 1000;
+    if (ses && !(ses.access_token && (!ses.expires_at || ses.expires_at > now + 30))) return;   // signed in, but the sign-in needs a refresh first: next page
+    var send = s.q.slice(0, 20);
+    withConfig(function (C) {
+      var hd = { apikey: C.key, "Content-Type": "application/json" }; if (ses) hd.Authorization = "Bearer " + ses.access_token;
+      fetch(C.url + "/rest/v1/rpc/log_visits", { method: "POST", headers: hd, body: JSON.stringify({ p_pages: send }), keepalive: true })
+        .then(function (r) {
+          if (r.status === 401 || r.status >= 500) return;   // try again with the next page
+          var t2 = seenGet(); t2.q = t2.q.filter(function (k) { return send.indexOf(k) < 0; }); seenPut(t2);   // sent (or not counted at all: 40_analytics.sql not run yet)
+          if (!r.ok) return;
+          return r.json().then(function (admin) {
+            var was = isAdmin();
+            try { if (admin === true && ses) localStorage.setItem("alto.admin", "1"); else localStorage.removeItem("alto.admin"); } catch (e) {}
+            if (admin === true && ses && !was) { var it = ITEMS.filter(function (x) { return x[0] === "analytics"; })[0]; addLink(it[0], it[1], it[2], false, it[0]); }
+          });
+        }).catch(function () { /* offline: the pages wait for next time */ });
+    });
+  }
+  countPage();
+  window.addEventListener("hashchange", countPage);
 })();
