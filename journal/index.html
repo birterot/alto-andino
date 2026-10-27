@@ -57,7 +57,12 @@ details.add summary{cursor:pointer;font-weight:600}
 .brewhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}
 .brewhead h2{margin:0}
 /* "Log a brew" sits in the right corner of the coffee card ("Buy again" in the left) and stays put; the form opens right below the card */
-#dbuy{display:contents}
+/* the coffee's page: Buy again and the bag buttons stacked on the left, Log a brew on the right, at the bottom */
+#dhead .acts{justify-content:space-between;align-items:flex-end}   /* a narrow phone: Log a brew goes under them, still on the right */
+#dbuy .btn{white-space:nowrap}
+#dbuy{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}
+#dbuy:empty{display:none}
+#dhead #newbrew{margin-left:auto;flex:none}
 .btn.logbtn{margin-left:auto;background:var(--t,var(--ink));border-color:var(--t,var(--ink));color:var(--f,var(--bg))}
 .btn.logbtn[aria-expanded=true]{background:none;color:var(--t,var(--ink));border-color:var(--t,var(--ink))}
 #brewbox{margin-top:0}
@@ -642,7 +647,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
 
   <div id="detail" hidden>
     <a class="back" id="dback" href="#">All coffees</a>
-    <section id="dhead" class="cc"><button type="button" class="phb" id="dphotob" hidden><img id="dphoto" alt=""></button><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><div class="acts"><span id="dbuy"></span><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button></div><p class="darch" id="darch" hidden></p><p class="frshare" id="frshare" hidden></p></div></section>
+    <section id="dhead" class="cc"><button type="button" class="phb" id="dphotob" hidden><img id="dphoto" alt=""></button><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><p class="darch" id="darch" hidden></p><p class="frshare" id="frshare" hidden></p><div class="acts"><span id="dbuy"></span><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button></div></div></section>
     <div id="dedithost"></div>
     <details class="add" id="brewbox">
       <summary id="brewsum">Log a brew</summary>
