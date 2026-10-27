@@ -123,10 +123,10 @@
   var sleepLogs = shelf && Array.isArray(shelf.sl) ? shelf.sl : null;
 
   // one note at a time: your caffeine first (when there was coffee today), then to do, Friends, the fact of the day
-  var notes = [], cafNote = null, rateNote = null, tipNote = null, todoNote = null, trendNote = null;
+  var notes = [], cafNote = null, rateNote = null, tipNote = null, todoNote = null, trendNote = null, monthNote = null;
   function todoOf(n) { return n > 0 ? { k: "To do", text: n + (n === 1 ? " of your brews still needs" : " of your brews still need") + " a Balance rating.", href: "journal/index.html#nobal", go: "Rate them", tap: true } : null; }
   // the order on Home: what is open to rate (a cup, then a Balance to give), the caffeine, the sleep tip, then the rest (friends, a bag running low, a fact)
-  var PR = { rate: 0, todo: 1, caf: 2, tip: 3, trend: 4 };
+  var PR = { rate: 0, todo: 1, caf: 2, month: 2.5, tip: 3, trend: 4 };
   var tr = session && shelf ? toRate(shelf.tr, shelf.nm) : null;
   if (tr) { tr.pr = PR.rate; notes.push(rateNote = tr); }
   var caf = session ? caffeine(shelf && shelf.cb) : null;
@@ -251,6 +251,7 @@
           var sh = null; try { sh = JSON.parse(localStorage.getItem("alto.shelf.v1") || "null"); if (sh && sh.u === my) { sh.cb = rows; sh.cbt = Date.now(); sh.my = mine; sh.tr = pend; sh.nm = nm; if (nob != null) sh.nob = nob; if (used) sh.used = Object.assign({}, sh.used || {}, used); if (res[2] && res[2].coffees) sh.coffees = res[2].coffees; if (logs) { sh.sl = logs; sh.stip = tip; } localStorage.setItem("alto.shelf.v1", JSON.stringify(sh)); } else sh = null; } catch (e) { sh = null; }
           if (sh) drawBags(sh);
           showStat(mine); showRate(pend, nm); showCaffeine(rows);
+          monthNote = swapNote(monthNote, monthReview(q.data, gc, my), PR.month);
           if (nob != null) todoNote = swapNote(todoNote, todoOf(nob), PR.todo);
           var tr = res[6] && !res[6].error && Array.isArray(res[6].data) ? res[6].data[0] : null;
           trendNote = swapNote(trendNote, tr ? { k: "From your friends", text: "Trending among your friends: " + tr.name + (tr.roaster ? " from " + tr.roaster : "") + ", " + (Math.round(tr.stars * 10) / 10).toFixed(1) + "\u2605 at " + tr.household_name + ".", href: "friends/index.html#f=" + tr.household + "&c=" + tr.id, go: "Their recipe" } : null, PR.trend);
@@ -285,6 +286,35 @@
     i = 0;
     if (notes.length) draw();
     return nu;
+  }
+  // The month in review, like the top of My brews: on the last two days of a month ("so far") and the first three of the next.
+  // Your cups (brews that were for you, here or at friends'), the brews you made, your stars, your favourite and your best cup.
+  function monthReview(brews, guest, my) {
+    var now = new Date(), d = now.getDate(), last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(), m0, m1, sofar;
+    if (d >= last - 1) { m0 = new Date(now.getFullYear(), now.getMonth(), 1); m1 = new Date(now.getFullYear(), now.getMonth() + 1, 1); sofar = true; }
+    else if (d <= 3) { m0 = new Date(now.getFullYear(), now.getMonth() - 1, 1); m1 = new Date(now.getFullYear(), now.getMonth(), 1); sofar = false; }
+    else return null;
+    var mon = m0.toLocaleDateString("en-GB", { month: "long" }), inM = function (t) { var x = Date.parse(t); return x >= m0.getTime() && x < m1.getTime(); };
+    var cups = [], made = 0, grams = 0, dev = {};
+    brews.forEach(function (b) {
+      if (!inM(b.brewed_at)) return;
+      if ((b.made_by || b.created_by) === my) { made++; grams += Number(b.dose_g) || 0; if (b.device) dev[b.device] = (dev[b.device] || 0) + 1; }
+      var r = (b.brew_ratings || []).filter(function (x) { return !x.is_guest && x.rater_id === my; })[0];
+      if (r) cups.push({ n: (b.coffees || {}).name || "a coffee", s: r.rating == null ? null : Number(r.rating), t: b.brewed_at });
+    });
+    (guest || []).forEach(function (x) { if (inM(x.brewed_at)) cups.push({ n: x.coffee_name || "a coffee", s: x.rating == null ? null : Number(x.rating), t: x.brewed_at }); });
+    if (!cups.length && !made) return null;
+    var st = cups.filter(function (c) { return c.s != null; }), avg = st.length ? st.reduce(function (a, c) { return a + c.s; }, 0) / st.length : null;
+    var by = {}; st.forEach(function (c) { (by[c.n] = by[c.n] || []).push(c.s); });
+    var fav = Object.keys(by).filter(function (k) { return by[k].length >= 2; }).map(function (k) { var v = by[k]; return [k, v.reduce(function (a, x) { return a + x; }, 0) / v.length, v.length]; })
+      .sort(function (a, b) { return b[1] - a[1] || b[2] - a[2]; })[0];
+    var best = st.slice().sort(function (a, b) { return b.s - a.s || Date.parse(b.t) - Date.parse(a.t); })[0];
+    var topDev = Object.keys(dev).sort(function (a, b) { return dev[b] - dev[a]; })[0];
+    var txt = cups.length + (cups.length === 1 ? " cup" : " cups") + (made ? ", " + made + (made === 1 ? " brew" : " brews") + " made" : "") + (avg != null ? ", " + (Math.round(avg * 10) / 10).toFixed(1) + "\u2605 on average" : "") + ".";
+    if (fav) txt += " Favourite: " + fav[0] + " (" + (Math.round(fav[1] * 10) / 10).toFixed(1) + "\u2605 over " + fav[2] + " cups).";
+    if (best && best.s >= 4 && (!fav || best.n !== fav[0] || best.s > fav[1])) { var bd = new Date(best.t); txt += " Best cup: " + String(best.s).replace(/\.0$/, "") + "\u2605, " + best.n + " on " + bd.toLocaleDateString("en-GB", { weekday: "long" }) + " " + bd.getDate() + "."; }
+    var small = [topDev && made >= 3 ? "Most used: " + topDev + " (" + dev[topDev] + " of " + made + ")." : null, grams >= 30 ? "About " + Math.round(grams) + "\u00A0g of beans in your brews" + (grams >= 200 ? ", about " + (Math.round(grams / 250 * 10) / 10) + " bags of 250\u00A0g" : "") + "." : null].filter(Boolean).join(" ");
+    return { k: sofar ? "Your " + mon + " so far" : "Your " + mon, text: txt, small: small || null, href: "journal/index.html#mine", go: "Your brews" };
   }
   function showRate(list, nm) { rateNote = swapNote(rateNote, toRate(list, nm), PR.rate); }
   // your cups still to rate: one = which one (and who made it), several = how many, to My brews

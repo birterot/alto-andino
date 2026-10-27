@@ -357,7 +357,9 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 #mlist .pend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:8px 0 2px;font-size:14.5px;color:var(--ink)}
 #mlist .pend .btn{min-height:40px;text-decoration:none}
 .mine-bal{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
-.mine-bal .lb{font-size:13.5px;color:var(--mut);min-width:92px}
+.mine-bal{margin-top:6px}
+.mine-bal .balsum{padding:2px 0;border:0;background:none;font:inherit;font-size:13.5px;color:var(--mut);cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.mine-bal .bal[hidden],.mine-bal .balsum[hidden]{display:none}
 .mine-bal .bal{margin:0;gap:5px;max-width:300px;flex:1}
 .mine-bal .bal button{min-height:38px;font-size:15px}
 .mine-bal .ok{font-size:13px;color:var(--mut)}
@@ -634,7 +636,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
 
   <div id="mineview" hidden>
     <section class="lhead" id="mhead" hidden></section>
-    <p class="hint" style="margin-top:0" id="mhint">Every brew you made or rated, newest first. You can give your Balance right here; changing one you already gave asks first. For anything else, open the brew.</p>
+    <p class="hint" style="margin-top:0" id="mhint">Every brew you made or rated, newest first.</p>
     <div class="filters">
       <select id="mflt-person" aria-label="Whose brews"></select>
       <select id="mflt-who" aria-label="Which brews"><option value="">Made or rated</option><option value="torate">To rate</option><option value="rated">Rated by me</option><option value="made">Made by me</option><option value="fav">\u2665 Favourites</option></select>
@@ -2925,8 +2927,8 @@ function renderMine() {
   const rg = whenRange("m");
   const list = mineData.filter(x => inWhen(rg, new Date(x.b.brewed_at)) && (!who || (who === "torate" ? x.pend : who === "rated" ? !!x.pr && !x.ppend : who === "fav" ? favs.brew.has(x.b.id) : x.made)) && (!bal || (bal === "none" ? x.r && !x.pend && x.r.balance == null : x.old != null)));
   const box = $("mlist"); box.textContent = "";
-  $("mhint").textContent = p === "me" ? "Every brew you made or rated, newest first. You can give your Balance right here; changing one you already gave asks first. For anything else, open the brew."
-    : p === "all" ? "Every brew of the household, newest first, with everyone's stars. Your own Balance can be given right here." : "Every brew " + (nameOf(p) || "they") + " made or rated, newest first. Your own Balance (where you tasted too) can be given right here.";
+  $("mhint").textContent = p === "me" ? "Every brew you made or rated, newest first."
+    : p === "all" ? "Every brew of the household, newest first, with everyone's stars." : "Every brew " + (nameOf(p) || "they") + " made or rated, newest first.";
   $("mcount").textContent = mineData.length ? list.length + (list.length === 1 ? " brew" : " brews") + (list.length !== mineData.length ? " of " + mineData.length : "") : "";
   if (!mineData.length) { box.appendChild(el("p", "hint", p === "me" ? "No brews of yours yet. Brews you make or rate show up here." : "No brews here yet.")); $("mmore").hidden = true; return; }
   if (!list.length) { box.appendChild(el("p", "hint", who === "torate" ? "Nothing to rate: all your cups are rated." : "No brews match these filters.")); $("mmore").hidden = true; return; }
@@ -3129,8 +3131,14 @@ function mineCard(x) {
   }
   else {
     if (x.r.rating != null && x.p === "me") { const s = el("div", "rr"); rateLine(s, Number(x.r.rating), "Your stars: " + Stars.text(Number(x.r.rating)), null, "Your stars" + (x.r.drink ? ", " + drinkText(x.r.drink, x.r.milk).toLowerCase() : ""), x.r.note); a.appendChild(s); }
-    const row = el("div", "mine-bal"), seg = el("div", "bal"), ok = el("span", "ok");
-    row.append(el("span", "lb", "Your Balance"), seg, ok);
+    // your Balance: one small line ("Balance 3 · change" or "Add your Balance"); the 0 to 5 buttons open from it
+    // (open right away in the list of brews without a Balance, where giving it is the point)
+    const row = el("div", "mine-bal"), seg = el("div", "bal"), ok = el("span", "ok"), sum = el("button", "balsum"); sum.type = "button";
+    const open = $("mflt-bal").value === "none";
+    const sumText = () => { sum.textContent = x.r.balance != null ? "Balance " + SCALE.balanceText(x.r.balance) + " \u00B7 change" : "Add your Balance"; };
+    sumText(); seg.hidden = !open; sum.hidden = open;
+    sum.onclick = () => { seg.hidden = false; sum.hidden = true; };
+    row.append(sum, seg, ok);
     if (x.r.balance != null) seg.classList.add("set");
     const draw = () => seg.querySelectorAll("button").forEach(btn => btn.setAttribute("aria-checked", String(x.r.balance != null && +btn.dataset.v === Number(x.r.balance))));
     SCALE.BALANCE.forEach(([v, name]) => {
@@ -3144,6 +3152,7 @@ function mineCard(x) {
         const { data, error } = await db.from("brew_ratings").update({ balance: nv }).eq("id", x.r.id).select("id");
         if (error || !data || !data.length) { x.r.balance = was; draw(); ok.textContent = "Not saved" + (error ? ": " + error.message : ""); return; }
         ok.textContent = nv == null ? "Saved: not rated" : "Saved: " + SCALE.balanceName(nv).toLowerCase();
+        if (!open) setTimeout(() => { seg.hidden = true; sum.hidden = false; sumText(); ok.textContent = ""; }, 1400);   // back to the small line
         if ($("mflt-bal").value === "none" && nv != null) setTimeout(() => { if ($("mflt-bal").value === "none") renderMine(); }, 1200);   // done: it leaves the "not rated" list
       };
       seg.appendChild(btn);
