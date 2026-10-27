@@ -4,7 +4,8 @@
    Tap to skip. Not shown with "reduce motion" switched on (the page then just appears).
 
    Smoothness: every moving part is its own picture layer, moved only with transform and opacity (the phone's graphics
-   chip does that without redrawing), all as Web Animations planned up front. Only the first outline is drawn as a line. */
+   chip does that without redrawing), all as Web Animations planned up front. Only the first outline is drawn as a line:
+   the mountain's own thick outline (a wide line along its outer edge, cut to the mark), so the mountain only adds its inside. */
 (function () {
   var root = document.documentElement;
   if (!root.classList.contains("intro")) return;
@@ -35,12 +36,37 @@
   var box = document.createElement("div"); box.className = "introbox"; lay.appendChild(box);
   var plant = img("plant"), back = img("back"), mountain = img("mountain");
   // the outline: the first contour of the mark (its outer edge), without the plant part
-  var outline = art[1].slice(0, art[1].indexOf("Z") + 1);
+  var outline = fromBottom(art[1].slice(0, art[1].indexOf("Z") + 1));
   var SPROUT = "268,0 393,0 393,103.6 389.2,107.8 385.8,112.4 371,132.8 357.4,151.7 349.2,163.2 337,180.3 334.3,184 324.8,183.5 322.4,180.6 309.2,161.5 298.8,146.7 281.5,121.8 268,102";
-  var lineL = sv("svg", { viewBox: art[0], class: "il line" }), ld = sv("defs", {}), lc = sv("clipPath", { id: "ia-mt" });
-  lc.appendChild(sv("path", { d: "M-20 -20H620V420H-20Z M" + SPROUT.split(" ").join(" L") + " Z", "clip-rule": "evenodd" })); ld.appendChild(lc); lineL.appendChild(ld);
-  var line = sv("path", { d: outline, fill: "none", stroke: "currentColor", "stroke-width": 5, "stroke-linejoin": "round", "clip-path": "url(#ia-mt)" });
-  lineL.appendChild(line);
+  // the drawing starts in the middle of the bottom edge (a straight cut there looks like a pen starting), not in a round corner:
+  // the outline's last curve (the bottom edge) is split in two and the path starts between the halves
+  function fromBottom(d) {
+    try {
+      var t = d.match(/[MCLZ]|-?[0-9.]+/g), segs = [], i = 0, st = null, cur = null;
+      while (i < t.length) {
+        var c = t[i++]; if (c === "Z") break;
+        if (c === "M") { st = cur = [+t[i++], +t[i++]]; continue; }
+        while (i < t.length && !/[MCLZ]/.test(t[i])) {
+          if (c === "C") { var sg = [+t[i++], +t[i++], +t[i++], +t[i++], +t[i++], +t[i++]]; segs.push(sg); cur = sg.slice(4); }
+          else { var q = [+t[i++], +t[i++]]; segs.push(cur.concat(q, q)); cur = q; }   // a straight line, as a curve
+        }
+      }
+      var last = segs.pop(), p0 = segs.length ? segs[segs.length - 1].slice(4) : st, m = function (a, b) { return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; };
+      var p1 = last.slice(0, 2), p2 = last.slice(2, 4), p3 = last.slice(4);
+      var a = m(p0, p1), b = m(p1, p2), c2 = m(p2, p3), ab = m(a, b), bc = m(b, c2), mid = m(ab, bc);   // de Casteljau at the half
+      var f = function (q) { return q[0].toFixed(2) + " " + q[1].toFixed(2); };
+      return "M" + f(mid) + "C" + f(bc) + " " + f(c2) + " " + f(p3) + segs.map(function (s) { return "C" + f(s.slice(0, 2)) + " " + f(s.slice(2, 4)) + " " + f(s.slice(4)); }).join("") +
+        "C" + f(a) + " " + f(ab) + " " + f(mid) + "Z";
+    } catch (e) { return d; }
+  }
+  var lineL = sv("svg", { viewBox: art[0], class: "il line" }), ld = sv("defs", {}), lc = sv("clipPath", { id: "ia-mt" }), lb = sv("clipPath", { id: "ia-band" });
+  lc.appendChild(sv("path", { d: "M-20 -20H620V420H-20Z M" + SPROUT.split(" ").join(" L") + " Z", "clip-rule": "evenodd" }));
+  lb.appendChild(sv("path", { d: art[1], "clip-rule": "evenodd" }));   // the mark itself: the wide line shows only where the mark's outline is
+  ld.appendChild(lc); ld.appendChild(lb); lineL.appendChild(ld);
+  var OUTLINE = 36;   // the mark's outline is about 35 units thick (of 599): the line is twice that, half of it falls outside and is cut away
+  var g = sv("g", { "clip-path": "url(#ia-mt)" });
+  var line = sv("path", { d: outline, fill: "none", stroke: "currentColor", "stroke-width": 2 * OUTLINE, "stroke-linejoin": "round", "clip-path": "url(#ia-band)" });
+  g.appendChild(line); lineL.appendChild(g);
   box.appendChild(plant); box.appendChild(back); box.appendChild(lineL); box.appendChild(mountain);
   document.body.appendChild(lay);
   lay.addEventListener("click", function () { anims.forEach(function (a) { try { a.finish(); } catch (e) {} }); finish(); });
@@ -64,10 +90,11 @@
   }
   var px = function (u) { return (u * BOXW / W).toFixed(1); };
   function start() {
-    // the outline is drawn, then the mountain fades in over it; the line layer goes away once it has faded
+    // the outline is drawn, then the inside of the mountain fades in (its outline is the same as the drawn one, so it just stays);
+    // the line layer goes once the mountain covers it
     play(line, [{ strokeDashoffset: L }, { strokeDashoffset: 0 }], 0, 1400, EASE);
-    play(mountain, [{ opacity: 0.001 }, { opacity: 1 }], 1050, 550, OUT);
-    play(lineL, [{ opacity: 1 }, { opacity: 0 }], 1450, 300);
+    play(mountain, [{ opacity: 0.001 }, { opacity: 1 }], 1250, 450, OUT);
+    play(lineL, [{ opacity: 1 }, { opacity: 0 }], 1700, 60);
     if (!window.__introPaused) setTimeout(function () { lineL.remove(); }, 1800);   // nothing vector left in the box while it moves and scales
     // the plant: up from behind the mountain, turning in from the side, then a little wiggle. One animation on one property,
     // so the graphics chip can run it on its own without the page in between.
