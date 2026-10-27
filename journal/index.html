@@ -376,6 +376,13 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .addc{flex:none;width:46px;height:46px;display:grid;place-items:center;margin-right:-6px;border:0;border-radius:12px;background:none;color:var(--brand,var(--ink));cursor:pointer}
 .addc:hover{background:var(--card)}
 .addc[hidden]{display:none}
+#ptitle{display:flex;align-items:center;gap:12px}
+#pticon{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--act);color:var(--on-act);flex:none}
+#pticon[hidden]{display:none}
+#pticon .ico{stroke-width:1.6}
+.logsub{margin:6px 0 20px}
+#newcoffee{display:inline-flex;align-items:center;gap:8px}
+#newcoffee .ico{stroke-width:1.6}
 .addc .ico{stroke-width:1.6}
 #listhost > #addbox:not([open]){display:none}
 #cfilters{margin-top:16px}
@@ -506,7 +513,7 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 </head>
 <body>
 <main>
-<div class="ptrow"><h1 id="ptitle">Coffee Shelf</h1><button type="button" class="addc" id="addc" aria-label="Add a coffee" title="Add a coffee" hidden></button></div>
+<div class="ptrow"><h1 id="ptitle"><span id="pticon" aria-hidden="true" hidden></span><span id="pttext">Coffee Shelf</span></h1><button type="button" class="addc" id="addc" aria-label="Add a coffee" title="Add a coffee" hidden></button></div>
 
 <form id="login" hidden>
   <div class="modes" id="authmodes"><button type="button" data-m="in" class="on">Sign in</button><button type="button" data-m="up">Create account</button></div>
@@ -557,7 +564,6 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
   </div>
   <div id="addview" hidden>
     <a class="back" href="#log">Log a brew</a>
-    <h2>New coffee</h2>
     <div id="addhost"></div>
   </div>
   <div id="listview">
@@ -780,7 +786,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
   </div>
 
   <div id="pickview" hidden>
-    <h2>Log a brew</h2>
+    <p class="sub logsub">Pick the device you are brewing with, then the coffee. The form opens on the coffee's page.</p>
     <div id="drafts"></div>
     <div class="modes" id="logmodes"><button type="button" data-m="device">By device</button><button type="button" data-m="coffee">By coffee</button></div>
     <div id="devpick"><p class="hint">Which device are you using?</p><div class="dvrow" id="devrow"></div></div>
@@ -2750,7 +2756,8 @@ function route() {
   $("listview").hidden = !!m || isLog || !!add || isRecent || isMine || isHH;
   $("addc").hidden = $("listview").hidden;
   // the household (name, members, invites, switching) has its own page, reached from Settings
-  $("hhpage").hidden = !isHH; $("ptitle").textContent = isHH ? "Household" : isRecent ? "Recent activity" : isMine ? "My brews" : "Coffee Shelf";
+  $("hhpage").hidden = !isHH; $("pttext").textContent = isHH ? "Household" : isRecent ? "Recent activity" : isMine ? "My brews" : isLog ? "Log a brew" : add ? "New coffee" : "Coffee Shelf";
+  $("pticon").hidden = !isLog;   // Log a brew is a page of its own: the cup with the plus, as in the top bar
   document.title = (isHH ? "Household" : isRecent ? "Recent Activity" : isMine ? "My Brews" : isLog ? "Log a Brew" : add ? "New Coffee" : "Coffee Shelf") + " | Alto Andino";   // the coffee's own page puts its name (openCoffee)
   if (isHH && $("hhbox").parentNode !== $("hhhost")) $("hhhost").appendChild($("hhbox"));
   if (isHH) { renderHousehold(); $("hhbox").open = true; }
@@ -3226,10 +3233,11 @@ function renderPick() {
     if (fits.length) add(fits); else box.appendChild(el("p", "hint", "No coffee is marked as suitable for " + t + " yet. You can mark them with \"Suitable for\" when you edit a coffee."));
     if (rest.length) { box.appendChild(el("h3", "sh", "Other coffees")); add(rest); }
   } else { box.appendChild(el("h3", "sh", "Which coffee?")); add(logCoffees); }
-  const nc = $("newcoffee"); nc.textContent = ""; nc.append(ico("plus", 16), el("span", "", "New coffee"));
+  const nc = $("newcoffee"); nc.textContent = ""; nc.append(ico("addcoffee", 22), el("span", "", "New coffee"));
   nc.onclick = () => { location.hash = "addcoffee" + (dev ? "&d=" + encodeURIComponent(dev) : ""); };
 }
 $("addc").append(ico("addcoffee", 28));
+$("pticon").append(ico("brew", 26));
 $("addc").onclick = () => { const b = $("addbox"); b.open = true; b.scrollIntoView({ behavior: "smooth", block: "start" }); setTimeout(() => $("f-roaster").focus({ preventScroll: true }), 350); };
 $("logmodes").querySelectorAll("button").forEach(b => { b.onclick = () => { logMode = b.dataset.m; store.set("alto.logmode", logMode); renderPick(); }; });
 window.addEventListener("hashchange", route);
