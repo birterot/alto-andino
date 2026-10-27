@@ -490,7 +490,7 @@
     var tcss = document.createElement("style");
     tcss.textContent = "body.hastabs main{padding-top:0}" +
       // tabs with a line under the one you are on, so they do not look like the filter buttons on the pages
-      ".sectabs{display:flex;gap:2px;overflow-x:auto;margin:0 -20px 22px;padding:0 12px;border-bottom:1px solid var(--line,#ccc);scrollbar-width:none;-webkit-overflow-scrolling:touch}" +
+      ".sectabs{display:flex;gap:2px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:none;margin:0 -20px 22px;padding:0 12px;border-bottom:1px solid var(--line,#ccc);scrollbar-width:none;-webkit-overflow-scrolling:touch}" +
       ".sectabs::-webkit-scrollbar{display:none}" +
       ".sectabs a{flex:none;display:inline-flex;align-items:center;min-height:46px;padding:0 10px;margin-bottom:-1px;border-bottom:3px solid transparent;color:var(--mut,#666);font-size:15px;text-decoration:none;white-space:nowrap}" +
       ".sectabs a[aria-current]{color:var(--ink,#222);font-weight:600;border-bottom-color:var(--act,#4a2f1c)}" +

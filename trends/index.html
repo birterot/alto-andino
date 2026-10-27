@@ -24,7 +24,7 @@
   --one:light-dark(#8A6A4A,#C4A27C);--one-track:light-dark(#E9DFD2,#3A332C);
   --grid:light-dark(#E6E0D6,#34302B);--axis:light-dark(#C9C0B2,#4A443D)
 }
-.tabs{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;margin:16px -20px 0;padding:0 20px 2px;scrollbar-width:none}
+.tabs{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:none;margin:16px -20px 0;padding:0 20px 2px;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tabs .tab{flex:none}
 .ctl{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 18px}
@@ -138,7 +138,7 @@ button.leg{cursor:pointer}
 .tile .tv{margin-top:2px;font-size:26px;font-weight:600;color:var(--ink)}
 .tile .ts{font-size:13px;color:var(--mut)}
 /* beans left: the open bags standing side by side on a shelf, each filled to what is left */
-.shelf{display:grid;grid-auto-flow:column;grid-auto-columns:92px;gap:10px;align-items:start;margin:14px -4px 4px;padding:0 4px 4px;overflow-x:auto;scrollbar-width:none;
+.shelf{display:grid;grid-auto-flow:column;grid-auto-columns:92px;gap:10px;align-items:start;margin:14px -4px 4px;padding:0 4px 4px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:none;scrollbar-width:none;
   background:linear-gradient(var(--axis),var(--axis)) 0 92px/100% 3px no-repeat;background-attachment:local}
 .shelf::-webkit-scrollbar{display:none}
 .bagb{display:flex;flex-direction:column;align-items:center;text-align:center;color:inherit;text-decoration:none}
