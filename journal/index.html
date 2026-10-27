@@ -309,6 +309,10 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .calcuse .acts{display:flex;gap:8px;margin-top:8px;align-items:center}
 .draftc{display:flex;flex-direction:column;gap:2px;margin:4px 0 12px;padding:12px 14px;border-radius:12px;border:1px solid var(--act);background:var(--card);color:var(--ink);text-decoration:none}
 .draftc strong{font-size:14.5px}.draftc span{font-size:13.5px;color:var(--mut)}
+.draftrow{display:flex;align-items:center;gap:4px;margin:4px 0 12px}.draftrow .draftc{flex:1;min-width:0;margin:0}
+.draftrow .ib{flex:none;color:var(--mut)}
+.draftnote{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--bg);font-size:14px;color:var(--mut)}
+.draftnote .lnk{font-size:14px;margin-left:2px}
 /* Coffees | Recent activity, at the top of the Coffee Shelf */
 /* the header of Recent activity and My brews: a few numbers about the week or the month, and one fun line */
 .lhead{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:16px 18px 14px;margin:14px 0 20px}
@@ -662,6 +666,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
       <form id="bf">
         <div class="ratehead" id="ratehead" hidden></div>
         <div id="brewpart">
+        <p class="draftnote" id="draftnote" hidden><span id="draftwhen"></span> <button class="lnk" type="button" id="draftdel">Discard it and start fresh</button></p>
         <div class="calcuse" id="calcuse" hidden></div>
         <label id="cofflab">Coffee<select id="b-coffee"></select></label>
         <label id="mblab" class="adv" hidden>Made by<select id="b-madeby"></select></label>
@@ -2500,6 +2505,9 @@ function restoreDraft() {
   ts.forEach(t => Object.keys(t.scores || {}).forEach(addNote));
   setTasters(ts, d.act || 0); renderFor();
   say("Your unsaved brew was restored.");
+  const at = new Date(d.t), today = at.toDateString() === new Date().toDateString();
+  $("draftwhen").textContent = "This is your unsaved brew from " + (today ? at.toTimeString().slice(0, 5) : fmtDT(at)) + ".";
+  $("draftnote").hidden = false;
   return true;
 }
 $("bf").addEventListener("input", e => {
@@ -2531,10 +2539,14 @@ function renderDrafts() {
     if (d && d.f && Date.now() - d.t <= 7 * 864e5 && c) list.push({ c, d });
   }); } catch (e) {}
   list.sort((x, y) => y.d.t - x.d.t).slice(0, 3).forEach(({ c, d }) => {
-    const a = el("a", "draftc"); a.href = "#c=" + c.id + "&new";
+    const row = el("div", "draftrow"), a = el("a", "draftc"); a.href = "#c=" + c.id + "&new";
     const what = [d.f["b-device"] && d.f["b-device"] !== "__other" ? d.f["b-device"] : null, d.f["b-dose"] ? d.f["b-dose"] + "\u00A0g" : null].filter(Boolean).join(", ");
     a.append(el("strong", "", "Continue your unsaved brew"), el("span", "", c.name + (what ? " \u00B7 " + what : "")));
-    box.appendChild(a);
+    const x = ibtn("Discard this unsaved brew", "close", () => {
+      if (!confirm("Discard your unsaved brew of " + c.name + "?")) return;
+      store.del("alto.draft.brew." + c.id); renderDrafts();
+    });
+    row.append(a, x); box.appendChild(row);
   });
 }
 // a number from the calculator or a friend's recipe into the brew form (only what is there; it counts as typed)
@@ -2552,7 +2564,7 @@ function setBMode(m) {
   $("bnlab").hidden = rate; if (!rate) $("bnoteshow").hidden = true;   // rating: your own comment (above); the brew's comment is only shown
   $("brewsum").textContent = rate ? "Rate the cup" : m === "edit" ? "Edit brew" : "Log a brew";
   $("bsave").textContent = rate ? "Save rating" : m === "edit" ? "Save changes" : "Save brew";
-  $("bcancel").hidden = m === "brew";
+  $("bcancel").hidden = m === "brew"; $("bcancel").textContent = "Cancel"; $("draftnote").hidden = $("draftnote").hidden || m !== "brew";
 }
 // "For": the people of the household as chips (tap to add or take away), and guests with a name
 function renderFor() {
@@ -2650,7 +2662,7 @@ $("b-when").addEventListener("change", () => { delete $("b-when").dataset.q; tou
 function whenISO() { const v = $("b-when").value; if (!v) return null; const d = new Date(v); return isFinite(d) ? d.toISOString() : null; }
 function newBrewSetup(dev, plain) {   // plain: no draft and no calculator offer (the rate view starts from here)
   wyLead = null;
-  editingBrew = null; touched = new Set(); prof = []; edited = false; renderProf();
+  editingBrew = null; touched = new Set(); prof = []; edited = false; renderProf(); $("draftnote").hidden = true;
   $("bf").reset(); $("b-wylink").checked = wyLinked; setRating(null); delete $("b-when").dataset.q; renderWhen();
   $("b-device-new").hidden = true; $("b-device-new").required = false;
   setBMode("brew"); syncNewBrew();
@@ -2665,6 +2677,7 @@ function newBrewSetup(dev, plain) {   // plain: no draft and no calculator offer
   fillGrinders(); $("b-grinder").value = defaultGrinder();
   applyType(); autoFill(); refreshAutoDrinks();
   const restored = plain ? false : restoreDraft(); draftWasRestored = restored;
+  if (restored) { $("bcancel").hidden = false; $("bcancel").textContent = "Discard"; }   // a brew you came back to can also be thrown away
   if (h) {
     hp("b-dose", h.dose_g); if (!isEsp(typeOf(chosen("b-device")))) hp("b-water", h.water_g); hp("b-yield", h.yield_g); hp("b-temp", h.temp_c); if (isFlair(chosen("b-device"))) hp("b-preheat", h.preheat);
     if (h.grind != null) hp("b-grind", h.grind);   // a friend's recipe brings its grind too
@@ -2717,7 +2730,13 @@ function startBrewEdit(b) {
   $("brewbox").open = true; $("calcbox").open = false; syncNewBrew();
   $("brewbox").scrollIntoView({ behavior: "smooth" });
 }
-$("bcancel").onclick = () => { store.del(draftKey()); newBrewSetup(); };
+$("bcancel").onclick = () => { if (bmode === "brew") { discardDraft(); return; } store.del(draftKey()); newBrewSetup(); };
+// throw away the unsaved brew you came back to (asks first) and start with an empty form
+function discardDraft() {
+  if (!confirm("Discard this unsaved brew? What you filled in is gone.")) return;
+  store.del(draftKey()); draftWasRestored = false; newBrewSetup(); syncNewBrew(); say("Discarded. The form is empty again.");
+}
+$("draftdel").onclick = discardDraft;
 
 function route() {
   if (!me) return;
