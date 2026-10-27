@@ -64,8 +64,9 @@ details.add summary{cursor:pointer;font-weight:600}
 .dacts .stk:empty{display:none}
 .dacts .stk .btn{white-space:nowrap}
 .dacts > .btn{margin-left:auto;flex:none}
-.btn.logbtn{margin-left:auto;background:var(--t,var(--ink));border-color:var(--t,var(--ink));color:var(--f,var(--bg))}
-.btn.logbtn[aria-expanded=true]{background:none;color:var(--t,var(--ink));border-color:var(--t,var(--ink))}
+/* the brew buttons (Brews on a card, Log a brew on a coffee's page): one colour everywhere, whatever the roast */
+.btn.logbtn,.btn.brewbtn{margin-left:auto;background:var(--act);border-color:var(--act);color:var(--on-act)}
+.btn.logbtn[aria-expanded=true]{background:none;color:var(--act);border-color:var(--act)}
 #brewbox{margin-top:0}
 .clist{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
 .cc{background:var(--f);border:1px solid var(--line);border-top:3px solid var(--s);color:var(--t);border-radius:10px;overflow:hidden}
@@ -1166,7 +1167,7 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
   const bl = buyLink(c); if (bl) stk.appendChild(bl);
   stk.appendChild(abtn("btn ghost", "New bag", "plus", () => startNewBag(c)));
   bagActions(c, load).forEach(x => stk.appendChild(x));
-  acts.append(stk, abtn("btn", nBrews ? "Brews (" + nBrews + ")" : "Brews", "brew", () => { location.hash = "c=" + c.id; }));
+  acts.append(stk, abtn("btn brewbtn", nBrews ? "Brews (" + nBrews + ")" : "Brews", "brew", () => { location.hash = "c=" + c.id; }));
   const del = ibtn("Archive or delete", "trash", async () => {
     const what = await askRemove(c, coffeeCounts[c.id] || 0);
     if (what === "archive") { if (await setArchived(c, true)) load(); }
