@@ -49,19 +49,6 @@ table.t th,table.t td{padding:6px 6px;border-bottom:1px solid var(--line);text-a
 table.t th:first-child,table.t td:first-child{text-align:left}
 table.t th{font-weight:600;color:var(--mut);font-size:12.5px}
 .twrap{overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:none}
-/* people */
-ul.ppl{list-style:none;margin:10px 0 0;padding:0}
-ul.ppl li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
-ul.ppl li:last-child{border-bottom:0}
-ul.ppl .av{grid-row:span 2;width:36px;height:36px;font-size:15px}
-.av{flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;font-weight:600}
-ul.ppl .nm{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-ul.ppl .nm small{font-weight:400;color:var(--mut)}
-ul.ppl .ls{font-size:13.5px;color:var(--mut);text-align:right;white-space:nowrap}
-ul.ppl .dt{grid-column:2 / 4;font-size:13.5px;color:var(--mut)}
-.dots{display:inline-flex;gap:2px;vertical-align:middle;margin-left:6px}
-.dots i{width:4px;height:10px;border-radius:1px;background:var(--line)}
-.dots i.on{background:var(--accent)}
 /* parts of the app, devices */
 ul.bars{list-style:none;margin:10px 0 0;padding:0}
 ul.bars li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
@@ -76,7 +63,7 @@ ul.bars .bt i{display:block;height:100%;background:var(--accent);border-radius:3
 <body>
 <main>
 <h1>Analytics</h1>
-<p class="sub">How much the app is used, and which parts. Only the app's admins see this page.</p>
+<p class="sub">How much the app is used, and which parts. Only counts, no names: nobody here can see who did what. Only the app's admins see this page.</p>
 
 <section class="box" id="signedout" hidden>
   <h2>Sign in first</h2>
@@ -105,7 +92,7 @@ ul.bars .bt i{display:block;height:100%;background:var(--accent);border-radius:3
 
   <section class="box">
     <h2>Week by week</h2>
-    <p class="hint">Monday to Sunday. Active means opened the app, made a brew, rated, added a coffee or cupped. Tap a week for its numbers.</p>
+    <p class="hint">Monday to Sunday. Active people made a brew, rated, added a coffee or cupped that week. Tap a week for its numbers.</p>
     <div class="metric" id="metric" role="group" aria-label="What to show">
       <button type="button" data-m="active">Active people</button>
       <button type="button" data-m="brews">Brews</button>
@@ -120,9 +107,9 @@ ul.bars .bt i{display:block;height:100%;background:var(--accent);border-radius:3
   </section>
 
   <section class="box">
-    <h2>People</h2>
-    <p class="hint" id="pplhint"></p>
-    <ul class="ppl" id="ppl"></ul>
+    <h2>How regular</h2>
+    <p class="hint">All accounts, by how many of the last 30 days they were active.</p>
+    <ul class="bars" id="rhythm"></ul>
   </section>
 
   <section class="box">
@@ -140,8 +127,6 @@ ul.bars .bt i{display:block;height:100%;background:var(--accent);border-radius:3
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script src="../assets/js/config.js"></script>
-<script src="../data/defaults.js"></script>
-<script src="../assets/js/people.js"></script>
 <script src="../assets/js/nav.js" defer></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
@@ -161,11 +146,6 @@ const METRIC = { active: ["active people", "active person"], brews: ["brews", "b
 const n1 = (n, w) => n + " " + (n === 1 ? w[1] : w[0]);
 const D = s => new Date(s + "T12:00:00");
 const fmtDay = (s, o) => D(s).toLocaleDateString("en-GB", o || { day: "numeric", month: "short" });
-function ago(s) {
-  if (!s) return "not yet";
-  const d = Math.round((D(data.today) - D(s)) / 864e5);
-  return d <= 0 ? "today" : d === 1 ? "yesterday" : d < 7 ? d + " days ago" : d < 60 ? Math.round(d / 7) + (Math.round(d / 7) === 1 ? " week ago" : " weeks ago") : fmtDay(s, { day: "numeric", month: "short", year: "numeric" });
-}
 
 function pressed(box, attr, v) { box.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset[attr] === String(v)))); }
 $("per").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; weeks = Number(b.dataset.w); store.set("alto.an.weeks", weeks); load(); });
@@ -182,7 +162,7 @@ async function load() {
     $("report").hidden = true; return;
   }
   data = r; say(""); store.set("alto.admin", "1"); $("report").hidden = false; pick = null;
-  drawKpis(); drawWeeks(); drawPeople(); drawPages(); drawDevices();
+  drawKpis(); drawWeeks(); drawRhythm(); drawPages(); drawDevices();
 }
 
 function drawKpis() {
@@ -220,26 +200,12 @@ function drawWeeks() {
   tb.appendChild(body); $("wktable").textContent = ""; $("wktable").appendChild(tb);
 }
 
-function drawPeople() {
-  const ul = $("ppl"); ul.textContent = "";
-  const P = data.people, ids = P.map(p => p.id), photos = {};
-  $("pplhint").textContent = "Everyone with an account, last active first. The little bars are the last 30 days: how many of them they were active. Brews and ratings are for this period.";
-  if (!P.length) { ul.appendChild(el("li", "empty", "No one yet.")); return; }
-  P.forEach(p => {
-    if (p.photo) photos[p.id] = p.photo;
-    const li = el("li"), av = PEOPLE.avatar(p.id, p.name, PEOPLE.color(p.id, p.name, null, ids));
-    const nm = el("span", "nm", p.name + " "); if (p.household) nm.appendChild(el("small", "", p.household)); else nm.appendChild(el("small", "", "no household"));
-    const ls = el("span", "ls", ago(p.last));
-    const dt = el("span", "dt", p.days30 + " of 30 days");
-    const dots = el("span", "dots"); dots.setAttribute("aria-hidden", "true");
-    for (let i = 0; i < 10; i++) dots.appendChild(el("i", i < Math.round(p.days30 / 3) ? "on" : ""));
-    dt.appendChild(dots);
-    dt.append(" · " + n1(p.brews, METRIC.brews) + ", " + n1(p.ratings, METRIC.ratings) + " · joined " + fmtDay(p.joined, { day: "numeric", month: "short", year: "numeric" }));
-    li.append(av, nm, ls, dt); ul.appendChild(li);
-  });
-  PEOPLE.photos(db, photos);
+function drawRhythm() {
+  const r = data.rhythm; $("rhythm").closest("section").hidden = !r; if (!r) return;   // before 41_analytics_anonymous.sql
+  const n = r.most + r.weekly + r.now + r.none;
+  bars($("rhythm"), [[r.most, "Most days (15+)"], [r.weekly, "About weekly (4\u201314)"], [r.now, "Now and then (1\u20133)"], [r.none, "Not in 30 days"]]
+    .map(([v, l]) => ({ label: l, v, note: n1(v, ["accounts", "account"]) + (n ? " \u00B7 " + Math.round(v / n * 100) + "%" : "") })));
 }
-
 function bars(ul, rows) {
   ul.textContent = ""; const max = Math.max(1, ...rows.map(r => r.v));
   rows.forEach(r => {
@@ -250,9 +216,9 @@ function bars(ul, rows) {
 function drawPages() {
   const since = data.logged_since;
   $("pghint").textContent = since
-    ? "Each part counts once a day per phone. Counting since " + fmtDay(since, { day: "numeric", month: "long", year: "numeric" }) + (since > data.from ? ", so weeks before that only show brews, ratings and coffees." : ".")
+    ? "Each part counts once a day per phone, without a name. Counting since " + fmtDay(since, { day: "numeric", month: "long", year: "numeric" }) + (since > data.from ? ", so weeks before that only show brews, ratings and coffees." : ".")
     : "Counting starts now: each part of the app counts once a day per phone, from the next time someone opens it.";
-  const rows = data.pages.map(p => ({ label: pageLabel(p.page), v: p.opens, note: n1(p.opens, ["times", "time"]) + (p.people ? ", " + n1(p.people, ["people", "person"]) : "") + (p.visitors ? ", " + p.visitors + " signed out" : "") }));
+  const rows = data.pages.map(p => ({ label: pageLabel(p.page), v: p.opens, note: n1(p.opens, ["times", "time"]) + (p.visitors ? ", " + p.visitors + " signed out" : "") }));
   if (!rows.length) { $("pages").textContent = ""; $("pages").appendChild(el("li", "empty", "Nothing counted yet.")); return; }
   bars($("pages"), rows);
 }

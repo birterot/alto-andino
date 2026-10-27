@@ -428,6 +428,9 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .curve{max-width:420px;margin-top:12px;color:var(--mut)}
 .curve svg{display:block;width:100%;height:auto;color:var(--mut)}
 .curve .ln{stroke:var(--accent)}
+.curve .ln.over{stroke:#c0392b}.curve .overt{fill:#c0392b}
+#profsum.warn{color:var(--ink)}
+#profsum .lnk{font-size:inherit}
 .prow{display:grid;grid-template-columns:auto 1fr 74px auto;gap:8px;align-items:center;margin-top:10px;max-width:420px}
 .prow input[type=range]{margin:0}
 .prow input[type=number],.prow input[data-num]{margin:0;padding:8px}
@@ -712,6 +715,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
           <summary>Pressure profile with several stages</summary>
           <p class="hint">After the pre-infusion. Each stage has a pressure and how long it lasts. With stages, the single pressure above is not used.</p>
           <div id="profrows"></div>
+          <p class="hint" id="profsum" aria-live="polite"></p>
           <button type="button" class="btn ghost" id="profadd"><span>Add stage</span></button>
         </details>
         </div>
@@ -2005,27 +2009,49 @@ function feelFor() {
 function feelAuto() { if (!touched.has("b-feel")) $("b-feel").value = feelFor(); }
 
 // ----- pressure curve (small picture) and the optional stages
+// the stages after the pre-infusion, as they are brewed: a last stage without seconds runs to the end of the shot
+function stagesFor(pis, stages, tot) {
+  const st = (stages || []).map(s => ({ s: s.s, bar: s.bar })), last = st[st.length - 1];
+  if (last && !(last.s > 0)) { const used = (pis > 0 ? pis : 0) + st.slice(0, -1).reduce((a, s) => a + (s.s > 0 ? s.s : 0), 0); last.s = tot > used ? Math.round((tot - used) * 10) / 10 : 0; }
+  return st.filter(s => s.s > 0);
+}
 function pressurePts(pib, pis, stages, bar, tot) {
   const pts = []; let t = 0;
-  if (pis > 0 && pib !== null) { pts.push([0, pib], [pis, pib]); t = pis; }
-  const st = (stages || []).filter(s => s.s > 0);
+  if (pis > 0) { if (pib !== null && pib !== undefined) pts.push([0, pib], [pis, pib]); t = pis; }
+  const st = stagesFor(pis, stages, tot);
   if (st.length) st.forEach(s => { pts.push([t, s.bar], [t + s.s, s.bar]); t += s.s; });
   else if (bar !== null && bar !== undefined) { const d = tot && tot > t ? tot - t : 20; pts.push([t, bar], [t + d, bar]); }
   return pts;
 }
-function curveSvg(pts) {
+// the curve, with the time axis up to the shot time (tot): what runs past it is dashed in the warning colour
+function curveSvg(pts, tot) {
   const NS = "http://www.w3.org/2000/svg", W = 300, H = 100, L = 30, B = 18, T = 8, R = 8;
   const svg = document.createElementNS(NS, "svg");
   svg.setAttribute("viewBox", "0 0 " + W + " " + H); svg.setAttribute("role", "img");
-  const tmax = Math.max(...pts.map(p => p[0])) || 1, bmax = Math.max(10, Math.ceil(Math.max(...pts.map(p => p[1]))));
+  const tend = Math.max(...pts.map(p => p[0])), shot = tot > 0 ? tot : null, tmax = Math.max(tend, shot || 0) || 1, bmax = Math.max(10, Math.ceil(Math.max(...pts.map(p => p[1]))));
   const X = t => L + t / tmax * (W - L - R), Y = v => H - B - v / bmax * (H - B - T);
   const mk = (n, a, txt) => { const e = document.createElementNS(NS, n); Object.keys(a).forEach(k => e.setAttribute(k, a[k])); if (txt) e.textContent = txt; svg.appendChild(e); return e; };
   mk("path", { d: "M" + L + " " + T + "V" + (H - B) + "H" + (W - R), fill: "none", stroke: "currentColor", "stroke-opacity": ".35" });
   mk("text", { x: L - 4, y: Y(0) + 3, "text-anchor": "end", "font-size": 9, fill: "currentColor" }, "0");
   mk("text", { x: L - 4, y: Y(bmax) + 3, "text-anchor": "end", "font-size": 9, fill: "currentColor" }, bmax + " bar");
-  mk("text", { x: X(tmax), y: H - 4, "text-anchor": "end", "font-size": 9, fill: "currentColor" }, Math.round(tmax) + " s");
-  mk("path", { d: pts.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(""), fill: "none", "class": "ln", "stroke-width": 2.2, "stroke-linejoin": "round", "stroke-linecap": "round" });
-  const lab = pts.length ? "Pressure over time, up to " + Math.round(tmax) + " seconds" : "";
+  const over = shot && tend > shot + 0.5, line = (ps, a) => mk("path", Object.assign({ d: ps.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(""), fill: "none", "class": "ln", "stroke-width": 2.2, "stroke-linejoin": "round", "stroke-linecap": "round" }, a || {}));
+  if (over) {   // cut at the end of the shot (the segments are flat or straight up and down, so a straight cut is exact)
+    const a = [], b = [];
+    pts.forEach((p, i) => {
+      const q = pts[i - 1];
+      if (q && q[0] < shot && p[0] > shot) { const m = [shot, q[1] + (p[1] - q[1]) * (shot - q[0]) / (p[0] - q[0])]; a.push(m); b.push(m); }
+      (p[0] <= shot ? a : b).push(p);
+    });
+    if (b.length && a.length && b[0][0] > shot) b.unshift(a[a.length - 1]);
+    if (a.length > 1) line(a); if (b.length > 1) line(b, { "class": "ln over", "stroke-dasharray": "4 3" });
+    mk("path", { d: "M" + X(shot).toFixed(1) + " " + T + "V" + (H - B), stroke: "currentColor", "stroke-dasharray": "2 2", "stroke-opacity": ".6" });
+    mk("text", { x: X(shot), y: H - 4, "text-anchor": X(tmax) - X(shot) < 34 ? "end" : "middle", "font-size": 9, fill: "currentColor" }, Math.round(shot) + " s shot");
+    if (X(tmax) - X(shot) >= 34) mk("text", { x: X(tmax), y: H - 4, "text-anchor": "end", "font-size": 9, "class": "overt" }, Math.round(tend) + " s");
+  } else {
+    line(pts);
+    mk("text", { x: X(tmax), y: H - 4, "text-anchor": "end", "font-size": 9, fill: "currentColor" }, Math.round(tmax) + " s");
+  }
+  const lab = pts.length ? "Pressure over time, up to " + Math.round(tmax) + " seconds" + (over ? "; the stages run " + Math.round(tend - shot) + " seconds past the " + Math.round(shot) + "-second shot" : "") : "";
   svg.setAttribute("aria-label", lab);
   return svg;
 }
@@ -2033,7 +2059,31 @@ function drawCurve() {
   const box = $("curve"), esp = isEsp(typeOf(chosen("b-device")));
   const pts = esp ? pressurePts(numOf("b-pibar"), numOf("b-pis"), prof, numOf("b-pressure"), numOf("b-time")) : [];
   box.hidden = !pts.length; box.textContent = "";
-  if (pts.length) box.appendChild(curveSvg(pts));
+  if (pts.length) box.appendChild(curveSvg(pts, numOf("b-time")));
+  profSum();
+}
+// under the stages: how they add up against the shot time, so nobody has to count
+function profSum() {
+  const box = $("profsum"); if (!box) return; box.textContent = ""; box.classList.remove("warn");
+  if (!prof.length) return;
+  const pis = numOf("b-pis") || 0, tot = numOf("b-time"), last = prof[prof.length - 1], open = !(last.s > 0);
+  const used = Math.round((pis + prof.reduce((a, s) => a + (s.s > 0 ? s.s : 0), 0)) * 10) / 10, f = v => Math.round(v * 10) / 10 + "\u00A0s";
+  const pre = pis ? "Pre-infusion " + f(pis) + " + stages " + f(used - pis) : "The stages take " + f(used);
+  const btn = (txt, go) => { const b = el("button", "lnk", txt); b.type = "button"; b.onclick = () => { go(); renderProf(); drawCurve(); userChanged(); }; return b; };
+  if (!tot) { box.append((pis ? pre + " = " + f(used) : "The stages take " + f(used)) + ". Put in the shot time above and a last stage without seconds runs to the end by itself."); return; }
+  if (open) {
+    const rest = Math.round((tot - used) * 10) / 10;
+    box.append(rest > 0 ? "The last stage runs to the end of the " + f(tot) + " shot: " + f(rest) + "." : pre + " already take " + f(used) + " of the " + f(tot) + " shot, so the last stage has no time left.");
+    return;
+  }
+  const diff = Math.round((tot - used) * 10) / 10;
+  if (Math.abs(diff) < 0.5) { box.append(pre + " = the " + f(tot) + " shot."); return; }
+  if (diff > 0) { box.append(pre + " = " + f(used) + ", " + f(diff) + " short of the " + f(tot) + " shot. ", btn("Run the last stage to the end", () => { last.s = 0; })); return; }
+  box.classList.add("warn");
+  const fit = Math.round((last.s + diff) * 10) / 10;
+  box.append(pre + " = " + f(used) + ", " + f(-diff) + " longer than the " + f(tot) + " shot. ");
+  if (fit > 0) box.append(btn("Shorten the last stage to " + f(fit), () => { last.s = fit; }), " ");
+  box.append(btn("Make the shot " + f(used), () => { $("b-time").value = used; touched.add("b-time"); timeToParts(); }));
 }
 function renderProf() {
   const box = $("profrows"); box.textContent = "";
@@ -2041,7 +2091,7 @@ function renderProf() {
     const row = el("div", "prow"), out = el("output", "", st.bar + " bar");
     const r = el("input"); r.type = "range"; r.min = 0; r.max = 12; r.step = 0.5; r.value = st.bar; r.setAttribute("aria-label", "Stage " + (i + 1) + " pressure");
     r.addEventListener("input", () => { st.bar = +r.value; out.textContent = st.bar + " bar"; });
-    const s = el("input"); s.type = "number"; s.step = "any"; s.inputMode = "decimal"; s.placeholder = "sec"; s.value = st.s || ""; s.setAttribute("aria-label", "Stage " + (i + 1) + " seconds");
+    const s = el("input"); s.type = "number"; s.step = "any"; s.inputMode = "decimal"; s.placeholder = i === prof.length - 1 ? "to end" : "sec"; s.value = st.s || ""; s.setAttribute("aria-label", "Stage " + (i + 1) + " seconds");
     s.addEventListener("input", () => { st.s = parseFloat(s.value) || 0; });
     const x = ibtn("Remove stage " + (i + 1), "close", () => { prof.splice(i, 1); renderProf(); drawCurve(); userChanged(); });
     row.append(out, r, s, x); box.appendChild(row);
@@ -3336,8 +3386,8 @@ function brewCard(b) {
     b.dose_g && b.yield_g ? "ratio 1:" + (b.yield_g / b.dose_g).toFixed(1) : null].filter(Boolean).join(", ");
   if (nums) a.appendChild(el("p", "", nums));
   if (Array.isArray(b.pressure_profile) && b.pressure_profile.length) {
-    const pts = pressurePts(b.preinfusion_bar, b.preinfusion_s, b.pressure_profile, null, null);
-    if (pts.length) { const w = el("div", "curve"); w.appendChild(curveSvg(pts)); a.appendChild(w); }
+    const pts = pressurePts(b.preinfusion_bar, b.preinfusion_s, b.pressure_profile, null, b.time_s);
+    if (pts.length) { const w = el("div", "curve"); w.appendChild(curveSvg(pts, b.time_s)); a.appendChild(w); }
   }
   // the taste: Balance and the sliders in a tidy grid, then the tasting notes that were there (by name only; "none" is left out)
   const chips = (sc, bal) => {
@@ -3486,7 +3536,7 @@ function brewRow() {
   const num = id => { const v = $(id).value.trim(); return v === "" ? null : Number(v.replace(",", ".")); };
   const device = chosen("b-device") || null, esp = isEsp(typeOf(device));
   const keep = id => !isSimple() || touched.has(id);   // in "Simple", hidden fields only count when you filled them in yourself
-  const stages = esp ? prof.filter(s => s.s > 0).map(s => ({ s: s.s, bar: s.bar })) : [];
+  const stages = esp ? stagesFor(num("b-pis"), prof, num("b-time")) : [];   // a last stage without seconds: up to the end of the shot
   const row = {
     device, grinder: $("b-grind").value.trim() || touched.has("b-grinder") ? ($("b-grinder").value || null) : null, grind: $("b-grind").value.trim() || null, grind_feel: $("b-feel").value.trim() || null,
     pressure_bar: esp && keep("b-pressure") ? num("b-pressure") : null, preinfusion_bar: esp && keep("b-pibar") ? num("b-pibar") : null, preinfusion_s: esp && keep("b-pis") ? num("b-pis") : null,

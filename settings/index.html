@@ -349,8 +349,7 @@ $("export").onclick = async () => {
       sleep: await get(db.from("sleep_logs").select("night,quality,created_at").order("night"), "sleep"),
       favourites: await get(db.from("favourites").select("kind,ref,created_at"), "favourites"),
       feedback: await get(db.from("feedback").select("created_at,kind,message,page,device,photo_path").eq("user_id", me.id), "feedback"),
-      notification_phones: (await get(db.from("push_subscriptions").select("created_at"), "phones")).length,
-      app_usage: await get(db.from("app_usage").select("day,page,opens").eq("user_id", me.id).order("day"), "usage")
+      notification_phones: (await get(db.from("push_subscriptions").select("created_at"), "phones")).length
     };
     const blob = new Blob([JSON.stringify(out, null, 2)], { type: "application/json" }), a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = "alto-andino-my-data-" + new Date().toISOString().slice(0, 10) + ".json"; document.body.appendChild(a); a.click(); a.remove();
@@ -391,7 +390,7 @@ const DD = [   // key, label, a warning when it also takes things from the other
   ["brews", "The brews I made", "Also gone for the others in your household, with their ratings of them."],
   ["coffees", "The coffees I added", "Also gone for the others in your household, with all their brews and photos."],
   ["cuppings", "My cupping scores", null], ["feedback", "What I sent with Feedback", null],
-  ["profile", "My profile photo and the line about me", null], ["settings", "My settings (my name stays)", null], ["phones", "My phones with notifications", null], ["usage", "Which parts of the app I opened (for Analytics)", null]];
+  ["profile", "My profile photo and the line about me", null], ["settings", "My settings (my name stays)", null], ["phones", "My phones with notifications", null]];
 DD.forEach(([k, t, w]) => {
   const l = el("label", "chk"), i = el("input"), sp = el("span"); i.type = "checkbox"; i.id = "dd-" + k;
   sp.append(document.createTextNode(t + " "), el("span", "n", "")); if (w) sp.appendChild(el("span", "warn", w));
@@ -405,15 +404,15 @@ $("deldata").onclick = async () => {
   $("ddbox").hidden = false; $("delbox").hidden = true; $("ddword").value = ""; $("ddmsg").textContent = ""; DD.forEach(([k]) => { $("dd-" + k).checked = false; }); ddReady();
   // how much there is of each (left out where it cannot be counted)
   const cnt = q => q.then(r => r.error ? null : r.count, () => null), H = { count: "exact", head: true }, id = me.id;
-  const [ra, sl, br, co, cu, fb, ph, us] = await Promise.all([
+  const [ra, sl, br, co, cu, fb, ph] = await Promise.all([
     cnt(db.from("brew_ratings").select("id", H).eq("rater_id", id).eq("is_guest", false)),
     cnt(db.from("sleep_logs").select("night", H).eq("user_id", id)),
     cnt(db.from("brews").select("id", H).or("made_by.eq." + id + ",and(made_by.is.null,created_by.eq." + id + ")")),
     cnt(db.from("coffees").select("id", H).eq("created_by", id)),
     cnt(db.from("cuppings").select("id", H).eq("cupper_id", id).eq("is_guest", false)),
     cnt(db.from("feedback").select("id", H).eq("user_id", id)),
-    cnt(db.from("push_subscriptions").select("endpoint", H)), cnt(db.from("app_usage").select("day", H).eq("user_id", id))]);
-  const n = { ratings: ra, sleep: sl, brews: br, coffees: co, cuppings: cu, feedback: fb, phones: ph, usage: us };
+    cnt(db.from("push_subscriptions").select("endpoint", H))]);
+  const n = { ratings: ra, sleep: sl, brews: br, coffees: co, cuppings: cu, feedback: fb, phones: ph };
   DD.forEach(([k]) => { const s = $("dd-" + k).parentNode.querySelector(".n"); s.textContent = typeof n[k] === "number" ? "(" + n[k] + ")" : ""; });
 };
 $("ddgo").onclick = async () => {
@@ -438,7 +437,7 @@ $("ddgo").onclick = async () => {
       if (what.includes("settings")) ["alto.cafpref", "alto.homehide", "alto.homeorder", "alto.mydevs", "alto.formmode", "alto.device", "alto.grinder"].forEach(drop);
       if (["ratings", "sleep", "brews", "coffees"].some(k => what.includes(k))) drop("alto.shelf.v1");   // Home builds it again
     } catch (e) { /* only shortcuts */ }
-    const L = { ratings: ["rating", "ratings"], sleep: ["sleep answer", "sleep answers"], brews: ["brew", "brews"], coffees: ["coffee", "coffees"], cuppings: ["cupping score", "cupping scores"], feedback: ["feedback", "feedback"], phones: ["phone", "phones"], usage: ["usage entry", "usage entries"] };
+    const L = { ratings: ["rating", "ratings"], sleep: ["sleep answer", "sleep answers"], brews: ["brew", "brews"], coffees: ["coffee", "coffees"], cuppings: ["cupping score", "cupping scores"], feedback: ["feedback", "feedback"], phones: ["phone", "phones"] };
     const said = Object.entries(data || {}).filter(([k]) => L[k]).map(([k, v]) => v + " " + L[k][v === 1 ? 0 : 1]);
     if (what.includes("profile")) said.push("your photo and line"); if (what.includes("settings")) said.push("your settings");
     $("ddmsg").textContent = "Deleted: " + (said.join(", ") || "nothing was there") + ".";
