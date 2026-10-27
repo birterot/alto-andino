@@ -34,7 +34,8 @@
 
   lay = document.createElement("div"); lay.id = "introlay"; lay.setAttribute("aria-hidden", "true");
   var box = document.createElement("div"); box.className = "introbox"; lay.appendChild(box);
-  var plant = img("plant"), back = img("back"), mountain = img("mountain");
+  var plant = img("plant"), back = img("back"), mountain = img("mountain"), cover = img("back");
+  cover.className = "il cover";   // a second backing over the mountain: it shrinks to the middle, so the lines inside appear from the outline inwards
   // the outline: the first contour of the mark (its outer edge), without the plant part
   var outline = fromBottom(art[1].slice(0, art[1].indexOf("Z") + 1));
   var SPROUT = "268,0 393,0 393,103.6 389.2,107.8 385.8,112.4 371,132.8 357.4,151.7 349.2,163.2 337,180.3 334.3,184 324.8,183.5 322.4,180.6 309.2,161.5 298.8,146.7 281.5,121.8 268,102";
@@ -67,13 +68,13 @@
   var g = sv("g", { "clip-path": "url(#ia-mt)" });
   var line = sv("path", { d: outline, fill: "none", stroke: "currentColor", "stroke-width": 2 * OUTLINE, "stroke-linejoin": "round", "clip-path": "url(#ia-band)" });
   g.appendChild(line); lineL.appendChild(g);
-  box.appendChild(plant); box.appendChild(back); box.appendChild(lineL); box.appendChild(mountain);
+  box.appendChild(plant); box.appendChild(back); box.appendChild(mountain); box.appendChild(cover); box.appendChild(lineL);
   document.body.appendChild(lay);
   lay.addEventListener("click", function () { anims.forEach(function (a) { try { a.finish(); } catch (e) {} }); finish(); });
 
   var L = 4000; try { L = Math.ceil(line.getTotalLength()); } catch (e) {}
   line.style.strokeDasharray = L + " " + L; line.style.strokeDashoffset = L;
-  mountain.style.opacity = 0.001;   // not 0: then it is painted once up front, not in the middle of the animation
+  cover.style.transformOrigin = "50% 70%";
   plant.style.transform = "translate3d(" + (18 * BOXW / W).toFixed(1) + "px," + (190 * BOXW / W).toFixed(1) + "px,0) rotate(22deg)";
 
   // the move to where the real mark sits on the page (measured from the box's own place in the middle, untransformed)
@@ -90,12 +91,13 @@
   }
   var px = function (u) { return (u * BOXW / W).toFixed(1); };
   function start() {
-    // the outline is drawn, then the inside of the mountain fades in (its outline is the same as the drawn one, so it just stays);
-    // the line layer goes once the mountain covers it
+    // the outline is drawn; then the lines inside grow in from the outline to the middle: the backing over the mountain shrinks away
+    // (only a picture getting smaller, which the graphics chip does by itself). The drawn outline sits on top all along and
+    // goes once the mountain, with the same outline, is all there.
     play(line, [{ strokeDashoffset: L }, { strokeDashoffset: 0 }], 0, 1400, EASE);
-    play(mountain, [{ opacity: 0.001 }, { opacity: 1 }], 1250, 450, OUT);
-    play(lineL, [{ opacity: 1 }, { opacity: 0 }], 1700, 60);
-    if (!window.__introPaused) setTimeout(function () { lineL.remove(); }, 1800);   // nothing vector left in the box while it moves and scales
+    play(cover, [{ transform: "scale(1)" }, { transform: "scale(0.001)" }], 1350, 550, "cubic-bezier(.4,0,.2,1)");
+    play(lineL, [{ opacity: 1 }, { opacity: 0 }], 1900, 60);
+    if (!window.__introPaused) setTimeout(function () { lineL.remove(); cover.remove(); }, 2000);   // nothing vector left in the box while it moves and scales
     // the plant: up from behind the mountain, turning in from the side, then a little wiggle. One animation on one property,
     // so the graphics chip can run it on its own without the page in between.
     var T = function (x, y, r, at, ease) { var k = { transform: "translate3d(" + x + "px," + y + "px,0) rotate(" + r + "deg)" }; if (at !== undefined) k.offset = at; if (ease) k.easing = ease; return k; };
@@ -118,7 +120,7 @@
   var END = 5000;
   // start when the page has finished loading and the pictures are ready, then wait two frames so the first frame of the
   // animation is not also the frame that sets everything up (at the latest after a second and a half)
-  var ready = [plant, back, mountain].map(function (i) { return i.decode ? i.decode().catch(function () {}) : Promise.resolve(); });
+  var ready = [plant, back, mountain, cover].map(function (i) { return i.decode ? i.decode().catch(function () {}) : Promise.resolve(); });
   var loaded = new Promise(function (r) { if (document.readyState === "complete") r(); else window.addEventListener("load", r, { once: true }); });
   var started = false;
   function go() { if (started || done) return; started = true; requestAnimationFrame(function () { requestAnimationFrame(start); }); }
