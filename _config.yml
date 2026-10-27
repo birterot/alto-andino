@@ -1,0 +1,7 @@
+# GitHub Pages: files of the project that are not part of the app are not published on the site
+# (the database setup, the edge function, notes). They stay in the repository.
+exclude:
+  - supabase
+  - LATER.md
+  - SCOPE.md
+  - README.md
