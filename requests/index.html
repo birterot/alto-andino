@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/icons/icon-180.png?v=2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Alto Andino">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="robots" content="noindex">
+<title>Sign-up requests | Alto Andino</title>
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="../assets/css/base.css">
+<style>
+.box{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:6px 18px 18px;margin:0 0 16px;max-width:640px}
+.box h2{font-size:19px;margin:14px 0 4px}
+.hint{margin:4px 0 0;color:var(--mut);font-size:14px;max-width:62ch}
+ul.rq{list-style:none;margin:8px 0 0;padding:0}
+ul.rq li{padding:12px 0;border-bottom:1px solid var(--line)}
+ul.rq li:last-child{border-bottom:0}
+.rq .nm{font-weight:600;font-size:15.5px}
+.rq .em{font-size:14px;color:var(--mut);overflow-wrap:anywhere}
+.rq .dt{font-size:13px;color:var(--mut);margin-top:2px}
+.rq .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.rq .acts button{font:inherit;font-size:14.5px;min-height:40px;padding:0 16px;border-radius:999px;cursor:pointer}
+.rq .yes{border:1px solid var(--act);background:var(--act);color:var(--on-act)}
+.rq .no{border:1px solid var(--line);background:none;color:var(--ink)}
+.rq .acts button:disabled{opacity:.6;cursor:default}
+.rq .done{font-size:14px;color:var(--mut);margin-top:8px}
+.empty{color:var(--mut);font-size:14.5px;margin:10px 0 0}
+</style>
+</head>
+<body>
+<main>
+<h1>Sign-up requests</h1>
+<p class="sub">Alto Andino is invite-only for now. People who sign up without an invite link wait here until you say yes. With an invite or friend link they are in right away.</p>
+
+<section class="box" id="signedout" hidden>
+  <h2>Sign in first</h2>
+  <p class="hint">Sign in on the Coffee Shelf, then come back here.</p>
+  <p><a class="lnk" href="../journal/index.html">Go to the Coffee Shelf</a></p>
+</section>
+<section class="box" id="nosql" hidden>
+  <h2>Almost there</h2>
+  <p class="hint">This needs a small database update first: supabase/42_invite_only.sql, run once in Supabase.</p>
+</section>
+<section class="box" id="noadmin" hidden>
+  <h2>Only for the app's admins</h2>
+  <p class="hint">Only the admins decide who gets in.</p>
+</section>
+<p class="hint" id="msg" role="status"></p>
+
+<section class="box" id="waiting" hidden>
+  <h2>Waiting</h2>
+  <p class="hint">They can sign in, but cannot start a household until you say yes. Once you do, they can start right away (tell them, the app does not send them a message).</p>
+  <ul class="rq" id="wlist"></ul>
+</section>
+<section class="box" id="declined" hidden>
+  <h2>Not approved</h2>
+  <p class="hint">You said no. You can still let them in later.</p>
+  <ul class="rq" id="dlist"></ul>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
+<script src="../assets/js/config.js"></script>
+<script src="../assets/js/nav.js" defer></script>
+<script>
+const db = supabase.createClient(SUPA.url, SUPA.key);
+const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const say = t => { $("msg").textContent = t || ""; };
+const when = s => { const d = new Date(s); return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) + ", " + d.toTimeString().slice(0, 5); };
+let me = null;
+
+async function load() {
+  say("Loading...");
+  const { data, error } = await db.rpc("access_requests");
+  say("");
+  if (error) {
+    if (/Could not find the function|does not exist|schema cache/i.test(error.message)) $("nosql").hidden = false;
+    else if (/admins/i.test(error.message)) { $("noadmin").hidden = false; try { localStorage.removeItem("alto.admin"); } catch (e) { /* only the menu */ } }
+    else say("Could not load them: " + error.message);
+    return;
+  }
+  const rows = data || [], wait = rows.filter(r => r.status === "pending"), no = rows.filter(r => r.status === "declined");
+  $("waiting").hidden = false; $("declined").hidden = !no.length;
+  draw($("wlist"), wait, "Nobody is waiting.");
+  draw($("dlist"), no, "");
+}
+function draw(ul, rows, none) {
+  ul.textContent = "";
+  if (!rows.length) { if (none) ul.appendChild(el("li", "empty", none)); return; }
+  rows.forEach(r => {
+    const li = el("li");
+    li.append(el("div", "nm", r.name || "No name yet"), el("div", "em", r.email || ""), el("div", "dt", "Signed up " + when(r.signed_up) + (r.status === "declined" && r.decided_at ? " · turned down " + when(r.decided_at) : "")));
+    const acts = el("div", "acts"), yes = el("button", "yes", "Let in"), no = el("button", "no", "Not now");
+    yes.type = no.type = "button";
+    const decide = async ok => {
+      if (!ok && !confirm("Turn down " + (r.name || r.email) + "? They stay signed up, but cannot use the app. You can still let them in later.")) return;
+      yes.disabled = no.disabled = true;
+      const { error } = await db.rpc("decide_access", { p_user: r.id, p_approve: ok });
+      if (error) { yes.disabled = no.disabled = false; say("Not saved: " + error.message); return; }
+      acts.replaceWith(el("p", "done", ok ? "Let in. They can start their household now." : "Turned down."));
+      if (!ok) setTimeout(load, 1200);
+    };
+    yes.onclick = () => decide(true); no.onclick = () => decide(false);
+    acts.appendChild(yes); if (r.status !== "declined") acts.appendChild(no);
+    li.appendChild(acts); ul.appendChild(li);
+  });
+}
+
+db.auth.onAuthStateChange((_e, session) => setTimeout(() => {
+  const was = me && me.id; me = session ? session.user : null;
+  $("signedout").hidden = !!me;
+  if (!me) { $("waiting").hidden = $("declined").hidden = true; return; }
+  if (was === me.id) return;
+  load();
+}, 0));
+</script>
+</body>
+</html>

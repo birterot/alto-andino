@@ -21,7 +21,8 @@
     calc: "M7 3h10a1 1 0 011 1v16a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1zM8.5 7h7M8.5 12h.01M12 12h.01M15.5 12h.01M8.5 16h.01M12 16h.01M15.5 16h.01",
     book: "book",
     cupping: "M4 9h13v4a6 6 0 01-6 6h-1a6 6 0 01-6-6V9z M17 10.5h1.2a2.8 2.8 0 010 5.6H16.3 M3 21h16 M8 2.5c-1 1.5 1 2.5 0 4 M12.5 2.5c-1 1.5 1 2.5 0 4",   // a cup with a handle (ear), saucer and steam
-    analytics: "M4 20h16 M7 20v-6 M11 20V5 M15 20v-9 M19 20v-4",   // bars: how much the app is used
+    analytics: "M4 20h16 M7 20v-6 M11 20V5 M15 20v-9 M19 20v-4",
+    requests: "M10 11a3.5 3.5 0 100-7 3.5 3.5 0 000 7z M3.5 20a6.5 6.5 0 0113 0 M19 8v6 M16 11h6",   // a person with a plus: new accounts waiting for a yes   // bars: how much the app is used
     settings: "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"
   };
   var ITEMS = [               // key, label, link
@@ -37,7 +38,8 @@
     ["book", BOOK, "chapters/index.html"],
     ["settings", "Settings", "settings/index.html"],
     ["feedback", "Feedback", "feedback/index.html"],
-    ["analytics", "Analytics", "analytics/index.html"]   // only for the app's admins (see "usage" at the end)
+    ["analytics", "Analytics", "analytics/index.html"],   // only for the app's admins (see "usage" at the end)
+    ["requests", "Sign-up requests", "requests/index.html"]   // only for the app's admins (supabase/42_invite_only.sql)
   ];
   var CHAPTERS = [            // file name, label (order = menu order and the previous/next order)
     ["processing", "Processing"],
@@ -49,7 +51,7 @@
 
   var path = location.pathname, file = (path.split("/").pop() || "index.html").replace(/\.html$/, "");
   var inBook = /\/chapters\//.test(path), chapter = inBook && file !== "index" ? file : null;
-  var isHome = !inBook && !/\/(journal|trends|calc|settings|cupping|friends|feedback|analytics)\//.test(path) && !/privacy\.html$/.test(path);
+  var isHome = !inBook && !/\/(journal|trends|calc|settings|cupping|friends|feedback|analytics|requests)\//.test(path) && !/privacy\.html$/.test(path);
   var isCalc = /\/calc\//.test(path);
   var NS = "http://www.w3.org/2000/svg";
 
@@ -189,7 +191,7 @@
   var subs = null;
   ITEMS.forEach(function (it) {
     if (it[0] === "log" || it[0] === "calc") return;   // not in the menu: both are buttons in the top bar (still section tabs and Home tiles)
-    if (it[0] === "analytics" && !isAdmin()) return;
+    if ((it[0] === "analytics" || it[0] === "requests") && !isAdmin()) return;
     addLink(it[0], it[1], it[2], false, it[0]);
     if (it[0] === "book") {
       var a = links[links.length - 1], row = document.createElement("div"); row.className = "mrow";
@@ -508,7 +510,7 @@
   function isAdmin() { try { return localStorage.getItem("alto.admin") === "1"; } catch (e) { return false; } }
   function pageKey() {
     if (inBook) return "chapters/" + (chapter || "index");
-    var m = path.match(/\/(journal|trends|calc|settings|cupping|friends|feedback|analytics)\//);
+    var m = path.match(/\/(journal|trends|calc|settings|cupping|friends|feedback|analytics|requests)\//);
     if (!m) return /privacy\.html$/.test(path) ? "privacy" : "home";
     if (m[1] !== "journal") return m[1];
     var h = location.hash;
@@ -553,7 +555,7 @@
           return r.json().then(function (admin) {
             var was = isAdmin();
             try { if (admin === true && ses) localStorage.setItem("alto.admin", "1"); else localStorage.removeItem("alto.admin"); } catch (e) {}
-            if (admin === true && ses && !was) { var it = ITEMS.filter(function (x) { return x[0] === "analytics"; })[0]; addLink(it[0], it[1], it[2], false, it[0]); }
+            if (admin === true && ses && !was) ITEMS.filter(function (x) { return x[0] === "analytics" || x[0] === "requests"; }).forEach(function (it) { addLink(it[0], it[1], it[2], false, it[0]); });
           });
         }).catch(function () { /* offline: the pages wait for next time */ });
     });

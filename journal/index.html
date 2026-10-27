@@ -372,6 +372,8 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .modes a{display:inline-flex;align-items:center;font-size:14px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none}
 .modes a.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
 /* the Coffee Shelf title, with the bag+ button (add a coffee) on the right; the closed "Add a coffee" bar is not needed then */
+.hhwait{border-color:var(--accent)}
+.hhwait p{margin:6px 0 0;color:var(--mut);font-size:14.5px}
 .ptrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .addc{flex:none;width:46px;height:46px;display:grid;place-items:center;margin-right:-6px;border:0;border-radius:12px;background:none;color:var(--brand,var(--ink));cursor:pointer}
 .addc:hover{background:var(--card)}
@@ -518,7 +520,7 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
   <label id="nmlab" hidden>Your name<input id="nm" maxlength="40" autocomplete="nickname" placeholder="Shown on the brews you make"></label>
   <label>Email<input id="em" type="email" autocomplete="username" required></label>
   <label id="pwlab">Password<input id="pw" type="password" autocomplete="current-password" minlength="8" required></label>
-  <p class="hint" id="pwhint" hidden>At least 8 characters. By creating an account you agree to how the app handles your data: <a href="../privacy.html">Privacy</a>.</p>
+  <p class="hint" id="pwhint" hidden>Alto Andino is invite-only for now: with an invite link you are in right away, without one your account waits until we say yes. At least 8 characters. By creating an account you agree to how the app handles your data: <a href="../privacy.html">Privacy</a>.</p>
   <div id="captcha" class="captcha" hidden></div>
   <button class="go" id="authgo">Sign in</button>
   <p><button class="lnk" type="button" id="forgot">Forgot your password?</button></p>
@@ -538,7 +540,11 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
   <div id="hhview" hidden>
     <h2>Welcome</h2>
     <p class="sub">Coffees and brews live in a household: everyone in it sees and logs the same coffees. Nobody else can see them.</p>
-    <div class="hhcard">
+    <div class="hhcard hhwait" id="hhwait" hidden>
+      <h3 id="hhwaith">Waiting for approval</h3>
+      <p id="hhwaitt"></p>
+    </div>
+    <div class="hhcard" id="hhstart">
       <h3>Start your household</h3>
       <label>Name<input id="hh-new" maxlength="60" placeholder="e.g. Alto Andino"></label>
       <button class="go" type="button" id="hh-create">Start household</button>
@@ -2740,11 +2746,21 @@ function discardDraft() {
 }
 $("draftdel").onclick = discardDraft;
 
+// invite-only (supabase/42_invite_only.sql): without an invite, a new account waits for an admin's yes before it can start a household
+async function checkAccess() {
+  const { data, error } = await db.rpc("access_status", { p_code: store.get("alto.friend") || pendingJoin() || null });
+  const st = error ? "approved" : data;   // before the SQL has run: everyone is in, as before
+  $("hhstart").hidden = st !== "approved"; $("hhwait").hidden = st === "approved";
+  $("hhwaith").textContent = st === "declined" ? "Not approved" : "Waiting for approval";
+  $("hhwaitt").textContent = st === "declined"
+    ? "Sorry, we cannot let you in right now. If you know someone who uses Alto Andino, ask them for an invite link."
+    : "Thanks for signing up! Alto Andino is invite-only for now, so we look at every new account first. Once we have said yes, you can start your household here. Got an invite link from someone? Open it, or paste its code below, and you are in right away.";
+}
 function route() {
   if (!me) return;
   const noHH = hhOk && !hhs.length;   // signed in, but not in a household yet: start or join one first
   $("hhview").hidden = !noHH;
-  if (noHH) { $("addc").hidden = true; ["listview", "recentview", "mineview", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); return; }
+  if (noHH) { $("addc").hidden = true; ["listview", "recentview", "mineview", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); checkAccess(); return; }
   if (store.get("alto.friend")) { location.href = "../friends/index.html"; return; }   // came with a friend link: back to it, now signed in
   const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)((?:&[^&]*)*)$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/), isRecent = hash === "#recent", isMine = hash === "#mine" || hash === "#torate" || hash === "#nobal", isHH = hash === "#household";
   if (hash === "#torate") { $("mflt-person").value = "me"; $("mflt-who").value = "torate"; $("mflt-bal").value = ""; history.replaceState(null, "", location.pathname + location.search + "#mine"); }
