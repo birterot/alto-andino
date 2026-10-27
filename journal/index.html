@@ -21,8 +21,7 @@ input,textarea,select{display:block;width:100%;max-width:420px;margin-top:6px;fo
 input,select{height:48px;padding:0 14px}
 select{padding-right:38px}
 textarea{padding:12px 14px;min-height:96px}
-input[type=date]{-webkit-appearance:none;appearance:none;line-height:46px;text-align:left}
-input::-webkit-date-and-time-value{text-align:left}
+input[type=date],input[type=datetime-local]{line-height:46px}   /* 48 high with the border: see base.css */
 input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 input::placeholder,textarea::placeholder{color:var(--mut);opacity:.7}
 input[type=checkbox]{width:20px;height:20px;padding:0;margin:0;accent-color:var(--ink)}
@@ -57,8 +56,6 @@ details.add summary{cursor:pointer;font-weight:600}
 .cc img{display:block;width:100%;height:180px;object-fit:cover}
 .cc .in{padding:18px 20px}
 .cc h3{margin:0;font-size:18px}
-.balavg{display:flex;align-items:center;gap:6px;margin:8px 0 0;font-size:14px}
-.balavg svg{color:light-dark(#b07a00,#c98500)}
 .bagm{display:flex;align-items:center;gap:10px;margin-top:8px}
 .bagm svg{flex:none;overflow:visible}
 .bagm p{margin:0}
@@ -172,6 +169,10 @@ dialog.dlg p{margin:0 0 4px;font-size:14.5px;color:var(--mut)}
 .nt .seg button{padding:6px 10px}
 .nt .si{color:var(--mut)}.nt.on .si{color:var(--ac)}
 .nt .slb{font-weight:600;font-size:15px;text-transform:capitalize}
+.nt .ntools{display:inline-flex;gap:0}
+.nt .ned{width:34px;height:34px;display:grid;place-items:center;padding:0;border:0;border-radius:8px;background:none;color:var(--mut);cursor:pointer}
+.nt .ned:hover{background:var(--line)}
+.nt .nren{flex:1 1 120px;min-width:0;max-width:220px;height:38px;margin:0;padding:0 10px;font-size:16px}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--card)}
 .seg button{font:inherit;font-size:13px;padding:6px 12px;min-height:36px;border:0;background:none;color:var(--mut);cursor:pointer}
 .seg button+button{border-left:1px solid var(--line)}
@@ -425,6 +426,13 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .bc .ibs{position:relative}
 #dhead{position:relative}
 #dhead .dedit{position:absolute;top:12px;right:12px;color:var(--mut)}
+#dhead .dfav{position:absolute;top:12px;right:56px}
+.fav{color:var(--mut)}
+.fav.on{color:#c0392b}
+.fav.on .ico{fill:currentColor}
+.fav[hidden]{display:none}
+.fi .ft .mfav{flex:none;width:36px;height:36px;margin:-8px -8px -8px 0}
+.fi .fheart{flex:none;color:#c0392b;fill:currentColor;align-self:center}
 #dhead #dname{padding-right:40px}
 .pmenu{position:absolute;right:0;top:calc(100% + 4px);z-index:20;display:flex;flex-direction:column;min-width:190px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 10px 28px rgba(20,14,10,.18)}
 .pmenu[hidden]{display:none}
@@ -588,7 +596,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
     <input id="flt-q" type="search" placeholder="Search name, roaster, origin" aria-label="Search coffees">
     <select id="flt-process" aria-label="Filter by process"></select>
     <select id="flt-roast" aria-label="Filter by roast level"></select>
-    <select id="flt-open" aria-label="Filter by bag"><option value="">Any bag</option><option value="open">Open now</option><option value="closed">Not opened yet</option><option value="done">Finished</option></select>
+    <select id="flt-open" aria-label="Filter by bag"><option value="">Any bag</option><option value="open">Open now</option><option value="closed">Not opened yet</option><option value="done">Finished</option><option value="fav">\u2665 Favourites</option></select>
   </div>
   <div class="rleg" id="rleg" hidden></div>
   <div id="list" class="clist"></div>
@@ -612,7 +620,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
     <p class="hint" style="margin-top:0" id="mhint">Every brew you made or rated, newest first. You can give your Balance right here; changing one you already gave asks first. For anything else, open the brew.</p>
     <div class="filters">
       <select id="mflt-person" aria-label="Whose brews"></select>
-      <select id="mflt-who" aria-label="Which brews"><option value="">Made or rated</option><option value="torate">To rate</option><option value="rated">Rated by me</option><option value="made">Made by me</option></select>
+      <select id="mflt-who" aria-label="Which brews"><option value="">Made or rated</option><option value="torate">To rate</option><option value="rated">Rated by me</option><option value="made">Made by me</option><option value="fav">\u2665 Favourites</option></select>
       <select id="mflt-bal" aria-label="Balance"><option value="">Any Balance</option><option value="none">Balance not rated</option><option value="old">From the old slider</option></select>
       <select id="mflt-when" aria-label="When"><option value="">Any time</option><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="month">This month</option><option value="custom">Dates…</option></select>
     </div>
@@ -667,7 +675,10 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
           <label id="tsl">Time (s)<input id="b-time" type="number" step="any" inputmode="decimal"></label>
           <label id="tml" hidden>Time (min : s)<span class="mmss"><input id="b-tmin" type="number" inputmode="numeric" min="0" step="1" placeholder="min" aria-label="Minutes"><span aria-hidden="true">:</span><input id="b-tsec" type="number" inputmode="numeric" min="0" step="1" placeholder="ss" aria-label="Seconds"></span></label>
         </div>
-        <p class="hint" id="wyhint" hidden>Water and yield go together: type one and the other is worked out, because about 2 g of water per gram of coffee stays in the grounds. If you weigh the cup, type in what you weighed.</p>
+        <div id="wybox" hidden>
+          <label class="chk wylink"><input type="checkbox" id="b-wylink" checked> Water and yield go together</label>
+          <p class="hint" id="wyhint">Type one and the other is worked out, because about 2 g of water per gram of coffee stays in the grounds. Weighing both? Untick it and type in what you weighed.</p>
+        </div>
         <p class="hint"><span class="adv" id="temphint">Water temp is the temperature from the kettle. </span>Time is the total, pre-infusion included, as your scale shows it.</p>
         <div id="espbox" class="adv">
         <h3 class="sh">Pressure</h3>
@@ -732,6 +743,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
       <select id="bflt-device" aria-label="Filter by device"></select>
       <select id="bflt-recipe" aria-label="Filter by recipe"></select>
       <select id="bflt-who" aria-label="Filter by who brewed" hidden></select>
+      <select id="bflt-fav" aria-label="Favourites"><option value="">All brews</option><option value="fav">\u2665 Favourites</option></select>
       <select id="bflt-sort" aria-label="Sort"><option value="">Newest</option><option value="old">Oldest</option></select>
     </div>
     <div id="brews"></div>
@@ -990,6 +1002,7 @@ const ICONS = {
   bag: "M6.5 8h11l1 12.5h-13z M9 8V6.5a3 3 0 016 0V8",
   zoom: "M10.5 17a6.5 6.5 0 100-13 6.5 6.5 0 000 13z M15.2 15.2L20 20 M10.5 8v5 M8 10.5h5",
   plus: "M12 5v14 M5 12h14",
+  heart: "M12 20.5s-7.5-4.6-7.5-10.4A4.1 4.1 0 0112 7.6a4.1 4.1 0 017.5 2.5c0 5.8-7.5 10.4-7.5 10.4z",   // a favourite
   calday: "M5 6h14a1 1 0 011 1v12a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1z M4 10h16 M8.5 3.5v4 M15.5 3.5v4 M12 13v4.5 M9.8 15.3h4.4",   // a calendar page with a plus: set a date (opened today)
   flag: "M6 21V4 M6 4.5h11l-2.5 4 2.5 4H6",   // a finish flag: the bag is done
   undo: "M9 7L4.5 11.5 9 16 M5 11.5h9.5a5 5 0 010 10H12",   // an arrow back
@@ -1030,6 +1043,31 @@ function abtn(cls, label, icon, onclick) {
 function ibtn(label, icon, onclick, cls) {
   const b = el("button", "ib" + (cls ? " " + cls : "")); b.type = "button"; b.title = label; b.setAttribute("aria-label", label);
   b.appendChild(ico(icon, 20)); b.onclick = onclick; return b;
+}
+// Hearts: your favourite coffees (all bags: the coffee's key) and brews (supabase/38_favourites.sql). Kept on the phone too, so they show at once.
+const favs = { coffee: new Set(), brew: new Set() };
+let favOk = true;
+(function () { try { const f = JSON.parse(localStorage.getItem("alto.favs") || "null"); if (f) { (f.coffee || []).forEach(x => favs.coffee.add(x)); (f.brew || []).forEach(x => favs.brew.add(x)); } } catch (e) { /* none yet */ } })();
+const keepFavs = () => { try { localStorage.setItem("alto.favs", JSON.stringify({ coffee: [...favs.coffee], brew: [...favs.brew] })); } catch (e) { /* only a shortcut */ } };
+async function loadFavs() {
+  const { data, error } = await db.from("favourites").select("kind,ref");
+  if (error) { favOk = false; document.querySelectorAll(".fav[data-k]").forEach(b => { b.hidden = true; }); return; }   // before supabase/38 has run: no hearts
+  favOk = true; favs.coffee.clear(); favs.brew.clear(); (data || []).forEach(f => { if (favs[f.kind]) favs[f.kind].add(f.ref); }); keepFavs();
+  document.querySelectorAll(".fav[data-k]").forEach(b => { b.hidden = false; setFavBtn(b, favs[b.dataset.k].has(b.dataset.r)); });
+}
+function setFavBtn(b, on) { b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); const l = (on ? "Remove from favourites" : "Add to favourites"); b.title = l; b.setAttribute("aria-label", l); }
+function favBtn(kind, ref) {
+  const b = el("button", "ib fav"); b.type = "button"; b.dataset.k = kind; b.dataset.r = ref; b.appendChild(ico("heart", 20)); setFavBtn(b, favs[kind].has(ref));
+  b.hidden = !favOk;
+  b.onclick = async e => {
+    e.stopPropagation(); e.preventDefault();
+    const on = !favs[kind].has(ref), all = () => document.querySelectorAll('.fav[data-k="' + kind + '"][data-r="' + ref + '"]');
+    favs[kind][on ? "add" : "delete"](ref); keepFavs(); all().forEach(x => setFavBtn(x, on));
+    const r = on ? await db.from("favourites").insert({ user_id: me.id, kind, ref }) : await db.from("favourites").delete().eq("kind", kind).eq("ref", ref);
+    if (r && r.error && !/duplicate/i.test(r.error.message)) { favs[kind][on ? "delete" : "add"](ref); keepFavs(); all().forEach(x => setFavBtn(x, !on)); say("Could not save the heart: " + r.error.message); return; }
+    say(on ? "Added to your favourites." : "Taken out of your favourites.");
+  };
+  return b;
 }
 // Colour and icon for a flavour score (core flavours get their own, your own flavour notes get a leaf).
 // The same colours as the Trends charts (checked for colour blindness): sour, sweet, bitter, balance.
@@ -1122,7 +1160,7 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
     }
   }, "del");
   const ed = ibtn("Edit", "edit", () => startEdit(c));
-  const grp = el("div", "ibs"); grp.append(ed, del);
+  const grp = el("div", "ibs"); grp.append(favBtn("coffee", gk(c)), ed, del);
   hd.appendChild(grp);
   b.appendChild(acts);
   if (bags && bags.length > 1) {
@@ -1275,7 +1313,8 @@ function passCoffee(c, g) {
   if (r && c.roast_level !== r) return false;
   if (o === "open" && (!c.open_date || c.finished_at)) return false;   // the bag on the shelf: opened and not finished yet
   if (o === "closed" && c.open_date) return false;
-  if (o === "done" && !(g || [c]).some(x => x.finished_at)) return false;   // a finished bag of this coffee (also an earlier one)
+  if (o === "done" && !(g || [c]).some(x => x.finished_at)) return false;
+  if (o === "fav" && !favs.coffee.has(gk(c))) return false;   // a finished bag of this coffee (also an earlier one)
   return true;
 }
 
@@ -1788,8 +1827,9 @@ let draftWasRestored = false, touched = new Set(), prof = [], calc = null, edite
 // of coffee). Whichever you typed last leads; changing the dose updates the other one.
 const HOLD = 2;
 let wyLead = null;
+let wyLinked = (() => { try { return localStorage.getItem("alto.wylink") !== "off"; } catch (e) { return true; } })();   // each phone remembers it (a scale under the cup measures the yield)
 function wyFollow() {
-  if (isEsp(typeOf(chosen("b-device"))) || !wyLead) return;
+  if (isEsp(typeOf(chosen("b-device"))) || !wyLead || !wyLinked) return;
   const dose = numOf("b-dose"), r1 = x => String(Math.round(x));
   if (dose == null) return;
   if (wyLead === "water") { const w = numOf("b-water"); $("b-yield").value = w == null ? "" : r1(Math.max(0, w - HOLD * dose)); }
@@ -1797,6 +1837,13 @@ function wyFollow() {
 }
 ["b-water", "b-yield"].forEach(id => $(id).addEventListener("input", e => { if (!e.isTrusted) return; wyLead = id === "b-water" ? "water" : "yield"; wyFollow(); }));
 $("b-dose").addEventListener("input", e => { if (e.isTrusted) wyFollow(); });
+$("b-wylink").checked = wyLinked;
+$("b-wylink").addEventListener("change", () => {
+  wyLinked = $("b-wylink").checked; store.set("alto.wylink", wyLinked ? "on" : "off");
+  $("wyhint").textContent = wyLinked ? "Type one and the other is worked out, because about 2 g of water per gram of coffee stays in the grounds. Weighing both? Untick it and type in what you weighed." : "Each on its own: type in the water you poured and what you weighed in the cup.";
+  if (wyLinked) wyFollow();
+});
+if (!wyLinked) $("wyhint").textContent = "Each on its own: type in the water you poured and what you weighed in the cup.";
 const BF = ["b-when", "b-madeby", "b-device", "b-preheat", "b-device-new", "b-grinder", "b-grind", "b-feel", "b-pressure", "b-pibar", "b-pis", "b-dose", "b-water", "b-yield", "b-temp", "b-time", "b-recipe", "b-notes"];
 // news for the others (household and friends): a notification on their phones, if they want that kind (Settings); never in the way
 const tell = (kind, ref, what) => { try { return db.functions.invoke("notify", { body: { action: "event", kind, ref, what: what || null } }).catch(() => {}); } catch (e) { return Promise.resolve(); } };
@@ -2005,23 +2052,55 @@ function addCore(a, hint) {
   if (hint) $("scorebox").appendChild(el("p", "hint schint", hint));
   ctl[a] = { set, clear };
 }
-function addNote(a) {
+// a tasting note: none / a little / clearly there. One you added yourself (not from the coffee's flavour notes) can be renamed or taken away.
+function addNote(a, own) {
   a = String(a).trim().toLowerCase();
   if (!a || ctl[a] || SCALE.isCore(a)) return;
-  const row = el("div", "nt"), seg = el("div", "seg"), btns = [];
-  row.style.setProperty("--ac", attrColor(a));
-  const set = stored => { const i = SCALE.levelOf(stored); scores[a] = SCALE.LEVELS[i][1]; btns.forEach((b, k) => { b.classList.toggle("on", k === i); b.setAttribute("aria-pressed", String(k === i)); }); row.classList.add("on"); };
-  const clear = () => { delete scores[a]; btns.forEach(b => { b.classList.remove("on"); b.setAttribute("aria-pressed", "false"); }); row.classList.remove("on"); };
+  let key = a;
+  const row = el("div", "nt" + (own ? " own" : "")), seg = el("div", "seg"), btns = [];
+  row.style.setProperty("--ac", attrColor(key));
+  const set = stored => { const i = SCALE.levelOf(stored); scores[key] = SCALE.LEVELS[i][1]; btns.forEach((b, k) => { b.classList.toggle("on", k === i); b.setAttribute("aria-pressed", String(k === i)); }); row.classList.add("on"); };
+  const clear = () => { delete scores[key]; btns.forEach(b => { b.classList.remove("on"); b.setAttribute("aria-pressed", "false"); }); row.classList.remove("on"); };
   SCALE.LEVELS.forEach(l => {
     const b = el("button", "", l[0]); b.type = "button"; b.setAttribute("aria-pressed", "false");
-    b.onclick = () => { if (scores[a] === l[1]) clear(); else set(l[1]); userChanged(); };
+    b.onclick = () => { if (scores[key] === l[1]) clear(); else set(l[1]); userChanged(); };
     btns.push(b); seg.appendChild(b);
   });
-  const ic = ico(attrIcon(a), 22); ic.classList.add("si");
-  const lb = el("span", "slb", a); lb.title = a;
+  let ic = ico(attrIcon(key), 22); ic.classList.add("si");
+  const lb = el("span", "slb", key); lb.title = key;
   row.append(ic, lb, seg);
+  if (own) {   // rename: the same note for every taster of this brew gets the new name
+    const moveAll = (from, to) => [scores, ...tasters.map(t => t.scores || {})].forEach(sc => { if (from in sc) { if (to) sc[to] = sc[from]; delete sc[from]; } });
+    const ed = el("button", "ned"); ed.type = "button"; ed.setAttribute("aria-label", "Rename " + key); ed.appendChild(ico("edit", 15));
+    const rm = el("button", "ned"); rm.type = "button"; rm.setAttribute("aria-label", "Take away " + key); rm.appendChild(ico("close", 15));
+    ed.onclick = () => {
+      const inp = el("input", "nren"); inp.value = key; inp.setAttribute("aria-label", "New name for " + key); inp.maxLength = 40;
+      lb.replaceWith(inp); inp.focus(); inp.select();
+      let done = false;
+      const finish = ok => {
+        if (done) return; done = true;
+        const n = inp.value.trim().toLowerCase();
+        if (ok && n && n !== key) {
+          if (SCALE.isCore(n)) say(n + " is one of the sliders above.");
+          else if (ctl[n]) say("There is already a note called " + n + ".");
+          else {
+            stashTaster(); moveAll(key, n);
+            ctl[n] = ctl[key]; delete ctl[key]; noteNames[noteNames.indexOf(key)] = n; key = n;
+            lb.textContent = key; lb.title = key; row.style.setProperty("--ac", attrColor(key));
+            const ic2 = ico(attrIcon(key), 22); ic2.classList.add("si"); ic.replaceWith(ic2); ic = ic2;
+            ed.setAttribute("aria-label", "Rename " + key); rm.setAttribute("aria-label", "Take away " + key); userChanged();
+          }
+        }
+        inp.replaceWith(lb);
+      };
+      inp.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); finish(true); } else if (e.key === "Escape") { e.preventDefault(); finish(false); } });
+      inp.addEventListener("blur", () => finish(true));
+    };
+    rm.onclick = () => { stashTaster(); moveAll(key, null); delete ctl[key]; noteNames.splice(noteNames.indexOf(key), 1); row.remove(); userChanged(); };
+    const tools = el("span", "ntools"); tools.append(ed, rm); row.insertBefore(tools, seg);
+  }
   $("notebox").appendChild(row);
-  ctl[a] = { set, clear }; noteNames.push(a);
+  ctl[key] = { set, clear }; noteNames.push(key);
 }
 // Balance 0..5 (or unrated): six buttons, tap the chosen one again to clear it
 (function () {
@@ -2046,17 +2125,18 @@ function buildScores(c, extra) {
   $("scorebox").textContent = ""; $("notebox").textContent = "";
   SCALE.PROFILE.forEach(a => addCore(a));
   addCore("body", "Body: how the coffee feels in your mouth. Minus is watery or thin, like tea. Plus is full, thick or syrupy, which can be lovely and is not the same as too strong. With sour and bitter it places the cup on the brewing chart in Trends.");
-  [...(c.flavour_tags || []), ...(extra || [])].forEach(addNote);
+  (c.flavour_tags || []).forEach(n => addNote(n));
+  (extra || []).forEach(n => addNote(n, true));   // notes someone added on a brew of this coffee
 }
 function setScore(a, v) {
   if (a === "balance" && !ctl[a]) { scores[a] = v; return; }   // an old balance score (from the slider days): kept as it is, not shown as a slider
-  if (!ctl[a]) addNote(a); if (ctl[a]) ctl[a].set(v);
+  if (!ctl[a]) addNote(a, true); if (ctl[a]) ctl[a].set(v);
 }
 function newNote() {
   const t = $("b-newnote").value.trim().toLowerCase();
   if (!t) return;
   if (SCALE.isCore(t)) { say(t + " is one of the sliders above."); return; }
-  addNote(t); if (ctl[t] && !(t in scores)) ctl[t].set(SCALE.LEVELS[2][1]);
+  addNote(t, true); if (ctl[t] && !(t in scores)) ctl[t].set(SCALE.LEVELS[2][1]);
   $("b-newnote").value = ""; userChanged();
 }
 $("b-addnote").onclick = newNote;
@@ -2193,11 +2273,6 @@ function tastersOf(b) {
   if (b.rating != null || sc.length) return [{ rater_id: b.made_by || b.created_by || null, guest: false, guest_name: null, rating: b.rating == null ? null : Number(b.rating), balance: null, drink: null, milk: null, scores: sco(sc) }];
   return [];
 }
-// Balance of a brew: the average of everyone who rated it (null when nobody did; never 0 by default)
-function brewBalance(b) {
-  const v = (b.brew_ratings || []).map(r => r.balance).filter(x => x != null).map(Number);
-  return v.length ? v.reduce((a, c) => a + c, 0) / v.length : null;
-}
 // average stars of a brew over everyone who rated it
 function brewAvg(b) {
   const rs = (b.brew_ratings || []).map(r => r.rating).filter(v => v != null).map(Number);
@@ -2261,7 +2336,7 @@ function applyType() {
     const i = $(id); i.disabled = !esp; i.closest("label").classList.toggle("off", !esp);
     if (!esp) { i.value = ""; touched.delete(id); }
   });
-  $("wlab").hidden = esp; $("wyhint").hidden = esp; if (esp) { $("b-water").value = ""; touched.delete("b-water"); }
+  $("wlab").hidden = esp; $("wybox").hidden = esp; if (esp) { $("b-water").value = ""; touched.delete("b-water"); }
   $("espbox").hidden = !esp;
   $("tsl").hidden = !esp; $("tml").hidden = esp; timeToParts();
   const fl = isFlair(chosen("b-device"));
@@ -2502,7 +2577,7 @@ function whenISO() { const v = $("b-when").value; if (!v) return null; const d =
 function newBrewSetup(dev, plain) {   // plain: no draft and no calculator offer (the rate view starts from here)
   wyLead = null;
   editingBrew = null; touched = new Set(); prof = []; edited = false; renderProf();
-  $("bf").reset(); setRating(null); delete $("b-when").dataset.q; renderWhen();
+  $("bf").reset(); $("b-wylink").checked = wyLinked; setRating(null); delete $("b-when").dataset.q; renderWhen();
   $("b-device-new").hidden = true; $("b-device-new").required = false;
   setBMode("brew"); syncNewBrew();
   $("cofflab").hidden = false; if (cur) $("b-coffee").value = cur.id;
@@ -2548,7 +2623,7 @@ function offerCalc(skip) {
 }
 function startBrewEdit(b) {
   editingBrew = b; touched = new Set(BF); edited = false;
-  $("bf").reset(); $("cofflab").hidden = true;
+  $("bf").reset(); $("b-wylink").checked = wyLinked; $("cofflab").hidden = true;
   delete $("b-when").dataset.q; $("b-when").value = b.brewed_at ? localDT(new Date(b.brewed_at)) : ""; renderWhen();
   prof = Array.isArray(b.pressure_profile) ? b.pressure_profile.map(x => ({ s: x.s, bar: x.bar })) : []; renderProf();
   buildScores(cur, (b.brew_scores || []).map(s => s.attribute));
@@ -2751,7 +2826,7 @@ function feedCard(x) {
     // who brewed it comes first: their initial in a circle, then "Andrés brewed <coffee>"
     const top = el("div", "ft"), hd = el("span", "fh");
     hd.append(el("b", "", by || "Someone"), document.createTextNode(" brewed "), el("span", "fc", c ? c.name : "a coffee"));
-    top.append(avatar(maker, by), hd, el("time", "", hhmm(x.t))); a.appendChild(top);
+    top.append(avatar(maker, by), hd); if (favs.brew.has(b.id)) { const h = ico("heart", 15); h.classList.add("fheart"); top.appendChild(h); } top.appendChild(el("time", "", hhmm(x.t))); a.appendChild(top);
     const nums = [b.dose_g != null ? b.dose_g + "\u00A0g in" : null, b.yield_g != null ? b.yield_g + "\u00A0g out" : b.water_g != null ? b.water_g + "\u00A0g water" : null,
       b.time_s != null ? (isEsp(typeOf(b.device)) && b.time_s < 90 ? b.time_s + "\u00A0s" : mmss(b.time_s) + "\u00A0min") : null].filter(Boolean).join(", ");
     const dev = DEV_OLD[b.device] || b.device, devT = dev && /^(Manual|Semi-automatic|Moka|French|Pour|Cold|Turkish|Drip)\b/.test(dev) ? dev[0].toLowerCase() + dev.slice(1) : dev;
@@ -2761,7 +2836,7 @@ function feedCard(x) {
     if (ts.length) {
       const rr = el("div", "rr");
       ts.forEach(t => rateLine(rr, t.rating, tName(t) + ": " + Stars.text(t.rating) + " of 5", t,
-        isPending(t) ? ": to rate" : (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.balance != null ? ", balance " + SCALE.balanceText(t.balance) : "") + (t.rating == null ? ", taste only" : ""), t.note));
+        isPending(t) ? ": to rate" : (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.rating == null ? ", taste only" : ""), t.note));
       a.appendChild(rr);
     } else a.appendChild(el("p", "", "Not rated yet"));
     if (b.notes) { const n = el("p", "note"); n.append(el("span", "nl", "Brew comment: "), document.createTextNode(b.notes)); a.appendChild(n); }
@@ -2832,7 +2907,7 @@ function renderMine() {
   mineData = mineRows();
   const p = $("mflt-person").value, who = p === "all" ? "" : $("mflt-who").value, bal = $("mflt-bal").value;
   const rg = whenRange("m");
-  const list = mineData.filter(x => inWhen(rg, new Date(x.b.brewed_at)) && (!who || (who === "torate" ? x.pend : who === "rated" ? !!x.pr && !x.ppend : x.made)) && (!bal || (bal === "none" ? x.r && !x.pend && x.r.balance == null : x.old != null)));
+  const list = mineData.filter(x => inWhen(rg, new Date(x.b.brewed_at)) && (!who || (who === "torate" ? x.pend : who === "rated" ? !!x.pr && !x.ppend : who === "fav" ? favs.brew.has(x.b.id) : x.made)) && (!bal || (bal === "none" ? x.r && !x.pend && x.r.balance == null : x.old != null)));
   const box = $("mlist"); box.textContent = "";
   $("mhint").textContent = p === "me" ? "Every brew you made or rated, newest first. You can give your Balance right here; changing one you already gave asks first. For anything else, open the brew."
     : p === "all" ? "Every brew of the household, newest first, with everyone's stars. Your own Balance can be given right here." : "Every brew " + (nameOf(p) || "they") + " made or rated, newest first. Your own Balance (where you tasted too) can be given right here.";
@@ -3013,7 +3088,7 @@ function drawMonth() {
 function mineCard(x) {
   const b = x.b, c = mineCoffees[b.coffee_id], a = el("article", "fi");
   if (c) applyLook(a, c);
-  const top = el("div", "ft"); top.append(el("strong", "", c ? c.name : "A coffee"), el("time", "", fmtDT(new Date(b.brewed_at)))); a.appendChild(top);
+  const top = el("div", "ft"), fb = favBtn("brew", b.id); fb.classList.add("mfav"); top.append(el("strong", "", c ? c.name : "A coffee"), el("time", "", fmtDT(new Date(b.brewed_at))), fb); a.appendChild(top);
   const maker = b.made_by || b.created_by, dv = DEV_OLD[b.device] || b.device, dev = dv && /^(Manual|Semi-automatic|Moka|French|Pour|Cold|Turkish|Drip|Filter|Fully)\b/.test(dv) ? dv[0].toLowerCase() + dv.slice(1) : dv;
   const bl = el("p", "", "Brewed by "); bl.appendChild(personTag({ rater_id: maker }, true));
   bl.appendChild(document.createTextNode([(dev ? " on the " + dev : ""), b.is_dialin ? "dial-in" : null].filter(Boolean).join(" \u00B7 "))); a.appendChild(bl);
@@ -3025,7 +3100,7 @@ function mineCard(x) {
       ts.forEach(t => {
         const tt = { rater_id: t.rater_id, guest: t.is_guest, guest_name: t.guest_name, note: t.note || null };
         const open = t.rating == null && t.balance == null && !(b.brew_scores || []).some(s => s.rating_id === t.id);
-        rateLine(rr, t.rating != null ? Number(t.rating) : null, tName(tt) + ": " + Stars.text(Number(t.rating)), tt, open ? ": to rate" : (t.balance != null ? ", balance " + SCALE.balanceText(t.balance) : "") + (t.rating == null ? ", taste only" : ""), tt.note);
+        rateLine(rr, t.rating != null ? Number(t.rating) : null, tName(tt) + ": " + Stars.text(Number(t.rating)), tt, open ? ": to rate" : (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.rating == null ? ", taste only" : ""), tt.note);
       });
       a.appendChild(rr);
     } else a.appendChild(el("p", "", "Not rated yet."));
@@ -3128,13 +3203,15 @@ async function openCoffee(id, dev, wantForm, rid) {
   }
   cur = c;
   fillCoffeeSwitch(c, all || []);
-  ["bflt-device", "bflt-recipe", "bflt-who", "bflt-sort"].forEach(i => { $(i).value = ""; });
+  ["bflt-device", "bflt-recipe", "bflt-who", "bflt-fav", "bflt-sort"].forEach(i => { $(i).value = ""; });
   applyLook($("dhead"), c);
   const fx = $("dfacts"); fx.textContent = ""; fx.appendChild(factsBlock(c, true));
   const da = $("darch"); da.textContent = ""; da.hidden = !c.archived;
   if (c.archived) { da.append(document.createTextNode("This bag is archived. Its brews still count in Trends.")); da.appendChild(abtn("btn ghost", "Restore", "check", async () => { if (await setArchived(c, false)) openCoffee(c.id); })); }
   $("dname").textContent = c.name; document.title = c.name + " | Alto Andino";
   drawFriendShare(c);
+  const oldFav = $("dhead").querySelector(".dfav"); if (oldFav) oldFav.remove();
+  { const fb = favBtn("coffee", gk(c)); fb.classList.add("dfav"); $("dhead").appendChild(fb); }
   if (!$("dedit")) { const eb = ibtn("Edit coffee", "edit", () => { $("dedithost").appendChild($("addbox")); startEdit(cur); }); eb.id = "dedit"; eb.classList.add("dedit"); $("dhead").appendChild(eb); }
   if (c.photo_path && !coffeeUrls[c.photo_path]) { const got = await photoLinks([c.photo_path]); coffeeUrls = Object.assign({}, coffeeUrls, got.full); coffeeThumbs = Object.assign({}, coffeeThumbs, got.thumb); }   // opened straight from a link
   const ph = $("dphoto"), pu = c.photo_path ? coffeeUrls[c.photo_path] : null, pt = c.photo_path ? (coffeeThumbs[c.photo_path] || pu) : null;
@@ -3240,8 +3317,8 @@ function brewCard(b) {
     const box = el("div", "taste");
     if (core.length || bal != null) {
       const t = el("div", "tags core");
-      if (bal != null) { const ch = el("span", "chip balc"); ch.style.setProperty("--ac", attrColor("balance")); ch.title = SCALE.balanceName(bal); ch.append(ico("balance", 14), document.createTextNode("balance " + SCALE.balanceText(bal))); t.appendChild(ch); }
       core.forEach(([k, v]) => { const ch = el("span", "chip"); ch.style.setProperty("--ac", attrColor(k)); ch.append(ico(attrIcon(k), 14), document.createTextNode((k === "balance" ? "balance (old scale) " : k + " ") + SCALE.text(k, v))); t.appendChild(ch); });
+      if (bal != null) { const ch = el("span", "chip balc"); ch.style.setProperty("--ac", attrColor("balance")); ch.title = SCALE.balanceName(bal); ch.append(ico("balance", 14), document.createTextNode("balance " + SCALE.balanceText(bal))); t.appendChild(ch); }
       box.appendChild(t);
     }
     if (notes.length) {   // like in the form: the leaf and the name
@@ -3292,7 +3369,7 @@ function brewCard(b) {
     const { data: gone, error } = await db.from("brews").delete().eq("id", b.id).select();
     if (error) say("Could not delete: " + error.message); else if (!gone.length) say("Nothing was deleted."); else { loadBrews(); load(); }
   }, "del");
-  const grp = el("div", "ibs"); grp.append(ed, del, menu);
+  const grp = el("div", "ibs"); grp.append(favBtn("brew", b.id), ed, del, menu);
   hd.appendChild(grp);
   return a;
 }
@@ -3306,9 +3383,6 @@ async function loadBrews() {
   // tasting notes used on earlier brews of this coffee are offered again
   if (!editingBrew) data.forEach(b => (b.brew_scores || []).forEach(s => { if (!SCALE.isCore(s.attribute)) addNote(s.attribute); }));
   const dr = $("drate"); dr.textContent = ""; const rb = rateBlock(data.slice().reverse().map(b => ({ r: brewAvg(b), d: !!b.is_dialin }))); if (rb) dr.appendChild(rb);
-  // Balance of this coffee: the average over the counted brews (dial-ins left out, as for the stars); unrated brews do not count as 0
-  const bal = data.filter(b => !b.is_dialin).map(brewBalance).filter(v => v != null);
-  if (bal.length) { const v = bal.reduce((a, c) => a + c, 0) / bal.length, p = el("p", "balavg"); p.append(ico("balance", 16), el("b", "", "Balance " + SCALE.balanceText(v)), document.createTextNode(" " + SCALE.balanceName(v).toLowerCase() + ", from " + bal.length + (bal.length === 1 ? " brew" : " brews"))); dr.appendChild(p); }
   const uniq = k => [...new Set(data.map(b => b[k]).filter(Boolean))].sort();
   fillFilter("bflt-device", "Device", uniq("device"));
   fillFilter("bflt-recipe", "Recipe", uniq("recipe"));
@@ -3318,7 +3392,7 @@ async function loadBrews() {
 }
 function renderBrews() {
   const dv = $("bflt-device").value, rc = $("bflt-recipe").value, wh = $("bflt-who").value;
-  let list = brewData.filter(b => (!dv || b.device === dv) && (!rc || b.recipe === rc) && (!wh || (b.made_by || b.created_by) === wh));
+  let list = brewData.filter(b => (!dv || b.device === dv) && (!rc || b.recipe === rc) && (!wh || (b.made_by || b.created_by) === wh) && ($("bflt-fav").value !== "fav" || favs.brew.has(b.id)));
   if ($("bflt-sort").value === "old") list = list.slice().reverse();   // data arrives newest first
   $("bfilters").hidden = brewData.length < 2;
   const box = $("brews"); box.textContent = "";
@@ -3333,7 +3407,7 @@ function renderBrews() {
     window.scrollTo({ top: Math.max(0, y), behavior: "smooth" }); fb.classList.add("hl");
   });
 }
-["bflt-device", "bflt-recipe", "bflt-who", "bflt-sort"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderBrews)));
+["bflt-device", "bflt-recipe", "bflt-who", "bflt-fav", "bflt-sort"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderBrews)));
 
 // Saving a rating: only the tasters that changed are written, in place (someone else may be rating the same brew).
 async function saveRate() {
@@ -3689,6 +3763,7 @@ async function show(session) {
   toHome = false;
   if (quiet) { $("signingin").hidden = true; $("app").hidden = false; shelfFromCache(); }   // staying here after all (no household yet, a friend link, a join)
   const names = loadNames();   // names and the coffees load at the same time
+  loadFavs();
   $("hhview").hidden = !(hhOk && !hhs.length);
   route();
   await names;

@@ -71,7 +71,7 @@ ul.rank .di{width:22px;height:22px;fill:none;stroke:var(--one);stroke-width:1.7;
 .av{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin-right:8px;border-radius:50%;color:#fff;font-size:12.5px;font-weight:600;flex:none}
 .ctl .range{display:flex;align-items:center;gap:8px;flex:1 1 100%;font-size:14.5px;color:var(--mut)}
 .ctl .range[hidden]{display:none}
-.ctl .range input{flex:1 1 0;min-width:0;height:42px;margin:0;padding:0 12px;font:inherit;font-size:15px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.ctl .range input{flex:1 1 0;min-width:0;height:42px;line-height:40px;box-sizing:border-box;margin:0;padding:0 12px;font:inherit;font-size:15px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 .banner{margin:0 0 14px;padding:8px 12px;border-radius:10px;border:1px dashed var(--line);background:var(--card);font-size:14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 16px 12px;margin:0 0 18px}
 .card h2{margin:0;font-size:19px}
@@ -292,6 +292,7 @@ function rankList(rows) {
 }
 // small device icons by kind (lever, espresso, filter, immersion, moka, cold brew)
 const DEV_ICON = {
+  chemex: "M6.5 3h11L13.4 11 17.5 21h-11l4.1-10L6.5 3z M9.6 9.5h4.8 M9.9 12.5h4.2 M12 12.5v-3",   // an hourglass with the wooden collar in its waist
   lever: "M3.5 21h15 M16 21V6.5 M17.5 7.2L5.5 3.1 M5.5 3.1L3 2.3 M10.25 4.8v3.7 M12 10.5h4 M8.5 8.5h3.5v5H8.5z M10.25 13.5v1.5 M8 16.5h4.5l-.6 3.5H8.6z",   // a lever press (Flair), not a machine with a portafilter
   espresso: "M5 3h14v5H5z M9 8v2 M15 8v2 M6 13h11v2.5a4.5 4.5 0 01-4.5 4.5h-2A4.5 4.5 0 016 15.5V13z M17 14h1.5a1.75 1.75 0 010 3.5H17",
   filter: "M4 5h16l-6 9h-4L4 5z M12 14v3 M7 20h10",
@@ -300,7 +301,7 @@ const DEV_ICON = {
   cold: "M6 4h12l-1.5 16h-9L6 4z M9.5 9h3v3h-3z M13 12.5h2.5V15H13z"
 };
 function devIcon(name) {
-  const k = /cold ?brew/i.test(name || "") ? "cold" : /manual espresso|lever|flair/i.test(name || "") ? "lever" : ({ espresso: "espresso", filter: "filter", immersion: "immersion", moka: "moka" })[typeOf(name)] || "filter";
+  const k = /cold ?brew/i.test(name || "") ? "cold" : /manual espresso|lever|flair/i.test(name || "") ? "lever" : /chemex/i.test(name || "") ? "chemex" : ({ espresso: "espresso", filter: "filter", immersion: "immersion", moka: "moka" })[typeOf(name)] || "filter";
   const NS = "http://www.w3.org/2000/svg", s = document.createElementNS(NS, "svg"), p = document.createElementNS(NS, "path");
   s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("class", "di"); s.setAttribute("aria-hidden", "true");
   p.setAttribute("d", DEV_ICON[k]); s.appendChild(p); return s;
@@ -681,13 +682,13 @@ function beansLeft() {
   bags.forEach(x => {
     const a = el(state.demo ? "div" : "a", "bagb" + (x.cups < 3 ? " low" : "")); if (!state.demo) a.href = "../journal/index.html#c=" + x.c.id;
     a.setAttribute("aria-label", x.c.name + ": " + Math.round(x.left) + " of " + x.c.bag_g + " grams left, about " + x.cups + " cups");
-    a.title = Math.round(x.used) + " of " + x.c.bag_g + " g used in " + x.n + (x.n === 1 ? " brew" : " brews");
-    a.append(bagSvg(Math.min(1, x.left / x.c.bag_g)), el("b", "", x.c.name), el("small", "", Math.round(x.left) + " g left"), el("small", "", x.left <= 0 ? "empty" : x.cups >= 1 ? "about " + x.cups + (x.cups === 1 ? " cup" : " cups") : "almost empty"));
+    a.title = Math.round(x.used) + " of " + x.c.bag_g + "\u00A0g used in " + x.n + (x.n === 1 ? " brew" : " brews");
+    a.append(bagSvg(Math.min(1, x.left / x.c.bag_g)), el("b", "", x.c.name), el("small", "", Math.round(x.left) + "\u00A0g left"), el("small", "", x.left <= 0 ? "empty" : x.cups >= 1 ? "about " + x.cups + (x.cups === 1 ? " cup" : " cups") : "almost empty"));
     shelf.appendChild(a);
   });
   const g = bags.reduce((t, x) => t + x.left, 0), cups = bags.reduce((t, x) => t + x.cups, 0);
-  if (bags.length > 1) bl.appendChild(el("p", "shelfsum", "Altogether " + Math.round(g) + " g left, about " + cups + " cups."));
-  numbers(bl, ["Coffee", "Bag", "Used", "Left", "Brews", "Usual dose", "Cups left"], bags.map(x => [x.c.name, x.c.bag_g + " g", Math.round(x.used) + " g", Math.round(x.left) + " g", x.n, x.typical + " g", x.cups]));
+  if (bags.length > 1) bl.appendChild(el("p", "shelfsum", "Altogether " + Math.round(g) + "\u00A0g left, about " + cups + "\u00A0cups."));
+  numbers(bl, ["Coffee", "Bag", "Used", "Left", "Brews", "Usual dose", "Cups left"], bags.map(x => [x.c.name, x.c.bag_g + "\u00A0g", Math.round(x.used) + "\u00A0g", Math.round(x.left) + "\u00A0g", x.n, x.typical + "\u00A0g", x.cups]));
 }
 
 // Origins: a world map of where the coffees you brewed (in the time frame) come from, darker = more coffees

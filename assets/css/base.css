@@ -88,3 +88,8 @@ select{-webkit-appearance:none;appearance:none;font:inherit;color:var(--ink);bac
 background-image:linear-gradient(45deg,transparent 50%,var(--mut) 50%),linear-gradient(135deg,var(--mut) 50%,transparent 50%);background-position:calc(100% - 21px) 52%,calc(100% - 15px) 52%;background-size:6px 6px,6px 6px;background-repeat:no-repeat}
 select:hover{border-color:var(--mut)}
 select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+/* Date and time fields on the iPhone: the value sits on the field's middle line, left like the other fields, with no empty space under it
+   (each page sets line-height = the field's inner height) */
+input[type=date],input[type=time],input[type=datetime-local]{-webkit-appearance:none;appearance:none;box-sizing:border-box;text-align:left;min-width:0}
+input[type=date]::-webkit-date-and-time-value,input[type=time]::-webkit-date-and-time-value,input[type=datetime-local]::-webkit-date-and-time-value{text-align:left;margin:0}
+input[type=date]::-webkit-datetime-edit,input[type=time]::-webkit-datetime-edit,input[type=datetime-local]::-webkit-datetime-edit{padding:0;line-height:inherit}
