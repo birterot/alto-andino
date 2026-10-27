@@ -347,6 +347,7 @@ $("export").onclick = async () => {
       brews: await get(db.from("brews").select("*, brew_ratings(*), brew_scores(*)").order("brewed_at"), "brews"),
       cuppings: await get(db.from("cuppings").select("*"), "cuppings"),
       sleep: await get(db.from("sleep_logs").select("night,quality,created_at").order("night"), "sleep"),
+      favourites: await get(db.from("favourites").select("kind,ref,created_at"), "favourites"),
       feedback: await get(db.from("feedback").select("created_at,kind,message,page,device,photo_path").eq("user_id", me.id), "feedback"),
       notification_phones: (await get(db.from("push_subscriptions").select("created_at"), "phones")).length
     };

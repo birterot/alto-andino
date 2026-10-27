@@ -79,6 +79,8 @@ if (globalThis.Deno) Deno.serve(async req => {
   const { data: u } = jwt ? await db.auth.getUser(jwt) : { data: null };
   if (!u || !u.user) return json({ error: "Not signed in." }, 401);
   const site = "https://alto-andino.com/";
+  // "on the Hario V60", "on the manual espresso machine": the device, after the coffee
+  const dev = d => !d ? "" : " on the " + (/^(Manual|Semi-automatic|Moka|French|Pour|Cold|Filter|Fully)\b/.test(d) ? d[0].toLowerCase() + d.slice(1) : d);
   let targets = [], sent = 0, gone = 0;
   if (q.action === "test") {
     const { data, error } = await db.from("push_subscriptions").select("endpoint,p256dh,auth");
@@ -88,31 +90,31 @@ if (globalThis.Deno) Deno.serve(async req => {
     const { data, error } = await db.rpc("push_targets", { p_brew: q.brew_id });
     if (error) return json({ error: error.message }, 500);
     const only = Array.isArray(q.ratings) && q.ratings.length ? new Set(q.ratings) : null;
-    const dev = d => !d ? "" : " on the " + (/^(Manual|Semi-automatic|Moka|French|Pour|Cold|Filter|Fully)\b/.test(d) ? d[0].toLowerCase() + d.slice(1) : d);
     targets = (data || []).filter(t => !only || only.has(t.rating_id)).map(t => ({ s: t, msg: {
-      title: t.maker + " made you a coffee", body: (t.coffee_name || "A coffee") + dev(t.device) + ". Tap to rate your cup.",
+      title: t.maker + " made you a coffee", body: (t.coffee_name || "A coffee") + dev(t.device),
       url: site + "journal/index.html#c=" + t.coffee_id + "&b=" + q.brew_id + "&rate=" + t.rating_id, tag: "rate-" + t.rating_id } }));
   } else if (q.action === "rated" && q.rating_id) {
     const { data, error } = await db.rpc("push_rated_targets", { p_rating: q.rating_id });
     if (error) return json({ error: error.message }, 500);
-    const dev = d => !d ? "" : " on the " + (/^(Manual|Semi-automatic|Moka|French|Pour|Cold|Filter|Fully)\b/.test(d) ? d[0].toLowerCase() + d.slice(1) : d);
-    const stars = v => v == null ? "" : String(Math.round(Number(v) * 2) / 2).replace(/\.0$/, "") + "\u2605";
+    const stars = v => String(Math.round(Number(v) * 2) / 2).replace(/\.0$/, "") + (Number(v) === 1 ? " star" : " stars");
+    const NAMES = { filter: "filter coffee", filter_milk: "filter coffee with milk", moka: "moka pot coffee", cafe_au_lait: "café au lait" };
+    const drink = d => !d ? "" : NAMES[d] || String(d).replace(/_/g, " ").toLowerCase();   // "flat_white" -> "flat white"; your own drink names as they are
+    // short: "Birte had your brew as a flat white and rated it 5 stars", the coffee under it
     targets = (data || []).map(t => ({ s: t, msg: {
-      title: t.rater + " rated your coffee" + (t.rating != null ? ": " + stars(t.rating) : ""),
-      body: (t.coffee_name || "A coffee") + dev(t.device) + (t.balance != null ? ", balance " + t.balance + "/5" : "") + ". Tap to see it.",
+      title: t.rater + (t.drink ? " had your brew as " + (/^[aeiou]/.test(drink(t.drink)) ? "an " : "a ") + drink(t.drink) + (t.rating != null ? " and rated it " + stars(t.rating) : "") : t.rating != null ? " rated your brew " + stars(t.rating) : " rated your brew"),
+      body: t.coffee_name || "",
       url: site + "journal/index.html#c=" + t.coffee_id + "&b=" + t.brew_id, tag: "rated-" + q.rating_id } }));
   } else if (q.action === "event" && q.kind && q.ref) {
     const kinds = q.kind === "brewed" ? ["hhbrew", "friendbrew"] : [q.kind];
-    const dev = d => !d ? "" : " on the " + (/^(Manual|Semi-automatic|Moka|French|Pour|Cold|Filter|Fully)\b/.test(d) ? d[0].toLowerCase() + d.slice(1) : d);
     const J = site + "journal/index.html", HH = J + "#household";
     const say = (k, t) => {
-      if (k === "hhbrew") return { title: t.actor + " brewed a coffee", body: (t.item || "A coffee") + dev(t.extra) + ".", url: J + "#c=" + t.coffee_id + "&b=" + t.brew_id };
-      if (k === "friendbrew") return { title: t.actor + " (" + t.place + ") brewed a coffee", body: (t.item || "A coffee") + dev(t.extra) + ". Tap to see their coffee.", url: site + "friends/index.html#f=" + t.household_id + "&c=" + t.coffee_id };
+      if (k === "hhbrew") return { title: t.actor + " brewed a coffee", body: (t.item || "A coffee") + dev(t.extra), url: J + "#c=" + t.coffee_id + "&b=" + t.brew_id };
+      if (k === "friendbrew") return { title: t.actor + " (" + t.place + ") brewed a coffee", body: (t.item || "A coffee") + dev(t.extra), url: site + "friends/index.html#f=" + t.household_id + "&c=" + t.coffee_id };
       if (k === "coffee") return { title: { added: t.actor + " added a coffee", bag: t.actor + " got a new bag", opened: t.actor + " opened a bag", finished: t.actor + " finished a bag" }[t.extra] || t.actor + " changed a coffee",
-        body: (t.item || "A coffee") + ({ added: " is on your shelf now.", bag: " is on your shelf again.", opened: ": the first cups are waiting.", finished: " is empty. Time for a new one?" }[t.extra] || "."), url: J + "#c=" + t.coffee_id };
-      if (k === "household") return { title: { joined: t.actor + " joined " + t.place, left: t.actor + " left " + t.place, renamed: t.actor + " renamed your household", sharing: t.actor + " changed what your friends see", until: t.actor + " changed how long someone stays" }[t.extra] || t.place + " changed",
-        body: { joined: "Say hello with a coffee.", left: "Their brews stay on the shelf.", renamed: "It is now called " + t.place + ".", sharing: "In " + t.place + ". Have a look at the sharing switches.", until: "In " + t.place + ". See the members." }[t.extra] || "", url: t.extra === "sharing" ? site + "friends/index.html" : HH };
-      if (k === "friend") return { title: t.place + " are now your friends", body: t.actor + " used your friend link. See what they brew.", url: site + "friends/index.html#f=" + t.household_id };
+        body: t.item || "", url: J + "#c=" + t.coffee_id };
+      if (k === "household") return { title: { joined: t.actor + " joined " + t.place, left: t.actor + " left " + t.place, renamed: t.actor + " renamed your household", sharing: t.actor + " changed what your friends see", until: t.actor + " changed a membership" }[t.extra] || t.place + " changed",
+        body: t.extra === "renamed" ? "Now: " + t.place : "", url: t.extra === "sharing" ? site + "friends/index.html" : HH };
+      if (k === "friend") return { title: t.place + " are now your friends", body: "", url: site + "friends/index.html#f=" + t.household_id };
       return null;
     };
     for (const k of kinds) {
