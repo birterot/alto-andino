@@ -236,7 +236,7 @@ h3.sh{font-size:16px;margin:26px 0 2px}
 .bc .rby{font-size:14px;color:var(--mut);margin-left:8px}
 .bc .rby .pt{margin-left:3px}
 /* a person: their initial in their colour, then the name */
-.pt{display:inline-flex;align-items:center;gap:5px;vertical-align:middle}
+.pt{display:inline;white-space:nowrap}.pt .av{vertical-align:middle;margin:-3px 5px 0 0}
 .pt .av{width:20px;height:20px;font-size:11px}
 .pt b{font-weight:600;color:var(--ink)}
 .bc .age .pt{margin-left:2px}
@@ -693,12 +693,13 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
           <label id="phlab" class="adv" hidden>Preheat<select id="b-preheat"></select></label>
           <label id="tsl">Time (s)<input id="b-time" type="number" step="any" inputmode="decimal"></label>
           <label id="tml" hidden>Time (min : s)<span class="mmss"><input id="b-tmin" type="number" inputmode="numeric" min="0" step="1" placeholder="min" aria-label="Minutes"><span aria-hidden="true">:</span><input id="b-tsec" type="number" inputmode="numeric" min="0" step="1" placeholder="ss" aria-label="Seconds"></span></label>
+          <label id="blab" hidden>Bloom (s)<input id="b-bloom" type="number" step="1" min="0" inputmode="numeric" placeholder="45"></label>
         </div>
         <div id="wybox" hidden>
           <div class="wyrow"><label class="sw1"><input type="checkbox" id="b-wylink" role="switch" checked><span class="knob" aria-hidden="true"></span><span id="wylab">Link water and yield</span></label><button type="button" class="infob" id="wyinfo" aria-label="What does this do?" aria-expanded="false" aria-controls="wyhint">i</button></div>
           <p class="hint" id="wyhint" hidden></p>
         </div>
-        <p class="hint"><span class="adv" id="temphint">Water temp is the temperature from the kettle. </span>Time is the total, pre-infusion included, as your scale shows it.</p>
+        <p class="hint"><span class="adv" id="temphint">Water temp is the temperature from the kettle. </span><span id="tihint">Time is the total, pre-infusion included, as your scale shows it.</span></p>
         <div id="espbox" class="adv">
         <h3 class="sh">Pressure</h3>
         <div class="nums">
@@ -1677,7 +1678,7 @@ const unit = u => v => v == null || v === "" ? "" : v + u;
 const BREW_FIELDS = [
   ["device", "Device"], ["grinder", "Grinder"], ["grind", "Grind setting"], ["grind_feel", "Grind feel"],
   ["dose_g", "Dose", unit(" g")], ["water_g", "Water", unit(" g")], ["yield_g", "Yield", unit(" g")],
-  ["temp_c", "Temperature", unit(" \u00B0C")], ["preheat", "Preheat"], ["time_s", "Time", fmtTime],
+  ["temp_c", "Temperature", unit(" \u00B0C")], ["preheat", "Preheat"], ["time_s", "Time", fmtTime], ["bloom_s", "Bloom", unit(" s")],
   ["pressure_bar", "Pressure", unit(" bar")], ["preinfusion_bar", "Pre-infusion", unit(" bar")], ["preinfusion_s", "Pre-infusion time", unit(" s")],
   ["pressure_profile", "Pressure profile", v => Array.isArray(v) && v.length ? v.map(x => x.s + " s at " + x.bar + " bar").join(", ") : ""],
   ["is_dialin", "Dial-in shot"], ["notes", "Comments"]
@@ -1862,7 +1863,7 @@ const wyText = () => { $("wyhint").textContent = "On: type the water or the yiel
 $("b-wylink").addEventListener("change", () => { wyLinked = $("b-wylink").checked; store.set("alto.wylink", wyLinked ? "on" : "off"); wyText(); if (wyLinked) wyFollow(); });
 $("wyinfo").onclick = () => { const h = $("wyhint"); h.hidden = !h.hidden; $("wyinfo").setAttribute("aria-expanded", String(!h.hidden)); };
 wyText();
-const BF = ["b-when", "b-madeby", "b-device", "b-preheat", "b-device-new", "b-grinder", "b-grind", "b-feel", "b-pressure", "b-pibar", "b-pis", "b-dose", "b-water", "b-yield", "b-temp", "b-time", "b-recipe", "b-notes"];
+const BF = ["b-when", "b-madeby", "b-device", "b-preheat", "b-device-new", "b-grinder", "b-grind", "b-feel", "b-pressure", "b-pibar", "b-pis", "b-dose", "b-water", "b-yield", "b-temp", "b-time", "b-bloom", "b-recipe", "b-notes"];
 // news for the others (household and friends): a notification on their phones, if they want that kind (Settings); never in the way
 const tell = (kind, ref, what) => { try { return db.functions.invoke("notify", { body: { action: "event", kind, ref, what: what || null } }).catch(() => {}); } catch (e) { return Promise.resolve(); } };
 const store = {
@@ -2357,6 +2358,10 @@ function applyType() {
   $("wlab").hidden = esp; $("wybox").hidden = esp; if (esp) { $("b-water").value = ""; touched.delete("b-water"); }
   $("espbox").hidden = !esp;
   $("tsl").hidden = !esp; $("tml").hidden = esp; timeToParts();
+  // pour-over: how long the bloom took (the first little pour, then waiting), as its own line
+  const pour = typeOf(chosen("b-device")) === "filter";
+  $("blab").hidden = !pour; if (!pour) { $("b-bloom").value = ""; touched.delete("b-bloom"); }
+  $("tihint").textContent = esp ? "Time is the total, pre-infusion included, as your scale shows it." : pour ? "Time is the total, bloom included, as your scale shows it. Bloom is how long you let the first pour sit." : "Time is the total, as your scale shows it.";
   const fl = isFlair(chosen("b-device"));
   $("phlab").hidden = !fl; if (!fl) { $("b-preheat").value = ""; touched.delete("b-preheat"); }
   // a semi-automatic machine heats the water itself: no kettle, just the temperature it is set to
@@ -2652,7 +2657,7 @@ function startBrewEdit(b) {
   applyType();
   const pt = (id, v) => { $(id).value = v == null ? "" : v; };
   pt("b-grind", b.grind); pt("b-feel", b.grind_feel); pt("b-pressure", b.pressure_bar); pt("b-pibar", b.preinfusion_bar); pt("b-pis", b.preinfusion_s);
-  pt("b-dose", b.dose_g); pt("b-water", b.water_g); pt("b-yield", b.yield_g); pt("b-temp", b.temp_c); pt("b-preheat", b.preheat); pt("b-time", b.time_s); pt("b-notes", b.notes); timeToParts();
+  pt("b-dose", b.dose_g); pt("b-water", b.water_g); pt("b-yield", b.yield_g); pt("b-temp", b.temp_c); pt("b-preheat", b.preheat); pt("b-time", b.time_s); pt("b-bloom", b.bloom_s); pt("b-notes", b.notes); timeToParts();
   if (!isEsp(typeOf(b.device))) { ["b-pressure", "b-pibar", "b-pis"].forEach(i => { $(i).value = ""; }); }
   $("b-recipe").value = b.recipe && b.recipe !== settingsLabel(b) ? b.recipe : "";   // an automatic name is rebuilt on save
   setTasters(tastersOf(b)); renderFor();
@@ -3327,7 +3332,7 @@ function brewCard(b) {
   const set = settingsLabel(b);
   if (set && set !== b.recipe) a.appendChild(el("p", "set", set));
   const nums = [b.dose_g != null ? b.dose_g + " g in" : null, b.water_g != null ? b.water_g + " g water" : null, b.yield_g != null ? b.yield_g + " g out" : null,
-    b.temp_c != null ? b.temp_c + (isSemi(b.device) ? " °C" : " °C water") : null, b.preheat ? "preheat " + phText(b.preheat) : null, b.time_s != null ? (isEsp(typeOf(b.device)) && b.time_s < 90 ? b.time_s + " s total" : mmss(b.time_s) + " min total") : null,
+    b.temp_c != null ? b.temp_c + (isSemi(b.device) ? " °C" : " °C water") : null, b.preheat ? "preheat " + phText(b.preheat) : null, b.bloom_s != null ? "bloom " + b.bloom_s + "\u00A0s" : null, b.time_s != null ? (isEsp(typeOf(b.device)) && b.time_s < 90 ? b.time_s + " s total" : mmss(b.time_s) + " min total") : null,
     b.dose_g && b.yield_g ? "ratio 1:" + (b.yield_g / b.dose_g).toFixed(1) : null].filter(Boolean).join(", ");
   if (nums) a.appendChild(el("p", "", nums));
   if (Array.isArray(b.pressure_profile) && b.pressure_profile.length) {
@@ -3491,6 +3496,9 @@ function brewRow() {
   };
   // the brew's own stars: the average of everyone who rated it, to the nearest half star (the ratings themselves keep the detail)
   const rs = tasterRows().map(t => t.rating).filter(v => v != null);
+  // the bloom: only sent once there is one (or the brew already has the column), so saving works even before 39_bloom.sql
+  const bloom = typeOf(device) === "filter" ? num("b-bloom") : null;
+  if (bloom !== null || (editingBrew && editingBrew.bloom_s !== undefined)) row.bloom_s = bloom;
   row.rating = rs.length ? Math.round(rs.reduce((a, c) => a + c, 0) / rs.length * 2) / 2 : null;
   if (!$("mblab").hidden) { const mb = $("b-madeby").value || null; row.made_by = mb && mb !== (editingBrew ? editingBrew.created_by : me.id) ? mb : null; }
   // when: new brews without a time are "now" (the database fills it in); an edited brew keeps its time unless you changed it
@@ -3499,7 +3507,7 @@ function brewRow() {
   if (w) { if (Date.parse(w) > Date.now() + 10 * 60e3) throw new Error("the time is in the future"); if (!editingBrew || Math.abs(Date.parse(w) - Date.parse(editingBrew.brewed_at)) >= 60e3) row.brewed_at = w; }
   else if (editingBrew && touched.has("b-when") && $("b-when").value === "" && editingBrew.brewed_at && Date.now() - Date.parse(editingBrew.brewed_at) > 60e3) row.brewed_at = new Date().toISOString();
   if (stages.length && row.pressure_bar === null) row.pressure_bar = Math.max(...stages.map(s => s.bar));
-  for (const k of ["pressure_bar", "preinfusion_bar", "preinfusion_s", "dose_g", "water_g", "yield_g", "temp_c", "time_s"]) if (row[k] !== null && !isFinite(row[k])) throw new Error("check the numbers");
+  for (const k of ["pressure_bar", "preinfusion_bar", "preinfusion_s", "dose_g", "water_g", "yield_g", "temp_c", "time_s", "bloom_s"]) if (row[k] != null && !isFinite(row[k])) throw new Error("check the numbers");
   row.recipe = $("b-recipe").value.trim() || settingsLabel(row) || null;
   return row;
 }
