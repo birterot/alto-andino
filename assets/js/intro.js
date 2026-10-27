@@ -5,7 +5,8 @@
 
    Smoothness: every moving part is its own picture layer, moved only with transform and opacity (the phone's graphics
    chip does that without redrawing), all as Web Animations planned up front. The outline is a picture as well (the mountain's
-   own thick outline), uncovered round by a turning wedge, so it stays sharp. Then the lines inside are drawn out of the outline
+   own thick outline), so it stays sharp; it is uncovered along the line, like a pen drawing it, by a stroke that grows on the
+   outline's middle line and only lets the picture show where it has passed. Then the lines inside are drawn out of the outline
    (thin, simple lines) and the mountain picture takes their place. */
 (function () {
   var root = document.documentElement;
@@ -30,6 +31,8 @@
   function sv(t, a) { var e = document.createElementNS(NS, t); for (var k in a) e.setAttribute(k, a[k]); return e; }
   // the lines inside the mountain, as the middle of each line (traced from the mark): each starts where it meets the outline
   var INNER = ["M367.3 184.9L412.9 241.4L414.9 243.4L419.1 244.9L424.9 243.4L426.6 242.1L462.1 206.9","M149.5 359.3L233.1 260.9L238.1 255.6L243.4 253.6","M142.7 197.2L189.9 248.9","M120.7 230.7L163.6 277.1L164.6 278.4L164.9 280.6","M334.5 359.3L251.4 258.4L248.6 255.6L243.6 253.6","M179.8 141.2L204.1 170.4L208.1 174.4L213.4 176.4","M195.2 358.6L213.1 339.1L236.6 311.9L238.4 310.1L243.4 308.4","M97.3 359.3L138.4 309.9L139.6 307.9L140.9 302.6L138.4 295.6L103.4 257.4","M456.2 359.3L434.9 333.4L375.9 255.4L371.6 253.9L365.1 256.1L331.6 286.4L329.9 291.4L331.4 298.6L340.1 310.9L345.6 312.4L351.1 310.6L369.4 294.1L372.1 293.6","M504.3 359.8L470.9 314.6L469.6 312.6L468.4 307.6L469.6 301.4L471.1 299.4L501.6 266.4","M483.8 240.2L447.1 279.4","M275.1 159.9L217.9 219.1L211.6 221.4","M287.8 360.1L273.1 340.4L249.6 311.4L248.4 310.1L243.9 308.4","M162.3 167.9L177.6 186.6L204.6 217.1L206.6 219.1L211.6 221.4","M256.8 134.2L218.9 174.6L213.6 176.4"];
+  // the middle line of the thick outline (traced from the outline picture): from the middle of the bottom edge to the left, round clockwise
+  var PEN = "M299.5 372.1 L16.1 372.1 L218.4 63.1 L328.9 221.0 L408.3 109.5 L582.5 372.1 Z";
   var bg = getComputedStyle(document.body).backgroundColor.match(/\d+/g) || [255, 255, 255];
   var theme = (0.299 * bg[0] + 0.587 * bg[1] + 0.114 * bg[2]) / 255 < 0.5 ? "dark" : "light";
   var dir = (document.querySelector('script[src$="intro.js"]') || {}).src; dir = dir ? dir.replace(/js\/intro\.js.*$/, "brand/intro/") : "assets/brand/intro/";
@@ -43,21 +46,20 @@
   var inner = sv("svg", { viewBox: "0 0 599 397", class: "il inner" }), strokes = INNER.map(function (d) {
     var p = sv("path", { d: d, fill: "none", stroke: "currentColor", "stroke-width": 14.5, "stroke-linecap": "square", "stroke-linejoin": "miter" }); inner.appendChild(p); return p;
   });
-  // the outline: a ready-made picture too (the mountain's thick outline only), uncovered by a turning wedge, as if drawn round
-  var line = img("outline"); line.classList.add("line");
+  // the outline: a ready-made picture too (the mountain's thick outline only), shown through a mask: a wide stroke on the
+  // outline's middle line that grows from its start, so the outline appears along the line as if drawn with a pen
+  var lineImg = img("outline");   // loaded and decoded up front; the SVG below shows the same file
+  var line = sv("svg", { viewBox: "0 0 599 397", class: "il line" }), defs = sv("defs", {});
+  var mask = sv("mask", { id: "ia-pen", maskUnits: "userSpaceOnUse", x: -60, y: -60, width: 720, height: 520 });
+  var pen = sv("path", { d: PEN, fill: "none", stroke: "#fff", "stroke-width": 52, "stroke-linejoin": "miter", "stroke-miterlimit": 12, "stroke-linecap": "butt" });
+  mask.appendChild(pen); defs.appendChild(mask); line.appendChild(defs);
+  line.appendChild(sv("image", { href: lineImg.src, x: 0, y: 0, width: 599, height: 397, preserveAspectRatio: "none", mask: "url(#ia-pen)" }));
   box.appendChild(plant); box.appendChild(back); box.appendChild(mountain); box.appendChild(inner); box.appendChild(line);
   document.body.appendChild(lay);
   lay.addEventListener("click", function () { anims.forEach(function (a) { try { a.finish(); } catch (e) {} }); finish(); });
 
-  // the wedge: from the middle of the mountain, starting straight down (the middle of the bottom edge), turning clockwise.
-  // One clip shape per step of 10 degrees, all with the same number of corners, so the browser slides smoothly between them.
-  function wedge(deg) {
-    var cx = 50, cy = 64, R = 160, n = 18, pts = [cx + "% " + cy + "%"];
-    for (var k = 0; k <= n; k++) { var an = (90 + deg * k / n) * Math.PI / 180; pts.push((cx + R * Math.cos(an)).toFixed(2) + "% " + (cy + R * Math.sin(an)).toFixed(2) + "%"); }
-    return "polygon(" + pts.join(",") + ")";
-  }
-  var SWEEP = []; for (var d = 0; d <= 36; d++) SWEEP.push({ clipPath: wedge(d * 10), webkitClipPath: wedge(d * 10) });
-  line.style.clipPath = line.style.webkitClipPath = wedge(0);
+  var penLen = 1600; try { penLen = Math.ceil(pen.getTotalLength()) + 4; } catch (e) {}
+  pen.style.strokeDasharray = penLen + " " + penLen; pen.style.strokeDashoffset = penLen;
   var lens = strokes.map(function (p) { var l = 300; try { l = Math.ceil(p.getTotalLength()) + 8; } catch (e) {} p.style.strokeDasharray = l + " " + l; p.style.strokeDashoffset = l; return l; });
   mountain.style.opacity = 0.001;
   plant.style.transform = "translate3d(" + (18 * BOXW / W).toFixed(1) + "px," + (190 * BOXW / W).toFixed(1) + "px,0) rotate(22deg)";
@@ -79,7 +81,7 @@
     // the outline is drawn round; then the lines inside grow in from the outline to the middle: the backing over the mountain
     // shrinks away (only a picture getting smaller, which the graphics chip does by itself). The outline picture sits on top
     // all along and goes once the mountain, with the same outline, is all there.
-    play(line, SWEEP, 0, 1400, EASE);
+    play(pen, [{ strokeDashoffset: penLen }, { strokeDashoffset: 0 }], 0, 1400, EASE);
     // the lines inside, all at the same pace from the outline inwards: the longest takes a second, the short ones are done earlier
     var most = Math.max.apply(null, lens);
     strokes.forEach(function (p, i) { play(p, [{ strokeDashoffset: lens[i] }, { strokeDashoffset: 0 }], 1350, Math.max(250, 1000 * lens[i] / most), "cubic-bezier(.3,0,.3,1)"); });
@@ -88,9 +90,10 @@
     play(line, [{ opacity: 1 }, { opacity: 0 }], 2380, 1);
     if (!window.__introPaused) setTimeout(function () { line.remove(); inner.remove(); }, 2450);   // only the mountain and the plant left while it moves and scales
     // the plant: up from behind the mountain, turning in from the side, then a little wiggle. One animation on one property,
-    // so the graphics chip can run it on its own without the page in between.
+    // so the graphics chip can run it on its own without the page in between. The way up is one smooth move (no slowing
+    // down halfway, which looked like a stutter just before it popped out).
     var T = function (x, y, r, at, ease) { var k = { transform: "translate3d(" + x + "px," + y + "px,0) rotate(" + r + "deg)" }; if (at !== undefined) k.offset = at; if (ease) k.easing = ease; return k; };
-    play(plant, [T(px(18), px(190), 22, 0, OUT), T(px(3), px(30), 3, 0.27, OUT), T(0, 0, -3, 0.4, "ease-in-out"), T(0, 0, 0, 0.5, "ease-in-out"),
+    play(plant, [T(px(18), px(190), 22, 0, "cubic-bezier(.25,.8,.35,1)"), T(0, 0, -3, 0.4, "ease-in-out"), T(0, 0, 0, 0.5, "ease-in-out"),
       T(0, 0, -7, 0.6, "ease-in-out"), T(0, 0, 5, 0.72, "ease-in-out"), T(0, 0, -2.5, 0.85, "ease-in-out"), T(0, 0, 1, 0.93, "ease-in-out"), T(0, 0, 0, 1)], 1500, 1600);
     // the mountain flies to its place. Measured right when it starts: on the phone the page can still shift a little
     // after it opens (status bar, safe area), and the mountain should land exactly where the real one sits.
@@ -109,7 +112,7 @@
   var END = 5000;
   // start when the page has finished loading and the pictures are ready, then wait two frames so the first frame of the
   // animation is not also the frame that sets everything up (at the latest after a second and a half)
-  var ready = [plant, back, mountain, line].map(function (i) { return i.decode ? i.decode().catch(function () {}) : Promise.resolve(); });
+  var ready = [plant, back, mountain, lineImg].map(function (i) { return i.decode ? i.decode().catch(function () {}) : Promise.resolve(); });
   var loaded = new Promise(function (r) { if (document.readyState === "complete") r(); else window.addEventListener("load", r, { once: true }); });
   var started = false;
   function go() { if (started || done) return; started = true; requestAnimationFrame(function () { requestAnimationFrame(start); }); }
