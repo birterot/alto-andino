@@ -34,6 +34,16 @@ input[type=checkbox]{width:20px;height:20px;padding:0;margin:0;accent-color:var(
 label.chk{display:flex;align-items:center;gap:10px;color:var(--ink);font-size:15px;margin-top:16px}
 label.chk input{width:20px;height:20px;margin:0;flex:none}
 .chkrow{display:flex;flex-wrap:wrap;gap:0 28px}.chkrow label.chk{margin-top:12px}
+/* a small switch (water and yield), with an (i) for what it does */
+.wyrow{display:flex;align-items:center;gap:8px;margin-top:12px}
+.sw1{display:inline-flex;align-items:center;gap:10px;margin:0;font-size:14.5px;color:var(--ink);cursor:pointer}
+.sw1 input{position:absolute;opacity:0;width:1px;height:1px}
+.sw1 .knob{position:relative;flex:none;width:40px;height:24px;border-radius:12px;background:var(--line);transition:background .15s}
+.sw1 .knob::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.sw1 input:checked + .knob{background:var(--act)}
+.sw1 input:checked + .knob::after{transform:translateX(16px)}
+.sw1 input:focus-visible + .knob{outline:2px solid var(--accent);outline-offset:2px}
+.infob{flex:none;width:22px;height:22px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--card);color:var(--mut);font:600 12px/1 Georgia,serif;font-style:italic;cursor:pointer}
 label.chk input.untildate{width:auto;height:40px;margin:0 0 0 4px;padding:0 10px;flex:0 1 auto}
 .go,.lnk{font:inherit;cursor:pointer;border-radius:6px}
 .go{margin-top:20px;height:48px;padding:0 24px;border-radius:12px;border:1px solid var(--act);background:var(--act);color:var(--on-act);font-size:16px}
@@ -676,8 +686,8 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
           <label id="tml" hidden>Time (min : s)<span class="mmss"><input id="b-tmin" type="number" inputmode="numeric" min="0" step="1" placeholder="min" aria-label="Minutes"><span aria-hidden="true">:</span><input id="b-tsec" type="number" inputmode="numeric" min="0" step="1" placeholder="ss" aria-label="Seconds"></span></label>
         </div>
         <div id="wybox" hidden>
-          <label class="chk wylink"><input type="checkbox" id="b-wylink" checked> Water and yield go together</label>
-          <p class="hint" id="wyhint">Type one and the other is worked out, because about 2 g of water per gram of coffee stays in the grounds. Weighing both? Untick it and type in what you weighed.</p>
+          <div class="wyrow"><label class="sw1"><input type="checkbox" id="b-wylink" role="switch" checked><span class="knob" aria-hidden="true"></span><span id="wylab">Link water and yield</span></label><button type="button" class="infob" id="wyinfo" aria-label="What does this do?" aria-expanded="false" aria-controls="wyhint">i</button></div>
+          <p class="hint" id="wyhint" hidden></p>
         </div>
         <p class="hint"><span class="adv" id="temphint">Water temp is the temperature from the kettle. </span>Time is the total, pre-infusion included, as your scale shows it.</p>
         <div id="espbox" class="adv">
@@ -1838,12 +1848,11 @@ function wyFollow() {
 ["b-water", "b-yield"].forEach(id => $(id).addEventListener("input", e => { if (!e.isTrusted) return; wyLead = id === "b-water" ? "water" : "yield"; wyFollow(); }));
 $("b-dose").addEventListener("input", e => { if (e.isTrusted) wyFollow(); });
 $("b-wylink").checked = wyLinked;
-$("b-wylink").addEventListener("change", () => {
-  wyLinked = $("b-wylink").checked; store.set("alto.wylink", wyLinked ? "on" : "off");
-  $("wyhint").textContent = wyLinked ? "Type one and the other is worked out, because about 2 g of water per gram of coffee stays in the grounds. Weighing both? Untick it and type in what you weighed." : "Each on its own: type in the water you poured and what you weighed in the cup.";
-  if (wyLinked) wyFollow();
-});
-if (!wyLinked) $("wyhint").textContent = "Each on its own: type in the water you poured and what you weighed in the cup.";
+// on: type the water or the yield and the other is filled in (about 2 g of water per gram of coffee stays in the grounds); off: both typed in, for a scale under the cup
+const wyText = () => { $("wyhint").textContent = "On: type the water or the yield and the other is filled in (the grounds keep about 2 g of water per gram of coffee). Off: you type in both, e.g. when you weigh the cup."; };
+$("b-wylink").addEventListener("change", () => { wyLinked = $("b-wylink").checked; store.set("alto.wylink", wyLinked ? "on" : "off"); wyText(); if (wyLinked) wyFollow(); });
+$("wyinfo").onclick = () => { const h = $("wyhint"); h.hidden = !h.hidden; $("wyinfo").setAttribute("aria-expanded", String(!h.hidden)); };
+wyText();
 const BF = ["b-when", "b-madeby", "b-device", "b-preheat", "b-device-new", "b-grinder", "b-grind", "b-feel", "b-pressure", "b-pibar", "b-pis", "b-dose", "b-water", "b-yield", "b-temp", "b-time", "b-recipe", "b-notes"];
 // news for the others (household and friends): a notification on their phones, if they want that kind (Settings); never in the way
 const tell = (kind, ref, what) => { try { return db.functions.invoke("notify", { body: { action: "event", kind, ref, what: what || null } }).catch(() => {}); } catch (e) { return Promise.resolve(); } };
@@ -3317,8 +3326,8 @@ function brewCard(b) {
     const box = el("div", "taste");
     if (core.length || bal != null) {
       const t = el("div", "tags core");
-      core.forEach(([k, v]) => { const ch = el("span", "chip"); ch.style.setProperty("--ac", attrColor(k)); ch.append(ico(attrIcon(k), 14), document.createTextNode((k === "balance" ? "balance (old scale) " : k + " ") + SCALE.text(k, v))); t.appendChild(ch); });
       if (bal != null) { const ch = el("span", "chip balc"); ch.style.setProperty("--ac", attrColor("balance")); ch.title = SCALE.balanceName(bal); ch.append(ico("balance", 14), document.createTextNode("balance " + SCALE.balanceText(bal))); t.appendChild(ch); }
+      core.forEach(([k, v]) => { const ch = el("span", "chip"); ch.style.setProperty("--ac", attrColor(k)); ch.append(ico(attrIcon(k), 14), document.createTextNode((k === "balance" ? "balance (old scale) " : k + " ") + SCALE.text(k, v))); t.appendChild(ch); });
       box.appendChild(t);
     }
     if (notes.length) {   // like in the form: the leaf and the name

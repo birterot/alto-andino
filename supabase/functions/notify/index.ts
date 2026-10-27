@@ -79,6 +79,8 @@ if (globalThis.Deno) Deno.serve(async req => {
   const { data: u } = jwt ? await db.auth.getUser(jwt) : { data: null };
   if (!u || !u.user) return json({ error: "Not signed in." }, 401);
   const site = "https://alto-andino.com/";
+  // "on the Hario V60", "on the manual espresso machine": the device, after the coffee
+  const dev = d => !d ? "" : " on the " + (/^(Manual|Semi-automatic|Moka|French|Pour|Cold|Filter|Fully)\b/.test(d) ? d[0].toLowerCase() + d.slice(1) : d);
   let targets = [], sent = 0, gone = 0;
   if (q.action === "test") {
     const { data, error } = await db.from("push_subscriptions").select("endpoint,p256dh,auth");
@@ -89,7 +91,7 @@ if (globalThis.Deno) Deno.serve(async req => {
     if (error) return json({ error: error.message }, 500);
     const only = Array.isArray(q.ratings) && q.ratings.length ? new Set(q.ratings) : null;
     targets = (data || []).filter(t => !only || only.has(t.rating_id)).map(t => ({ s: t, msg: {
-      title: t.maker + " made you a coffee", body: t.coffee_name || "",
+      title: t.maker + " made you a coffee", body: (t.coffee_name || "A coffee") + dev(t.device),
       url: site + "journal/index.html#c=" + t.coffee_id + "&b=" + q.brew_id + "&rate=" + t.rating_id, tag: "rate-" + t.rating_id } }));
   } else if (q.action === "rated" && q.rating_id) {
     const { data, error } = await db.rpc("push_rated_targets", { p_rating: q.rating_id });
@@ -106,8 +108,8 @@ if (globalThis.Deno) Deno.serve(async req => {
     const kinds = q.kind === "brewed" ? ["hhbrew", "friendbrew"] : [q.kind];
     const J = site + "journal/index.html", HH = J + "#household";
     const say = (k, t) => {
-      if (k === "hhbrew") return { title: t.actor + " brewed a coffee", body: t.item || "", url: J + "#c=" + t.coffee_id + "&b=" + t.brew_id };
-      if (k === "friendbrew") return { title: t.actor + " (" + t.place + ") brewed a coffee", body: t.item || "", url: site + "friends/index.html#f=" + t.household_id + "&c=" + t.coffee_id };
+      if (k === "hhbrew") return { title: t.actor + " brewed a coffee", body: (t.item || "A coffee") + dev(t.extra), url: J + "#c=" + t.coffee_id + "&b=" + t.brew_id };
+      if (k === "friendbrew") return { title: t.actor + " (" + t.place + ") brewed a coffee", body: (t.item || "A coffee") + dev(t.extra), url: site + "friends/index.html#f=" + t.household_id + "&c=" + t.coffee_id };
       if (k === "coffee") return { title: { added: t.actor + " added a coffee", bag: t.actor + " got a new bag", opened: t.actor + " opened a bag", finished: t.actor + " finished a bag" }[t.extra] || t.actor + " changed a coffee",
         body: t.item || "", url: J + "#c=" + t.coffee_id };
       if (k === "household") return { title: { joined: t.actor + " joined " + t.place, left: t.actor + " left " + t.place, renamed: t.actor + " renamed your household", sharing: t.actor + " changed what your friends see", until: t.actor + " changed a membership" }[t.extra] || t.place + " changed",
