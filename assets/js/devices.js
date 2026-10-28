@@ -32,7 +32,8 @@
     Array.prototype.forEach.call(document.querySelectorAll("#tabs .tab"), function (t, i) { t.setAttribute("aria-selected", String(i === cur)); });
     var p = $("panel"); p.textContent = ""; p.className = "sb " + m.id;
 
-    var h = el("div", "sbh"); h.insertAdjacentHTML("beforeend", window.cupSvg());
+    var h = el("div", "sbh");   // the device's own icon (the variant's, e.g. the Chemex), the same as in Trends
+    h.appendChild(window.DEVICONS ? DEVICONS.svg(v.n && /chemex|aero|french|moka|flair/i.test(v.n) ? v.n : m.name, m.type, "devic") : el("span"));
     var hd = el("div"); hd.appendChild(el("small", "", m.kind)); hd.appendChild(el("h3", "", m.name)); hd.appendChild(el("p", "", m.tag));
     h.appendChild(hd); p.appendChild(h);
 
