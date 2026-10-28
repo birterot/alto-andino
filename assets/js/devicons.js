@@ -10,7 +10,7 @@ window.DEVICONS = (function () {
     filter: "M4 5h16l-6 9h-4L4 5z M12 14v3 M7 20h10",   // a dripper
     aero: "M8 2.5h8 M9.6 2.5v6 M14.4 2.5v6 M9.6 8.5h4.8 M8.5 5.5h7v13h-7z M6.5 18.5h11 M8.5 18.5l.5 2h6l.5-2",   // the plunger in its tube, with the filter cap
     immersion: "M7 7h10v12a1 1 0 01-1 1H8a1 1 0 01-1-1V7z M5 7h14 M12 3v8 M9.5 11h5",   // a French press
-    moka: "M8 3h8l-1.2 6H9.2L8 3z M9.2 9L7 20h10L14.8 9 M17 12.5h1.5a1.5 1.5 0 010 3H17",
+    moka: "M12 2v1.5 M7.5 3.5h9l-2 7h-5l-2-7z M7.5 3.5L6 2.5 M9.5 10.5h5 M9.5 10.5l-2.5 10h10l-2.5-10 M16.5 5H19l-1 5h-2",   // the pot with its waist, lid knob, spout and handle
     cold: "M6 4h12l-1.5 16h-9L6 4z M9.5 9h3v3h-3z M13 12.5h2.5V15H13z"
   };
   function key(name, type) {
