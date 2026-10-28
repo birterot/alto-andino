@@ -1854,6 +1854,11 @@ $("cf").onsubmit = async e => {
       if (error) throw error;
       if (!done.length) throw new Error("nothing was changed");
       if (path && editing.photo_path) await releasePhoto(editing.photo_path);
+      // the name and roaster belong to the coffee, not to one bag: all its bags get them, so its history stays together
+      // (also mends bags that were renamed one by one before)
+      const k = gk(editing);
+      const all = await db.from("coffees").update({ name: row.name, roaster: row.roaster }).or("group_id.eq." + k + ",id.eq." + k).neq("id", editing.id);
+      if (all.error) say("Saved, but the other bags kept the old name: " + all.error.message);
     } else {
       const { data: made, error } = await db.from("coffees").insert(row).select().single();
       if (error) throw error;

@@ -267,7 +267,7 @@ function asRated(b) {
 // brews after the device / person filters (and the coffee filter where the view uses it)
 function filtered(useCoffee) {
   const [t0, t1] = rangeOf();
-  return state.brews.filter(b => (!state.device || b.device === state.device) && (!state.who || b.who === state.who) && (!useCoffee || !state.coffee || b.coffeeId === state.coffee) && b.t >= t0 && b.t < t1).map(asRated).filter(Boolean);
+  return state.brews.filter(b => (!state.device || b.device === state.device) && (!state.who || b.who === state.who) && (!useCoffee || !state.coffee || grpOf(b) === state.coffee) && b.t >= t0 && b.t < t1).map(asRated).filter(Boolean);
 }
 // the time frame (Time frame filter): [from, to) as dates; all time unless you chose one
 function rangeOf() {
@@ -333,7 +333,7 @@ function brewTip(b, extra) {
 // ---------- 1 + 2: dial-in map and taste compass ----------
 function viewDial() {
   let list = filtered(true);
-  const c = coffeeOf(state.coffee);
+  const c = groupCoffee(state.coffee);
   let devNote = "";
   if (!state.device && list.length) {   // one device at a time, otherwise grind and time are not comparable
     const counts = {}; list.forEach(b => { if (b.device) counts[b.device] = (counts[b.device] || 0) + 1; });
@@ -747,7 +747,7 @@ function origins(list) {
 
 // ---------- over time (the original chart, redrawn) ----------
 function viewTime() {
-  const c = coffeeOf(state.coffee);
+  const c = groupCoffee(state.coffee);
   const m = card("Flavour over time", "Sour, sweet and bitter for one coffee, from -5 to +5, and below it the Balance from 0 to 5. Lines only join brews of one recipe, so a recipe change is not mistaken for the coffee changing.");
   if (!c) { empty(m, "Pick a coffee above."); return; }
   const xk = state.xk, all = filtered(true).map(b => ({ b, x: xk === "roast" ? b.dRoast : b.dOpen })).filter(p => p.x != null && (CORE.some(a => p.b.scores[a] != null) || p.b.balance != null));
@@ -799,6 +799,9 @@ function viewTime() {
 // does not make its settings look great. Every chart says how much more it needs until there is enough to show.
 const numOf = v => { const x = parseFloat(String(v == null ? "" : v).replace(",", ".")); return isFinite(x) ? x : null; };
 const grpOf = b => { const c = coffeeOf(b.coffeeId); return c ? (c.group_id || c.id) : b.coffeeId; };
+// all bags of one coffee (by its key), and the newest of them (it has the coffee's current name; the data comes newest first)
+const bagsOf = k => state.coffees.filter(c => (c.group_id || c.id) === k);
+const groupCoffee = k => bagsOf(k)[0] || coffeeOf(k);
 const fmtS = v => r1(v).toFixed(1) + "\u2605";
 const needMore = (box, text) => box.appendChild(el("p", "msg need", text));
 const WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -1014,11 +1017,13 @@ function fillFilters() {
     s.value = items.some(i => i[0] === keep) ? keep : "";
     return s.value;
   };
-  const counts = {}; state.brews.forEach(b => { counts[b.coffeeId] = (counts[b.coffeeId] || 0) + 1; });
-  const cs = state.coffees.filter(c => counts[c.id]).sort((a, b) => (counts[b.id] || 0) - (counts[a.id] || 0));
-  if (!state.coffee || !counts[state.coffee]) state.coffee = cs.length ? cs[0].id : "";
+  // one entry per coffee, with all its bags (a new bag or a new name keeps the history together); named like its newest bag
+  const counts = {}; state.brews.forEach(b => { const k = grpOf(b); counts[k] = (counts[k] || 0) + 1; });
+  const keys = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  if (!state.coffee || !counts[state.coffee]) state.coffee = keys.length ? keys[0] : "";
   const csel = $("f-coffee"); csel.textContent = "";
-  cs.forEach(c => { const o = el("option", "", c.name + (c.roast_date ? ", roasted " + fmtIso(c.roast_date) : "") + (c.archived ? " (archived)" : "") + " · " + counts[c.id]); o.value = c.id; csel.appendChild(o); });
+  keys.forEach(k => { const c = groupCoffee(k), n = bagsOf(k).length; if (!c) return; const o = el("option", "", c.name + (n > 1 ? " (" + n + " bags)" : c.roast_date ? ", roasted " + fmtIso(c.roast_date) : "") + (c.archived ? " (archived)" : "") + " · " + counts[k]); o.value = k; csel.appendChild(o); });
+  const cs = keys;
   if (!cs.length) { const o = el("option", "", "No coffees with brews"); o.value = ""; csel.appendChild(o); }
   csel.value = state.coffee;
   const devs = [...new Set(state.brews.map(b => b.device).filter(Boolean))].sort();
