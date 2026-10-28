@@ -470,9 +470,10 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .pmenu[hidden]{display:none}
 .pmenu button{font:inherit;font-size:15px;text-align:left;padding:10px 12px;border:0;border-radius:8px;background:none;color:var(--ink);cursor:pointer}
 .pmenu button:hover,.pmenu button:focus-visible{background:var(--bg);outline:none}
-.bc .chip svg{color:var(--ac)}
+.bc .chip svg,.chip.note svg{color:var(--ac)}
 .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0 0 16px}
 .filters input,.filters select{margin:0;max-width:none}
+@media (max-width:520px){#cfilters #flt-q{grid-column:1 / -1}}   /* phone: the search on its own line, the four choices two by two */
 #bfilters,#rfilters{display:flex;flex-wrap:nowrap;gap:6px}
 #bfilters select,#rfilters select{width:auto;flex:1 1 0;min-width:0;height:38px;min-height:38px;padding:0 30px 0 13px;font-size:14.5px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;background-position:calc(100% - 16px) 52%,calc(100% - 11px) 52%;background-size:5px 5px,5px 5px}
 #bfilters select[hidden]{display:none}
@@ -631,7 +632,8 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
     <input id="flt-q" type="search" placeholder="Search name, roaster, origin" aria-label="Search coffees">
     <select id="flt-process" aria-label="Filter by process"></select>
     <select id="flt-roast" aria-label="Filter by roast level"></select>
-    <select id="flt-open" aria-label="Filter by bag"><option value="">Any bag</option><option value="open">Open now</option><option value="closed">Not opened yet</option><option value="done">Finished</option><option value="fav">\u2665 Favourites</option></select>
+    <select id="flt-open" aria-label="Filter by bag"><option value="">Any bag</option><option value="open">Open now</option><option value="closed">Not opened yet</option><option value="done">Finished</option><option value="fav">&#9829; Favourites</option></select>
+    <select id="flt-sort" aria-label="Sort the coffees"><option value="">Last brewed first</option><option value="new">Newest bag first</option><option value="stars">Best rated first</option><option value="name">Name A&ndash;Z</option></select>
   </div>
   <div class="rleg" id="rleg" hidden></div>
   <div id="list" class="clist"></div>
@@ -655,7 +657,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
     <p class="hint" style="margin-top:0" id="mhint">Every brew you made or rated, newest first.</p>
     <div class="filters">
       <select id="mflt-person" aria-label="Whose brews"></select>
-      <select id="mflt-who" aria-label="Which brews"><option value="">Made or rated</option><option value="torate">To rate</option><option value="rated">Rated by me</option><option value="made">Made by me</option><option value="fav">\u2665 Favourites</option></select>
+      <select id="mflt-who" aria-label="Which brews"><option value="">Made or rated</option><option value="torate">To rate</option><option value="rated">Rated by me</option><option value="made">Made by me</option></select>
       <select id="mflt-bal" aria-label="Balance"><option value="">Any Balance</option><option value="none">Balance not rated</option><option value="old">From the old slider</option></select>
       <select id="mflt-when" aria-label="When"><option value="">Any time</option><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="month">This month</option><option value="custom">Dates…</option></select>
     </div>
@@ -781,7 +783,6 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
       <select id="bflt-device" aria-label="Filter by device"></select>
       <select id="bflt-recipe" aria-label="Filter by recipe"></select>
       <select id="bflt-who" aria-label="Filter by who brewed" hidden></select>
-      <select id="bflt-fav" aria-label="Favourites"><option value="">All brews</option><option value="fav">\u2665 Favourites</option></select>
       <select id="bflt-sort" aria-label="Sort"><option value="">Newest</option><option value="old">Oldest</option></select>
     </div>
     <div id="brews"></div>
@@ -1082,7 +1083,7 @@ function ibtn(label, icon, onclick, cls) {
   const b = el("button", "ib" + (cls ? " " + cls : "")); b.type = "button"; b.title = label; b.setAttribute("aria-label", label);
   b.appendChild(ico(icon, 20)); b.onclick = onclick; return b;
 }
-// Hearts: your favourite coffees (all bags: the coffee's key) and brews (supabase/38_favourites.sql). Kept on the phone too, so they show at once.
+// Hearts: your favourite coffees (all bags: the coffee's key) (supabase/38_favourites.sql; it can also keep brews, not used any more). Kept on the phone too, so they show at once.
 const favs = { coffee: new Set(), brew: new Set() };
 let favOk = true;
 (function () { try { const f = JSON.parse(localStorage.getItem("alto.favs") || "null"); if (f) { (f.coffee || []).forEach(x => favs.coffee.add(x)); (f.brew || []).forEach(x => favs.brew.add(x)); } } catch (e) { /* none yet */ } })();
@@ -1111,6 +1112,8 @@ function favBtn(kind, ref) {
 // The same colours as the Trends charts (checked for colour blindness): sour, sweet, bitter, balance.
 const ATTR = { sour: ["#2a78d6", "#3987e5"], sweet: ["#eb6834", "#d95926"], bitter: ["#1baf7a", "#199e70"], balance: ["#eda100", "#c98500"], body: ["#8a5a9e", "#b58bc7"], chocolaty: ["#5A3A24", "#C09670"] };
 const attrIcon = a => ICONS[a] && ATTR[a] ? a : "leaf";
+// a tasting note as a chip with its leaf, the same on the coffee as on the brews
+function noteChip(x) { const ch = el("span", "chip note"); ch.style.setProperty("--ac", attrColor(x)); ch.append(ico(attrIcon(x), 14), document.createTextNode(x)); return ch; }
 const attrColor = a => ATTR[a] ? "light-dark(" + ATTR[a][0] + "," + ATTR[a][1] + ")" : "var(--accent)";
 
 // Bags of one coffee can share a photo, so the file is only removed when no bag uses it any more.
@@ -1168,7 +1171,7 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
   b.appendChild(factsBlock(c, true));
   if (bags && bags.length > 1) b.appendChild(el("p", "age", "Bag " + bags.length + " of " + bags.length));
   if (c.flavour_tags && c.flavour_tags.length) {
-    const t = el("div", "tags"); c.flavour_tags.forEach(x => t.appendChild(el("span", "chip", x))); b.appendChild(t);
+    const t = el("div", "tags"); c.flavour_tags.forEach(x => t.appendChild(noteChip(x))); b.appendChild(t);
   }
   const rt = rateBlock(ratings, bags && bags.length > 1); if (rt) b.appendChild(rt);
   else if (bags && bags.length > 1) {   // a new bag without rated brews yet: the bag before as a hint
@@ -1392,9 +1395,20 @@ function renderCoffees() {
   active.forEach(c => { const k = gk(c); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(c); });
   const shown = [...groups.values()].filter(g => passCoffee(g[0], g));
   if (!shown.length) { list.appendChild(el("p", "hint", "No coffees match these filters.")); return; }
+  // the order (remembered on this phone): last brewed (a bag never brewed counts from the day it was added), newest bag, stars, name
+  const sortBy = $("flt-sort").value; try { localStorage.setItem("alto.shelfsort", sortBy); } catch (e) { /* only remembered */ }
+  const bagT = g => Date.parse(g[0].created_at) || 0;
+  const lastT = g => Math.max(bagT(g), ...g.flatMap(c => (coffeeRates[c.id] || []).map(x => Date.parse(x.t) || 0)));
+  const stars = g => { const c = (coffeeRates[g[0].id] || []).filter(x => x.r != null && !x.d); return c.length ? c.reduce((a, x) => a + x.r, 0) / c.length : -1; };
+  const cmp = sortBy === "new" ? (a, b) => bagT(b) - bagT(a)
+    : sortBy === "stars" ? (a, b) => stars(b) - stars(a) || lastT(b) - lastT(a)
+    : sortBy === "name" ? (a, b) => String(a[0].name || "").localeCompare(String(b[0].name || ""), undefined, { sensitivity: "base" })
+    : (a, b) => lastT(b) - lastT(a);
+  shown.sort(cmp);
   shown.forEach(g => list.appendChild(card(g[0], coffeeUrls[g[0].photo_path], coffeeCounts[g[0].id] || 0, coffeeRates[g[0].id] || [], g, coffeeThumbs[g[0].photo_path])));   // the stars of the current bag
 }
-["flt-q", "flt-process", "flt-roast", "flt-open"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderCoffees)));
+["flt-q", "flt-process", "flt-roast", "flt-open", "flt-sort"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderCoffees)));
+(function () { let s = null; try { s = localStorage.getItem("alto.shelfsort"); } catch (e) { /* none */ } if (s && [...$("flt-sort").options].some(o => o.value === s)) $("flt-sort").value = s; })();
 
 let editing = null, newBagOf = null;
 function setSel(id, v) {
@@ -2941,7 +2955,7 @@ function feedCard(x) {
     // who brewed it comes first: their initial in a circle, then "Andrés brewed <coffee>"
     const top = el("div", "ft"), hd = el("span", "fh");
     hd.append(el("b", "", by || "Someone"), document.createTextNode(" brewed "), el("span", "fc", c ? c.name : "a coffee"));
-    top.append(avatar(maker, by), hd); if (favs.brew.has(b.id)) { const h = ico("heart", 15); h.classList.add("fheart"); top.appendChild(h); } top.appendChild(el("time", "", hhmm(x.t))); a.appendChild(top);
+    top.append(avatar(maker, by), hd); top.appendChild(el("time", "", hhmm(x.t))); a.appendChild(top);
     const nums = [b.dose_g != null ? b.dose_g + "\u00A0g in" : null, b.yield_g != null ? b.yield_g + "\u00A0g out" : b.water_g != null ? b.water_g + "\u00A0g water" : null,
       b.time_s != null ? (isEsp(typeOf(b.device)) && b.time_s < 90 ? b.time_s + "\u00A0s" : mmss(b.time_s) + "\u00A0min") : null].filter(Boolean).join(", ");
     const dev = DEV_OLD[b.device] || b.device, devT = dev && /^(Manual|Semi-automatic|Moka|French|Pour|Cold|Turkish|Drip)\b/.test(dev) ? dev[0].toLowerCase() + dev.slice(1) : dev;
@@ -3022,7 +3036,7 @@ function renderMine() {
   mineData = mineRows();
   const p = $("mflt-person").value, who = p === "all" ? "" : $("mflt-who").value, bal = $("mflt-bal").value;
   const rg = whenRange("m");
-  const list = mineData.filter(x => inWhen(rg, new Date(x.b.brewed_at)) && (!who || (who === "torate" ? x.pend : who === "rated" ? !!x.pr && !x.ppend : who === "fav" ? favs.brew.has(x.b.id) : x.made)) && (!bal || (bal === "none" ? x.r && !x.pend && x.r.balance == null : x.old != null)));
+  const list = mineData.filter(x => inWhen(rg, new Date(x.b.brewed_at)) && (!who || (who === "torate" ? x.pend : who === "rated" ? !!x.pr && !x.ppend : x.made)) && (!bal || (bal === "none" ? x.r && !x.pend && x.r.balance == null : x.old != null)));
   const box = $("mlist"); box.textContent = "";
   $("mhint").textContent = p === "me" ? "Every brew you made or rated, newest first."
     : p === "all" ? "Every brew of the household, newest first, with everyone's stars." : "Every brew " + (nameOf(p) || "they") + " made or rated, newest first.";
@@ -3265,7 +3279,7 @@ async function openCoffee(id, dev, wantForm, rid) {
   }
   cur = c;
   fillCoffeeSwitch(c, all || []);
-  ["bflt-device", "bflt-recipe", "bflt-who", "bflt-fav", "bflt-sort"].forEach(i => { $(i).value = ""; });
+  ["bflt-device", "bflt-recipe", "bflt-who", "bflt-sort"].forEach(i => { $(i).value = ""; });
   applyLook($("dhead"), c);
   const fx = $("dfacts"); fx.textContent = ""; fx.appendChild(factsBlock(c, true));
   const da = $("darch"); da.textContent = ""; da.hidden = !c.archived;
@@ -3285,7 +3299,7 @@ async function openCoffee(id, dev, wantForm, rid) {
   bx.appendChild(abtn("btn ghost", "New bag", "plus", () => { $("dedithost").appendChild($("addbox")); startNewBag(c); }));
   bagActions(c, () => { load(); openCoffee(c.id); }).forEach(x => bx.appendChild(x));
   const t = $("dtags"); t.textContent = "";
-  (c.flavour_tags || []).forEach(x => t.appendChild(el("span", "chip", x)));
+  (c.flavour_tags || []).forEach(x => t.appendChild(noteChip(x)));
   // devices you do not own (ticked in Settings) stay out, even if used for this coffee before; your own names ("French press (1 l)") stay in
   const std = deviceList(true), devs = deviceList(), owns = devs.length < std.length;
   fill("b-device", devs, [...new Set((dv || []).map(b => DEV_OLD[b.device] || b.device).filter(Boolean))].filter(d => !owns || !std.includes(d)));
@@ -3440,7 +3454,7 @@ function brewCard(b, opt) {
     const { data: gone, error } = await db.from("brews").delete().eq("id", b.id).select();
     if (error) say("Could not delete: " + error.message); else if (!gone.length) say("Nothing was deleted."); else if (inMine) loadMine(); else { loadBrews(); load(); }
   }, "del");
-  const grp = el("div", "ibs"); grp.append(favBtn("brew", b.id), ed, del, menu);
+  const grp = el("div", "ibs"); grp.append(ed, del, menu);   // hearts are for coffees only
   hd.appendChild(grp);
   return a;
 }
@@ -3463,7 +3477,7 @@ async function loadBrews() {
 }
 function renderBrews() {
   const dv = $("bflt-device").value, rc = $("bflt-recipe").value, wh = $("bflt-who").value;
-  let list = brewData.filter(b => (!dv || b.device === dv) && (!rc || b.recipe === rc) && (!wh || (b.made_by || b.created_by) === wh) && ($("bflt-fav").value !== "fav" || favs.brew.has(b.id)));
+  let list = brewData.filter(b => (!dv || b.device === dv) && (!rc || b.recipe === rc) && (!wh || (b.made_by || b.created_by) === wh));
   if ($("bflt-sort").value === "old") list = list.slice().reverse();   // data arrives newest first
   $("bfilters").hidden = brewData.length < 2;
   const box = $("brews"); box.textContent = "";
@@ -3478,7 +3492,7 @@ function renderBrews() {
     window.scrollTo({ top: Math.max(0, y), behavior: "smooth" }); fb.classList.add("hl");
   });
 }
-["bflt-device", "bflt-recipe", "bflt-who", "bflt-fav", "bflt-sort"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderBrews)));
+["bflt-device", "bflt-recipe", "bflt-who", "bflt-sort"].forEach(id => ["input", "change"].forEach(ev => $(id).addEventListener(ev, renderBrews)));
 
 // Saving a rating: only the tasters that changed are written, in place (someone else may be rating the same brew).
 async function saveRate() {
