@@ -120,6 +120,7 @@ ul.rank li:has(.medal){grid-template-columns:auto minmax(0,1fr) 64px var(--vw,au
 .runner .av{width:30px;height:30px;font-size:13px;box-shadow:0 0 0 2px var(--card)}
 .flag{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:16px}
 .lval{text-align:right;font-variant-numeric:tabular-nums;font-size:14.5px}
+.duel{margin:4px 0 12px;font-size:14px;line-height:1.45;color:var(--ink)}
 .titles{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .ttl{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-size:13.5px}.ttl b{font-weight:600}
 ul.worked{list-style:none;margin:8px 0 4px;padding:0}
@@ -841,68 +842,99 @@ function sweetSpot() {
 // ---------- 6 + 7 + 8: us ----------
 // ---------- the barista ranking: fair, on the same coffees, as a little race ----------
 const median = a => { const s = a.slice().sort((x, y) => x - y), k = s.length; return k ? (k % 2 ? s[(k - 1) / 2] : (s[k / 2 - 1] + s[k / 2]) / 2) : null; };
-function baristaRace(list, ppl) {
-  const m = card("Barista ranking", "Fair, on the same coffees: each brew's stars against the household's average for that coffee (where everyone counts the same, however often they brew it). So brewing a tricky coffee, or experimenting a lot, does not count against you. Dial-ins are left out. The typical cup is the median: half your cups are better, half worse. Under 8 compared brews it is too early to call.");
-  m.querySelector("h2").prepend(ic("trophy", "h2i"));
-  if (!ppl.length) { empty(m, "Brews show up here once they have a \u201CMade by\u201D."); return; }
-  const rated = list.filter(b => b.rating != null && !b.dialin && b.who);
-  const byC = {}; rated.forEach(b => (byC[grpOf(b)] = byC[grpOf(b)] || []).push(b));
-  const dev = {};
-  Object.values(byC).forEach(xs => {
-    const per = {}; xs.forEach(b => (per[b.who] = per[b.who] || []).push(b.rating));
-    if (Object.keys(per).length < 2) return;   // only coffees more than one of you brewed
-    const bar = avg(Object.values(per).map(avg));   // every barista counts once for the coffee's average
-    xs.forEach(b => (dev[b.who] = dev[b.who] || []).push(b.rating - bar));
+// Duels for the barista ranking: two brews of the same coffee, by two different people, on the same kind of device,
+// at most DUEL_DAYS apart, judged by the stars of someone who rated both. The closest pairs in time first; every brew duels once.
+const DUEL_DAYS = 4;
+function baristaDuels(list) {
+  const raterOk = r => r.rating != null && !r.guest && r.who && (!state.rater || state.rater === GUEST || r.who === state.rater);
+  const xs = list.filter(b => b.who && !b.dialin && b.device && (b.ratings || []).some(raterOk));
+  const kind = b => isEsp(b.device) ? "e" : "f", by = {};
+  xs.forEach(b => { const k = grpOf(b) + "|" + kind(b); (by[k] = by[k] || []).push(b); });
+  const pairs = [];
+  Object.values(by).forEach(g => {
+    for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++) {
+      const a = g[i], b = g[j], gap = Math.abs(a.t - b.t);
+      if (a.who === b.who || gap > DUEL_DAYS * 864e5) continue;
+      const ra = {}, rb = {}; a.ratings.filter(raterOk).forEach(r => { ra[r.who] = r.rating; }); b.ratings.filter(raterOk).forEach(r => { rb[r.who] = r.rating; });
+      const by2 = Object.keys(ra).filter(w => w in rb); if (!by2.length) continue;   // nobody had both cups: no fair judge
+      pairs.push({ a, b, gap, by: by2, sa: [avg(by2.map(w => ra[w])), avg(by2.map(w => rb[w]))] });
+    }
   });
+  pairs.sort((x, y) => x.gap - y.gap);
+  const used = new Set(), out = [];
+  pairs.forEach(p => {
+    if (used.has(p.a) || used.has(p.b)) return;
+    used.add(p.a); used.add(p.b);
+    const d = p.sa[0] - p.sa[1]; p.win = Math.abs(d) >= 0.5 ? (d > 0 ? p.a.who : p.b.who) : null;
+    out.push(p);
+  });
+  return out;
+}
+function baristaRace(list, ppl) {
+  const m = card("Barista ranking", "Head-to-head duels: a brew of yours against a brew of someone else's, of the same coffee, on the same kind of device (espresso or filter), at most " + DUEL_DAYS + " days apart, so at the same point in the bag. Judged by the same person's stars (someone who rated both cups), so a strict rater counts the same for both of you. Half a star or more wins, closer is a draw. Every brew duels at most once, so brewing more never counts against you: you just get more chances. Dial-ins are left out. The ranking is the share of duels won (a draw is half), and under 8 duels it is too early to call. The typical cup is the median of your stars.");
+  m.querySelector("h2").prepend(ic("trophy", "h2i"));
+  if (!ppl.length) { empty(m, "Brews show up here once they have a “Made by”."); return; }
+  const rated = list.filter(b => b.rating != null && !b.dialin && b.who);
+  const duels = baristaDuels(list);
   const rows = ppl.map(id => {
-    const mine = rated.filter(b => b.who === id), st = mine.map(b => b.rating), d = dev[id] || [], mu = avg(st);
-    return { id, brews: list.filter(b => b.who === id).length, rated: st.length, med: median(st), score: d.length ? avg(d) : null, cmp: d.length,
+    const mine = rated.filter(b => b.who === id), st = mine.map(b => b.rating), mu = avg(st);
+    const my = duels.filter(d => d.a.who === id || d.b.who === id), won = my.filter(d => d.win === id).length, even = my.filter(d => !d.win).length, lost = my.length - won - even;
+    return { id, brews: list.filter(b => b.who === id).length, rated: st.length, med: median(st), duels: my.length, won, lost, even,
+      rate: my.length ? (won + even / 2) / my.length : null, score: (won + even / 2 + 2) / (my.length + 4),   // pulled towards 50 % while there are few duels
       sd: st.length >= 5 ? Math.sqrt(avg(st.map(x => (x - mu) * (x - mu)))) : null, best: st.length ? Math.max(...st) : null };
   });
-  const fair = rows.filter(r => r.cmp >= 3).sort((a, b) => b.score - a.score);
-  const byMed = !fair.length;   // nobody brewed the same coffee yet: by the typical cup for now
+  const fair = rows.filter(r => r.duels >= 3).sort((a, b) => b.score - a.score || b.duels - a.duels);
+  const byMed = fair.length < 2;   // not enough duels yet: by the typical cup for now
   const ranked = byMed ? rows.filter(r => r.rated >= 3).sort((a, b) => b.med - a.med || b.rated - a.rated) : fair;
-  const val = r => byMed ? r.med : r.score;
-  if (ranked.length < 2) { needMore(m, ppl.length < 2 ? "A ranking needs a second barista: brews made by someone else in the household." : "A few more rated brews each (at least 3 of the same coffees) and the race starts."); }
+  const wl = r => r.won + "–" + r.lost + (r.even ? " (" + r.even + (r.even === 1 ? " draw)" : " draws)") : "");
+  if (ranked.length < 2) { needMore(m, ppl.length < 2 ? "A ranking needs a second barista: brews made by someone else in the household." : "A few more rated brews each and the race starts. Duels come from the same coffee brewed by two of you within a few days."); }
   else {
     // the leader, in one line
-    const a = ranked[0], b = ranked[1], gap = r1(val(a)) - r1(val(b)), close = gap < 0.1;   // as the lanes show it
+    const a = ranked[0], b = ranked[1], two = ranked.length === 2 && !byMed;
+    const close = byMed ? r1(a.med) === r1(b.med) : (two ? a.won === b.won : Math.round(a.rate * 100) === Math.round(b.rate * 100));
     const ban = el("div", "lead"); ban.appendChild(el("span", "crown", close ? "\u{1F91D}" : "\u{1F451}"));
-    ban.appendChild(el("p", "", close ? "Neck and neck: " + andList(ranked.slice(0, 2).map(r => nameOf(r.id))) + (byMed ? " have the same typical cup." : " make equally good cups of the same coffees.")
-      : nameOf(a.id) + " leads" + (byMed ? " with a typical cup of " + fmtS(a.med) : " by " + gap.toFixed(1) + "\u2605 on the same coffees") + "."));
+    ban.appendChild(el("p", "", close ? "Neck and neck: " + andList(ranked.slice(0, 2).map(r => nameOf(r.id))) + (byMed ? " have the same typical cup." : two ? ", " + a.won + " duels won each." : " win as many duels.")
+      : nameOf(a.id) + " leads" + (byMed ? " with a typical cup of " + fmtS(a.med) : two ? ", " + a.won + (a.won === 1 ? " duel" : " duels") + " won to " + b.won : " with " + Math.round(a.rate * 100) + "% of duels won") + "."));
     m.appendChild(ban);
-    // the race: one lane each, the further right the better, the flag at the leader's end
-    const lo = Math.min(...ranked.map(val)), hi = Math.max(...ranked.map(val)), span = Math.max(hi - lo, byMed ? 1 : 0.5);
+    // the race: one lane each, the further right the better (the share of duels won), the flag at 100 %
+    const lo = byMed ? Math.min(...ranked.map(r => r.med)) : 0, span = byMed ? Math.max(Math.max(...ranked.map(r => r.med)) - lo, 1) : 1;
     const race = el("div", "race");
     ranked.forEach((r, i) => {
-      const lane = el("div", "lane" + (r.cmp < 8 && !byMed ? " unsure" : "")), runner = el("span", "runner");
-      runner.style.left = (8 + 64 * (val(r) - lo) / span) + "%";   // stays clear of the flag
+      const lane = el("div", "lane" + (r.duels < 8 && !byMed ? " unsure" : "")), runner = el("span", "runner");
+      runner.style.left = (8 + 64 * ((byMed ? r.med : r.rate) - lo) / span) + "%";   // stays clear of the flag
       runner.appendChild(avatar(r.id));
       lane.append(el("span", "lpos", i === 0 ? "\u{1F3C6}" : String(i + 1)), el("span", "lname", nameOf(r.id)));
       const track = el("span", "track"); track.append(runner, el("span", "flag", "\u{1F3C1}")); lane.appendChild(track);
-      lane.appendChild(el("b", "lval", byMed ? fmtS(r.med) : (r.score >= 0 ? "+" : "\u2212") + r1(Math.abs(r.score)).toFixed(1) + "\u2605"));
+      lane.appendChild(el("b", "lval", byMed ? fmtS(r.med) : Math.round(r.rate * 100) + "%"));
       race.appendChild(lane);
     });
     m.appendChild(race);
-    if (!byMed && ranked.some(r => r.cmp < 8)) m.appendChild(el("p", "small", "Faded lanes: under 8 compared brews, too early to call."));
-    if (byMed) m.appendChild(el("p", "small", "No coffee brewed by more than one of you yet, so this is by the typical cup for now. Brew the same coffee to race fairly."));
+    if (!byMed && ranked.some(r => r.duels < 8)) m.appendChild(el("p", "small", "Faded lanes: under 8 duels, too early to call."));
+    if (byMed) m.appendChild(el("p", "small", "Hardly any duels yet (the same coffee, brewed by two of you within " + DUEL_DAYS + " days, and rated by someone who had both), so this is by the typical cup for now."));
+    // the latest duel, for the bragging rights
+    const last = duels.slice().sort((x, y) => Math.max(y.a.t, y.b.t) - Math.max(x.a.t, x.b.t))[0];
+    if (last && !byMed) {
+      const c = groupCoffee(grpOf(last.a)), side = d => nameOf(d.who) + " " + fmtS(last.sa[d === last.a ? 0 : 1]);
+      m.appendChild(el("p", "duel", "⚔️ Latest duel: " + (c ? c.name : "a coffee") + ", " + fmtDate(new Date(Math.max(last.a.t, last.b.t))) + ". " + side(last.a) + " vs " + side(last.b)
+        + (last.by ? ", rated by " + andList(last.by.map(nameOf)) : "") + ". " + (last.win ? nameOf(last.win) + " won." : "A draw.")));
+    }
   }
   // everyone's numbers, as small tiles
   const tiles = el("div", "tiles"); m.appendChild(tiles);
   rows.slice().sort((a, b) => b.brews - a.brews).forEach(r => {
     const t = el("div", "tile"), l = el("div", "tl"); l.append(avatar(r.id), document.createTextNode(nameOf(r.id))); t.appendChild(l);
-    t.appendChild(el("div", "tv", r.med != null ? fmtS(r.med) : "\u2013"));
+    t.appendChild(el("div", "tv", r.med != null ? fmtS(r.med) : "–"));
     t.appendChild(el("div", "ts", "typical cup"));
-    t.appendChild(el("div", "ts", r.brews + (r.brews === 1 ? " brew" : " brews") + (r.cmp ? " \u00B7 " + r.cmp + " compared" : "")));
+    t.appendChild(el("div", "ts", r.brews + (r.brews === 1 ? " brew" : " brews") + (r.duels ? " · duels " + wl(r) : "")));
     tiles.appendChild(t);
   });
   // little titles, for fun
   const titles = [];
-  const most = rows.slice().sort((a, b) => b.brews - a.brews)[0]; if (most && rows.length > 1 && most.brews > 0) titles.push(["\u{1F4AA}", "Most brews", nameOf(most.id) + " \u00B7 " + most.brews]);
+  const most = rows.slice().sort((a, b) => b.brews - a.brews)[0]; if (most && rows.length > 1 && most.brews > 0) titles.push(["\u{1F4AA}", "Most brews", nameOf(most.id) + " · " + most.brews]);
   const st = rows.filter(r => r.sd != null).sort((a, b) => a.sd - b.sd)[0]; if (st && rows.filter(r => r.sd != null).length > 1) titles.push(["\u{1F3AF}", "Steadiest hand", nameOf(st.id)]);
-  const top = rated.slice().sort((a, b) => b.rating - a.rating || b.t - a.t)[0]; if (top && top.rating >= 4) titles.push(["\u2B50", "Best cup", nameOf(top.who) + " \u00B7 " + fmtS(top.rating)]);
+  const top = rated.slice().sort((a, b) => b.rating - a.rating || b.t - a.t)[0]; if (top && top.rating >= 4) titles.push(["⭐", "Best cup", nameOf(top.who) + " · " + fmtS(top.rating)]);
   if (titles.length) { const tl = el("div", "titles"); titles.forEach(([e, k, v]) => { const d = el("span", "ttl"); d.append(document.createTextNode(e + " " + k + " "), el("b", "", v)); tl.appendChild(d); }); m.appendChild(tl); }
-  numbers(m, ["Barista", "Brews", "Rated", "Typical cup", "Same coffees (vs household)", "Compared brews"], rows.map(r => [nameOf(r.id), r.brews, r.rated, r.med != null ? r1(r.med).toFixed(1) : null, r.score != null ? (r.score >= 0 ? "+" : "") + r1(r.score).toFixed(2) : null, r.cmp]));
+  numbers(m, ["Barista", "Brews", "Rated", "Typical cup", "Duels", "Won", "Lost", "Draws", "Won (share)"], rows.map(r => [nameOf(r.id), r.brews, r.rated, r.med != null ? r1(r.med).toFixed(1) : null, r.duels, r.won, r.lost, r.even, r.rate != null ? Math.round(r.rate * 100) + "%" : null]));
 }
 function viewFreshTab() {
   viewFresh();
