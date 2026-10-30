@@ -374,6 +374,7 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 /* the Coffee Shelf title, with the bag+ button (add a coffee) on the right; the closed "Add a coffee" bar is not needed then */
 .hhwait{border-color:var(--accent)}
 .hhwait p{margin:6px 0 0;color:var(--mut);font-size:14.5px}
+#f-perkg:empty{display:none}
 .ptrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .addc{flex:none;width:46px;height:46px;display:grid;place-items:center;margin-right:-6px;border:0;border-radius:12px;background:none;color:var(--brand,var(--ink));cursor:pointer}
 .addc:hover{background:var(--card)}
@@ -614,8 +615,10 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
       <label>Open date<input type="date" id="f-od"></label>
       <label class="adv">Notes<textarea id="f-notes" rows="3"></textarea></label>
       <label class="adv">Bag size (g, optional)<input id="f-bag" type="number" inputmode="numeric" min="1" max="5000" step="1" placeholder="250"></label>
+      <label class="adv">Price paid (&euro;, optional)<input id="f-price" type="number" inputmode="decimal" min="0" max="10000" step="0.01" placeholder="e.g. 14.50"></label>
+      <p class="hint adv" id="f-perkg" aria-live="polite"></p>
       <label class="adv">SCA score (from the bag, optional)<input id="f-sca" type="number" inputmode="decimal" min="0" max="100" step="0.25" placeholder="e.g. 86.5"></label>
-      <p class="hint adv">Used to show how much coffee is left.</p>
+      <p class="hint adv">The bag size shows how much coffee is left; with the price, Trends shows what you get for your money.</p>
       <label class="adv">Where to buy (link, optional)<input id="f-url" type="url" inputmode="url" placeholder="https://..."></label>
       <label>Bag photo<input type="file" id="f-photo" accept="image/*"></label>
       <p class="hint" id="photohint" hidden>Leave empty to keep the current photo (a new bag uses the same photo).</p>
@@ -1443,7 +1446,7 @@ function startEdit(c) {
   $("f-blend").checked = !!c.is_blend; syncBlend(); $("f-decaf").checked = !!c.is_decaf; setSfor(c.suitable_for); renderVarieties();
   setSel("f-process", c.process); setSel("f-roast", c.roast_level);
   $("f-tags").value = (c.flavour_tags || []).join(", ");
-  $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || ""; $("f-url").value = c.buy_url || ""; $("f-pd").value = c.purchase_date || ""; $("f-rdx").checked = !c.roast_date && !!c.purchase_date; syncRoastUnknown(); $("f-bag").value = c.bag_size_g || ""; $("f-sca").value = c.sca_score == null ? "" : Number(c.sca_score);
+  $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || ""; $("f-url").value = c.buy_url || ""; $("f-pd").value = c.purchase_date || ""; $("f-rdx").checked = !c.roast_date && !!c.purchase_date; syncRoastUnknown(); $("f-bag").value = c.bag_size_g || ""; $("f-price").value = c.price_eur == null ? "" : Number(c.price_eur); syncBag(); $("f-sca").value = c.sca_score == null ? "" : Number(c.sca_score);
   $("addsum").textContent = "Edit coffee";
   $("save").textContent = "Save changes";
   $("cancel").hidden = false;
@@ -1455,11 +1458,19 @@ function startNewBag(c) {
   startEdit(c);
   editing = null; newBagOf = c;   // saves as a new row, in the same group
   $("f-rd").value = ""; $("f-od").value = ""; $("f-notes").value = ""; $("f-pd").value = ""; $("f-rdx").checked = false; syncRoastUnknown();
+  $("f-price").value = ""; syncBag();   // a new bag: the same size, its own price
   $("addsum").textContent = "New bag of " + c.name;
   $("save").textContent = "Save new bag";
   $("photohint").hidden = !c.photo_path;
 }
 $("cancel").onclick = endEdit;
+// the price per kg, worked out from what you paid and the bag size
+function syncBag() {
+  const g = Number($("f-bag").value) || null, p = Number(String($("f-price").value).replace(",", "."));
+  $("f-perkg").textContent = g && p > 0 ? "That is \u20AC" + (p / g * 1000).toFixed(2) + " per kg." : p > 0 ? "Add the bag size to see the price per kg." : "";
+}
+["f-bag", "f-price"].forEach(id => $(id).addEventListener("input", syncBag));
+$("cf").addEventListener("reset", () => setTimeout(syncBag, 0));
 // Variety: a dropdown that works on the phone too (the browser's own list did not). Chosen varieties show as
 // dark tokens with an x; the list offers the common varieties plus every variety already used on one of our coffees,
 // and "Add ..." for a new one. Several varieties are stored comma-separated in the hidden field f-variety.
@@ -1568,7 +1579,7 @@ function syncBlend() {   // a blend: several countries in the country field
   $("f-country").placeholder = b ? "e.g. Brazil, Ethiopia" : "e.g. Colombia";
 }
 $("f-blend").addEventListener("change", () => { syncBlend(); if ($("f-blend").checked) $("f-country").focus(); });
-const CF = ["f-name", "f-roaster", "f-origin", "f-variety", "f-alt-min", "f-alt-max", "f-process", "f-process-new", "f-roast", "f-roast-new", "f-tags", "f-rd", "f-od", "f-notes", "f-url", "f-bag", "f-pd"];
+const CF = ["f-name", "f-roaster", "f-origin", "f-variety", "f-alt-min", "f-alt-max", "f-process", "f-process-new", "f-roast", "f-roast-new", "f-tags", "f-rd", "f-od", "f-notes", "f-url", "f-bag", "f-price", "f-pd"];
 function saveCoffeeDraft() {
   if (editing || newBagOf || !me) return;
   const f = {}; CF.forEach(i => { f[i] = $(i).value; });
@@ -1587,7 +1598,7 @@ function tryRestoreCoffee() {
   ["f-process", "f-roast"].forEach(i => { $(i + "-new").hidden = $(i).value !== "__other"; });
   $("f-blend").checked = !!d.blend; syncBlend(); setSfor(d.sfor); restoredCoffee = true; renderVarieties();
   $("f-rdx").checked = !!d.f["f-pd"]; syncRoastUnknown(); if (d.f["f-pd"]) $("f-pd").value = d.f["f-pd"];
-  $("addbox").open = true; $("addsum").textContent = "Add a coffee (unsaved draft)";
+  syncBag(); $("addbox").open = true; $("addsum").textContent = "Add a coffee (unsaved draft)";
   say("Your unsaved coffee was restored.");
 }
 $("cf").addEventListener("input", e => { if (e.isTrusted) saveCoffeeDraft(); });
@@ -1700,7 +1711,7 @@ const COFFEE_FIELDS = [
   [r => r.altitude_min_m == null ? "" : r.altitude_max_m != null ? r.altitude_min_m + "\u2013" + r.altitude_max_m + " m" : r.altitude_min_m + " m", "Altitude"],
   ["process", "Process"], ["roast_level", "Roast level"], ["is_blend", "Blend"], ["is_decaf", "Decaf"],
   ["roast_date", "Roasted", fmtD], ["purchase_date", "Bought", fmtD], ["open_date", "Opened", fmtD],
-  ["bag_size_g", "Bag size", v => v == null ? "" : v + " g"], ["sca_score", "SCA score", v => v == null ? "" : String(Number(v))],
+  ["bag_size_g", "Bag size", v => v == null ? "" : v + " g"], ["price_eur", "Price", v => v == null ? "" : "\u20AC" + Number(v).toFixed(2)], ["sca_score", "SCA score", v => v == null ? "" : String(Number(v))],
   ["flavour_tags", "Flavour tags"], ["suitable_for", "Ideal for", v => (v || []).map(typeLabel).join(", ")],
   ["notes", "Notes"], ["buy_url", "Link"]
 ];
@@ -1803,6 +1814,10 @@ function coffeeRow() {
   const bag = v("f-bag") === "" ? null : Math.round(Number(v("f-bag")));
   if (bag !== null && !(bag >= 1 && bag <= 5000)) throw new Error("the bag size must be between 1 and 5000 g");
   if (bag !== null || (editing && editing.bag_size_g) || (newBagOf && newBagOf.bag_size_g)) row.bag_size_g = bag;
+  // price: only sent when filled in (or cleared), so saving works before supabase/45_price.sql
+  const price = v("f-price") === "" ? null : Math.round(Number(v("f-price").replace(",", ".")) * 100) / 100;
+  if (price !== null && !(price >= 0 && price <= 10000)) throw new Error("the price must be between 0 and 10,000 euros");
+  if (price !== null || (editing && editing.price_eur != null)) row.price_eur = price;
   // SCA score: only sent when filled in (or cleared), so saving works before supabase/21_sca_cupping.sql
   const sca = v("f-sca") === "" ? null : Math.round(Number(v("f-sca").replace(",", ".")) * 100) / 100;
   if (sca !== null && !(sca >= 0 && sca <= 100)) throw new Error("the SCA score must be between 0 and 100");

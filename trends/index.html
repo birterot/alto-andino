@@ -422,6 +422,20 @@ function whichDevice(k) {
   m.appendChild(el("p", "take", a.v - b.v >= 0.25 && a.n >= 2 ? a.d + " suits this coffee best for you: " + fmtS(a.v) + " (" + a.n + " brews), against " + fmtS(b.v) + " on " + b.d + "." : "About the same on " + andList(rows.map(r => r.d)) + " so far."));
   m.appendChild(rankList(rows.map(r => ({ icon: devIcon(r.d), label: r.d, sub: "(" + r.n + ")", value: r.v, max: 5, text: fmtS(r.v) }))));
 }
+// Your best ratios: per device, the ratio of your best rated cups (a starting point for any new coffee)
+function bestRatios() {
+  const list = filtered(false).filter(b => b.rating != null && !b.dialin && b.device && ratioOf(b));
+  const by = {}; list.forEach(b => (by[b.device] = by[b.device] || []).push(b));
+  const rows = Object.keys(by).filter(d => by[d].length >= 4).map(d => {
+    const xs = by[d].slice().sort((a, b) => b.rating - a.rating), n = Math.max(2, Math.ceil(xs.length / 3)), top = xs.slice(0, n).map(ratioOf).sort((a, b) => a - b);
+    return { d, lo: top[0], hi: top[top.length - 1], mid: top[Math.floor((top.length - 1) / 2)], n, all: xs.length, v: avg(xs.slice(0, n).map(b => b.rating)) };
+  }).sort((a, b) => b.all - a.all);
+  if (!rows.length) return;
+  const m = card("Your best ratios", "Per device, the ratio of your best rated cups (your top third). A good starting point for a new coffee.");
+  const ul = el("ul", "worked");
+  rows.forEach(r => { const li = el("li"); li.append(el("b", "", r.d), document.createTextNode(": " + (r1(r.lo) === r1(r.hi) ? "1:" + r1(r.lo) : "between 1:" + r1(r.lo) + " and 1:" + r1(r.hi)) + " (" + fmtS(r.v) + ", your best " + r.n + " of " + r.all + " brews).")); ul.appendChild(li); });
+  m.appendChild(ul);
+}
 // Buy again? Your coffees by their stars, and how steady they were; and your roasters
 function buyAgain() {
   const list = filtered(false).filter(b => b.rating != null && !b.dialin);
@@ -436,14 +450,30 @@ function buyAgain() {
   m.appendChild(el("p", "take", (top.length ? "Worth buying again: " + andList(top.map(r => r.c.name + " (" + fmtS(r.v) + (steady(r) ? ", " + steady(r) : "") + ")")) + "."
     : twice.length ? "None of them stands out yet. Your best so far: " + twice[0].c.name + " (" + fmtS(twice[0].v) + ")." : "Rate a coffee at least twice to see whether it is worth buying again.")
     + (hm ? " " + hm.c.name + " is hit or miss: great when it works, so it is worth dialling in carefully." : "")));
-  m.appendChild(rankList(rows.slice(0, 8).map(r => ({ label: r.c.name, sub: "(" + [r.c.roaster, r.n + (r.n === 1 ? " brew" : " brews"), steady(r)].filter(Boolean).join(", ") + ")", value: r.v, max: 5, text: fmtS(r.v) }))));
+  // the price per kg: from the newest bag of the coffee with a price and a size
+  const perKg = k => { const b = bagsOf(k).find(c => c.price_eur != null && c.bag_g); return b ? Number(b.price_eur) / b.bag_g * 1000 : null; };
+  rows.forEach(r => { r.kg = perKg(r.k); });
+  const eur = v => "\u20AC" + Math.round(v) + "/kg";
+  m.appendChild(rankList(rows.slice(0, 8).map(r => ({ label: r.c.name, sub: "(" + [r.c.roaster, r.n + (r.n === 1 ? " brew" : " brews"), steady(r), r.kg != null ? eur(r.kg) : null].filter(Boolean).join(", ") + ")", value: r.v, max: 5, text: fmtS(r.v) }))));
+  const priced = rows.filter(r => r.kg != null && r.n >= 2);
+  if (priced.length >= 2) {
+    const fav = priced.slice().sort((a, b) => b.v - a.v)[0], value = priced.slice().sort((a, b) => b.v / b.kg - a.v / a.kg)[0];
+    m.appendChild(el("h3", "", "For your money"));
+    m.appendChild(el("p", "take", value === fav ? fav.c.name + " is your favourite and also the most stars for the money: " + fmtS(fav.v) + " at " + eur(fav.kg) + "."
+      : "Most stars: " + fav.c.name + " (" + fmtS(fav.v) + " at " + eur(fav.kg) + "). Most stars for the money: " + value.c.name + " (" + fmtS(value.v) + " at " + eur(value.kg) + ")."));
+  }
+  const pk = state.coffees.filter(c => c.price_eur != null && c.bag_g), recent = state.brews.filter(b => b.t >= Date.now() - 28 * 864e5 && b.dose);
+  if (pk.length) {
+    const avgKg = pk.reduce((x, c) => x + Number(c.price_eur), 0) / pk.reduce((x, c) => x + c.bag_g, 0) * 1000, perDay = recent.reduce((x, b) => x + b.dose, 0) / 28;
+    m.appendChild(el("p", "small", "You pay about " + eur(avgKg) + " on average (" + pk.length + (pk.length === 1 ? " bag" : " bags") + " with a price)" + (perDay >= 1 ? ", at your pace about \u20AC" + Math.round(avgKg * perDay * 30 / 1000) + " a month." : ".")));
+  }
   const ro = {}; rows.forEach(r => { const n = r.c.roaster; if (!n) return; ro[n] = ro[n] || { xs: [], cs: 0 }; ro[n].xs.push(...by[r.k]); ro[n].cs++; });
   const rr = Object.keys(ro).map(n => ({ n, v: avg(ro[n].xs), b: ro[n].xs.length, cs: ro[n].cs })).sort((a, b) => b.v - a.v || b.b - a.b);
   if (rr.length > 1) {
     m.appendChild(el("h3", "", "Roasters"));
     m.appendChild(rankList(rr.map(r => ({ label: r.n, sub: "(" + r.cs + (r.cs === 1 ? " coffee, " : " coffees, ") + r.b + (r.b === 1 ? " brew)" : " brews)"), value: r.v, max: 5, text: fmtS(r.v) }))));
   }
-  numbers(m, ["Coffee", "Roaster", "Stars", "Brews", "Spread"], rows.map(r => [r.c.name, r.c.roaster || null, r1(r.v).toFixed(1), r.n, r.n >= 2 ? r1(r.sd).toFixed(1) : null]));
+  numbers(m, ["Coffee", "Roaster", "Stars", "Brews", "Spread", "Price per kg"], rows.map(r => [r.c.name, r.c.roaster || null, r1(r.v).toFixed(1), r.n, r.n >= 2 ? r1(r.sd).toFixed(1) : null, r.kg != null ? "\u20AC" + r.kg.toFixed(2) : null]));
 }
 // Your taste in short: what kind of coffee, how your best cups taste, and what costs you the most stars
 function tasteSummary() {
@@ -546,6 +576,7 @@ function viewYourTaste() {
   tasteSummary();
   sweetSpot();
   insFactors(rated.filter(b => !b.dialin));
+  bestRatios();
   whatYouLike();
   buyAgain();
   insDialCurve(rated);
@@ -648,7 +679,16 @@ function sweetSpot() {
   const notes = {}, cnt = (arr, k) => arr.forEach(b => Object.keys(b.scores).forEach(a => { if (!SCALE.isCore(a) && a !== "body" && SCALE.levelOf(b.scores[a]) >= 1) { notes[a] = notes[a] || { f: 0, r: 0 }; notes[a][k]++; } }));
   cnt(fav, "f"); cnt(rest, "r");
   const top = Object.keys(notes).filter(a => notes[a].f).sort((a, b) => notes[b].f - notes[a].f || notes[a].r - notes[b].r).slice(0, 4);
-  if (top.length) f.appendChild(el("p", "small", "Often in your favourites: " + top.map(a => a + " (" + notes[a].f + " of " + fav.length + ")").join(", ") + "."));
+  // a tasting note is not a favourite just because it comes up often: its brews against the other brews of the same coffees
+  const all = fav.concat(rest), eff = {};
+  Object.keys(notes).forEach(a => {
+    const cs = new Set(all.filter(b => SCALE.levelOf(b.scores[a]) >= 1).map(grpOf)), same = all.filter(b => cs.has(grpOf(b)));
+    const yes = same.filter(b => SCALE.levelOf(b.scores[a]) >= 1).map(b => b.rating), no = same.filter(b => !(SCALE.levelOf(b.scores[a]) >= 1)).map(b => b.rating);
+    if (yes.length >= 3) eff[a] = { d: no.length >= 2 ? avg(yes) - avg(no) : avg(yes) - avg(all.map(b => b.rating)), n: yes.length };
+  });
+  const good = Object.keys(eff).filter(a => eff[a].d >= 0.3).sort((a, b) => eff[b].d - eff[a].d).slice(0, 3), flat = Object.keys(eff).filter(a => Math.abs(eff[a].d) < 0.2).sort((a, b) => eff[b].n - eff[a].n).slice(0, 2);
+  if (good.length) f.appendChild(el("p", "small", "Notes that go with more stars: " + good.map(a => a + " (+" + r1(eff[a].d).toFixed(1) + "\u2605, " + eff[a].n + " brews)").join(", ") + "." + (flat.length ? " Often there, but nothing special: " + andList(flat) + "." : "")));
+  else if (top.length) f.appendChild(el("p", "small", "Often in your favourites: " + top.map(a => a + " (" + notes[a].f + " of " + fav.length + ")").join(", ") + ". A few more brews show whether they make the difference."));
   const bv = l => { const b = avgBal(l); return b ? balText(b.v) : null; };
   numbers(f, ["", ...CORE, "Balance", "Brews"], [["Favourites", ...pf.map(x => x.v === null ? null : r1(x.v)), bv(fav), fav.length]].concat(rest.length ? [["The others", ...pr.map(x => x.v === null ? null : r1(x.v)), bv(rest), rest.length]] : []));
 }
@@ -725,6 +765,18 @@ function viewUs() {
   }
 
   origins(list);
+  explored(list);
+}
+// how far you have explored: countries, roasters, processes, varieties, and new coffees this month
+function explored(list) {
+  const m = $("views").lastElementChild; if (!m) return;
+  const ks = new Set(list.map(grpOf)), cs = [...ks].map(groupCoffee).filter(Boolean), cnt = f => new Set(cs.flatMap(f).filter(Boolean)).size;
+  const countries = cnt(c => { const o = splitOrigin(c.origin); return o.countries.length ? o.countries : [o.country]; }), roasters = cnt(c => [c.roaster]), procs = cnt(c => [c.process]);
+  const vars = cnt(c => String(c.variety || "").split(",").map(x => x.trim()));
+  const m0 = new Date(); m0.setDate(1); m0.setHours(0, 0, 0, 0);
+  const fresh = [...ks].filter(k => { const bs = bagsOf(k); return bs.length && Math.min(...bs.map(c => Date.parse(c.created_at) || Date.now())) >= m0.getTime(); }).length;
+  const parts = [[countries, "country", "countries"], [roasters, "roaster", "roasters"], [procs, "process", "processes"], [vars, "variety", "varieties"]].filter(p => p[0]).map(p => p[0] + " " + (p[0] === 1 ? p[1] : p[2]));
+  if (parts.length) m.appendChild(el("p", "small", "Explored so far: " + andList(parts) + (fresh ? ". New this month: " + fresh + (fresh === 1 ? " coffee." : " coffees.") : ".")));
 }
 
 // Beans left: the open bags with a bag size, side by side on a shelf, each filled to what is left (emptiest first)
@@ -746,7 +798,7 @@ function beansLeft() {
     const left = Math.max(0, c.bag_g - used);
     return { c, used, left, typical, n: mine.length, cups: Math.floor(left / typical) };
   }).sort((x, y) => x.left / x.c.bag_g - y.left / y.c.bag_g);
-  if (!bags.length) { empty(bl, "Add the bag size (in grams) to an opened coffee on the Coffee Shelf to see how much is left."); return; }
+  if (!bags.length) { empty(bl, "Add the bag size (in grams) to an opened coffee on the Coffee Shelf to see how much is left."); supply(bl, 0); return; }
   const shelf = el("div", "shelf"); bl.appendChild(shelf);
   bags.forEach(x => {
     const a = el(state.demo ? "div" : "a", "bagb" + (x.cups < 3 ? " low" : "")); if (!state.demo) a.href = "../journal/index.html#c=" + x.c.id;
@@ -757,9 +809,22 @@ function beansLeft() {
   });
   const g = bags.reduce((t, x) => t + x.left, 0), cups = bags.reduce((t, x) => t + x.cups, 0);
   if (bags.length > 1) bl.appendChild(el("p", "shelfsum", "Altogether " + Math.round(g) + "\u00A0g left, about " + cups + "\u00A0cups."));
+  supply(bl, g);
   numbers(bl, ["Coffee", "Bag", "Used", "Left", "Brews", "Usual dose", "Cups left"], bags.map(x => [x.c.name, x.c.bag_g + "\u00A0g", Math.round(x.used) + "\u00A0g", Math.round(x.left) + "\u00A0g", x.n, x.typical + "\u00A0g", x.cups]));
 }
 
+// How long the beans last: what is left in the open bags plus the unopened ones, at your pace of the last four weeks
+function supply(box, openLeft) {
+  const since = Date.now() - 28 * 864e5, recent = state.brews.filter(b => b.t >= since && b.dose);
+  const unopened = state.coffees.filter(c => !c.archived && !c.finished_at && !c.open_date && c.bag_g).reduce((x, c) => x + c.bag_g, 0);
+  const days = recent.length ? Math.max(7, Math.min(28, (Date.now() - Math.min(...recent.map(b => b.t))) / 864e5)) : 0;
+  const perDay = days ? recent.reduce((x, b) => x + b.dose, 0) / days : 0;
+  if (perDay < 1) return;
+  const total = openLeft + unopened, d = total / perDay;
+  const when = d < 1.5 ? "about a day" : d < 10 ? "about " + Math.round(d) + " days" : "about " + Math.round(d / 7) + " weeks";
+  box.appendChild(el("p", "take", "At your pace of the last weeks (about " + Math.round(perDay) + "\u00A0g a day) your beans last " + when
+    + (unopened ? ": " + Math.round(openLeft) + "\u00A0g in open bags and " + Math.round(unopened) + "\u00A0g unopened." : ".") + (d < 7 ? " Time to order the next bag." : "")));
+}
 // Origins: a world map of where the coffees you brewed (in the time frame) come from, darker = more coffees
 function origins(list) {
   const m = card("Where your coffee comes from", "The countries of the coffees brewed in this time frame. Darker means more coffees from there. Tap a country. The dashed lines are the tropics, the coffee belt.");
@@ -1156,9 +1221,9 @@ function demo() {
   let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
   const day = n => { const d = new Date(); d.setHours(8, 0, 0, 0); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
   const coffees = [
-    { id: "d1", name: "Colombia Huila", roaster: "Coffee Collective", origin: "Colombia, Huila", process: "Washed", roast_level: "Light", altitude_min_m: 1700, altitude_max_m: 1900, roast_date: day(40), open_date: day(34), bag_size_g: 1000 },
-    { id: "d2", name: "Ethiopia Guji", roaster: "80 Cup", origin: "Ethiopia, Guji", process: "Natural", roast_level: "Medium-light", altitude_min_m: 2000, altitude_max_m: 2200, roast_date: day(30), open_date: day(22), bag_size_g: 340 },
-    { id: "d3", name: "Brazil Cerrado", roaster: "Fjord", origin: "Brazil, Cerrado", process: "Pulped natural", roast_level: "Medium-dark", altitude_min_m: 1100, roast_date: day(55), open_date: day(48), bag_size_g: 1000, archived: false }
+    { id: "d1", name: "Colombia Huila", roaster: "Coffee Collective", origin: "Colombia, Huila", process: "Washed", roast_level: "Light", altitude_min_m: 1700, altitude_max_m: 1900, roast_date: day(40), open_date: day(34), bag_size_g: 1000, price_eur: 42, created_at: day(36) },
+    { id: "d2", name: "Ethiopia Guji", roaster: "80 Cup", origin: "Ethiopia, Guji", process: "Natural", roast_level: "Medium-light", altitude_min_m: 2000, altitude_max_m: 2200, roast_date: day(30), open_date: day(22), bag_size_g: 340, price_eur: 17.5, created_at: day(24) },
+    { id: "d3", name: "Brazil Cerrado", roaster: "Fjord", origin: "Brazil, Cerrado", process: "Pulped natural", roast_level: "Medium-dark", altitude_min_m: 1100, roast_date: day(55), open_date: day(48), bag_size_g: 1000, archived: false, price_eur: 24, created_at: day(50) }
   ];
   const brews = []; let n = 0;
   coffees.forEach((c, ci) => {
