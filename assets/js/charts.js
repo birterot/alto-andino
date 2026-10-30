@@ -117,7 +117,7 @@ window.Charts = (function () {
     (o.zones || []).forEach(function (z) {
       var zt = z.y0 != null ? Math.min(y(z.y0), y(z.y1)) : f.T, zb = z.y0 != null ? Math.max(y(z.y0), y(z.y1)) : f.B;   // y0, y1: a box instead of a band
       f.svg.appendChild(s("rect", { x: x(z.x0), y: zt, width: x(z.x1) - x(z.x0), height: zb - zt, class: "zone" }));
-      if (z.label) f.svg.appendChild(s("text", { x: (x(z.x0) + x(z.x1)) / 2, y: f.T + 14, "text-anchor": "middle", class: "zlab" }, z.label));
+      if (z.label) f.svg.appendChild(s("text", { x: (x(z.x0) + x(z.x1)) / 2, y: z.y0 != null ? Math.max(f.T + 12, zt - 5) : f.T + 14, "text-anchor": "middle", class: "zlab" }, z.label));   // a box: its label just above it
     });
     axes(f, { x: x, y: y, xTicks: o.xTicks || ticks(xd[0], xd[1], 5, o.xStep), yTicks: o.yTicks || ticks(yd[0], yd[1], 4), xFmt: o.xFmt, yFmt: o.yFmt, xLabel: o.xLabel, yLabel: o.yLabel, xGrid: o.xGrid, xBase: o.xBase, yBase: o.yBase, noBaseline: o.noBaseline });
     (o.corner || []).forEach(function (c, i) {

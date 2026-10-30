@@ -508,28 +508,47 @@ function tasteSummary() {
 }
 function brewingChart(list, c) {
   // the brewing chart: extraction (sour to bitter) against body (watery to full), each with its own fix
-  const bc = card("Brewing chart", "Two things at once. Across is the taste: sour on the left (too little came out of the coffee), bitter on the right (too much). You change that with the grind. Up and down is the strength: watery at the bottom, full at the top. You change that with how much water you use for the coffee. The box in the middle is where you want to be. The line follows your last eight brews, the ringed dot is the newest. Tap a dot for its ratio and recipe.");
-  const bp = list.map(b => {
+  const bc = card("Brewing chart", "Across is the taste, from sour to bitter: you move it with the grind. Up and down is the strength, from watery to full: you move it with how much water you use for the coffee. The box is your sweet spot: where your best rated cups sit. That is where to aim, even if it is not the middle. The line follows your last eight brews, the ringed dot is the newest. Tap a dot for its ratio and recipe.");
+  const place = b => {
     const so = b.scores.sour, bi = b.scores.bitter, bo = b.scores.body;
     if ((so == null && bi == null) || bo == null) return null;
     const x = ((bi != null ? shown("bitter", bi) : 0) - (so != null ? shown("sour", so) : 0)) / (so != null && bi != null ? 2 : 1);
     return { b, x, y: shown("body", bo) };
-  }).filter(Boolean).sort((a, b) => a.b.t - b.b.t);
-  if (bp.length < 1) empty(bc, c ? "Rate sour or bitter and the new Body slider (when you rate a cup) to place brews here." : "Pick a coffee above.");
-  else {
-    const box = chartBox(bc);
-    Charts.scatter({
-      box, height: 320, xDomain: [-5, 5], xTicks: [-5, 0, 5], xFmt: v => v === 0 ? "just right" : v < 0 ? "sour" : "bitter", xGrid: true, xBase: 0,
-      yDomain: [-5, 5], yTicks: [-5, 0, 5], yFmt: v => v === 0 ? "just right" : v < 0 ? "watery" : "full", yLabel: "Body", yBase: 0,
-      zones: [{ x0: -1, x1: 1, y0: -1, y1: 1 }], corner: ["finer, more water", "coarser, more water", "finer, less water", "coarser, less water"],
-      path: true, last: true, trailFrom: Math.max(0, bp.length - 8),
-      points: bp.map((p, i) => ({ faded: i < bp.length - 8, x: p.x, y: p.y, color: p.b.rating ? RCOL(p.b.rating) : "var(--mut)", hollow: !p.b.rating, tip: () => brewTip(p.b, [{ value: p.x === 0 ? "just right" : (p.x < 0 ? "sour " : "bitter ") + r1(Math.abs(p.x)), label: "taste" }, { value: p.y === 0 ? "just right" : (p.y < 0 ? "watery " : "full ") + r1(Math.abs(p.y)), label: "body" }]) }))
-    });
-    starRamp(bc, bp.some(p => !p.b.rating));
-    const L = bp[bp.length - 1], ex = Math.abs(L.x) <= 1 ? null : L.x < 0 ? "grind finer (or use hotter water)" : "grind coarser (or use cooler water)", st = Math.abs(L.y) <= 1 ? null : L.y < 0 ? "use less water for the same coffee" : "if it felt too strong, use more water for the same coffee";
-    bc.appendChild(el("p", "take", !ex && !st ? "Your newest brew is in the box: neither sour nor bitter, and the body is right." : "Your newest brew is " + [L.x < -1 ? "sour" : L.x > 1 ? "bitter" : null, L.y < -1 ? "watery" : L.y > 1 ? "full" : null].filter(Boolean).join(" and ") + ". Next time: " + [ex, st].filter(Boolean).join(", and ") + "."));
-    numbers(bc, ["Date", "Taste (sour - / bitter +)", "Body (watery - / full +)", "Ratio", "Stars"], bp.map(p => [fmtDate(p.b.t), r1(p.x), r1(p.y), ratioOf(p.b) ? "1:" + r1(ratioOf(p.b)) : null, p.b.rating ? stars(p.b.rating) : null]));
-  }
+  };
+  const bp = list.map(place).filter(Boolean).sort((a, b) => a.b.t - b.b.t);
+  if (bp.length < 1) { empty(bc, c ? "Rate sour or bitter and the Body slider (when you rate a cup) to place brews here." : "Pick a coffee above."); return; }
+  // your sweet spot: the middle of your best rated cups (4 stars and up, or your best third), of this coffee if it has
+  // three of them, else of all your brews on this device; until then the middle of the chart
+  const best = arr => {
+    const r = arr.filter(p => p.b.rating && !p.b.dialin); if (r.length < 3) return null;
+    let f = r.filter(p => p.b.rating >= 4);
+    if (f.length < 3) f = r.slice().sort((a, b) => b.b.rating - a.b.rating).slice(0, Math.max(3, Math.ceil(r.length / 3)));
+    return { x: avg(f.map(p => p.x)), y: avg(f.map(p => p.y)), n: f.length };
+  };
+  const dev = list[0] && list[0].device;
+  let tgt = best(bp), from = "this coffee";
+  if (!tgt) { tgt = best(filtered(false).filter(b => !dev || b.device === dev).map(place).filter(Boolean)); from = dev ? "all your " + dev + " brews" : "all your brews"; }
+  const lim = v => Math.max(-4, Math.min(4, v)), cx = tgt ? lim(tgt.x) : 0, cy = tgt ? lim(tgt.y) : 0;
+  const box = chartBox(bc);
+  Charts.scatter({
+    box, height: 320, xDomain: [-5, 5], xTicks: [-5, 0, 5], xFmt: v => v === 0 ? "just right" : v < 0 ? "sour" : "bitter", xGrid: true, xBase: 0,
+    yDomain: [-5, 5], yTicks: [-5, 0, 5], yFmt: v => v === 0 ? "just right" : v < 0 ? "watery" : "full", yLabel: "Body", yBase: 0,
+    zones: [{ x0: cx - 1, x1: cx + 1, y0: cy - 1, y1: cy + 1, label: tgt ? "your sweet spot" : null }], corner: ["finer, more water", "coarser, more water", "finer, less water", "coarser, less water"],
+    path: true, last: true, trailFrom: Math.max(0, bp.length - 8),
+    points: bp.map((p, i) => ({ faded: i < bp.length - 8, x: p.x, y: p.y, color: p.b.rating ? RCOL(p.b.rating) : "var(--mut)", hollow: !p.b.rating, tip: () => brewTip(p.b, [{ value: p.x === 0 ? "just right" : (p.x < 0 ? "sour " : "bitter ") + r1(Math.abs(p.x)), label: "taste" }, { value: p.y === 0 ? "just right" : (p.y < 0 ? "watery " : "full ") + r1(Math.abs(p.y)), label: "body" }]) }))
+  });
+  starRamp(bc, bp.some(p => !p.b.rating));
+  // where the sweet spot is, in words; then the newest brew against it
+  const lean = (v, neg, pos) => Math.abs(v) < 0.75 ? null : (Math.abs(v) > 2 ? "clearly toward " : "a little toward ") + (v < 0 ? neg : pos);
+  const where = tgt ? [lean(cx, "sour", "bitter"), lean(cy, "watery", "full")].filter(Boolean) : [];
+  bc.appendChild(el("p", "small", !tgt ? "Not enough rated cups yet to find your sweet spot, so the box is in the middle for now."
+    : "Your sweet spot, from your " + tgt.n + " best cups of " + from + ": " + (where.length ? andList(where) : "right in the middle") + "."));
+  const L = bp[bp.length - 1], dx = L.x - cx, dy = L.y - cy;
+  const ex = Math.abs(dx) <= 1 ? null : dx < 0 ? "grind finer (or use hotter water)" : "grind coarser (or use cooler water)";
+  const st = Math.abs(dy) <= 1 ? null : dy < 0 ? "use less water for the same coffee" : "use more water for the same coffee";
+  const how = [dx < -1 ? "more sour" : dx > 1 ? "more bitter" : null, dy < -1 ? "thinner" : dy > 1 ? "stronger" : null].filter(Boolean);
+  bc.appendChild(el("p", "take", !ex && !st ? "Your newest brew is in your sweet spot. Keep the recipe." : "Your newest brew is " + andList(how) + " than your sweet spot. Next time: " + [ex, st].filter(Boolean).join(", and ") + "."));
+  numbers(bc, ["Date", "Taste (sour - / bitter +)", "Body (watery - / full +)", "Ratio", "Stars"], bp.map(p => [fmtDate(p.b.t), r1(p.x), r1(p.y), ratioOf(p.b) ? "1:" + r1(ratioOf(p.b)) : null, p.b.rating ? stars(p.b.rating) : null]));
 }
 
 // ---------- 3: freshness curve ----------
