@@ -521,7 +521,7 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
   <label id="nmlab" hidden>Your name<input id="nm" maxlength="40" autocomplete="nickname" placeholder="Shown on the brews you make"></label>
   <label>Email<input id="em" type="email" autocomplete="username" required></label>
   <label id="pwlab">Password<input id="pw" type="password" autocomplete="current-password" minlength="8" required></label>
-  <p class="hint" id="pwhint" hidden>Alto Andino is invite-only for now: with an invite link you are in right away, without one your account waits until we say yes. At least 8 characters. By creating an account you agree to how the app handles your data: <a href="../privacy.html">Privacy</a>.</p>
+  <p class="hint" id="pwhint" hidden>Alto Andino is invite-only for now: we look at every new account first, also when you have an invite, and let you in soon. At least 8 characters. By creating an account you agree to how the app handles your data: <a href="../privacy.html">Privacy</a>.</p>
   <div id="captcha" class="captcha" hidden></div>
   <button class="go" id="authgo">Sign in</button>
   <p><button class="lnk" type="button" id="forgot">Forgot your password?</button></p>
@@ -550,7 +550,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
       <label>Name<input id="hh-new" maxlength="60" placeholder="e.g. Alto Andino"></label>
       <button class="go" type="button" id="hh-create">Start household</button>
     </div>
-    <div class="hhcard">
+    <div class="hhcard" id="hhjoin">
       <h3>Join a household</h3>
       <p class="hint">Got an invite link? Open it, or paste the code from it here.</p>
       <label>Invite code<input id="hh-code" maxlength="20" autocomplete="off" autocapitalize="characters" placeholder="e.g. 3F9A1C7B2D"></label>
@@ -2769,11 +2769,11 @@ $("draftdel").onclick = discardDraft;
 async function checkAccess() {
   const { data, error } = await db.rpc("access_status", { p_code: store.get("alto.friend") || pendingJoin() || null });
   const st = error ? "approved" : data;   // before the SQL has run: everyone is in, as before
-  $("hhstart").hidden = st !== "approved"; $("hhwait").hidden = st === "approved";
+  $("hhstart").hidden = $("hhjoin").hidden = st !== "approved"; $("hhwait").hidden = st === "approved";
   $("hhwaith").textContent = st === "declined" ? "Not approved" : "Waiting for approval";
   $("hhwaitt").textContent = st === "declined"
     ? "Sorry, we cannot let you in right now. If you know someone who uses Alto Andino, ask them for an invite link."
-    : "Thanks for signing up! Alto Andino is invite-only for now, so we look at every new account first. Once we have said yes, you can start your household here. Got an invite link from someone? Open it, or paste its code below, and you are in right away.";
+    : "Thanks for signing up! Alto Andino is invite-only for now, so we look at every new account first, also when someone invited you. Once we have said yes, you can start your household here" + (pendingJoin() ? ", and you join the household you were invited to right away." : ".");
 }
 function route() {
   if (!me) return;
@@ -3683,8 +3683,9 @@ async function loadFriends() {
 }
 async function tryPendingJoin() {
   const code = pendingJoin(); if (!code) return;
-  try { localStorage.removeItem("alto.join"); } catch (e) {}
   const { data, error } = await db.rpc("join_household", { p_code: code });
+  if (error && /waiting for approval/i.test(error.message)) return;   // kept: joins on its own after the yes (the waiting note says so)
+  try { localStorage.removeItem("alto.join"); } catch (e) {}
   if (error) { say("Could not join: " + error.message); return; }
   store.set("alto.household", data); tell("household", data, "joined");
   await loadHouseholds();

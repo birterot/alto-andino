@@ -36,7 +36,7 @@ ul.rq li:last-child{border-bottom:0}
 <body>
 <main>
 <h1>Sign-up requests</h1>
-<p class="sub">Alto Andino is invite-only for now. People who sign up without an invite link wait here until you say yes. With an invite or friend link they are in right away.</p>
+<p class="sub">Alto Andino is invite-only for now. Everyone who signs up waits here until you say yes, also people with an invite or friend link. That one is shown, so you know who brought them.</p>
 
 <section class="box" id="signedout" hidden>
   <h2>Sign in first</h2>
@@ -55,7 +55,7 @@ ul.rq li:last-child{border-bottom:0}
 
 <section class="box" id="waiting" hidden>
   <h2>Waiting</h2>
-  <p class="hint">They can sign in, but cannot start a household until you say yes. Once you do, they can start right away (tell them, the app does not send them a message).</p>
+  <p class="hint">They can sign in, but cannot start or join a household until you say yes. Once you do, they can start right away, and someone with an invite joins that household the next time they open the app (tell them, the app does not send them a message).</p>
   <ul class="rq" id="wlist"></ul>
 </section>
 <section class="box" id="declined" hidden>
@@ -95,7 +95,7 @@ function draw(ul, rows, none) {
   if (!rows.length) { if (none) ul.appendChild(el("li", "empty", none)); return; }
   rows.forEach(r => {
     const li = el("li");
-    li.append(el("div", "nm", r.name || "No name yet"), el("div", "em", r.email || ""), el("div", "dt", "Signed up " + when(r.signed_up) + (r.status === "declined" && r.decided_at ? " · turned down " + when(r.decided_at) : "")));
+    li.append(el("div", "nm", r.name || "No name yet"), el("div", "em", r.email || ""), el("div", "dt", (r.came_with ? "Came with a link: " + r.came_with + " \u00B7 " : "") + "Signed up " + when(r.signed_up) + (r.status === "declined" && r.decided_at ? " · turned down " + when(r.decided_at) : "")));
     const acts = el("div", "acts"), yes = el("button", "yes", "Let in"), no = el("button", "no", "Not now");
     yes.type = no.type = "button";
     const decide = async ok => {
