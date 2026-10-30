@@ -1,6 +1,6 @@
 /* How flavour scores are stored and shown.
    Sour, sweet and bitter are shown from -5 to +5 (0 = just right) and stored as 0 to 10 (5 = just right),
-   and so is body (minus = watery or thin, plus = full, thick or syrupy), for the brewing chart in Trends,
+   and so is body (minus = thin or light, plus = full or thick),
    so nothing already saved changes. (Balance used to be a fourth slider like these; old balance scores keep
    that meaning and are still read, but new brews rate Balance on its own 0 to 5 scale, see BALANCE below.)
    Tasting notes are none / light / present. Stored as nothing / 3 / 7, shown as none / light / present. */

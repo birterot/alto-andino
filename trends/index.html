@@ -56,6 +56,24 @@ ul.rank .di,ul.rank svg.ti{width:22px;height:22px;fill:none;stroke:var(--one);st
 .typecard .tt{margin:6px 0 4px;font-size:21px;line-height:1.3;font-weight:600;color:var(--ink)}
 .typecard .ts{margin:0;font-size:13.5px;color:var(--mut)}
 .typecard .tt.rec{font-size:17.5px;line-height:1.4}
+.typecard.best .tk{margin-bottom:10px}
+.bl1{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:600;color:var(--ink);line-height:1.3}
+.bl1 svg{width:24px;height:24px;flex:none;color:var(--one)}
+.bl2{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:15.5px;color:var(--ink);line-height:1.35}
+.bl2 svg.ti{width:20px;height:20px;color:var(--one)}.bl2 small{color:var(--mut);font-size:14px}
+.bkeys{display:flex;gap:8px;margin-top:14px}
+.bkey{flex:1;min-width:0;padding:10px 12px;border-radius:12px;background:var(--card)}
+.bkey b{display:block;font-family:"Iowan Old Style",Palatino,Georgia,serif;font-size:26px;font-weight:500;line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}
+.bkey small{font-size:12.5px;color:var(--mut)}
+details.brest{margin-top:10px}
+details.brest summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-height:32px;font-size:14.5px;font-weight:600;color:var(--one)}
+details.brest summary::-webkit-details-marker{display:none}
+details.brest summary::after{content:"\203A";font-size:19px;line-height:1;transition:transform .15s}
+details.brest[open] summary::after{transform:rotate(90deg)}
+.brows{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;margin-top:4px}
+.brows div{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.brows div.wide{grid-column:1/-1}
+.brows span{color:var(--mut)}.brows b{font-weight:600;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
 .typecard .tl{margin:6px 0 8px;font-size:15.5px;line-height:1.45;color:var(--ink)}
 /* every card: the title with a small (i) for the explanation */
 .card .chd{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
@@ -166,7 +184,7 @@ svg.ch .pad{fill:transparent;outline:none}
 svg.ch .hair{stroke:var(--axis);stroke-width:1}
 svg.ch .trail{fill:none;stroke:var(--axis);stroke-width:1.5;stroke-linejoin:round}
 svg.ch .lastring{fill:none;stroke:var(--ink);stroke-width:1.5}
-svg.ch .zone{fill:var(--one);opacity:.08}
+svg.ch .zone{fill:var(--one);fill-opacity:.1;stroke:var(--one);stroke-opacity:.35;stroke-width:1}
 svg.ch .zlab{font-size:11.5px;fill:var(--mut)}
 svg.ch .rl{fill:var(--ink);font-size:13px}
 svg.ch .val{fill:var(--ink);font-size:13px;font-weight:600}
@@ -191,6 +209,7 @@ button.leg{cursor:pointer}
 .leg i.d{width:10px;height:10px;border-radius:50%}
 .leg i.dash{width:16px;background:repeating-linear-gradient(90deg,var(--col) 0 4px,transparent 4px 7px)}
 .leg i.h{width:8px;height:8px;border-radius:50%;background:none;border:2px solid var(--mut)}
+.leg i.zn{width:16px;height:11px;border-radius:2px;background:color-mix(in srgb,var(--one) 16%,transparent);border:1px solid color-mix(in srgb,var(--one) 45%,transparent)}
 .leg[aria-pressed=false]{opacity:.45}
 .ramp{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--mut)}
 .ramp i{display:inline-block;width:14px;height:10px;border-radius:3px}
@@ -414,7 +433,7 @@ function numbers(parent, headers, rows) {
 function empty(parent, text) { parent.appendChild(el("p", "msg", text)); }
 function legendItem(parent, color, label, kind, onToggle, pressed) {
   const b = el(onToggle ? "button" : "span", "leg"); if (onToggle) { b.type = "button"; b.setAttribute("aria-pressed", String(pressed)); b.onclick = onToggle; }
-  const i = el("i", kind === "dot" ? "d" : kind === "hollow" ? "h" : kind === "dash" ? "dash" : ""); i.style.setProperty("--col", color); b.append(i, document.createTextNode(label)); parent.appendChild(b); return b;
+  const i = el("i", kind === "dot" ? "d" : kind === "hollow" ? "h" : kind === "dash" ? "dash" : kind === "zone" ? "zn" : ""); i.style.setProperty("--col", color); b.append(i, document.createTextNode(label)); parent.appendChild(b); return b;
 }
 function starRamp(parent, withUnrated) {
   const r = el("div", "legend"), w = el("span", "ramp");
@@ -482,11 +501,27 @@ function whatWorked(list, c, devNote) {
   }
   if (!rated.length) { needMore(m, "Rate a brew of this coffee and your best cup shows up here."); return; }
   const best = rated.slice().sort((a, b) => b.rating - a.rating || b.t - a.t)[0];
-  const parts = [best.device, grindText(best), best.dose ? best.dose + " g in" : null,
-    isEsp(best.device) ? (best.yld ? best.yld + " g out" : null) : (best.water ? best.water + " g water" : null), ratioOf(best) ? "1:" + r1(ratioOf(best)) : null, timeText(best), best.temp ? best.temp + " °C" : null].filter(Boolean);
-  const bx = el("div", "typecard");
-  bx.append(el("p", "tk", "Your best cup so far"), el("p", "tt rec", parts.join(", ")),
-    el("p", "ts", stars(best.rating) + ", " + fmtDate(best.t) + (nameOf(best.who) ? ", made by " + nameOf(best.who) : "") + (rated.length > 1 ? " · from " + rated.length + " rated brews" : "")));
+  // the best cup in three steps: what and how fine, the two numbers that matter most, the rest folded away
+  const esp = isEsp(best.device), bx = el("div", "typecard best");
+  bx.appendChild(el("p", "tk", "Your best cup so far"));
+  if (best.device) { const l1 = el("div", "bl1"); l1.append(devIcon(best.device), document.createTextNode(best.device)); bx.appendChild(l1); }
+  if ((best.grind != null && best.grind !== "") || best.feel) {
+    const l2 = el("div", "bl2"), t = el("span", "", best.grind != null && best.grind !== "" ? "Grind " + best.grind + (best.grinder ? " on the " + best.grinder : "") : best.feel[0].toUpperCase() + best.feel.slice(1) + " grind");
+    if (best.feel && best.grind != null && best.grind !== "") t.appendChild(el("small", "", " \u00B7 " + best.feel));
+    l2.append(ic("grind"), t); bx.appendChild(l2);
+  }
+  const keys = [[ratioOf(best) ? "1:" + r1(ratioOf(best)) : null, "ratio"], [best.time != null ? (esp && best.time < 90 ? best.time + " s" : mmss(best.time)) : null, esp ? "shot time" : "brew time"]].filter(k => k[0]);
+  if (keys.length) { const kr = el("div", "bkeys"); keys.forEach(([v, k]) => { const d = el("div", "bkey"); d.append(el("b", "", v), el("small", "", k)); kr.appendChild(d); }); bx.appendChild(kr); }
+  const pi = [best.piBar != null ? best.piBar + " bar" : null, best.piS != null ? best.piS + " s" : null].filter(Boolean).join(", ");
+  const rest = [["Coffee in", best.dose ? best.dose + " g" : null], esp ? ["Out", best.yld ? best.yld + " g" : null] : ["Water", best.water ? best.water + " g" : best.yld ? best.yld + " g" : null],
+    ["Temperature", best.temp ? best.temp + " \u00B0C" : null], ["Pressure", best.pressure != null ? best.pressure + " bar" : null], ["Pre-infusion", pi || null],
+    ["Bloom", best.bloom != null ? best.bloom + " s" : null], ["Recipe", best.recipe || null]].filter(r => r[1]);
+  if (rest.length) {
+    const dt = el("details", "brest"), sm = el("summary", "", "The whole recipe"), g = el("div", "brows");
+    rest.forEach(([k, v]) => { const r = el("div", k === "Recipe" ? "wide" : ""); r.append(el("span", "", k), el("b", "", v)); g.appendChild(r); });
+    dt.append(sm, g); bx.appendChild(dt);
+  }
+  bx.appendChild(el("p", "ts", stars(best.rating) + ", " + fmtDate(best.t) + (nameOf(best.who) ? ", made by " + nameOf(best.who) : "") + (rated.length > 1 ? " \u00B7 from " + rated.length + " rated brews" : "")));
   m.appendChild(bx);
   const SET = [   // what, lower, higher, value
     ["The grind", "a lower grind number", "a higher grind number", b => (b.grinder || "Grinder not set") === gr ? numOf(b.grind) : null],
@@ -507,7 +542,7 @@ function whatWorked(list, c, devNote) {
     const th = tx(H), tl = tx(L), dt = th != null && tl != null ? (d >= 0 ? th - tl : tl - th) : null;   // the taste of the better side, against the other
     found.push({ what, d: Math.abs(d), better: d >= 0 ? hi : lo, dt, n: H.length + L.length });
   });
-  if (!found.length) { needMore(m, "Change one thing at a time over a few brews (at least four rated brews where it changes), and what worked shows here."); return; }
+  if (!found.length) return;
   found.sort((a, b) => b.d - a.d);
   const ul = el("ul", "worked");
   found.forEach(x => {
@@ -643,7 +678,7 @@ function tasteSummary() {
     if (mt.children.length) { hero.appendChild(el("p", "hk", "Your best cups taste")); hero.appendChild(mt); }
   }
   // 3. what costs you the most stars: cups clearly off on one taste, against cups where it was about right
-  const OFF = { sour: ["too sour", "too flat"], sweet: ["too sweet", "not sweet enough"], bitter: ["too bitter", "too little bitterness"], body: ["too heavy", "too watery"] };
+  const OFF = { sour: ["too sour", "too flat"], sweet: ["too sweet", "not sweet enough"], bitter: ["too bitter", "too little bitterness"], body: ["too heavy", "too thin"] };
   const cost = [];
   Object.keys(OFF).forEach(a => {
     const xs = list.filter(b => b.scores[a] != null).map(b => [shown(a, b.scores[a]), b.rating]);
@@ -662,48 +697,60 @@ function tasteSummary() {
   m.appendChild(el("p", "foot", list.length + " rated brews \u00B7 " + fmtS(all) + " on average"));
 }
 function brewingChart(list, c) {
-  // the brewing chart: extraction (sour to bitter) against body (watery to full), each with its own fix
-  const bc = card("Brewing chart", "Across is the taste, from sour to bitter: you move it with the grind. Up and down is the strength, from watery to full: you move it with how much water you use for the coffee. The box is your sweet spot: where your best rated cups sit. That is where to aim, even if it is not the middle. The line follows your last eight brews, the ringed dot is the newest. Tap a dot for its ratio and recipe.");
-  const place = b => {
-    const so = b.scores.sour, bi = b.scores.bitter, bo = b.scores.body;
-    if ((so == null && bi == null) || bo == null) return null;
-    const x = ((bi != null ? shown("bitter", bi) : 0) - (so != null ? shown("sour", so) : 0)) / (so != null && bi != null ? 2 : 1);
-    return { b, x, y: shown("body", bo) };
-  };
-  const bp = list.map(place).filter(Boolean).sort((a, b) => a.b.t - b.b.t);
-  if (bp.length < 1) { empty(bc, c ? "Rate sour or bitter and the Body slider (when you rate a cup) to place brews here." : "Pick a coffee above."); return; }
-  // your sweet spot: the middle of your best rated cups (4 stars and up, or your best third), of this coffee if it has
-  // three of them, else of all your brews on this device; until then the middle of the chart
+  // the brewing chart: the grind against the brew time (how you set it, and how it ran), on one grinder
+  const bc = card("Brewing chart", "Across is the grind, from finer to coarser; up and down is the brew time. Each dot is a brew, coloured by its stars, and the line joins your last few. The box is your sweet spot: the grind and time of your best rated cups. A finer grind gives more resistance, so the coffee runs slower; coarser runs faster.");
+  if (!c) { empty(bc, "Pick a coffee above."); return; }
+  const ok = b => numOf(b.grind) != null && b.time > 0, gc = {};
+  list.forEach(b => { if (ok(b)) { const g = b.grinder || "Grinder not set"; gc[g] = (gc[g] || 0) + 1; } });
+  const gs = Object.keys(gc).sort((a, b) => gc[b] - gc[a]), gr = state.grinder && gc[state.grinder] ? state.grinder : gs[0];
+  const onGr = b => ok(b) && (b.grinder || "Grinder not set") === gr;
+  const bp = list.filter(onGr).map(b => ({ b, x: numOf(b.grind), y: b.time })).sort((a, b) => a.b.t - b.b.t);
+  if (!bp.length) { empty(bc, "Log the grind setting and the brew time and your brews show up here."); return; }
+  const esp = isEsp(list[0] && list[0].device), fT = v => esp && v < 90 ? Math.round(v) + " s" : mmss(v);
+  // your sweet spot: the grind and time of your best rated cups (4 stars and up, or your best third), of this coffee
+  // if it has three of them, else of all your brews on this device and grinder
   const best = arr => {
     const r = arr.filter(p => p.b.rating && !p.b.dialin); if (r.length < 3) return null;
     let f = r.filter(p => p.b.rating >= 4);
     if (f.length < 3) f = r.slice().sort((a, b) => b.b.rating - a.b.rating).slice(0, Math.max(3, Math.ceil(r.length / 3)));
-    return { x: avg(f.map(p => p.x)), y: avg(f.map(p => p.y)), n: f.length };
+    const xs = f.map(p => p.x).sort((a, b) => a - b), ys = f.map(p => p.y).sort((a, b) => a - b), q = (v, k) => v[Math.round((v.length - 1) * k)];
+    return { x0: q(xs, 0.2), x1: q(xs, 0.8), y0: q(ys, 0.2), y1: q(ys, 0.8), n: f.length };
   };
   const dev = list[0] && list[0].device;
   let tgt = best(bp), from = "this coffee";
-  if (!tgt) { tgt = best(filtered(false).filter(b => !dev || b.device === dev).map(place).filter(Boolean)); from = dev ? "all your " + dev + " brews" : "all your brews"; }
-  const lim = v => Math.max(-4, Math.min(4, v)), cx = tgt ? lim(tgt.x) : 0, cy = tgt ? lim(tgt.y) : 0;
+  if (!tgt) { tgt = best(filtered(false).filter(b => (!dev || b.device === dev) && onGr(b)).map(b => ({ b, x: numOf(b.grind), y: b.time }))); from = "all your " + (dev ? dev + " " : "") + "brews"; }
+  if (tgt) {   // at least a step of grind and a few seconds wide, so the box can be seen
+    const gx = Math.max(0, 1 - (tgt.x1 - tgt.x0)) / 2, gy = Math.max(0, (esp ? 4 : 15) - (tgt.y1 - tgt.y0)) / 2;
+    tgt.x0 -= gx; tgt.x1 += gx; tgt.y0 -= gy; tgt.y1 += gy;
+  }
+  const allX = bp.map(p => p.x).concat(tgt ? [tgt.x0, tgt.x1] : []), allY = bp.map(p => p.y).concat(tgt ? [tgt.y0, tgt.y1] : []);
+  const px = Math.max(1, (Math.max(...allX) - Math.min(...allX)) * 0.12), py = Math.max(esp ? 3 : 10, (Math.max(...allY) - Math.min(...allY)) * 0.12);
   const box = chartBox(bc);
   Charts.scatter({
-    box, height: 320, xDomain: [-5, 5], xTicks: [-5, 0, 5], xFmt: v => v === 0 ? "just right" : v < 0 ? "sour" : "bitter", xGrid: true, xBase: 0,
-    yDomain: [-5, 5], yTicks: [-5, 0, 5], yFmt: v => v === 0 ? "just right" : v < 0 ? "watery" : "full", yLabel: "Body", yBase: 0,
-    zones: [{ x0: cx - 1, x1: cx + 1, y0: cy - 1, y1: cy + 1, label: tgt ? "your sweet spot" : null }], corner: ["finer, more water", "coarser, more water", "finer, less water", "coarser, less water"],
+    box, height: 320, xDomain: [Math.floor(Math.min(...allX) - px), Math.ceil(Math.max(...allX) + px)], yDomain: [Math.max(0, Math.floor(Math.min(...allY) - py)), Math.ceil(Math.max(...allY) + py)],
+    xFmt: v => String(v), yFmt: fT, xLabel: "Grind" + (gr && gr !== "Grinder not set" ? " on the " + gr : "") + "  (finer ← → coarser)", yLabel: esp ? "Shot time" : "Brew time", xGrid: true,
+    zones: tgt ? [{ x0: tgt.x0, x1: tgt.x1, y0: tgt.y0, y1: tgt.y1 }] : [],
     path: true, last: true, trailFrom: Math.max(0, bp.length - 8),
-    points: bp.map((p, i) => ({ faded: i < bp.length - 8, x: p.x, y: p.y, color: p.b.rating ? RCOL(p.b.rating) : "var(--mut)", hollow: !p.b.rating, tip: () => brewTip(p.b, [{ value: p.x === 0 ? "just right" : (p.x < 0 ? "sour " : "bitter ") + r1(Math.abs(p.x)), label: "taste" }, { value: p.y === 0 ? "just right" : (p.y < 0 ? "watery " : "full ") + r1(Math.abs(p.y)), label: "body" }]) }))
+    points: bp.map((p, i) => ({ faded: i < bp.length - 8, x: p.x, y: p.y, color: p.b.rating ? RCOL(p.b.rating) : "var(--mut)", hollow: !p.b.rating,
+      tip: () => brewTip(p.b, [{ value: "grind " + p.b.grind, label: gr }, { value: fT(p.y), label: esp ? "shot time" : "brew time" }]) }))
   });
+  // the legend under the chart: the sweet spot, then the stars
+  if (tgt) { const lg = el("div", "legend"); legendItem(lg, "var(--one)", "your sweet spot", "zone"); bc.appendChild(lg); }
   starRamp(bc, bp.some(p => !p.b.rating));
+  if (gs.length > 1) bc.appendChild(el("p", "small", "On the " + gr + ". Pick another grinder under What worked."));
   // where the sweet spot is, in words; then the newest brew against it
-  const lean = (v, neg, pos) => Math.abs(v) < 0.75 ? null : (Math.abs(v) > 2 ? "clearly toward " : "a little toward ") + (v < 0 ? neg : pos);
-  const where = tgt ? [lean(cx, "sour", "bitter"), lean(cy, "watery", "full")].filter(Boolean) : [];
-  bc.appendChild(el("p", "small", !tgt ? "Not enough rated cups yet to find your sweet spot, so the box is in the middle for now."
-    : "Your sweet spot, from your " + tgt.n + " best cups of " + from + ": " + (where.length ? andList(where) : "right in the middle") + "."));
-  const L = bp[bp.length - 1], dx = L.x - cx, dy = L.y - cy;
-  const ex = Math.abs(dx) <= 1 ? null : dx < 0 ? "grind finer (or use hotter water)" : "grind coarser (or use cooler water)";
-  const st = Math.abs(dy) <= 1 ? null : dy < 0 ? "use less water for the same coffee" : "use more water for the same coffee";
-  const how = [dx < -1 ? "more sour" : dx > 1 ? "more bitter" : null, dy < -1 ? "thinner" : dy > 1 ? "stronger" : null].filter(Boolean);
-  bc.appendChild(el("p", "take", !ex && !st ? "Your newest brew is in your sweet spot. Keep the recipe." : "Your newest brew is " + andList(how) + " than your sweet spot. Next time: " + [ex, st].filter(Boolean).join(", and ") + "."));
-  numbers(bc, ["Date", "Taste (sour - / bitter +)", "Body (watery - / full +)", "Ratio", "Stars"], bp.map(p => [fmtDate(p.b.t), r1(p.x), r1(p.y), ratioOf(p.b) ? "1:" + r1(ratioOf(p.b)) : null, p.b.rating ? stars(p.b.rating) : null]));
+  const rg = (a, b, f) => f(a) === f(b) ? f(a) : f(a) + "–" + f(b), g1 = v => String(r1(v));
+  const rt = (a, b) => esp && b < 90 ? (Math.round(a) === Math.round(b) ? Math.round(a) : Math.round(a) + "–" + Math.round(b)) + " s" : rg(a, b, fT);
+  bc.appendChild(el("p", "small", !tgt ? "Not enough rated cups yet to find your sweet spot." : "Your sweet spot, from your " + tgt.n + " best cups of " + from + ": grind " + rg(tgt.x0, tgt.x1, g1) + ", " + rt(tgt.y0, tgt.y1) + "."));
+  if (tgt) {
+    const L = bp[bp.length - 1], gx = L.x < tgt.x0 ? -1 : L.x > tgt.x1 ? 1 : 0, ty = L.y < tgt.y0 ? -1 : L.y > tgt.y1 ? 1 : 0;
+    let tx;
+    if (!gx && !ty) tx = "Your newest brew is in your sweet spot. Keep the recipe.";
+    else if (gx) tx = "Your newest brew was ground " + (gx < 0 ? "finer" : "coarser") + " than your sweet spot" + (ty ? " and ran " + (ty < 0 ? "faster" : "slower") : "") + ". Next time: grind " + (gx < 0 ? "coarser" : "finer") + ", toward " + g1((tgt.x0 + tgt.x1) / 2) + ".";
+    else tx = "Your newest brew had the right grind but ran " + (ty < 0 ? "faster" : "slower") + " than your sweet spot. Next time: one step " + (ty < 0 ? "finer" : "coarser") + (esp ? ", or check the dose and the puck." : ", or pour " + (ty < 0 ? "slower." : "faster."));
+    bc.appendChild(el("p", "take", tx));
+  }
+  numbers(bc, ["Date", "Grind", esp ? "Shot time" : "Brew time", "Ratio", "Stars"], bp.map(p => [fmtDate(p.b.t), p.b.grind, fT(p.y), ratioOf(p.b) ? "1:" + r1(ratioOf(p.b)) : null, p.b.rating ? stars(p.b.rating) : null]));
 }
 
 // ---------- 3: freshness curve ----------
@@ -1413,7 +1460,7 @@ function shape(raw, coffees) {
       ? b.brew_ratings.map(r => ({ who: r.is_guest ? null : r.rater_id, guest: !!r.is_guest, name: r.guest_name || null, rating: r.rating == null ? null : Number(r.rating), balance: r.balance == null ? null : Number(r.balance), scores: sco(r.id), drink: r.drink || null, milk: r.milk || null }))
       : (b.rating != null || (b.brew_scores || []).length ? [{ who: b.made_by || b.created_by || null, guest: false, name: null, rating: b.rating == null ? null : Number(b.rating), balance: null, scores }] : []);
     const day = iso => iso ? Math.floor((t - new Date(iso + "T00:00:00")) / 864e5) : null;
-    return { id: b.id, coffeeId: b.coffee_id, t, device: b.device, grind: b.grind, dose: b.dose_g, yld: b.yield_g, water: b.water_g, time: b.time_s, temp: b.temp_c, grinder: b.grinder || null, feel: b.grind_feel ? String(b.grind_feel).trim().toLowerCase() : null,
+    return { id: b.id, coffeeId: b.coffee_id, t, device: b.device, grind: b.grind, dose: b.dose_g, yld: b.yield_g, water: b.water_g, time: b.time_s, temp: b.temp_c, grinder: b.grinder || null, pressure: numOf(b.pressure_bar), piBar: numOf(b.preinfusion_bar), piS: numOf(b.preinfusion_s), bloom: numOf(b.bloom_s), feel: b.grind_feel ? String(b.grind_feel).trim().toLowerCase() : null,
       rating: b.rating == null ? null : Number(b.rating), dialin: !!b.is_dialin, recipe: b.recipe, who: b.made_by || b.created_by || null, ratings, scores, dRoast: c ? day(c.roast_date) : null, dOpen: c ? day(c.open_date) : null };
   });
 }
@@ -1466,7 +1513,7 @@ function demo() {
       const dose = flair ? 18 : 30, yld = flair ? Math.round(36 + rnd() * 12) : 440, water = flair ? null : 500;
       const sc = (v) => Math.max(0, Math.min(10, Math.round(v)));
       brews.push({ id: "b" + (++n) + "x", coffee_id: c.id, brewed_at: new Date(Date.now() - d * 864e5 - rnd() * 3e6).toISOString(), device: flair ? "Manual espresso machine" : "Hario V60", grinder: flair ? (rnd() < 0.6 ? "Comandante C40" : "Kingrinder K6") : "Fellow Ode", grind_feel: flair ? (grind < 22 ? "extra fine" : "fine") : (grind < 65 ? "medium-fine" : "medium"),
-        grind: String(grind), dose_g: dose, yield_g: yld, water_g: water, time_s: time, temp_c: flair ? 93 : 88 + Math.floor(rnd() * 9), rating: rnd() < 0.9 ? rating : null, is_dialin: rnd() < 0.15, made_by: who, recipe: flair ? "Manual espresso, 1:2.2" : "V60, 60 g/l",
+        grind: String(grind), dose_g: dose, yield_g: yld, water_g: water, time_s: time, temp_c: flair ? 93 : 88 + Math.floor(rnd() * 9), pressure_bar: flair ? 9 : null, preinfusion_bar: flair && rnd() < 0.7 ? 3 : null, preinfusion_s: flair ? 6 + Math.floor(rnd() * 5) : null, bloom_s: flair ? null : 40 + Math.floor(rnd() * 3) * 5, rating: rnd() < 0.9 ? rating : null, is_dialin: rnd() < 0.15, made_by: who, recipe: flair ? "Manual espresso, 1:2.2" : "V60, 60 g/l",
         brew_scores: [{ attribute: "sour", score: sc(5 - ext * 1.6 + (rnd() - 0.5) * 2) }, { attribute: "sweet", score: sc(5 + (ci === 1 ? 2 : 1) - Math.abs(ext) + rnd()) }, { attribute: "bitter", score: sc(5 + ext * 1.6 + (ci === 2 ? 1.5 : 0) + (rnd() - 0.5) * 2) }].concat(rnd() < 0.7 ? [{ attribute: "body", score: sc(5 + (rnd() - 0.5) * 5 + ext * 0.6) }] : [])
           .concat(ci === 1 ? [{ attribute: "blueberry", score: rnd() < 0.6 ? 7 : 3 }] : ci === 0 ? [{ attribute: "panela", score: rnd() < 0.5 ? 7 : 3 }] : [{ attribute: "nutty", score: 7 }]) });
     }
