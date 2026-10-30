@@ -925,7 +925,8 @@ function baristaRace(list, ppl) {
     const t = el("div", "tile"), l = el("div", "tl"); l.append(avatar(r.id), document.createTextNode(nameOf(r.id))); t.appendChild(l);
     t.appendChild(el("div", "tv", r.med != null ? fmtS(r.med) : "–"));
     t.appendChild(el("div", "ts", "typical cup"));
-    t.appendChild(el("div", "ts", r.brews + (r.brews === 1 ? " brew" : " brews") + (r.duels ? " · duels " + wl(r) : "")));
+    t.appendChild(el("div", "ts", r.brews + (r.brews === 1 ? " brew" : " brews")));
+    if (r.duels) t.appendChild(el("div", "ts", "\u2694\uFE0F " + wl(r)));
     tiles.appendChild(t);
   });
   // little titles, for fun
