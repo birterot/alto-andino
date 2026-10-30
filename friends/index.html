@@ -113,27 +113,25 @@ p.off{color:var(--mut);font-size:14px;font-style:italic}
 /* the barista board */
 .brow{display:flex;align-items:center;gap:12px;padding:10px 2px;border-top:1px solid var(--line);color:inherit;text-decoration:none}
 .brow:first-of-type{border-top:0}
-.brow .rk{width:26px;text-align:center;font-family:"Iowan Old Style",Palatino,Georgia,serif;font-size:17px;color:var(--mut);font-variant-numeric:tabular-nums}
+.brow .rk{width:26px;text-align:center;font-weight:700;color:var(--mut);font-variant-numeric:tabular-nums}
 .brow div{flex:1;min-width:0}.brow strong{display:block}.brow small{color:var(--mut);font-size:12.5px}
-.brow .bst{font-variant-numeric:tabular-nums;font-family:"Iowan Old Style",Palatino,Georgia,serif;font-weight:500;font-size:17px}
+.brow .bst{font-variant-numeric:tabular-nums}
 .brow.me strong::after{content:" (you)";font-weight:400;color:var(--mut);font-size:12.5px}
-.brow.unsure,.pod a.unsure{opacity:.5}
-#boardbox h2 svg{width:21px;height:21px;vertical-align:-3px;margin-right:8px;fill:none;stroke:var(--accent);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:10px;margin:20px 0 4px;border-bottom:1px solid var(--line)}
-.podium.two{grid-template-columns:repeat(2,minmax(0,1fr));max-width:320px;margin-inline:auto}
-.pod a{display:flex;flex-direction:column;align-items:center;gap:5px;color:inherit;text-decoration:none;text-align:center;min-width:0}
-.pod .md{font-family:"Iowan Old Style",Palatino,Georgia,serif;font-size:18px;line-height:1;color:var(--mut)}
-.pod.p1 .md{color:var(--accent);font-size:22px}
-.pod .face{box-shadow:0 0 0 3px var(--card)}
-.pod strong{font-size:14.5px;font-weight:500;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow.unsure,.pod a.unsure{opacity:.6}
+#boardbox h2 svg{width:22px;height:22px;vertical-align:-3px;margin-right:6px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:8px;margin:14px 0 6px}
+.podium.two{grid-template-columns:repeat(2,minmax(0,1fr));max-width:340px;margin-inline:auto}
+.pod a{display:flex;flex-direction:column;align-items:center;gap:4px;color:inherit;text-decoration:none;text-align:center;min-width:0}
+.pod .md{font-size:22px;line-height:1}
+.pod strong{font-size:14.5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pod small{color:var(--mut);font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pod .step{width:100%;border-radius:3px 3px 0 0;background:var(--bg);border:1px solid var(--line);border-bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-variant-numeric:tabular-nums;margin-top:6px}
-.pod .step b{font-family:"Iowan Old Style",Palatino,Georgia,serif;font-weight:500;font-size:18px}.pod .step small{font-size:11.5px}
-.pod.p1 .step{height:96px;background:color-mix(in srgb,var(--crema) 18%,var(--card))}.pod.p2 .step{height:70px}.pod.p3 .step{height:54px}
+.pod .step{width:100%;border-radius:12px 12px 4px 4px;background:var(--bg);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-variant-numeric:tabular-nums;margin-top:4px}
+.pod .step b{font-size:17px}.pod .step small{font-size:11.5px}
+.pod.p1 .step{height:98px;background:color-mix(in srgb,var(--act) 16%,var(--card))}.pod.p2 .step{height:72px}.pod.p3 .step{height:56px}
 .pod.me strong::after{content:" (you)";font-weight:400;color:var(--mut);font-size:12px}
-.btitles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:0 14px;margin-top:10px;border-top:1px solid var(--line)}
-.btitles div{padding:12px 0 2px}.btitles small{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
-.btitles b{display:block;margin-top:3px;font-family:"Iowan Old Style",Palatino,Georgia,serif;font-weight:500;font-size:16px}
+.btitles{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+.btitles span{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-size:13.5px}
+.btitles b{font-weight:600}
 /* a face: photo or initial */
 .face{flex:none;display:inline-grid;place-items:center;border-radius:50%;color:#fff;font-weight:600;background-size:cover;background-position:center}
 /* a profile */
@@ -514,7 +512,7 @@ async function showMore() {
   order.forEach(i => {
     const p = top[i], w = el("div", "pod p" + (i + 1) + (isMe(p) ? " me" : "")), a = el("a", sure(p).trim()); a.href = "#p=" + p.id;
     const step = el("span", "step"); step.append(el("b", "", r1(typ(p)).toFixed(1) + "★"), el("small", "", p.n + " rated"));
-    a.append(el("span", "md", String(i + 1)), face(p, i === 0 ? 58 : 46), el("strong", "", p.name), el("small", "", p.household_name), step);
+    a.append(el("span", "md", ["🥇", "🥈", "🥉"][i]), face(p, i === 0 ? 58 : 46), el("strong", "", p.name), el("small", "", p.household_name), step);
     w.appendChild(a); pod.appendChild(w);
   });
   bl.appendChild(pod);
@@ -528,10 +526,10 @@ async function showMore() {
   });
   // little titles, for fun
   const tt = [], busy = list.slice().sort((a, b) => b.brews - a.brews)[0];
-  if (busy && busy.brews > 0) tt.push(["Busiest", busy.name + " · " + busy.brews + " brews"]);
+  if (busy && busy.brews > 0) tt.push(["💪", "Busiest", busy.name + " · " + busy.brews + " brews"]);
   const best = list.filter(p => p.best != null).sort((a, b) => Number(b.best) - Number(a.best) || typ(b) - typ(a))[0];
-  if (best && Number(best.best) >= 4) tt.push(["Best cup", best.name + " · " + r1(Number(best.best)).toFixed(1) + "★"]);
-  if (tt.length) { const t2 = el("div", "btitles"); tt.forEach(([k, v]) => { const x = el("div"); x.append(el("small", "", k), el("b", "", v)); t2.appendChild(x); }); bl.appendChild(t2); }
+  if (best && Number(best.best) >= 4) tt.push(["⭐", "Best cup", best.name + " · " + r1(Number(best.best)).toFixed(1) + "★"]);
+  if (tt.length) { const t2 = el("div", "btitles"); tt.forEach(([e, k, v]) => { const x = el("span"); x.append(document.createTextNode(e + " " + k + " "), el("b", "", v)); t2.appendChild(x); }); bl.appendChild(t2); }
 }
 // a person's profile
 async function showPerson(uid) {

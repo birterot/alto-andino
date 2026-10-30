@@ -107,24 +107,21 @@ ul.rank li:has(.medal){grid-template-columns:auto minmax(0,1fr) 64px var(--vw,au
 .stab{display:inline-flex;align-items:center;gap:3px;margin-left:6px;font-size:12px;vertical-align:middle}
 .stab svg.ti{width:16px;height:16px}.stab.ok{color:var(--f-bitter)}.stab.bump{color:var(--f-sweet)}
 /* the barista race */
-.card h2 .h2i{width:22px;height:22px;vertical-align:-3px;margin-right:8px;color:var(--accent)}
-.lead{margin:8px 0 6px;padding:2px 0 2px 14px;border-left:2px solid var(--accent)}
-.lead small,.ttl small{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
-.lead p{margin:2px 0 0;font-family:"Iowan Old Style",Palatino,Georgia,serif;font-size:19px;line-height:1.35;color:var(--ink)}
-.race{display:grid;gap:14px;margin:16px 0 18px}
-.lane.unsure{opacity:.5}
-.lhead{display:flex;align-items:baseline;gap:10px}
-.lpos{font-family:"Iowan Old Style",Palatino,Georgia,serif;font-size:17px;color:var(--mut);min-width:14px}
-.lname{flex:1;min-width:0;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lval{font-variant-numeric:tabular-nums;font-size:14px;font-weight:500;color:var(--mut)}
-.lane:first-child .lval{color:var(--ink)}
-.track{position:relative;display:block;height:28px;margin-top:2px;background:linear-gradient(var(--line),var(--line)) center/100% 1px no-repeat}
-.track::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:1px;background:var(--line)}
+.card h2 .h2i{width:24px;height:24px;vertical-align:-4px;margin-right:6px;color:var(--one)}
+.lead{display:flex;align-items:center;gap:12px;margin:10px 0 6px;padding:12px 14px;border-radius:14px;background:var(--one-track)}
+.lead .crown{font-size:28px;line-height:1}.lead p{margin:0;font-size:16px;font-weight:600;color:var(--ink);line-height:1.35}
+.race{display:grid;gap:10px;margin:12px 0 14px}
+.lane{display:grid;grid-template-columns:26px 72px minmax(0,1fr) 54px;align-items:center;gap:8px}
+.lane.unsure{opacity:.55}
+.lpos{text-align:center;font-weight:700;color:var(--mut);font-size:15px}
+.lname{font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.track{position:relative;height:36px;border-radius:18px;background:repeating-linear-gradient(90deg,var(--one-track) 0 14px,transparent 14px 20px);border:1px solid var(--line)}
 .runner{position:absolute;top:50%;transform:translate(-50%,-50%)}
-.runner .av{width:26px;height:26px;font-size:11.5px;box-shadow:0 0 0 3px var(--card)}
-.flag{position:absolute;right:0;top:5px;bottom:5px;width:1px;background:var(--mut)}
-.titles{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:0 14px;margin-top:16px;border-top:1px solid var(--line)}
-.ttl{padding:12px 0 2px}.ttl b{display:block;margin-top:3px;font-family:"Iowan Old Style",Palatino,Georgia,serif;font-weight:500;font-size:16px}
+.runner .av{width:30px;height:30px;font-size:13px;box-shadow:0 0 0 2px var(--card)}
+.flag{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:16px}
+.lval{text-align:right;font-variant-numeric:tabular-nums;font-size:14.5px}
+.titles{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.ttl{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-size:13.5px}.ttl b{font-weight:600}
 ul.worked{list-style:none;margin:8px 0 4px;padding:0}
 ul.worked li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14.5px;line-height:1.45}
 ul.worked li:last-child{border-bottom:0}
@@ -870,20 +867,20 @@ function baristaRace(list, ppl) {
   else {
     // the leader, in one line
     const a = ranked[0], b = ranked[1], gap = r1(val(a)) - r1(val(b)), close = gap < 0.1;   // as the lanes show it
-    const ban = el("div", "lead"); ban.appendChild(el("small", "", close ? "Neck and neck" : "In the lead"));
-    ban.appendChild(el("p", "", close ? andList(ranked.slice(0, 2).map(r => nameOf(r.id))) + (byMed ? ", with the same typical cup." : ", equally good on the same coffees.")
-      : nameOf(a.id) + (byMed ? ", with a typical cup of " + fmtS(a.med) : ", by " + gap.toFixed(1) + "\u2605 on the same coffees") + "."));
+    const ban = el("div", "lead"); ban.appendChild(el("span", "crown", close ? "\u{1F91D}" : "\u{1F451}"));
+    ban.appendChild(el("p", "", close ? "Neck and neck: " + andList(ranked.slice(0, 2).map(r => nameOf(r.id))) + (byMed ? " have the same typical cup." : " make equally good cups of the same coffees.")
+      : nameOf(a.id) + " leads" + (byMed ? " with a typical cup of " + fmtS(a.med) : " by " + gap.toFixed(1) + "\u2605 on the same coffees") + "."));
     m.appendChild(ban);
     // the race: one lane each, the further right the better, the flag at the leader's end
     const lo = Math.min(...ranked.map(val)), hi = Math.max(...ranked.map(val)), span = Math.max(hi - lo, byMed ? 1 : 0.5);
     const race = el("div", "race");
     ranked.forEach((r, i) => {
       const lane = el("div", "lane" + (r.cmp < 8 && !byMed ? " unsure" : "")), runner = el("span", "runner");
-      runner.style.left = (6 + 82 * (val(r) - lo) / span) + "%";   // stays clear of the finish line
+      runner.style.left = (8 + 64 * (val(r) - lo) / span) + "%";   // stays clear of the flag
       runner.appendChild(avatar(r.id));
-      const hd = el("div", "lhead"); hd.append(el("span", "lpos", String(i + 1)), el("span", "lname", nameOf(r.id)),
-        el("b", "lval", byMed ? fmtS(r.med) : (r.score >= 0 ? "+" : "\u2212") + r1(Math.abs(r.score)).toFixed(1) + "\u2605"));
-      const track = el("span", "track"); track.append(runner, el("span", "flag")); lane.append(hd, track);
+      lane.append(el("span", "lpos", i === 0 ? "\u{1F3C6}" : String(i + 1)), el("span", "lname", nameOf(r.id)));
+      const track = el("span", "track"); track.append(runner, el("span", "flag", "\u{1F3C1}")); lane.appendChild(track);
+      lane.appendChild(el("b", "lval", byMed ? fmtS(r.med) : (r.score >= 0 ? "+" : "\u2212") + r1(Math.abs(r.score)).toFixed(1) + "\u2605"));
       race.appendChild(lane);
     });
     m.appendChild(race);
@@ -901,10 +898,10 @@ function baristaRace(list, ppl) {
   });
   // little titles, for fun
   const titles = [];
-  const most = rows.slice().sort((a, b) => b.brews - a.brews)[0]; if (most && rows.length > 1 && most.brews > 0) titles.push(["Most brews", nameOf(most.id) + " \u00B7 " + most.brews]);
-  const st = rows.filter(r => r.sd != null).sort((a, b) => a.sd - b.sd)[0]; if (st && rows.filter(r => r.sd != null).length > 1) titles.push(["Steadiest hand", nameOf(st.id)]);
-  const top = rated.slice().sort((a, b) => b.rating - a.rating || b.t - a.t)[0]; if (top && top.rating >= 4) titles.push(["Best cup", nameOf(top.who) + " \u00B7 " + fmtS(top.rating)]);
-  if (titles.length) { const tl = el("div", "titles"); titles.forEach(([k, v]) => { const d = el("div", "ttl"); d.append(el("small", "", k), el("b", "", v)); tl.appendChild(d); }); m.appendChild(tl); }
+  const most = rows.slice().sort((a, b) => b.brews - a.brews)[0]; if (most && rows.length > 1 && most.brews > 0) titles.push(["\u{1F4AA}", "Most brews", nameOf(most.id) + " \u00B7 " + most.brews]);
+  const st = rows.filter(r => r.sd != null).sort((a, b) => a.sd - b.sd)[0]; if (st && rows.filter(r => r.sd != null).length > 1) titles.push(["\u{1F3AF}", "Steadiest hand", nameOf(st.id)]);
+  const top = rated.slice().sort((a, b) => b.rating - a.rating || b.t - a.t)[0]; if (top && top.rating >= 4) titles.push(["\u2B50", "Best cup", nameOf(top.who) + " \u00B7 " + fmtS(top.rating)]);
+  if (titles.length) { const tl = el("div", "titles"); titles.forEach(([e, k, v]) => { const d = el("span", "ttl"); d.append(document.createTextNode(e + " " + k + " "), el("b", "", v)); tl.appendChild(d); }); m.appendChild(tl); }
   numbers(m, ["Barista", "Brews", "Rated", "Typical cup", "Same coffees (vs household)", "Compared brews"], rows.map(r => [nameOf(r.id), r.brews, r.rated, r.med != null ? r1(r.med).toFixed(1) : null, r.score != null ? (r.score >= 0 ? "+" : "") + r1(r.score).toFixed(2) : null, r.cmp]));
 }
 function viewFreshTab() {
