@@ -2255,7 +2255,7 @@ function buildScores(c, extra) {
   scores = {}; ctl = {}; noteNames = [];
   $("scorebox").textContent = ""; $("notebox").textContent = "";
   SCALE.PROFILE.forEach(a => addCore(a));
-  addCore("body", "Body: how the coffee feels in your mouth. Minus is watery or thin, like tea. Plus is full, thick or syrupy, which can be lovely and is not the same as too strong. With sour and bitter it places the cup on the brewing chart in Trends.");
+  addCore("body", "Body: how the coffee feels in your mouth. Minus is thin or light, like tea. Plus is full or thick, even syrupy, which can be lovely and is not the same as too strong.");
   (c.flavour_tags || []).forEach(n => addNote(n));
   (extra || []).forEach(n => addNote(n, true));   // notes someone added on a brew of this coffee
 }
