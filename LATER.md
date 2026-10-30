@@ -16,6 +16,13 @@ Ideas for after the basics have settled. Nothing here is promised; it is the lis
 - **Kept a bit separate** from the journal: how it fits into the app is still open (its own tab or page, rather than mixed into the Coffee Shelf and Recent activity).
 - To think about when we get there: who sees a post (friends only, or chosen ones), whether posting is always a choice per brew (never automatic), comments and reactions, notifications for them (Settings already has the kinds), and taking a post down again.
 
+## Fill in a coffee from a link or a photo (when the app takes off)
+- **The idea:** paste the shop link or take a photo of the bag, and the coffee form comes back filled in (name, roaster, origin, process, variety, altitude, roast date, tasting notes, weight, price), marked so you check it before saving.
+- **How:** one helper in Supabase (an Edge Function, like "notify"): it reads the shop page (many roasters use Shopify, with clean product data) or the photo, and an AI model picks out the fields from the description or the label.
+- **Why not yet:** it costs a little per bag read (typically well under a cent with a small model, paid to the AI provider). Needs an API key, entered as a Supabase secret by us, a daily limit per account so nobody can run up a bill, and a line on the privacy page (the link or photo is sent to the AI provider to be read, not kept).
+- **Limits:** some shops block automatic visitors (then the photo is the fallback); a shop's price can be for another size than the one bought.
+- **Free meanwhile:** the iPhone's Live Text (camera or photo) to copy the label text into the form.
+
 ## App
 - **Language setting** (English / German / Spanish). Means moving all texts into one file per language.
 - **Offline use:** open the app and log brews without a connection, saved once back online.
