@@ -942,25 +942,33 @@ function viewUs() {
     }
   }
 
-  const a = card("Activity", "Brews per week over the last 12 weeks, and which devices you use.");
+  const a = card("Activity", "Brews per day, week or month in the time frame you chose above (the longer the time frame, the bigger the steps), and which devices you use.");
   if (!list.length) empty(a, "No brews yet.");
   else {
-    const now = new Date(), monday = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
-    const start = monday(now); start.setDate(start.getDate() - 7 * 11);
-    const weeks = []; for (let i = 0; i < 12; i++) { const w = new Date(start); w.setDate(start.getDate() + 7 * i); weeks.push(w); }
-    const who = [...ppl, ""], cols = weeks.map(w => {
-      const end = new Date(w); end.setDate(w.getDate() + 7);
-      const inW = list.filter(b => b.t >= w && b.t < end);
-      return { label: fmtShort(w), full: fmtDate(w), parts: who.map(id => ({ value: inW.filter(b => (b.who || "") === id && (id || !ppl.includes(b.who))).length, color: id ? personCol(id) : "var(--mut)", name: id ? nameOf(id) : "not set" })), n: inW.length, w };
+    // the steps follow the time frame: from its start (or your first brew in it) to its end (or today)
+    const [r0, r1x] = rangeOf(), first = new Date(Math.min(...list.map(b => +b.t))), today = new Date();
+    const from = new Date(Math.max(+r0, +first)), to = new Date(Math.min(+r1x - 1, Math.max(+today, Math.max(...list.map(b => +b.t)))));
+    if (!state.range && to - from < 77 * 864e5) from.setTime(+to - 77 * 864e5);   // all time, but only a few weeks of brews: still show 12 weeks
+    const span = (to - from) / 864e5, unit = span <= 21 ? "day" : span <= 140 ? "week" : "month";
+    const floor = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); if (unit === "week") x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); if (unit === "month") x.setDate(1); return x; };
+    const next = d => { const x = new Date(d); if (unit === "day") x.setDate(x.getDate() + 1); else if (unit === "week") x.setDate(x.getDate() + 7); else x.setMonth(x.getMonth() + 1); return x; };
+    const steps = []; for (let w = floor(from); w <= to && steps.length < 60; w = next(w)) steps.push(w);
+    const yrs = new Set(steps.map(w => w.getFullYear())).size > 1;
+    const lab = w => unit === "month" ? w.toLocaleDateString("en-GB", { month: "short" }) + (yrs && (w.getMonth() === 0 || w === steps[0]) ? " " + String(w.getFullYear()).slice(2) : "") : fmtShort(w);
+    const ttl = w => unit === "day" ? fmtDate(w) : unit === "week" ? "Week of " + fmtDate(w) : w.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+    const who = [...ppl, ""], cols = steps.map(w => {
+      const end = next(w), inW = list.filter(b => b.t >= w && b.t < end);
+      return { label: lab(w), full: ttl(w), parts: who.map(id => ({ value: inW.filter(b => (b.who || "") === id && (id || !ppl.includes(b.who))).length, color: id ? personCol(id) : "var(--mut)", name: id ? nameOf(id) : "not set" })), n: inW.length, w };
     });
+    a.appendChild(el("p", "small", "Brews per " + unit + ", " + fmtDate(steps[0]) + " to " + fmtDate(to) + "."));
     const leg = el("div", "legend"); ppl.forEach(id => legendItem(leg, personCol(id), nameOf(id), "dot")); if (list.some(b => !ppl.includes(b.who))) legendItem(leg, "var(--mut)", "not set", "dot"); a.appendChild(leg);
     const box = chartBox(a);
-    Charts.stacked({ box, height: 210, yLabel: "Brews", cols: cols.map(c => ({ label: c.label, parts: c.parts, tip: () => ({ title: "Week of " + c.full, rows: [{ value: String(c.n), label: c.n === 1 ? "brew" : "brews" }].concat(c.parts.filter(p => p.value).map(p => ({ value: String(p.value), label: p.name, color: p.color, kind: "dot" }))) }) })) });
+    Charts.stacked({ box, height: 210, yLabel: "Brews", cols: cols.map(c => ({ label: c.label, parts: c.parts, tip: () => ({ title: c.full, rows: [{ value: String(c.n), label: c.n === 1 ? "brew" : "brews" }].concat(c.parts.filter(p => p.value).map(p => ({ value: String(p.value), label: p.name, color: p.color, kind: "dot" }))) }) })) });
     const dc = {}; list.forEach(b => { const k = b.device || "Unknown"; dc[k] = (dc[k] || 0) + 1; });
     const drows = Object.keys(dc).map(k => ({ label: k, value: dc[k] })).sort((x, y) => y.value - x.value);
     a.appendChild(el("h3", "", "Devices"));
     a.appendChild(rankList(drows.map(r => ({ icon: devIcon(r.label), label: r.label, value: r.value, max: drows[0].value, text: String(r.value) + (r.value === 1 ? " brew" : " brews") }))));
-    numbers(a, ["Week of", ...ppl.map(nameOf), "Total"], cols.map(c => [c.full, ...ppl.map((id, i) => c.parts[i].value), c.n]));
+    numbers(a, [unit === "day" ? "Day" : unit === "week" ? "Week" : "Month", ...ppl.map(nameOf), "Total"], cols.map(c => [c.full, ...ppl.map((id, i) => c.parts[i].value), c.n]));
   }
 
   origins(list);
