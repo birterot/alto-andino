@@ -359,7 +359,7 @@ function viewCoffee() {
 // device, the grind also on one grinder (grinders count differently), by brews above its middle value against below.
 const tasteX = b => { const so = b.scores.sour, bi = b.scores.bitter; if (so == null && bi == null) return null; return ((bi != null ? shown("bitter", bi) : 0) - (so != null ? shown("sour", so) : 0)) / (so != null && bi != null ? 2 : 1); };
 function whatWorked(list, c, devNote) {
-  const m = card("What worked", "Your best cup of this coffee so far, and what went with better cups when you changed something. Grind settings are only compared on one grinder: every grinder counts differently.");
+  const m = card("What worked", "Your best cup of this coffee so far, with its whole recipe. Below it, for each setting you varied (grind, ratio, water temperature, dose): which way went with more stars.");
   if (devNote) m.appendChild(el("p", "what", devNote));
   const rated = list.filter(b => b.rating != null && !b.dialin);
   const gc = {}; list.forEach(b => { if (b.grind != null && b.grind !== "") { const g = b.grinder || "Grinder not set"; gc[g] = (gc[g] || 0) + 1; } });
@@ -408,7 +408,7 @@ function whatWorked(list, c, devNote) {
     ul.appendChild(li);
   });
   m.appendChild(ul);
-  if (found.some(x => x.what === "The grind")) m.appendChild(el("p", "small", "On most grinders a lower number is finer." + (gs.length > 1 ? " Grind compared on the " + gr + " only." : "")));
+  if (found.some(x => x.what === "The grind")) m.appendChild(el("p", "small", "The grind is compared on " + (gr && gr !== "Grinder not set" ? "the " + gr : "one grinder") + " only, because a \u201C15\u201D means something different on every grinder. On most grinders a lower number is finer."));
   if (thin.length) m.appendChild(el("p", "what", "Not enough yet for " + andList(thin) + ": it needs a few rated brews where it changes."));
 }
 // Which device suits it: this coffee's stars per device (only when it was brewed on more than one)
@@ -837,11 +837,11 @@ function supply(box, openLeft) {
   const since = Date.now() - 28 * 864e5, recent = state.brews.filter(b => b.t >= since && b.dose);
   const unopened = state.coffees.filter(c => !c.archived && !c.finished_at && !c.open_date && c.bag_g).reduce((x, c) => x + c.bag_g, 0);
   const days = recent.length ? Math.max(7, Math.min(28, (Date.now() - Math.min(...recent.map(b => b.t))) / 864e5)) : 0;
-  const perDay = days ? recent.reduce((x, b) => x + b.dose, 0) / days : 0;
+  const perDay = days ? recent.reduce((x, b) => x + b.dose, 0) / days : 0, cupsDay = days ? recent.reduce((x, b) => x + Math.max(1, b.ratings.length), 0) / days : 0;
   if (perDay < 1) return;
   const total = openLeft + unopened, d = total / perDay;
   const when = d < 1.5 ? "about a day" : d < 10 ? "about " + Math.round(d) + " days" : "about " + Math.round(d / 7) + " weeks";
-  box.appendChild(el("p", "take", "At your pace of the last weeks (about " + Math.round(perDay) + "\u00A0g a day) your beans last " + when
+  box.appendChild(el("p", "take", "At your pace of the last weeks (about " + Math.round(perDay) + "\u00A0g a day, roughly " + (cupsDay < 1.5 ? "one cup" : Math.round(cupsDay) + " cups") + " a day) your beans last " + when
     + (unopened ? ": " + Math.round(openLeft) + "\u00A0g in open bags and " + Math.round(unopened) + "\u00A0g unopened." : ".") + (d < 7 ? " Time to order the next bag." : "")));
 }
 // Origins: a world map of where the coffees you brewed (in the time frame) come from, darker = more coffees
@@ -1057,8 +1057,8 @@ function insOpenBag(list) {
   if (pts.length < 2) { needMore(m, "This needs a few rated brews in more than one week of an open bag." + (pace ? " " + pace : "")); return; }
   const base = pts[0].y, drop = pts.find(p => p.y <= base - 0.3);
   m.appendChild(el("p", "take", (drop ? "After about " + (drop.x - 1) + (drop.x - 1 === 1 ? " week" : " weeks") + " open, your stars drop by " + r1(base - drop.y).toFixed(1) + "\u2605." : "Your stars hold up while a bag is open: no clear drop yet.") + (pace ? " " + pace : "")));
-  const box = chartBox(m);
-  Charts.lines({ box, height: 220, xLabel: "Week since opening", yFmt: v => v + "\u2605", xFmt: v => v === 7 ? "7+" : String(v), series: [{ name: "Stars", color: "var(--one)", points: pts }],
+  const box = chartBox(m);   // the whole 0 to 5 scale, so a small dip looks small
+  Charts.lines({ box, height: 220, xLabel: "Week since opening", yDomain: [0, 5], yTicks: [0, 1, 2, 3, 4, 5], yFmt: v => v + "\u2605", xFmt: v => v === 7 ? "7+" : String(v), series: [{ name: "Stars", color: "var(--one)", points: pts }],
     tipTitle: x => "Week " + (x === 7 ? "7 and later" : x) + " since opening", valueFmt: (sr, y, p) => y + "\u2605, " + p.n + (p.n === 1 ? " brew" : " brews") });
   numbers(m, ["Week since opening", "Stars (adjusted)", "Brews"], pts.map(p => [p.x === 7 ? "7+" : p.x, p.y, p.n]));
 }
