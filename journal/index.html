@@ -854,8 +854,14 @@ function deviceList(every) {
   // only the devices you own, if you ticked some in Settings (kept on the phone too, so it is right from the start)
   let own = (myPrefs().devices || []);
   if (!own.length) { try { own = JSON.parse(store.get("alto.mydevs") || "[]"); } catch (e) { own = []; } }
-  const mine = out.filter(d => own.includes(d));
-  return mine.length && !every ? mine : out;   // plain names, no sizes: your own ("French press (1 l)") come with "Other (add new)" and stay in the list once used
+  // your own devices (Settings > Brewing): always offered, and they count as yours
+  let cust = myPrefs().custom_devices;
+  if (!Array.isArray(cust)) { try { const m = JSON.parse(store.get("alto.customdevs") || "{}"); cust = Object.keys(m).map(n => ({ n, t: m[n] })); } catch (e) { cust = []; } }
+  const custNames = (cust || []).map(d => d && d.n).filter(Boolean);
+  if (window.DEVICES && DEVICES.register) { const m = {}; (cust || []).forEach(d => { if (d && d.n) m[d.n] = d.t; }); DEVICES.register(m); }
+  custNames.forEach(add);
+  const mine = out.filter(d => own.includes(d) || custNames.includes(d));
+  return own.length && mine.length && !every ? mine : out;   // nothing ticked: all of them (your own included)   // plain names, no sizes: your own ("French press (1 l)") come with "Other (add new)" and stay in the list once used
 }
 function fill(id, base, used, fixed) {   // fixed: only the base list, no "Other" (roast levels)
   const s = $(id), keep = s.value;

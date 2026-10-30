@@ -213,9 +213,17 @@ window.DEVICES = {
   ],
   // What kind of device a name is, also for names people type themselves ("French press (1 l)", "Kalita Wave", "Gaggia Classic"):
   // the devices above (and names that start with them) first, then a guess from words in the name. Unknown names count as filter coffee.
+  // your own devices (Settings > Brewing) with their kind: { name: type }, kept on the phone, and the household's (Trends)
+  own: null,
+  register: function (map) { var o = this.ownMap(); Object.keys(map || {}).forEach(function (k) { if (map[k]) o[String(k).trim().toLowerCase()] = map[k]; }); },
+  ownMap: function () {
+    if (!this.own) { this.own = {}; try { var m = JSON.parse(localStorage.getItem("alto.customdevs") || "{}"), o = this.own; Object.keys(m).forEach(function (k) { o[k.toLowerCase()] = m[k]; }); } catch (e) { /* none */ } }
+    return this.own;
+  },
   typeOf: function (name) {
     var n = String(name || "").trim().toLowerCase();
     if (!n) return "";
+    var mine = this.ownMap()[n]; if (mine) return mine;
     var list = this.D, i, j, names;
     for (i = 0; i < list.length; i++) { names = [list[i].name].concat(list[i].logAs || []); for (j = 0; j < names.length; j++) if (names[j].toLowerCase() === n) return list[i].type || ""; }
     for (i = 0; i < list.length; i++) { names = [list[i].name].concat(list[i].logAs || []); for (j = 0; j < names.length; j++) if (n.indexOf(names[j].toLowerCase() + " ") === 0) return list[i].type || ""; }

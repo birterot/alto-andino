@@ -43,6 +43,7 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .gradd{display:flex;gap:8px;align-items:center;margin-top:10px;max-width:420px}
 .gradd input{margin:0;flex:1}
 .gradd .lnk{min-height:44px}
+.devadd{flex-wrap:wrap}.devadd input{flex:1 1 100%}.devadd select{margin:0;flex:1 1 auto}
 .devs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .devs button{min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
 .devs button[aria-pressed=true]{border-color:var(--act);background:var(--act);color:var(--on-act)}
@@ -130,6 +131,9 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
     <p class="lab" id="devslab">Devices you own</p>
     <div class="devs" id="s-devs" role="group" aria-labelledby="devslab"></div>
     <p class="hint" id="devshint">Tick the ones you have at home: Log a brew then only offers these. Nothing ticked: all of them.</p>
+    <div class="grs" id="s-cdevs" role="list" aria-label="Your own devices"></div>
+    <div class="gradd devadd"><input id="s-dev-new" maxlength="40" placeholder="Not in the list? e.g. Hario Switch" autocomplete="off" aria-label="Add your own device"><select id="s-dev-type" aria-label="What kind"><option value="filter">Pour-over / filter</option><option value="immersion">Immersion</option><option value="espresso">Espresso</option><option value="moka">Moka pot</option></select><button type="button" class="lnk" id="s-dev-add">Add</button></div>
+    <p class="hint">Your own devices count as yours; the kind decides the brew form (water or yield, pressure) and how Trends compares it.</p>
     <p class="hint">"The last one used" means: whatever you logged last on this phone.</p>
     <label>Device<select id="s-device"></select></label>
     <p class="lab" id="grlab">Your grinders</p>
@@ -268,7 +272,24 @@ function tabFromHash() {   // #brew, or a part of a page: #cafset (from Home), #
   showTab(sec ? sec.dataset.tab : tab); if (n) setTimeout(() => n.scrollIntoView({ block: "start" }), 60);
 }
 window.addEventListener("hashchange", tabFromHash);
-let myGrinders = [];
+let myGrinders = [], myDevs = [];   // myDevs: your own devices, [{ n: name, t: kind }]
+const KIND = { filter: "pour-over", immersion: "immersion", espresso: "espresso", moka: "moka pot" };
+function drawCustomDevs() {
+  const box = $("s-cdevs"); box.textContent = "";
+  myDevs.forEach((d, i) => {
+    const r = el("div", "gr"); r.setAttribute("role", "listitem"); r.appendChild(el("span", "", d.n + " \u00B7 " + KIND[d.t]));
+    const x = el("button", "grx", "\u00D7"); x.type = "button"; x.setAttribute("aria-label", "Remove " + d.n);
+    x.onclick = () => { myDevs.splice(i, 1); drawCustomDevs(); syncDevs(); };
+    r.appendChild(x); box.appendChild(r);
+  });
+}
+$("s-dev-new").addEventListener("input", () => { const n = $("s-dev-new").value.trim(); if (n && window.DEVICES) $("s-dev-type").value = DEVICES.typeOf(n) || "filter"; });   // a first guess from the name
+$("s-dev-add").onclick = () => {
+  const n = $("s-dev-new").value.trim().slice(0, 40); if (!n) return;
+  if (!myDevs.some(d => d.n.toLowerCase() === n.toLowerCase())) myDevs.push({ n, t: $("s-dev-type").value });
+  $("s-dev-new").value = ""; drawCustomDevs(); syncDevs();
+};
+$("s-dev-new").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("s-dev-add").click(); } });
 function drawGrinders() {
   const box = $("s-grs"), g = $("s-grinder"), keep = g.value; box.textContent = "";
   myGrinders.forEach((n, i) => {
@@ -487,8 +508,9 @@ $("s-name").addEventListener("input", renderColors);
   list.forEach(d => { const b = el("button", "", d); b.type = "button"; b.dataset.d = d; b.setAttribute("aria-pressed", "false"); b.onclick = () => { b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true")); syncDevs(); }; box.appendChild(b); });
   syncDevs = () => {
     const own = ownedDevs(), keep = s.value;   // rebuilt, not hidden: the iPhone shows hidden options anyway
-    s.textContent = ""; opt(s, "", "The last one used"); list.filter(d => !own.length || own.includes(d) || d === keep).forEach(d => opt(s, d, d)); s.value = keep;
-    $("devshint").textContent = own.length ? "Log a brew offers " + (own.length === 1 ? "only this one" : "these " + own.length) + ". Tap one again to untick it." : "Tick the ones you have at home: Log a brew then only offers these. Nothing ticked: all of them.";
+    s.textContent = ""; opt(s, "", "The last one used"); list.filter(d => !own.length || own.includes(d) || d === keep).forEach(d => opt(s, d, d)); myDevs.forEach(d => opt(s, d.n, d.n)); s.value = keep;
+    const n = own.length + myDevs.length;
+    $("devshint").textContent = own.length ? "Log a brew offers " + (n === 1 ? "only this one" : "these " + n) + (myDevs.length ? " (with your own)" : "") + ". Tap one again to untick it." : "Tick the ones you have at home: Log a brew then only offers these. Nothing ticked: all of them.";
   };
   // your grinders: a list you add to (any name; a few known ones are suggested); the default grinder is one of them
   ((window.DEFAULTS && DEFAULTS.GRINDER_NAMES) || []).forEach(n => { const o = el("option"); o.value = n; $("grnames").appendChild(o); });
@@ -603,6 +625,7 @@ async function load() {
   if (hasProfile) { $("s-about").value = (data && data.about) || ""; $("s-prof").href = "../friends/index.html#p=" + me.id; photoPath = (data && data.photo_path) || null; drawFace(); }
   const pick = (id, v) => { const s = $(id); s.value = v || ""; if (s.value !== (v || "")) s.value = ""; };
   myGrinders = Array.isArray(p.grinders) ? p.grinders.slice() : []; drawGrinders();
+  myDevs = Array.isArray(p.custom_devices) ? p.custom_devices.filter(d => d && d.n && KIND[d.t]).map(d => ({ n: d.n, t: d.t })) : []; drawCustomDevs();
   pick("s-device", p.device); pick("s-grinder", p.grinder); pick("s-drink-esp", p.drink_esp); pick("s-drink-filter", p.drink_filter); pick("s-milk", p.milk);
   setNotifyBoxes(p.notify);
   document.querySelectorAll("#s-devs button").forEach(b => b.setAttribute("aria-pressed", String((p.devices || []).includes(b.dataset.d)))); syncDevs();
@@ -625,6 +648,8 @@ $("sf").onsubmit = async e => {
   const prefs = Object.assign({}, (profile && profile.prefs) || {});
   [["device", "s-device"], ["grinder", "s-grinder"], ["drink_esp", "s-drink-esp"], ["drink_filter", "s-drink-filter"], ["milk", "s-milk"]].forEach(([k, id]) => { if ($(id).value) prefs[k] = $(id).value; else delete prefs[k]; });
   const own = ownedDevs(); if (own.length) prefs.devices = own; else delete prefs.devices;
+  if (myDevs.length) prefs.custom_devices = myDevs.slice(); else delete prefs.custom_devices;
+  try { const m = {}; myDevs.forEach(d => { m[d.n] = d.t; }); if (myDevs.length) localStorage.setItem("alto.customdevs", JSON.stringify(m)); else localStorage.removeItem("alto.customdevs"); } catch (e) { /* only a shortcut for Log a brew */ }
   if (myGrinders.length) prefs.grinders = myGrinders.slice(); else delete prefs.grinders;
   try { if (myGrinders.length) localStorage.setItem("alto.mygrinders", JSON.stringify(myGrinders)); else localStorage.removeItem("alto.mygrinders"); } catch (e) { /* only a shortcut for Log a brew */ }
   try { if (own.length) localStorage.setItem("alto.mydevs", JSON.stringify(own)); else localStorage.removeItem("alto.mydevs"); } catch (e) { /* only a shortcut for Log a brew */ }
