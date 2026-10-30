@@ -40,7 +40,7 @@ ul.rank .rn small{color:var(--mut);font-size:12.5px}
 ul.rank .rt{height:6px;border-radius:3px;background:var(--one-track);overflow:hidden}
 ul.rank .rf{display:block;height:100%;border-radius:3px;background:var(--one)}
 ul.rank .rv{font-size:14px;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
-ul.rank .di{width:22px;height:22px;fill:none;stroke:var(--one);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+ul.rank .di,ul.rank svg.ti{width:22px;height:22px;fill:none;stroke:var(--one);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 /* Insights: the week grid, and the "needs more" note */
 .heat{display:grid;grid-template-columns:auto repeat(7,minmax(0,1fr));gap:3px;margin:12px 0 4px;font-size:12px}
 .heat .hh{text-align:center;color:var(--mut);padding-bottom:2px}
@@ -57,6 +57,55 @@ ul.rank .di{width:22px;height:22px;fill:none;stroke:var(--one);stroke-width:1.7;
 .typecard .ts{margin:0;font-size:13.5px;color:var(--mut)}
 .typecard .tt.rec{font-size:17.5px;line-height:1.4}
 .typecard .tl{margin:6px 0 8px;font-size:15.5px;line-height:1.45;color:var(--ink)}
+/* every card: the title with a small (i) for the explanation */
+.card .chd{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.card .chd h2{margin-bottom:0}
+.card .info{flex:none;width:26px;height:26px;margin-top:2px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--mut);font:italic 600 13px/1 Georgia,serif;cursor:pointer}
+.card .info[aria-expanded=true]{background:var(--one-track);color:var(--ink)}
+.card .chd + .what{margin-top:8px}
+.card > .chd + :not(.what){margin-top:10px}
+svg.ti{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+/* Your taste: badges, the scales, what costs stars */
+.hero{display:grid;gap:6px;margin-top:6px}
+.hk{margin:10px 0 2px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);font-weight:600}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.badge{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--one-track);color:var(--one)}
+.badge svg.ti{width:26px;height:26px}
+.badge b{display:block;color:var(--ink);font-size:15.5px;line-height:1.2}
+.badge small{display:block;color:var(--mut);font-size:12.5px;margin-top:2px}
+.meters{display:grid;gap:10px;margin-top:2px}
+.tm{display:grid;grid-template-columns:62px minmax(0,1fr) 108px;align-items:center;gap:10px;font-size:14px}
+.tml{display:flex;align-items:center;gap:6px;text-transform:capitalize}.tml i{width:8px;height:8px;border-radius:50%;flex:none}
+.tmt{position:relative;height:8px;border-radius:4px;background:var(--one-track)}
+.tmc{position:absolute;left:50%;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--axis);border-radius:1px}
+.tmd{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;box-shadow:0 0 0 2px var(--card)}
+.tmw{font-size:13px;color:var(--mut)}
+.costs{display:flex;flex-wrap:wrap;gap:8px}
+.cost{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;border:1px solid var(--line);color:var(--f-sweet)}
+.cost b{color:var(--ink);font-size:14.5px}.cost span{color:var(--mut);font-size:13.5px;font-variant-numeric:tabular-nums}
+.card .foot{margin:12px 0 0;font-size:13px;color:var(--mut)}
+.nchips{display:flex;flex-wrap:wrap;gap:6px}
+.nchip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--one-track);font-size:14px;color:var(--ink)}
+.nchip svg.ti{width:16px;height:16px;color:var(--one)}.nchip b{font-size:13px;font-variant-numeric:tabular-nums}
+.nchip.flat{background:none;border:1px solid var(--line);color:var(--mut)}.nchip.flat svg.ti{color:var(--mut)}
+.ratios{display:grid;gap:8px;margin-top:4px}
+.likes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:4px 18px}
+.likes .lgh{display:flex;align-items:center;gap:6px;margin:10px 0 0;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);font-family:inherit;font-weight:600}
+.likes .lgh svg.ti{width:18px;height:18px;color:var(--one)}
+.money{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.mtile{padding:10px 12px;border-radius:14px;background:var(--one-track)}
+.mtile small{display:block;font-size:12px;color:var(--mut)}.mtile b{display:block;font-size:16px;margin:2px 0}.mtile span{font-size:13.5px;color:var(--mut);font-variant-numeric:tabular-nums}
+.trynext svg.ti{width:16px;height:16px;vertical-align:-3px;margin-right:4px;color:var(--one)}
+.rat{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--one-track)}
+.rat svg{width:30px;height:30px;color:var(--one);fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.rtx small{display:block;font-size:12.5px;color:var(--mut)}.rtx b{display:block;font-size:22px;font-family:"Iowan Old Style",Palatino,Georgia,serif;font-weight:500;font-variant-numeric:tabular-nums}
+.rside{display:grid;justify-items:end;gap:4px}.rside small{font-size:12px;color:var(--mut)}
+.gchip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:var(--card);font-size:13px}.gchip svg.ti{width:15px;height:15px;color:var(--one)}
+ul.rank .medal{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--one-track);font-size:12.5px;font-weight:700;color:var(--mut)}
+ul.rank .medal.m1{background:#D4A73A;color:#fff}ul.rank .medal.m2{background:#A9A9A2;color:#fff}ul.rank .medal.m3{background:#B87A4B;color:#fff}
+ul.rank li:has(.medal){grid-template-columns:auto minmax(0,1fr) 64px var(--vw,auto)}
+.stab{display:inline-flex;align-items:center;gap:3px;margin-left:6px;font-size:12px;vertical-align:middle}
+.stab svg.ti{width:16px;height:16px}.stab.ok{color:var(--f-bitter)}.stab.bump{color:var(--f-sweet)}
 ul.worked{list-style:none;margin:8px 0 4px;padding:0}
 ul.worked li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14.5px;line-height:1.45}
 ul.worked li:last-child{border-bottom:0}
@@ -299,9 +348,37 @@ function devIcon(name) { return DEVICONS.svg(name, typeOf(name), "di"); }
 
 // ---------- page frame ----------
 function card(title, what) {
-  const c = el("section", "card"); c.appendChild(el("h2", "", title));
-  if (what) c.appendChild(el("p", "what", what));
+  const c = el("section", "card"), h = el("div", "chd"); h.appendChild(el("h2", "", title)); c.appendChild(h);
+  if (what) {   // the explanation: behind a small (i), so the page reads as headlines and pictures
+    const p = el("p", "what", what), b = el("button", "info", "i"); p.hidden = true;
+    b.type = "button"; b.setAttribute("aria-label", "What does this show?"); b.setAttribute("aria-expanded", "false");
+    b.onclick = () => { p.hidden = !p.hidden; b.setAttribute("aria-expanded", String(!p.hidden)); };
+    h.appendChild(b); c.appendChild(p);
+  }
   $("views").appendChild(c); return c;
+}
+// small line icons for the taste tab
+const IC = {
+  process: "M12 3c3 4 5 6.5 5 9.5a5 5 0 01-10 0C7 9.5 9 7 12 3z", roast: "M12 3c1 3 4 4.5 4 8.5a4 4 0 01-8 0c0-1.8.8-3 2-4 0 1.5.6 2.5 1.6 2.5C11.6 7.5 11 5 12 3z M7 20h10",
+  origin: "M12 21s-6-5.5-6-10a6 6 0 1112 0c0 4.5-6 10-6 10z M12 9v.01", altitude: "M3 19l6-10 4 6 2-3 6 7z",
+  warn: "M12 4l9 16H3z M12 10v4 M12 17v.01", grind: "M7 4h10l-2 6H9z M9 10v4h6v-4 M8 14h8l1 6H7z", ratio: "M7 4h4v16H7z M13 9h4v11h-4z",
+  temp: "M10 14V5a2 2 0 114 0v9a4 4 0 11-4 0z M12 9v6", dose: "M12 4c3.3 0 5 3.4 5 8s-1.7 8-5 8-5-3.4-5-8 1.7-8 5-8z M12 4c-1.2 2.5-1.2 5.5 0 8s1.2 5.5 0 8",
+  roastday: "M5 6h14v14H5z M5 10h14 M9 3v5 M15 3v5", clock: "M12 7v5l3 2 M12 21a9 9 0 110-18 9 9 0 010 18z", timer: "M12 9v4l2 2 M9 2h6 M12 21a8 8 0 110-16 8 8 0 010 16z",
+  person: "M12 12a4 4 0 100-8 4 4 0 000 8z M4.5 20.5a7.5 7.5 0 0115 0", device: "M4 5h16l-6 9h-4L4 5z M12 14v3 M7 20h10", leaf: "M5 19c0-8 5-14 14-14 0 9-6 14-14 14z M5 19l7-7",
+  steady: "M3 12h18", bumpy: "M3 15l4-6 4 8 4-8 4 6", star: "M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"
+};
+function ic(name, cls) {
+  const NS = "http://www.w3.org/2000/svg", s = document.createElementNS(NS, "svg"), p = document.createElementNS(NS, "path");
+  s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("class", "ti" + (cls ? " " + cls : "")); s.setAttribute("aria-hidden", "true");
+  p.setAttribute("d", IC[name] || IC.star); s.appendChild(p); return s;
+}
+// a taste on its scale: "just right" in the middle, a dot where your best cups are
+function meter(label, v, color, words) {
+  const r = el("div", "tm"), tr = el("div", "tmt"), dot = el("span", "tmd");
+  tr.appendChild(el("span", "tmc")); dot.style.left = (Math.max(-5, Math.min(5, v)) + 5) * 10 + "%"; dot.style.background = color; tr.appendChild(dot);
+  const word = Math.abs(v) < 0.75 ? "just right" : (Math.abs(v) > 2 ? "clearly " : "a little ") + (v < 0 ? words[0] : words[1]);
+  const lb = el("span", "tml"); const sw = el("i"); sw.style.background = color; lb.append(sw, document.createTextNode(label));
+  r.append(lb, tr, el("span", "tmw", word)); return r;
 }
 function chartBox(parent) { const b = el("div", "box"); parent.appendChild(b); return b; }
 function numbers(parent, headers, rows) {
@@ -440,9 +517,16 @@ function bestRatios() {
   }).sort((a, b) => b.all - a.all);
   if (!rows.length) return;
   const m = card("Your best ratios", "Per device, the ratio (and the grind, as a word, so it fits any grinder) of your best rated cups, your top third. A good starting point for a new coffee.");
-  const ul = el("ul", "worked");
-  rows.forEach(r => { const li = el("li"); li.append(el("b", "", r.d), document.createTextNode(": " + (r1(r.lo) === r1(r.hi) ? "1:" + r1(r.lo) : "between 1:" + r1(r.lo) + " and 1:" + r1(r.hi)) + (r.feel ? ", " + r.feel + " grind" : "") + " (" + fmtS(r.v) + ", your best " + r.n + " of " + r.all + " brews).")); ul.appendChild(li); });
-  m.appendChild(ul);
+  const box = el("div", "ratios");
+  rows.forEach(r => {
+    const row = el("div", "rat"); row.appendChild(devIcon(r.d));
+    const tx = el("div", "rtx"); tx.append(el("small", "", r.d), el("b", "", r1(r.lo) === r1(r.hi) ? "1:" + r1(r.lo) : "1:" + r1(r.lo) + " \u2013 1:" + r1(r.hi)));
+    row.appendChild(tx);
+    const side = el("div", "rside"); if (r.feel) { const g = el("span", "gchip"); g.append(ic("grind"), document.createTextNode(r.feel)); side.appendChild(g); }
+    side.appendChild(el("small", "", fmtS(r.v) + " \u00B7 best " + r.n + " of " + r.all)); row.appendChild(side);
+    box.appendChild(row);
+  });
+  m.appendChild(box);
 }
 // Which grinder suits it: this coffee's stars per grinder (only when it was ground on more than one)
 function whichGrinder(coffeeBrews) {   // on one device (the one shown), so the grinders are compared fairly
@@ -474,23 +558,27 @@ function buyAgain() {
   const perKg = k => { const b = bagsOf(k).find(c => c.price_eur != null && c.bag_g); return b ? Number(b.price_eur) / b.bag_g * 1000 : null; };
   rows.forEach(r => { r.kg = perKg(r.k); });
   const eur = v => "\u20AC" + Math.round(v) + "/kg";
-  m.appendChild(rankList(rows.slice(0, 8).map(r => ({ label: r.c.name, sub: "(" + [r.c.roaster, r.n + (r.n === 1 ? " brew" : " brews"), steady(r), r.kg != null ? eur(r.kg) : null].filter(Boolean).join(", ") + ")", value: r.v, max: 5, text: fmtS(r.v) }))));
+  m.appendChild(rankList(rows.slice(0, 8).map((r, i) => { const md = el("span", "medal m" + (i + 1), String(i + 1));
+    const sub = [r.c.roaster, r.n + (r.n === 1 ? " brew" : " brews"), r.kg != null ? eur(r.kg) : null].filter(Boolean).join(" \u00B7 ");
+    return { icon: md, label: r.c.name, sub, value: r.v, max: 5, text: fmtS(r.v), tag: steady(r) }; })));
+  m.querySelectorAll("ul.rank li").forEach((li, i) => { const r = rows[i], s = r && steady(r); if (s) { const t = el("span", "stab " + (s === "steady" ? "ok" : "bump")); t.append(ic(s === "steady" ? "steady" : "bumpy"), document.createTextNode(s)); li.querySelector(".rn").appendChild(t); } });
   const priced = rows.filter(r => r.kg != null && r.n >= 2);
   if (priced.length >= 2) {
     const fav = priced.slice().sort((a, b) => b.v - a.v)[0], value = priced.slice().sort((a, b) => b.v / b.kg - a.v / a.kg)[0];
-    m.appendChild(el("h3", "", "For your money"));
-    m.appendChild(el("p", "take", value === fav ? fav.c.name + " is your favourite and also the most stars for the money: " + fmtS(fav.v) + " at " + eur(fav.kg) + "."
-      : "Most stars: " + fav.c.name + " (" + fmtS(fav.v) + " at " + eur(fav.kg) + "). Most stars for the money: " + value.c.name + " (" + fmtS(value.v) + " at " + eur(value.kg) + ")."));
+    m.appendChild(el("p", "hk", "For your money"));
+    const mt = el("div", "money"), tile = (k, r) => { const d = el("div", "mtile"); d.append(el("small", "", k), el("b", "", r.c.name), el("span", "", fmtS(r.v) + " \u00B7 " + eur(r.kg))); mt.appendChild(d); };
+    if (value === fav) tile("Most stars, and best value", fav); else { tile("Most stars", fav); tile("Most stars for the money", value); }
+    m.appendChild(mt);
   }
   const pk = state.coffees.filter(c => c.price_eur != null && c.bag_g), recent = state.brews.filter(b => b.t >= Date.now() - 28 * 864e5 && b.dose);
   if (pk.length) {
     const avgKg = pk.reduce((x, c) => x + Number(c.price_eur), 0) / pk.reduce((x, c) => x + c.bag_g, 0) * 1000, perDay = recent.reduce((x, b) => x + b.dose, 0) / 28;
-    m.appendChild(el("p", "small", "You pay about " + eur(avgKg) + " on average (" + pk.length + (pk.length === 1 ? " bag" : " bags") + " with a price)" + (perDay >= 1 ? ", at your pace about \u20AC" + Math.round(avgKg * perDay * 30 / 1000) + " a month." : ".")));
+    m.appendChild(el("p", "foot", "On average " + eur(avgKg) + (perDay >= 1 ? " \u00B7 about \u20AC" + Math.round(avgKg * perDay * 30 / 1000) + " a month at your pace" : "") + " \u00B7 " + pk.length + (pk.length === 1 ? " bag" : " bags") + " with a price"));
   }
   const ro = {}; rows.forEach(r => { const n = r.c.roaster; if (!n) return; ro[n] = ro[n] || { xs: [], cs: 0 }; ro[n].xs.push(...by[r.k]); ro[n].cs++; });
   const rr = Object.keys(ro).map(n => ({ n, v: avg(ro[n].xs), b: ro[n].xs.length, cs: ro[n].cs })).sort((a, b) => b.v - a.v || b.b - a.b);
   if (rr.length > 1) {
-    m.appendChild(el("h3", "", "Roasters"));
+    m.appendChild(el("p", "hk", "Roasters"));
     m.appendChild(rankList(rr.map(r => ({ label: r.n, sub: "(" + r.cs + (r.cs === 1 ? " coffee, " : " coffees, ") + r.b + (r.b === 1 ? " brew)" : " brews)"), value: r.v, max: 5, text: fmtS(r.v) }))));
   }
   numbers(m, ["Coffee", "Roaster", "Stars", "Brews", "Spread", "Price per kg"], rows.map(r => [r.c.name, r.c.roaster || null, r1(r.v).toFixed(1), r.n, r.n >= 2 ? r1(r.sd).toFixed(1) : null, r.kg != null ? "\u20AC" + r.kg.toFixed(2) : null]));
@@ -498,33 +586,46 @@ function buyAgain() {
 // Your taste in short: what kind of coffee, how your best cups taste, and what costs you the most stars
 function tasteSummary() {
   const list = filtered(false).filter(b => b.rating != null && !b.dialin);
-  const m = card("Your taste in short", null);
-  if (list.length < 3) { needMore(m, "Rate a few more brews (" + (3 - list.length) + " to go) and your taste is summed up here."); return; }
-  const lines = [];
-  const { who } = likeGroups(list.filter(b => b.rating));
-  if (who) lines.push("You’re a " + who + " coffee person.");
+  const m = card("Your taste", "From your rated brews (dial-ins left out). The badges are the kinds of coffee that get your best stars. The scales show where your best cups sit: the middle is \u201Cjust right\u201D on the sliders. Below: what costs you the most stars.");
+  if (list.length < 3) { needMore(m, "Rate a few more brews (" + (3 - list.length) + " to go) and your taste shows up here."); return; }
+  const hero = el("div", "hero"); m.appendChild(hero);
+  // 1. your kind of coffee: one badge per clear favourite
+  const { res } = likeGroups(list.filter(b => b.rating)), all = avg(list.map(b => b.rating));
+  const BI = { Process: "process", Roast: "roast", Origin: "origin", Altitude: "altitude" }, badges = el("div", "badges");
+  res.filter(g => BI[g.title] && g.clear && g.rows[0].label !== "Several countries").forEach(g => {
+    const w = g.rows[0], b = el("div", "badge"); b.appendChild(ic(BI[g.title]));
+    const tx = el("div"); tx.append(el("b", "", w.label), el("small", "", g.title + (w.value - all >= 0.05 ? " \u00B7 +" + r1(w.value - all).toFixed(1) + "\u2605" : "")));
+    b.appendChild(tx); badges.appendChild(b);
+  });
+  if (badges.children.length) { hero.appendChild(el("p", "hk", "Your kind of coffee")); hero.appendChild(badges); }
+  // 2. where your best cups sit, on each taste
   const sc = list.filter(b => b.rating && CORE.some(a => b.scores[a] != null));
   if (sc.length >= 3) {
-    const { lean, right } = favProfile(sc);
-    if (lean.length) lines.push("Compared with the middle of the sliders, your best cups are " + andList(lean) + (right.length ? ", with " + andList(right) + " just right." : "."));
-    else if (right.length) lines.push("Your best cups sit right in the middle: " + andList(right) + " just right.");
+    const { fav, pf } = favProfile(sc), mt = el("div", "meters");
+    const WORDS = { sour: ["less sour", "more sour"], sweet: ["less sweet", "sweeter"], bitter: ["less bitter", "more bitter"] };
+    pf.forEach(x => { if (x.v !== null && WORDS[x.a]) mt.appendChild(meter(x.a, x.v, FCOL[x.a] || "var(--one)", WORDS[x.a])); });
+    const bo = fav.map(b => b.scores.body).filter(v => v != null).map(v => shown("body", v));
+    if (bo.length >= 2) mt.appendChild(meter("body", avg(bo), "var(--one)", ["lighter", "fuller"]));
+    if (mt.children.length) { hero.appendChild(el("p", "hk", "Your best cups taste")); hero.appendChild(mt); }
   }
-  // what costs you the most stars: cups that were clearly off on one taste, against cups where it was about right
-  const OFF = { sour: ["too much sourness", "too little acidity (flat)"], sweet: ["too much sweetness", "too little sweetness"], bitter: ["too much bitterness", "too little bitterness"], body: ["a heavy cup", "a watery cup"] };
+  // 3. what costs you the most stars: cups clearly off on one taste, against cups where it was about right
+  const OFF = { sour: ["too sour", "too flat"], sweet: ["too sweet", "not sweet enough"], bitter: ["too bitter", "too little bitterness"], body: ["too heavy", "too watery"] };
   const cost = [];
   Object.keys(OFF).forEach(a => {
     const xs = list.filter(b => b.scores[a] != null).map(b => [shown(a, b.scores[a]), b.rating]);
-    const ok = xs.filter(x => Math.abs(x[0]) <= 1).map(x => x[1]);
-    if (ok.length < 3) return;
-    [[x => x >= 2, 0], [x => x <= -2, 1]].forEach(([test, i]) => { const off = xs.filter(x => test(x[0])).map(x => x[1]); if (off.length >= 3) cost.push({ w: OFF[a][i], d: avg(ok) - avg(off), n: off.length }); });
+    const ok = xs.filter(x => Math.abs(x[0]) <= 1).map(x => x[1]); if (ok.length < 3) return;
+    [[x => x >= 2, 0], [x => x <= -2, 1]].forEach(([test, i]) => { const off = xs.filter(x => test(x[0])).map(x => x[1]); if (off.length >= 3) cost.push({ w: OFF[a][i], d: avg(ok) - avg(off) }); });
   });
   cost.sort((a, b) => b.d - a.d);
-  if (cost.length && cost[0].d >= 0.4) lines.push("What costs you the most stars: " + cost[0].w + " (" + r1(cost[0].d).toFixed(1) + "★ less on average" + (cost[1] && cost[1].d >= 0.4 ? "), then " + cost[1].w + " (" + r1(cost[1].d).toFixed(1) + "★)." : ")."));
-  if (!lines.length) { needMore(m, "No clear picture yet: rate and score the taste of a few more brews."); return; }
-  const hl = el("div", "typecard"); hl.appendChild(el("p", "tt", lines[0]));
-  lines.slice(1).forEach(l => hl.appendChild(el("p", "tl", l)));
-  hl.appendChild(el("p", "ts", "From " + list.length + " rated brews, " + fmtS(avg(list.map(b => b.rating))) + " on average."));
-  m.appendChild(hl);
+  const hurt = cost.filter(c => c.d >= 0.4).slice(0, 2);
+  if (hurt.length) {
+    hero.appendChild(el("p", "hk", "Costs you the most stars"));
+    const row = el("div", "costs");
+    hurt.forEach(c => { const ch = el("div", "cost"); ch.append(ic("warn"), el("b", "", c.w), el("span", "", "\u2212" + r1(c.d).toFixed(1) + "\u2605")); row.appendChild(ch); });
+    hero.appendChild(row);
+  }
+  if (!hero.children.length) { hero.remove(); needMore(m, "No clear picture yet: rate and score the taste of a few more brews."); return; }
+  m.appendChild(el("p", "foot", list.length + " rated brews \u00B7 " + fmtS(all) + " on average"));
 }
 function brewingChart(list, c) {
   // the brewing chart: extraction (sour to bitter) against body (watery to full), each with its own fix
@@ -643,36 +744,22 @@ function likeGroups(list) {
 }
 function whatYouLike() {
   const list = filtered(false).filter(b => b.rating && !b.dialin);
-  const m = card("What you like", "Which kinds of coffee get your best stars (dial-ins left out): good to know when you buy the next bag.");
+  const m = card("What you like", "Your stars for each kind of coffee (dial-ins left out), best first, with how many brews in brackets: good to know when you buy the next bag.");
   if (!list.length) { empty(m, "Rate a few brews (outside dial-ins) to see what you like."); }
   else {
     const all = avg(list.map(b => b.rating)), { res } = likeGroups(list);
-    // 2. one tile per kind of coffee with more than one kind: the winner, how far ahead of your average, and the runner-up
-    const tiles = el("div", "wtiles");
-    res.filter(g => g.rows.length > 1 && g.title !== "Region").forEach(g => {
-      const w = g.rows[0], d = w.value - all, t = el("div", "wt" + (g.clear ? "" : " close"));
-      const NS = "http://www.w3.org/2000/svg", sv = document.createElementNS(NS, "svg"), pa = document.createElementNS(NS, "path");
-      sv.setAttribute("viewBox", "0 0 24 24"); sv.setAttribute("class", "wi"); sv.setAttribute("aria-hidden", "true"); pa.setAttribute("d", g.icon); sv.appendChild(pa);
-      const hd = el("div", "wh"); hd.append(sv, el("span", "", g.title)); t.appendChild(hd);
-      t.appendChild(el("b", "", w.label));
-      const wv = el("p", "wv"); wv.appendChild(el("strong", "", r1(w.value).toFixed(1) + "\u2605"));
-      if (Math.abs(d) >= 0.05) wv.appendChild(el("span", d > 0 ? "up" : "", " " + (d > 0 ? "+" : "\u2212") + r1(Math.abs(d)).toFixed(1) + "\u2605 vs your average"));
-      t.appendChild(wv);
-      t.appendChild(el("p", "wr", g.clear ? "ahead of " + g.rows[1].label + " (" + r1(g.rows[1].value).toFixed(1) + "\u2605)" : "close race with " + g.rows[1].label + " (" + r1(g.rows[1].value).toFixed(1) + "\u2605)"));
-      tiles.appendChild(t);
-    });
-    if (tiles.children.length) m.appendChild(tiles);
-    // everything else, folded away
-    const more = el("details", "num"); more.appendChild(el("summary", "", "Show all kinds"));
+    // one small block per kind of coffee: your stars for each, best first (the winners are the badges under Your taste)
+    const BI = { Process: "process", Roast: "roast", Origin: "origin", Altitude: "altitude", Region: "origin" };
     const body = el("div", "likes");
-    res.forEach(g => { const d = el("div", "lg"); d.appendChild(el("h3", "", g.title)); d.appendChild(rankList(g.rows.map(r => ({ label: r.label, sub: "(" + r.n + ")", value: r.value, max: 5, text: r1(r.value).toFixed(1) + "\u2605" })))); body.appendChild(d); });
-    more.appendChild(body); m.appendChild(more);
+    res.forEach(g => { const d = el("div", "lg"), h = el("h3", "lgh"); h.append(ic(BI[g.title] || "star"), document.createTextNode(g.title)); d.appendChild(h);
+      d.appendChild(rankList(g.rows.slice(0, 4).map(r => ({ label: r.label, sub: "(" + r.n + ")", value: r.value, max: 5, text: r1(r.value).toFixed(1) + "\u2605" })))); body.appendChild(d); });
+    m.appendChild(body);
     // 4. something to try next: a kind you liked but had only once, or a big coffee country you have not had yet
     const tries = [];
     res.filter(g => g.title !== "Region" && g.title !== "Altitude").forEach(g => g.rows.filter(r => r.n === 1 && r.value >= all).forEach(r => tries.push("You\u2019ve had " + (g.title === "Origin" ? "coffee from " + r.label : g.word(r.label)) + " only once so far (" + r1(r.value).toFixed(1) + "\u2605). Worth another try?")));
     const had = new Set((res.find(g => g.title === "Origin") || { rows: [] }).rows.map(r => r.label));
     ["Ethiopia", "Kenya", "Colombia", "Guatemala", "Rwanda", "Costa Rica", "Panama", "Brazil", "Burundi", "Honduras"].filter(c => !had.has(c)).slice(0, 3).forEach(c => tries.push("Nothing from " + c + " yet. Maybe the next bag?"));
-    if (tries.length) { const tn = el("p", "trynext"); tn.append(el("b", "", "Try next: "), document.createTextNode(tries[Math.floor(Date.now() / 864e5) % tries.length])); m.appendChild(tn); }
+    if (tries.length) { const tn = el("p", "trynext"); tn.append(ic("star"), el("b", "", "Try next: "), document.createTextNode(tries[Math.floor(Date.now() / 864e5) % tries.length])); m.appendChild(tn); }
   }
 
 }
@@ -697,7 +784,7 @@ function favProfile(sc) {
 function sweetSpot() {
   const sc = filtered(false).filter(b => b.rating && !b.dialin && (CORE.some(a => b.scores[a] != null) || b.balance != null));
   const who = state.rater && state.rater !== GUEST ? state.names[state.rater] : null;
-  const f = card("Your sweet spot", "How the brews you liked most taste, next to the rest: sour, sweet and bitter from \u22125 to +5 (0 is just right)." + (who ? " Only " + who + "'s ratings." : $("f-rater").hidden ? "" : " Pick someone under \u201CRated by\u201D to see one person's taste."));
+  const f = card("Best cups vs the rest", "How the brews you liked most taste (filled dots), next to the others (light): sour, sweet and bitter from \u22125 to +5, 0 is just right. Below: the tasting notes that go with more stars, compared within the same coffees." + (who ? " Only " + who + "'s ratings." : $("f-rater").hidden ? "" : " Pick someone under \u201CRated by\u201D to see one person's taste."));
   if (sc.length < 3) { empty(f, "Rate and score the taste of at least three brews to find your sweet spot."); return; }
   const { fav, favLabel, rest, pf, pr, W, lean, right } = favProfile(sc);
   // compared with the middle of the sliders (0, "just right"), then with your other brews
@@ -705,7 +792,8 @@ function sweetSpot() {
     "Compared with the middle of the sliders (just right), your favourites are " + andList(lean) + (right.length ? "; their " + andList(right) + (right.length > 1 ? " are" : " is") + " just right." : ".");
   const diff = pf.map((x, i) => ({ a: x.a, f: x.v, r: pr[i].v })).filter(x => x.f !== null && x.r !== null).sort((x, y) => Math.abs(y.f - y.r) - Math.abs(x.f - x.r))[0];
   if (rest.length >= 2 && diff && Math.abs(diff.f - diff.r) >= 0.75) txt += " Compared with your other brews, they stand out most for being " + (diff.f > diff.r ? W[diff.a][0] : W[diff.a][1]) + ".";
-  if (txt) f.appendChild(el("p", "take", txt));
+  const big = rest.length >= 2 && diff && Math.abs(diff.f - diff.r) >= 0.75;
+  if (txt && big) f.appendChild(el("p", "take", "What sets your best cups apart: " + (diff.f > diff.r ? W[diff.a][0] : W[diff.a][1]) + "."));
   // one chart: per taste, your favourites (filled) and the others (light), on the same line
   const leg = el("div", "legend"); legendItem(leg, "var(--one)", "favourites: " + fav.length + (fav.length === 1 ? " brew, " : " brews, ") + favLabel, "dot");
   if (rest.length) legendItem(leg, "var(--mut)", "the others: " + rest.length, "dot");
@@ -714,7 +802,7 @@ function sweetSpot() {
     rows: pf.map((x, i) => ({ label: x.a, a: rest.length ? pr[i].v : null, b: x.v, tip: () => ({ title: x.a, rows: [{ value: x.v === null ? "no score" : (x.v > 0 ? "+" : "") + r1(x.v), label: "favourites, " + x.n + (x.n === 1 ? " brew" : " brews"), color: "var(--one)", kind: "dot" }].concat(rest.length ? [{ value: pr[i].v === null ? "no score" : (pr[i].v > 0 ? "+" : "") + r1(pr[i].v), label: "the others, " + pr[i].n, color: "var(--mut)", kind: "dot" }] : []) }) })) });
   // Balance and tasting notes: short lines underneath
   const bf = avgBal(fav), br = avgBal(rest);
-  if (bf) f.appendChild(el("p", "small", "Balance: favourites " + balText(bf.v) + " (" + SCALE.balanceName(bf.v).toLowerCase() + ")" + (br ? ", the others " + balText(br.v) : "") + "."));
+  if (bf) f.appendChild(el("p", "small", "Balance: best cups " + balText(bf.v) + (br ? ", the others " + balText(br.v) : "") + "."));
   const notes = {}, cnt = (arr, k) => arr.forEach(b => Object.keys(b.scores).forEach(a => { if (!SCALE.isCore(a) && a !== "body" && SCALE.levelOf(b.scores[a]) >= 1) { notes[a] = notes[a] || { f: 0, r: 0 }; notes[a][k]++; } }));
   cnt(fav, "f"); cnt(rest, "r");
   const top = Object.keys(notes).filter(a => notes[a].f).sort((a, b) => notes[b].f - notes[a].f || notes[a].r - notes[b].r).slice(0, 4);
@@ -726,8 +814,9 @@ function sweetSpot() {
     if (yes.length >= 3) eff[a] = { d: no.length >= 2 ? avg(yes) - avg(no) : avg(yes) - avg(all.map(b => b.rating)), n: yes.length };
   });
   const good = Object.keys(eff).filter(a => eff[a].d >= 0.3).sort((a, b) => eff[b].d - eff[a].d).slice(0, 3), flat = Object.keys(eff).filter(a => Math.abs(eff[a].d) < 0.2).sort((a, b) => eff[b].n - eff[a].n).slice(0, 2);
-  if (good.length) f.appendChild(el("p", "small", "Notes that go with more stars: " + good.map(a => a + " (+" + r1(eff[a].d).toFixed(1) + "\u2605, " + eff[a].n + " brews)").join(", ") + "." + (flat.length ? " Often there, but nothing special: " + andList(flat) + "." : "")));
-  else if (top.length) f.appendChild(el("p", "small", "Often in your favourites: " + top.map(a => a + " (" + notes[a].f + " of " + fav.length + ")").join(", ") + ". A few more brews show whether they make the difference."));
+  const chips = (title, items, cls) => { if (!items.length) return; f.appendChild(el("p", "hk", title)); const row = el("div", "nchips"); items.forEach(([a, val]) => { const c = el("span", "nchip" + (cls ? " " + cls : "")); c.append(ic("leaf"), document.createTextNode(a)); if (val) c.appendChild(el("b", "", val)); row.appendChild(c); }); f.appendChild(row); };
+  if (good.length) { chips("Notes that go with more stars", good.map(a => [a, "+" + r1(eff[a].d).toFixed(1) + "\u2605"])); chips("Often there, nothing special", flat.map(a => [a, ""]), "flat"); }
+  else if (top.length) chips("Often in your best cups", top.map(a => [a, notes[a].f + "\u00D7"]));
   const bv = l => { const b = avgBal(l); return b ? balText(b.v) : null; };
   numbers(f, ["", ...CORE, "Balance", "Brews"], [["Favourites", ...pf.map(x => x.v === null ? null : r1(x.v)), bv(fav), fav.length]].concat(rest.length ? [["The others", ...pr.map(x => x.v === null ? null : r1(x.v)), bv(rest), rest.length]] : []));
 }
@@ -1039,7 +1128,8 @@ function insFactors(list) {
   const big = res.filter(r => r.v >= 0.2).slice(0, 2), small = res.filter(r => r.v < 0.15);
   m.appendChild(el("p", "take", (big.length ? "What matters most for your stars: " + andList(big.map(r => r.label.toLowerCase())) + "." : "Nothing makes a big difference yet: your settings are already close, or there are only a few brews.") +
     (small.length ? " " + small.slice(0, 2).map(r => r.label).join(" and ") + (small.length === 1 ? " barely matters." : " barely matter.") : "")));
-  m.appendChild(rankList(res.map(r => ({ label: r.label, sub: r.sub, value: r.v, max: Math.max(1, res[0].v), text: r1(r.v).toFixed(1) + "\u2605" }))));
+  const FI = { "Grind": "grind", "Grind (fine to coarse)": "grind", "Ratio": "ratio", "Dose": "dose", "Water temperature": "temp", "Brew time": "timer", "Days after roast": "roastday", "Time of day": "clock", "Device": "device", "Who brewed": "person" };
+  m.appendChild(rankList(res.map(r => ({ icon: ic(FI[r.label] || "star", "di"), label: r.label, sub: r.sub, value: r.v, max: Math.max(1, res[0].v), text: r1(r.v).toFixed(1) + "\u2605" }))));
   if (thin.length) m.appendChild(el("p", "what", "Not enough yet for " + andList(thin.map(t => t[0].toLowerCase())) + ": that needs a few brews of one coffee where it changes."));
   numbers(m, ["What", "Change in stars", "Brews compared", "What it says"], res.map(r => [r.label, r1(r.v).toFixed(2), r.n, r.sub]));
 }
