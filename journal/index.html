@@ -2054,10 +2054,18 @@ function defaultGrinder() {   // your default from Settings, else the last one u
   const words = []; GR.forEach(g => (g.feel || []).forEach(f => { if (!words.includes(f[1])) words.push(f[1]); }));
   words.forEach(w => { const x = el("option"); x.value = w; $("feel-list").appendChild(x); });
 })();
+// the grind words of a grinder: yours from Settings first (kept on the phone too), else the app's table (data/defaults.js)
+function feelTable(name) {
+  if (!name) return null;
+  let own = prefsNow().grinder_feel;
+  if (!own) { try { own = JSON.parse(store.get("alto.grinderfeel") || "{}"); } catch (e) { own = {}; } }
+  if (own && Array.isArray(own[name]) && own[name].length) return own[name];
+  const g = GR.find(x => x.name.toLowerCase() === String(name).toLowerCase()); return g && g.feel ? g.feel : null;
+}
 function feelFor() {
-  const g = GR.find(x => x.name === $("b-grinder").value), v = numOf("b-grind");
-  if (!g || !g.feel || v === null) return "";
-  const f = g.feel.find(x => v <= x[0]);
+  const t = feelTable($("b-grinder").value), v = numOf("b-grind");
+  if (!t || v === null) return "";
+  const f = t.find(x => v <= x[0]);
   return f ? f[1] : "";
 }
 function feelAuto() { if (!touched.has("b-feel")) $("b-feel").value = feelFor(); }
@@ -3822,7 +3830,9 @@ async function loadNames() {
   if (!prefsApplied) {
     prefsApplied = true; const fm = myPrefs().formmode; if (fm === "simple" || fm === "all") setFormMode(fm);
     const own = myPrefs().devices; if (own && own.length) store.set("alto.mydevs", JSON.stringify(own)); else store.del("alto.mydevs");   // the devices you own, for next time
-    const grs = myPrefs().grinders; if (grs && grs.length) store.set("alto.mygrinders", JSON.stringify(grs)); else store.del("alto.mygrinders");   // and your grinders
+    const grs = myPrefs().grinders; if (grs && grs.length) store.set("alto.mygrinders", JSON.stringify(grs)); else store.del("alto.mygrinders");
+    const gf = myPrefs().grinder_feel; if (gf && Object.keys(gf).length) store.set("alto.grinderfeel", JSON.stringify(gf)); else store.del("alto.grinderfeel");   // your grind words
+    const cd = myPrefs().custom_devices; if (Array.isArray(cd) && cd.length) { const m = {}; cd.forEach(d => { if (d && d.n) m[d.n] = d.t; }); store.set("alto.customdevs", JSON.stringify(m)); if (window.DEVICES && DEVICES.register) DEVICES.register(m); } else store.del("alto.customdevs");   // your own devices   // and your grinders
     if (!editingBrew) { const keep = $("b-grinder").value; fillGrinders(); if (!touched.has("b-grinder")) $("b-grinder").value = defaultGrinder(); else if (keep) setSel("b-grinder", keep); }
     if (!$("pickview").hidden) renderPick();
   }

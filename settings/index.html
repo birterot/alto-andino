@@ -43,6 +43,13 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .gradd{display:flex;gap:8px;align-items:center;margin-top:10px;max-width:420px}
 .gradd input{margin:0;flex:1}
 .gradd .lnk{min-height:44px}
+.grs .grw{border:0;background:none;color:inherit;font:inherit;font-size:12.5px;opacity:.85;padding:0 6px;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.feelbox{margin:12px 0 4px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);max-width:460px}
+.feelbox .lab{margin-top:0}
+.feelgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:8px}
+.feelgrid label{margin:0;font-size:13.5px}
+.feelgrid input{margin-top:4px}
+.feelacts{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
 .devadd{flex-wrap:wrap}.devadd input{flex:1 1 100%}.devadd select{margin:0;flex:1 1 auto}
 .devs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .devs button{min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
@@ -141,6 +148,7 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
     <div class="gradd"><input id="s-gr-new" list="grnames" placeholder="Add a grinder, e.g. Comandante C40" autocomplete="off" aria-label="Add a grinder"><button type="button" class="lnk" id="s-gr-add">Add</button></div>
     <datalist id="grnames"></datalist>
     <p class="hint" id="grhint">The grinders you have: Log a brew offers these, with your default chosen. Nothing added: the app's own list.</p>
+    <div class="feelbox" id="s-feelbox" hidden></div>
     <label>Default grinder<select id="s-grinder"></select></label>
     <label id="fmlab">Fields in the brew form</label>
     <div class="seg" id="s-fm" role="group" aria-labelledby="fmlab">
@@ -272,7 +280,32 @@ function tabFromHash() {   // #brew, or a part of a page: #cafset (from Home), #
   showTab(sec ? sec.dataset.tab : tab); if (n) setTimeout(() => n.scrollIntoView({ block: "start" }), 60);
 }
 window.addEventListener("hashchange", tabFromHash);
-let myGrinders = [], myDevs = [];   // myDevs: your own devices, [{ n: name, t: kind }]
+let myGrinders = [], myDevs = [], myFeel = {}, feelEdit = null;   // myFeel: your grind words per grinder, { name: [[up to, word], ...] }
+// the grind words of a grinder: yours, else the app's table (data/defaults.js), else none
+const FEELS = ["extra fine", "fine", "medium-fine", "medium", "medium-coarse", "coarse"];
+const appFeel = n => { const g = ((window.DEFAULTS && DEFAULTS.GRINDERS) || []).find(x => x.name.toLowerCase() === String(n).toLowerCase()); return g && g.feel ? g.feel : null; };
+const feelOf = n => (myFeel[n] && myFeel[n].length ? myFeel[n] : appFeel(n));
+function drawFeel() {
+  const box = $("s-feelbox"); box.textContent = ""; box.hidden = !feelEdit; if (!feelEdit) return;
+  const n = feelEdit, cur = feelOf(n) || [], up = w => { const x = cur.find(r => r[1] === w); return x && x[0] < 9999 ? x[0] : ""; };
+  box.appendChild(el("p", "lab", "Grind words for the " + n));
+  box.appendChild(el("p", "hint", "Up to which setting each word goes. Log a brew then fills in the word from your setting, and Trends compares your grinders by it. Leave a word empty to skip it; coarser than the last number gets the next word." + (appFeel(n) && !(myFeel[n] && myFeel[n].length) ? " Filled in from the app\u2019s table for this grinder: change what does not fit yours." : "")));
+  const grid = el("div", "feelgrid");
+  FEELS.forEach(w => { const l = el("label", "", w.charAt(0).toUpperCase() + w.slice(1) + " up to"); const i = el("input"); i.type = "number"; i.inputMode = "decimal"; i.step = "any"; i.min = "0"; i.dataset.w = w; i.value = up(w); l.appendChild(i); grid.appendChild(l); });
+  box.appendChild(grid);
+  const acts = el("div", "feelacts");
+  const ok = el("button", "lnk", "Done"); ok.type = "button";
+  ok.onclick = () => {
+    const rows = [...grid.querySelectorAll("input")].map(i => [i.value === "" ? null : Number(String(i.value).replace(",", ".")), i.dataset.w]).filter(r => r[0] !== null && isFinite(r[0])).sort((a, b) => a[0] - b[0]);
+    const ALL = FEELS.concat(["extra coarse"]);   // coarser than the last word: the next word along
+    if (rows.length) { rows.push([9999, ALL[ALL.indexOf(rows[rows.length - 1][1]) + 1] || "extra coarse"]); myFeel[n] = rows; } else delete myFeel[n];
+    feelEdit = null; drawGrinders(); drawFeel(); $("msg").textContent = "Grind words for the " + n + " set. Remember to save.";
+  };
+  acts.appendChild(ok);
+  if (appFeel(n)) { const r = el("button", "lnk", "Use the app\u2019s table"); r.type = "button"; r.onclick = () => { delete myFeel[n]; drawGrinders(); drawFeel(); }; acts.appendChild(r); }
+  const no = el("button", "lnk", "Clear"); no.type = "button"; no.onclick = () => { myFeel[n] = []; grid.querySelectorAll("input").forEach(i => { i.value = ""; }); }; acts.appendChild(no);
+  box.appendChild(acts);
+}   // myDevs: your own devices, [{ n: name, t: kind }]
 const KIND = { filter: "pour-over", immersion: "immersion", espresso: "espresso", moka: "moka pot" };
 function drawCustomDevs() {
   const box = $("s-cdevs"); box.textContent = "";
@@ -294,9 +327,11 @@ function drawGrinders() {
   const box = $("s-grs"), g = $("s-grinder"), keep = g.value; box.textContent = "";
   myGrinders.forEach((n, i) => {
     const r = el("div", "gr"); r.setAttribute("role", "listitem"); r.appendChild(el("span", "", n));
+    const w = el("button", "grw", feelOf(n) ? "words \u2713" : "words"); w.type = "button"; w.setAttribute("aria-label", "Grind words for " + n);
+    w.onclick = () => { feelEdit = feelEdit === n ? null : n; drawFeel(); };
     const x = el("button", "grx", "\u00D7"); x.type = "button"; x.setAttribute("aria-label", "Remove " + n);
-    x.onclick = () => { myGrinders.splice(i, 1); drawGrinders(); };
-    r.appendChild(x); box.appendChild(r);
+    x.onclick = () => { myGrinders.splice(i, 1); delete myFeel[n]; if (feelEdit === n) feelEdit = null; drawGrinders(); drawFeel(); };
+    r.append(w, x); box.appendChild(r);
   });
   const base = myGrinders.length ? myGrinders : ((window.DEFAULTS && DEFAULTS.GRINDERS) || []).map(x => x.name);
   g.textContent = ""; opt(g, "", "The last one used"); base.forEach(n => opt(g, n, n));
@@ -624,6 +659,7 @@ async function load() {
   $("mebox").hidden = $("aboutlab").hidden = $("proflink").hidden = !hasProfile;
   if (hasProfile) { $("s-about").value = (data && data.about) || ""; $("s-prof").href = "../friends/index.html#p=" + me.id; photoPath = (data && data.photo_path) || null; drawFace(); }
   const pick = (id, v) => { const s = $(id); s.value = v || ""; if (s.value !== (v || "")) s.value = ""; };
+  myFeel = p.grinder_feel && typeof p.grinder_feel === "object" ? JSON.parse(JSON.stringify(p.grinder_feel)) : {};
   myGrinders = Array.isArray(p.grinders) ? p.grinders.slice() : []; drawGrinders();
   myDevs = Array.isArray(p.custom_devices) ? p.custom_devices.filter(d => d && d.n && KIND[d.t]).map(d => ({ n: d.n, t: d.t })) : []; drawCustomDevs();
   pick("s-device", p.device); pick("s-grinder", p.grinder); pick("s-drink-esp", p.drink_esp); pick("s-drink-filter", p.drink_filter); pick("s-milk", p.milk);
@@ -651,6 +687,9 @@ $("sf").onsubmit = async e => {
   if (myDevs.length) prefs.custom_devices = myDevs.slice(); else delete prefs.custom_devices;
   try { const m = {}; myDevs.forEach(d => { m[d.n] = d.t; }); if (myDevs.length) localStorage.setItem("alto.customdevs", JSON.stringify(m)); else localStorage.removeItem("alto.customdevs"); } catch (e) { /* only a shortcut for Log a brew */ }
   if (myGrinders.length) prefs.grinders = myGrinders.slice(); else delete prefs.grinders;
+  const feel = {}; Object.keys(myFeel).forEach(n => { if (myGrinders.includes(n) && myFeel[n] && myFeel[n].length) feel[n] = myFeel[n]; });
+  if (Object.keys(feel).length) prefs.grinder_feel = feel; else delete prefs.grinder_feel;
+  try { if (Object.keys(feel).length) localStorage.setItem("alto.grinderfeel", JSON.stringify(feel)); else localStorage.removeItem("alto.grinderfeel"); } catch (e) { /* only a shortcut for Log a brew */ }
   try { if (myGrinders.length) localStorage.setItem("alto.mygrinders", JSON.stringify(myGrinders)); else localStorage.removeItem("alto.mygrinders"); } catch (e) { /* only a shortcut for Log a brew */ }
   try { if (own.length) localStorage.setItem("alto.mydevs", JSON.stringify(own)); else localStorage.removeItem("alto.mydevs"); } catch (e) { /* only a shortcut for Log a brew */ }
   if (fm) prefs.formmode = fm; else delete prefs.formmode;

@@ -10,8 +10,11 @@
      preheat  preheat setting of a manual espresso machine like the Flair 58 (low / medium / high, see PREHEAT)
      device   the name used in the journal's device list
    The absorb and filter numbers are rules of thumb. Weigh your own spent grounds and adjust them.
-   GRINDERS: your grinders. "feel" lists [up to this setting, feel word]; the journal suggests the word from the number you type.
-     K6 numbers are clicks counted from zero (manufacturer's table). Add a grinder by copying a block; leave feel out for no suggestion.
+   GRINDERS: grinders the app knows. "feel" lists [up to this setting, feel word]; the journal suggests the word from the number you type,
+     and Trends compares grinders by that word. Rough guides: burrs and calibration differ, so everyone can set their own in Settings.
+     K6 numbers are clicks counted from zero (manufacturer's table). The others are worked out from the ranges per brew method on
+     honestcoffeeguide.com (October 2026): fine is the espresso range, medium-fine and medium the V60 range, coarse the French press one.
+     Add a grinder by copying a block; leave feel out for no suggestion.
    PREHEAT: the Flair 58 preheat settings: id, label, about how hot in Celsius.
    FLAIR_BY_ROAST / SEMI_BY_ROAST: which manual / semi-automatic espresso recipe (and so which preheat setting or temperature) fits each roast level.
    BREW_TYPES: the kinds of brewing a coffee can be suitable for, with the devices each one means.
@@ -35,12 +38,18 @@ window.DEFAULTS = {
     { id: "moka",        name: "Moka pot",                device: "Moka pot", gpl: 200, absorb: 2, filter: 0, water: 300 }
   ],
   GRINDERS: [
-    { id: "k6", name: "Kingrinder K6", unit: "clicks", feel: [[24, "extra fine"], [59, "fine"], [89, "medium-fine"], [129, "medium"], [9999, "coarse"]] }
+    { id: "k6", name: "Kingrinder K6", unit: "clicks", feel: [[24, "extra fine"], [59, "fine"], [89, "medium-fine"], [129, "medium"], [9999, "coarse"]] },
+    { id: "c40", name: "Comandante C40", unit: "clicks", feel: [[6, "extra fine"], [13, "fine"], [20, "medium-fine"], [25, "medium"], [29, "medium-coarse"], [36, "coarse"], [9999, "extra coarse"]] },
+    { id: "c2", name: "Timemore C2", unit: "clicks", feel: [[5, "extra fine"], [12, "fine"], [17, "medium-fine"], [22, "medium"], [25, "medium-coarse"], [29, "coarse"], [9999, "extra coarse"]] },
+    { id: "c3", name: "Timemore C3", unit: "clicks", feel: [[4, "extra fine"], [10, "fine"], [14, "medium-fine"], [18, "medium"], [20, "medium-coarse"], [23, "coarse"], [9999, "extra coarse"]] },
+    { id: "s064s", name: "Timemore Sculptor 064S", unit: "dial", feel: [[2.9, "fine"], [6, "medium-fine"], [9.3, "medium"], [11, "medium-coarse"], [14, "coarse"], [9999, "extra coarse"]] },   // the first version; the Gen 2 may count differently
+    { id: "ode2", name: "Fellow Ode Gen 2", unit: "dial", feel: [[2, "fine"], [3.7, "medium-fine"], [5.2, "medium"], [6.5, "medium-coarse"], [9, "coarse"], [9999, "extra coarse"]] },
+    { id: "encore", name: "Baratza Encore", unit: "dial", feel: [[6, "fine"], [12, "medium-fine"], [18, "medium"], [24, "medium-coarse"], [32, "coarse"], [9999, "extra coarse"]] }
   ],
   // well-known grinders, only as suggestions when you add yours in Settings (any name can be typed)
   GRINDER_NAMES: ["1Zpresso J-Max", "1Zpresso JX-Pro", "1Zpresso K-Ultra", "1Zpresso ZP6", "Baratza Encore", "Baratza Encore ESP", "Baratza Sette 270", "Baratza Virtuoso+",
-    "Comandante C40", "DF64", "Eureka Mignon Specialita", "Fellow Ode", "Fellow Opus", "Hario Skerton", "Kingrinder K4", "Kingrinder K6", "Lagom P64", "Mahlkönig X54",
-    "Niche Zero", "Option-O Lagom Mini", "Timemore C2", "Timemore C3", "Timemore Chestnut X", "Wilfa Uniform", "Wilfa Svart"],
+    "Comandante C40", "DF64", "Eureka Mignon Specialita", "Fellow Ode", "Fellow Ode Gen 2", "Fellow Opus", "Hario Skerton", "Kingrinder K4", "Kingrinder K6", "Lagom P64", "Mahlkönig X54",
+    "Niche Zero", "Option-O Lagom Mini", "Timemore C2", "Timemore C3", "Timemore Chestnut X", "Timemore Sculptor 064S", "Timemore Sculptor 064S Gen 2", "Timemore Sculptor 078S", "Wilfa Uniform", "Wilfa Svart"],
   PREHEAT: [["low", "Low", 85], ["medium", "Medium", 90], ["high", "High", 95]],
   FLAIR_BY_ROAST: { "light": "flair-light", "medium-light": "flair-light", "medium": "flair-med", "medium-dark": "flair-dark", "dark": "flair-dark" },
   SEMI_BY_ROAST: { "light": "semi-light", "medium-light": "semi-light", "medium": "semi-med", "medium-dark": "semi-dark", "dark": "semi-dark" },
