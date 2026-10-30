@@ -109,7 +109,7 @@ ul.rank li:has(.medal){grid-template-columns:auto minmax(0,1fr) 64px var(--vw,au
 /* the barista race */
 .card h2 .h2i{width:24px;height:24px;vertical-align:-4px;margin-right:6px;color:var(--one)}
 .lead{display:flex;align-items:center;gap:12px;margin:10px 0 6px;padding:12px 14px;border-radius:14px;background:var(--one-track)}
-.lead .crown{font-size:28px;line-height:1}.lead p{margin:0;font-size:16px;font-weight:600;color:var(--ink);line-height:1.35}
+.lead svg.crown{width:30px;height:30px;color:var(--accent);stroke-width:1.5}.lead p{margin:0;font-size:16px;font-weight:600;color:var(--ink);line-height:1.35}
 .race{display:grid;gap:10px;margin:12px 0 14px}
 .lane{display:grid;grid-template-columns:26px 72px minmax(0,1fr) 54px;align-items:center;gap:8px}
 .lane.unsure{opacity:.55}
@@ -118,7 +118,10 @@ ul.rank li:has(.medal){grid-template-columns:auto minmax(0,1fr) 64px var(--vw,au
 .track{position:relative;height:36px;border-radius:18px;background:repeating-linear-gradient(90deg,var(--one-track) 0 14px,transparent 14px 20px);border:1px solid var(--line)}
 .runner{position:absolute;top:50%;transform:translate(-50%,-50%)}
 .runner .av{width:30px;height:30px;font-size:13px;box-shadow:0 0 0 2px var(--card)}
-.flag{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:16px}
+.track svg.flag{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--mut);stroke-width:1.6}
+.lane svg.lcup{display:block;width:20px;height:20px;margin:0 auto;color:var(--accent)}
+.duel svg.dli{width:17px;height:17px;vertical-align:-3px;margin-right:6px;color:var(--accent)}
+.ttl svg.tti{width:17px;height:17px;color:var(--accent)}
 .lval{text-align:right;font-variant-numeric:tabular-nums;font-size:14.5px}
 .duel{margin:4px 0 12px;font-size:14px;line-height:1.45;color:var(--ink)}
 .titles{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
@@ -383,6 +386,12 @@ const IC = {
   roastday: "M5 6h14v14H5z M5 10h14 M9 3v5 M15 3v5", clock: "M12 7v5l3 2 M12 21a9 9 0 110-18 9 9 0 010 18z", timer: "M12 9v4l2 2 M9 2h6 M12 21a8 8 0 110-16 8 8 0 010 16z",
   person: "M12 12a4 4 0 100-8 4 4 0 000 8z M4.5 20.5a7.5 7.5 0 0115 0", device: "M4 5h16l-6 9h-4L4 5z M12 14v3 M7 20h10", leaf: "M5 19c0-8 5-14 14-14 0 9-6 14-14 14z M5 19l7-7",
   trophy: "M8 4h8v5a4 4 0 01-8 0z M8 6H5a3 3 0 003 4 M16 6h3a3 3 0 01-3 4 M12 13v4 M8 20h8 M9 17h6v3H9z",
+  crown: "M4 18L3 8l5 4 4-7 4 7 5-4-1 10z M4 21h16",
+  level: "M5 9h14 M5 15h14",
+  flag: "M6 21V4 M6 4h11l-2.5 4.5L17 13H6",
+  swords: "M14.5 17.5L3 6V3h3l11.5 11.5 M13 19l6-6 M16 16l4 4 M19 21l2-2 M9.5 6.5L18 3h3v3l-3.5 8.5 M5 14l4 4 M7 17l-3 3 M3 19l2 2",
+  cup: "M4 9h12v4a5 5 0 01-5 5H9a5 5 0 01-5-5z M16 11h1.5a2 2 0 010 4H16 M8 3.5c0 1.2 1 1.3 1 2.5 M12 3.5c0 1.2 1 1.3 1 2.5 M3 21h14",
+  target: "M12 3a9 9 0 100 18 9 9 0 000-18z M12 7.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9z M12 11.2a.8.8 0 100 1.6.8.8 0 000-1.6z",
   steady: "M3 12h18", bumpy: "M3 15l4-6 4 8 4-8 4 6", star: "M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"
 };
 function ic(name, cls) {
@@ -892,7 +901,7 @@ function baristaRace(list, ppl) {
     // the leader, in one line
     const a = ranked[0], b = ranked[1], two = ranked.length === 2 && !byMed;
     const close = byMed ? r1(a.med) === r1(b.med) : (two ? a.won === b.won : Math.round(a.rate * 100) === Math.round(b.rate * 100));
-    const ban = el("div", "lead"); ban.appendChild(el("span", "crown", close ? "\u{1F91D}" : "\u{1F451}"));
+    const ban = el("div", "lead"); ban.appendChild(ic(close ? "level" : "crown", "crown"));
     ban.appendChild(el("p", "", close ? "Neck and neck: " + andList(ranked.slice(0, 2).map(r => nameOf(r.id))) + (byMed ? " have the same typical cup." : two ? ", " + a.won + " duels won each." : " win as many duels.")
       : nameOf(a.id) + " leads" + (byMed ? " with a typical cup of " + fmtS(a.med) : two ? ", " + a.won + (a.won === 1 ? " duel" : " duels") + " won to " + b.won : " with " + Math.round(a.rate * 100) + "% of duels won") + "."));
     m.appendChild(ban);
@@ -903,8 +912,8 @@ function baristaRace(list, ppl) {
       const lane = el("div", "lane" + (r.duels < 8 && !byMed ? " unsure" : "")), runner = el("span", "runner");
       runner.style.left = (8 + 64 * ((byMed ? r.med : r.rate) - lo) / span) + "%";   // stays clear of the flag
       runner.appendChild(avatar(r.id));
-      lane.append(el("span", "lpos", i === 0 ? "\u{1F3C6}" : String(i + 1)), el("span", "lname", nameOf(r.id)));
-      const track = el("span", "track"); track.append(runner, el("span", "flag", "\u{1F3C1}")); lane.appendChild(track);
+      lane.append(i === 0 ? ic("trophy", "lpos lcup") : el("span", "lpos", String(i + 1)), el("span", "lname", nameOf(r.id)));
+      const track = el("span", "track"); track.append(runner, ic("flag", "flag")); lane.appendChild(track);
       lane.appendChild(el("b", "lval", byMed ? fmtS(r.med) : Math.round(r.rate * 100) + "%"));
       race.appendChild(lane);
     });
@@ -915,7 +924,7 @@ function baristaRace(list, ppl) {
     const last = duels.slice().sort((x, y) => Math.max(y.a.t, y.b.t) - Math.max(x.a.t, x.b.t))[0];
     if (last && !byMed) {
       const c = groupCoffee(grpOf(last.a)), side = d => nameOf(d.who) + " " + fmtS(last.sa[d === last.a ? 0 : 1]);
-      m.appendChild(el("p", "duel", "⚔️ Latest duel: " + (c ? c.name : "a coffee") + ", " + fmtDate(new Date(Math.max(last.a.t, last.b.t))) + ". " + side(last.a) + " vs " + side(last.b)
+      const dl = el("p", "duel"); dl.appendChild(ic("swords", "dli")); m.appendChild(dl); dl.appendChild(document.createTextNode("Latest duel: " + (c ? c.name : "a coffee") + ", " + fmtDate(new Date(Math.max(last.a.t, last.b.t))) + ". " + side(last.a) + " vs " + side(last.b)
         + (last.by ? ", rated by " + andList(last.by.map(nameOf)) : "") + ". " + (last.win ? nameOf(last.win) + " won." : "A draw.")));
     }
   }
@@ -926,15 +935,15 @@ function baristaRace(list, ppl) {
     t.appendChild(el("div", "tv", r.med != null ? fmtS(r.med) : "–"));
     t.appendChild(el("div", "ts", "typical cup"));
     t.appendChild(el("div", "ts", r.brews + (r.brews === 1 ? " brew" : " brews")));
-    if (r.duels) t.appendChild(el("div", "ts", "\u2694\uFE0F " + wl(r)));
+    if (r.duels) t.appendChild(el("div", "ts", "duels " + wl(r)));
     tiles.appendChild(t);
   });
   // little titles, for fun
   const titles = [];
-  const most = rows.slice().sort((a, b) => b.brews - a.brews)[0]; if (most && rows.length > 1 && most.brews > 0) titles.push(["\u{1F4AA}", "Most brews", nameOf(most.id) + " · " + most.brews]);
-  const st = rows.filter(r => r.sd != null).sort((a, b) => a.sd - b.sd)[0]; if (st && rows.filter(r => r.sd != null).length > 1) titles.push(["\u{1F3AF}", "Steadiest hand", nameOf(st.id)]);
-  const top = rated.slice().sort((a, b) => b.rating - a.rating || b.t - a.t)[0]; if (top && top.rating >= 4) titles.push(["⭐", "Best cup", nameOf(top.who) + " · " + fmtS(top.rating)]);
-  if (titles.length) { const tl = el("div", "titles"); titles.forEach(([e, k, v]) => { const d = el("span", "ttl"); d.append(document.createTextNode(e + " " + k + " "), el("b", "", v)); tl.appendChild(d); }); m.appendChild(tl); }
+  const most = rows.slice().sort((a, b) => b.brews - a.brews)[0]; if (most && rows.length > 1 && most.brews > 0) titles.push(["cup", "Most brews", nameOf(most.id) + " · " + most.brews]);
+  const st = rows.filter(r => r.sd != null).sort((a, b) => a.sd - b.sd)[0]; if (st && rows.filter(r => r.sd != null).length > 1) titles.push(["target", "Steadiest hand", nameOf(st.id)]);
+  const top = rated.slice().sort((a, b) => b.rating - a.rating || b.t - a.t)[0]; if (top && top.rating >= 4) titles.push(["star", "Best cup", nameOf(top.who) + " · " + fmtS(top.rating)]);
+  if (titles.length) { const tl = el("div", "titles"); titles.forEach(([e, k, v]) => { const d = el("span", "ttl"); d.append(ic(e, "tti"), document.createTextNode(k + " "), el("b", "", v)); tl.appendChild(d); }); m.appendChild(tl); }
   numbers(m, ["Barista", "Brews", "Rated", "Typical cup", "Duels", "Won", "Lost", "Draws", "Won (share)"], rows.map(r => [nameOf(r.id), r.brews, r.rated, r.med != null ? r1(r.med).toFixed(1) : null, r.duels, r.won, r.lost, r.even, r.rate != null ? Math.round(r.rate * 100) + "%" : null]));
 }
 function viewFreshTab() {

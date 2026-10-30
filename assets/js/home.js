@@ -342,12 +342,12 @@
     num(String(d.made), d.made === 1 ? "brew made" : "brews made");
     if (d.avg != null) num((Math.round(d.avg * 10) / 10).toFixed(1) + "★", "on average");
     c.appendChild(nums);
-    var ul = el("ul", "mlist"), li = function (e, t) { var x = el("li"); x.append(el("span", "me", e), el("span", "", t)); ul.appendChild(x); };
+    var ul = el("ul", "mlist"), li = function (e, t) { var x = el("li"); x.append(lineIco(e, "me"), el("span", "", t)); ul.appendChild(x); };
     var f1 = function (v) { return (Math.round(v * 10) / 10).toFixed(1) + "★"; };
-    if (d.fav) li("\u{1F3C6}", "Favourite: " + d.fav[0] + ", " + f1(d.fav[1]) + " over " + d.fav[2] + " cups");
-    if (d.best) { var bd = new Date(d.best.t); li("⭐", "Best cup: " + d.best.n + ", " + String(d.best.s).replace(/\.0$/, "") + "★ on " + bd.toLocaleDateString("en-GB", { weekday: "long" }) + " " + bd.getDate() + "."); }
-    if (d.dev) li("☕", "Most used: " + d.dev[0] + " (" + d.dev[1] + " of " + d.made + ")");
-    if (d.grams >= 30) li("\u{1FAD8}", "About " + d.grams + " g of beans" + (d.grams >= 200 ? ", " + (Math.round(d.grams / 250 * 10) / 10) + " bags of 250 g" : ""));
+    if (d.fav) li("trophy", "Favourite: " + d.fav[0] + ", " + f1(d.fav[1]) + " over " + d.fav[2] + " cups");
+    if (d.best) { var bd = new Date(d.best.t); li("star", "Best cup: " + d.best.n + ", " + String(d.best.s).replace(/\.0$/, "") + "★ on " + bd.toLocaleDateString("en-GB", { weekday: "long" }) + " " + bd.getDate() + "."); }
+    if (d.dev) li("device", "Most used: " + d.dev[0] + " (" + d.dev[1] + " of " + d.made + ")");
+    if (d.grams >= 30) li("bean", "About " + d.grams + " g of beans" + (d.grams >= 200 ? ", " + (Math.round(d.grams / 250 * 10) / 10) + " bags of 250 g" : ""));
     if (ul.children.length) c.appendChild(ul);
     var row = el("div", "mrow"), go = el("a", "mgo", "See your brews →"); go.href = "journal/index.html#mine"; row.appendChild(go);
     c.appendChild(row);
@@ -404,9 +404,9 @@
     var hd = el("div", "nh"); hd.appendChild(el("span", "nk", "Sleep check")); ask.appendChild(hd);
     ask.appendChild(el("p", "nt", "How did you sleep last night?"));
     var row = el("div", "faces");
-    [[1, "\uD83D\uDE1E", "Badly"], [2, "\uD83D\uDE10", "Okay"], [3, "\uD83D\uDE0A", "Well"]].forEach(function (f) {
+    [[1, "M8 16.5c1.1-1.2 2.4-1.8 4-1.8s2.9.6 4 1.8", "Badly"], [2, "M8.5 15.5h7", "Okay"], [3, "M8 14.5c1.1 1.5 2.4 2.2 4 2.2s2.9-.7 4-2.2", "Well"]].forEach(function (f) {
       var b = el("button", "face"); b.type = "button"; b.setAttribute("aria-label", f[2]);
-      b.append(el("span", "fe", f[1]), el("span", "fl", f[2]));
+      b.append(lineIco("M12 3a9 9 0 100 18 9 9 0 000-18z M9 9.5v.5 M15 9.5v.5 " + f[1], "fe"), el("span", "fl", f[2]));
       b.onclick = function () { saveSleep(f[0]); };
       row.appendChild(b);
     });
@@ -539,6 +539,13 @@
   }
 
   // the little bag from the Coffee Shelf, filled as far as there is coffee left
+  // small line icons, in the drawing style of the rest of the app (a name, or a path of its own)
+  var LINE = { trophy: "M8 4h8v5a4 4 0 01-8 0z M8 6H5a3 3 0 003 4 M16 6h3a3 3 0 01-3 4 M12 13v4 M8 20h8 M9 17h6v3H9z", star: "M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z", device: "M4 5h16l-6 9h-4L4 5z M12 14v3 M7 20h10", bean: "M12 3c4 0 6.5 4 6.5 9S16 21 12 21s-6.5-4-6.5-9S8 3 12 3z M12 3.5c-2 2.8-2 5.8 0 8.5s2 5.7 0 8.5" };
+  function lineIco(d, cls) {
+    var NS = "http://www.w3.org/2000/svg", sv = document.createElementNS(NS, "svg"), pa = document.createElementNS(NS, "path");
+    sv.setAttribute("viewBox", "0 0 24 24"); sv.setAttribute("aria-hidden", "true"); if (cls) sv.setAttribute("class", cls);
+    pa.setAttribute("d", LINE[d] || d); sv.appendChild(pa); return sv;
+  }
   function bagIcon(frac) {
     var NS = "http://www.w3.org/2000/svg", mk = function (t, a) { var e = document.createElementNS(NS, t); for (var k in a) e.setAttribute(k, a[k]); return e; };
     var s = mk("svg", { viewBox: "0 0 40 52", width: 30, height: 39, "aria-hidden": "true" });
