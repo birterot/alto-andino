@@ -106,6 +106,22 @@ ul.rank .medal.m1{background:#D4A73A;color:#fff}ul.rank .medal.m2{background:#A9
 ul.rank li:has(.medal){grid-template-columns:auto minmax(0,1fr) 64px var(--vw,auto)}
 .stab{display:inline-flex;align-items:center;gap:3px;margin-left:6px;font-size:12px;vertical-align:middle}
 .stab svg.ti{width:16px;height:16px}.stab.ok{color:var(--f-bitter)}.stab.bump{color:var(--f-sweet)}
+/* the barista race */
+.card h2 .h2i{width:24px;height:24px;vertical-align:-4px;margin-right:6px;color:var(--one)}
+.lead{display:flex;align-items:center;gap:12px;margin:10px 0 6px;padding:12px 14px;border-radius:14px;background:var(--one-track)}
+.lead .crown{font-size:28px;line-height:1}.lead p{margin:0;font-size:16px;font-weight:600;color:var(--ink);line-height:1.35}
+.race{display:grid;gap:10px;margin:12px 0 14px}
+.lane{display:grid;grid-template-columns:26px 72px minmax(0,1fr) 54px;align-items:center;gap:8px}
+.lane.unsure{opacity:.55}
+.lpos{text-align:center;font-weight:700;color:var(--mut);font-size:15px}
+.lname{font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.track{position:relative;height:36px;border-radius:18px;background:repeating-linear-gradient(90deg,var(--one-track) 0 14px,transparent 14px 20px);border:1px solid var(--line)}
+.runner{position:absolute;top:50%;transform:translate(-50%,-50%)}
+.runner .av{width:30px;height:30px;font-size:13px;box-shadow:0 0 0 2px var(--card)}
+.flag{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:16px}
+.lval{text-align:right;font-variant-numeric:tabular-nums;font-size:14.5px}
+.titles{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.ttl{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-size:13.5px}.ttl b{font-weight:600}
 ul.worked{list-style:none;margin:8px 0 4px;padding:0}
 ul.worked li{padding:8px 0;border-bottom:1px solid var(--line);font-size:14.5px;line-height:1.45}
 ul.worked li:last-child{border-bottom:0}
@@ -365,6 +381,7 @@ const IC = {
   temp: "M10 14V5a2 2 0 114 0v9a4 4 0 11-4 0z M12 9v6", dose: "M12 4c3.3 0 5 3.4 5 8s-1.7 8-5 8-5-3.4-5-8 1.7-8 5-8z M12 4c-1.2 2.5-1.2 5.5 0 8s1.2 5.5 0 8",
   roastday: "M5 6h14v14H5z M5 10h14 M9 3v5 M15 3v5", clock: "M12 7v5l3 2 M12 21a9 9 0 110-18 9 9 0 010 18z", timer: "M12 9v4l2 2 M9 2h6 M12 21a8 8 0 110-16 8 8 0 010 16z",
   person: "M12 12a4 4 0 100-8 4 4 0 000 8z M4.5 20.5a7.5 7.5 0 0115 0", device: "M4 5h16l-6 9h-4L4 5z M12 14v3 M7 20h10", leaf: "M5 19c0-8 5-14 14-14 0 9-6 14-14 14z M5 19l7-7",
+  trophy: "M8 4h8v5a4 4 0 01-8 0z M8 6H5a3 3 0 003 4 M16 6h3a3 3 0 01-3 4 M12 13v4 M8 20h8 M9 17h6v3H9z",
   steady: "M3 12h18", bumpy: "M3 15l4-6 4 8 4-8 4 6", star: "M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"
 };
 function ic(name, cls) {
@@ -822,6 +839,71 @@ function sweetSpot() {
 }
 
 // ---------- 6 + 7 + 8: us ----------
+// ---------- the barista ranking: fair, on the same coffees, as a little race ----------
+const median = a => { const s = a.slice().sort((x, y) => x - y), k = s.length; return k ? (k % 2 ? s[(k - 1) / 2] : (s[k / 2 - 1] + s[k / 2]) / 2) : null; };
+function baristaRace(list, ppl) {
+  const m = card("Barista ranking", "Fair, on the same coffees: each brew's stars against the household's average for that coffee (where everyone counts the same, however often they brew it). So brewing a tricky coffee, or experimenting a lot, does not count against you. Dial-ins are left out. The typical cup is the median: half your cups are better, half worse. Under 8 compared brews it is too early to call.");
+  m.querySelector("h2").prepend(ic("trophy", "h2i"));
+  if (!ppl.length) { empty(m, "Brews show up here once they have a \u201CMade by\u201D."); return; }
+  const rated = list.filter(b => b.rating != null && !b.dialin && b.who);
+  const byC = {}; rated.forEach(b => (byC[grpOf(b)] = byC[grpOf(b)] || []).push(b));
+  const dev = {};
+  Object.values(byC).forEach(xs => {
+    const per = {}; xs.forEach(b => (per[b.who] = per[b.who] || []).push(b.rating));
+    if (Object.keys(per).length < 2) return;   // only coffees more than one of you brewed
+    const bar = avg(Object.values(per).map(avg));   // every barista counts once for the coffee's average
+    xs.forEach(b => (dev[b.who] = dev[b.who] || []).push(b.rating - bar));
+  });
+  const rows = ppl.map(id => {
+    const mine = rated.filter(b => b.who === id), st = mine.map(b => b.rating), d = dev[id] || [], mu = avg(st);
+    return { id, brews: list.filter(b => b.who === id).length, rated: st.length, med: median(st), score: d.length ? avg(d) : null, cmp: d.length,
+      sd: st.length >= 5 ? Math.sqrt(avg(st.map(x => (x - mu) * (x - mu)))) : null, best: st.length ? Math.max(...st) : null };
+  });
+  const fair = rows.filter(r => r.cmp >= 3).sort((a, b) => b.score - a.score);
+  const byMed = !fair.length;   // nobody brewed the same coffee yet: by the typical cup for now
+  const ranked = byMed ? rows.filter(r => r.rated >= 3).sort((a, b) => b.med - a.med || b.rated - a.rated) : fair;
+  const val = r => byMed ? r.med : r.score;
+  if (ranked.length < 2) { needMore(m, ppl.length < 2 ? "A ranking needs a second barista: brews made by someone else in the household." : "A few more rated brews each (at least 3 of the same coffees) and the race starts."); }
+  else {
+    // the leader, in one line
+    const a = ranked[0], b = ranked[1], gap = r1(val(a)) - r1(val(b)), close = gap < 0.1;   // as the lanes show it
+    const ban = el("div", "lead"); ban.appendChild(el("span", "crown", close ? "\u{1F91D}" : "\u{1F451}"));
+    ban.appendChild(el("p", "", close ? "Neck and neck: " + andList(ranked.slice(0, 2).map(r => nameOf(r.id))) + (byMed ? " have the same typical cup." : " make equally good cups of the same coffees.")
+      : nameOf(a.id) + " leads" + (byMed ? " with a typical cup of " + fmtS(a.med) : " by " + gap.toFixed(1) + "\u2605 on the same coffees") + "."));
+    m.appendChild(ban);
+    // the race: one lane each, the further right the better, the flag at the leader's end
+    const lo = Math.min(...ranked.map(val)), hi = Math.max(...ranked.map(val)), span = Math.max(hi - lo, byMed ? 1 : 0.5);
+    const race = el("div", "race");
+    ranked.forEach((r, i) => {
+      const lane = el("div", "lane" + (r.cmp < 8 && !byMed ? " unsure" : "")), runner = el("span", "runner");
+      runner.style.left = (8 + 64 * (val(r) - lo) / span) + "%";   // stays clear of the flag
+      runner.appendChild(avatar(r.id));
+      lane.append(el("span", "lpos", i === 0 ? "\u{1F3C6}" : String(i + 1)), el("span", "lname", nameOf(r.id)));
+      const track = el("span", "track"); track.append(runner, el("span", "flag", "\u{1F3C1}")); lane.appendChild(track);
+      lane.appendChild(el("b", "lval", byMed ? fmtS(r.med) : (r.score >= 0 ? "+" : "\u2212") + r1(Math.abs(r.score)).toFixed(1) + "\u2605"));
+      race.appendChild(lane);
+    });
+    m.appendChild(race);
+    if (!byMed && ranked.some(r => r.cmp < 8)) m.appendChild(el("p", "small", "Faded lanes: under 8 compared brews, too early to call."));
+    if (byMed) m.appendChild(el("p", "small", "No coffee brewed by more than one of you yet, so this is by the typical cup for now. Brew the same coffee to race fairly."));
+  }
+  // everyone's numbers, as small tiles
+  const tiles = el("div", "tiles"); m.appendChild(tiles);
+  rows.slice().sort((a, b) => b.brews - a.brews).forEach(r => {
+    const t = el("div", "tile"), l = el("div", "tl"); l.append(avatar(r.id), document.createTextNode(nameOf(r.id))); t.appendChild(l);
+    t.appendChild(el("div", "tv", r.med != null ? fmtS(r.med) : "\u2013"));
+    t.appendChild(el("div", "ts", "typical cup"));
+    t.appendChild(el("div", "ts", r.brews + (r.brews === 1 ? " brew" : " brews") + (r.cmp ? " \u00B7 " + r.cmp + " compared" : "")));
+    tiles.appendChild(t);
+  });
+  // little titles, for fun
+  const titles = [];
+  const most = rows.slice().sort((a, b) => b.brews - a.brews)[0]; if (most && rows.length > 1 && most.brews > 0) titles.push(["\u{1F4AA}", "Most brews", nameOf(most.id) + " \u00B7 " + most.brews]);
+  const st = rows.filter(r => r.sd != null).sort((a, b) => a.sd - b.sd)[0]; if (st && rows.filter(r => r.sd != null).length > 1) titles.push(["\u{1F3AF}", "Steadiest hand", nameOf(st.id)]);
+  const top = rated.slice().sort((a, b) => b.rating - a.rating || b.t - a.t)[0]; if (top && top.rating >= 4) titles.push(["\u2B50", "Best cup", nameOf(top.who) + " \u00B7 " + fmtS(top.rating)]);
+  if (titles.length) { const tl = el("div", "titles"); titles.forEach(([e, k, v]) => { const d = el("span", "ttl"); d.append(document.createTextNode(e + " " + k + " "), el("b", "", v)); tl.appendChild(d); }); m.appendChild(tl); }
+  numbers(m, ["Barista", "Brews", "Rated", "Typical cup", "Same coffees (vs household)", "Compared brews"], rows.map(r => [nameOf(r.id), r.brews, r.rated, r.med != null ? r1(r.med).toFixed(1) : null, r.score != null ? (r.score >= 0 ? "+" : "") + r1(r.score).toFixed(2) : null, r.cmp]));
+}
 function viewFreshTab() {
   viewFresh();
   insOpenBag(filtered(false).filter(b => b.rating != null && !b.dialin));
@@ -835,18 +917,7 @@ function viewUsTab() {
 }
 function viewUs() {
   const list = filtered(false), ppl = people().filter(id => list.some(b => b.who === id));
-  const s = card("Who brews", "Brews per person, and the average stars their brews got from whoever tasted them. Dial-in brews count as brews, not for the stars.");
-  if (!ppl.length) empty(s, "Brews show up here once they have a \"Made by\".");
-  else {
-    const tiles = el("div", "tiles"); s.appendChild(tiles);
-    ppl.forEach(id => {
-      const mine = list.filter(b => b.who === id), rated = mine.filter(b => b.rating && !b.dialin), t = el("div", "tile");
-      const l = el("div", "tl"); l.append(avatar(id), document.createTextNode(nameOf(id)));
-      const gave = list.reduce((x, b) => x + b.ratings.filter(r => !r.guest && r.who === id && r.rating != null).length, 0);
-      t.appendChild(l); t.appendChild(el("div", "tv", String(mine.length))); t.appendChild(el("div", "ts", (mine.length === 1 ? "brew" : "brews") + (rated.length ? ", " + r1(avg(rated.map(b => b.rating))).toFixed(1) + "★ on average" : "") + (gave ? ". Rated " + gave + (gave === 1 ? " brew" : " brews") : "")));
-      tiles.appendChild(t);
-    });
-  }
+  baristaRace(list, ppl);
 
   // who gives which stars: by the person who rated, whoever made the brew
   const raters = people().filter(id => list.some(b => b.ratings.some(r => !r.guest && r.who === id && r.rating != null)));

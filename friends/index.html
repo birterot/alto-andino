@@ -117,6 +117,21 @@ p.off{color:var(--mut);font-size:14px;font-style:italic}
 .brow div{flex:1;min-width:0}.brow strong{display:block}.brow small{color:var(--mut);font-size:12.5px}
 .brow .bst{font-variant-numeric:tabular-nums}
 .brow.me strong::after{content:" (you)";font-weight:400;color:var(--mut);font-size:12.5px}
+.brow.unsure,.pod a.unsure{opacity:.6}
+#boardbox h2 svg{width:22px;height:22px;vertical-align:-3px;margin-right:6px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:8px;margin:14px 0 6px}
+.podium.two{grid-template-columns:repeat(2,minmax(0,1fr));max-width:340px;margin-inline:auto}
+.pod a{display:flex;flex-direction:column;align-items:center;gap:4px;color:inherit;text-decoration:none;text-align:center;min-width:0}
+.pod .md{font-size:22px;line-height:1}
+.pod strong{font-size:14.5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod small{color:var(--mut);font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod .step{width:100%;border-radius:12px 12px 4px 4px;background:var(--bg);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-variant-numeric:tabular-nums;margin-top:4px}
+.pod .step b{font-size:17px}.pod .step small{font-size:11.5px}
+.pod.p1 .step{height:98px;background:color-mix(in srgb,var(--act) 16%,var(--card))}.pod.p2 .step{height:72px}.pod.p3 .step{height:56px}
+.pod.me strong::after{content:" (you)";font-weight:400;color:var(--mut);font-size:12px}
+.btitles{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+.btitles span{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-size:13.5px}
+.btitles b{font-weight:600}
 /* a face: photo or initial */
 .face{flex:none;display:inline-grid;place-items:center;border-radius:50%;color:#fff;font-weight:600;background-size:cover;background-position:center}
 /* a profile */
@@ -183,8 +198,8 @@ p.off{color:var(--mut);font-size:14px;font-style:italic}
     <div class="cgrid" id="trend"></div>
   </section>
   <section class="box" id="boardbox" hidden>
-    <h2>Barista Board</h2>
-    <p class="hint">Everyone in your household and your friends' households: the average stars of the brews they made in the last 90 days (at least 3 rated brews).</p>
+    <h2><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 01-8 0z M8 6H5a3 3 0 003 4 M16 6h3a3 3 0 01-3 4 M12 13v4 M8 20h8 M9 17h6v3H9z"/></svg>Barista Ranking</h2>
+    <p class="hint">Everyone in your household and your friends' households, over the last 90 days. Ranked by the typical cup: the middle of someone's stars, so one experiment gone wrong does not pull them down. Faded: under 8 rated brews, too early to call. Every household rates a bit differently, so: a friendly race.</p>
     <div id="board"></div>
   </section>
   <section class="box" id="cupsbox" hidden>
@@ -486,13 +501,35 @@ async function showMore() {
   const list = !bb.error && Array.isArray(bb.data) ? bb.data : [];
   PEOPLE.photos(db, Object.fromEntries(list.map(p => [p.id, p.photo || null])));   // all photos of the board in one request
   bx.hidden = list.length < 2;
-  list.slice(0, 10).forEach((p, i) => {
-    const a = el("a", "brow" + (me && p.id === me.id ? " me" : "")); a.href = "#p=" + p.id;
-    a.append(el("span", "rk", i === 0 ? "🏆" : String(i + 1)), face(p, 36));
-    const d = el("div"); d.append(el("strong", "", p.name), el("small", "", p.household_name + " · " + p.n + " rated brews")); a.appendChild(d);
-    a.appendChild(el("b", "bst", r1(p.stars).toFixed(1) + "★"));
+  // the typical cup (median, from 46_barista_board.sql); before that update, the average
+  const typ = p => Number(p.median != null ? p.median : p.stars);
+  list.sort((a, b) => typ(b) - typ(a) || Number(b.stars) - Number(a.stars) || b.n - a.n);
+  const isMe = p => me && p.id === me.id, sure = p => p.n >= 8 ? "" : " unsure";
+  const sub = p => p.household_name + " · " + p.n + " rated";
+  // the podium: 2nd, 1st, 3rd
+  const top = list.slice(0, Math.min(3, list.length)), pod = el("div", "podium" + (top.length === 2 ? " two" : ""));
+  const order = top.length === 3 ? [1, 0, 2] : [1, 0];
+  order.forEach(i => {
+    const p = top[i], w = el("div", "pod p" + (i + 1) + (isMe(p) ? " me" : "")), a = el("a", sure(p).trim()); a.href = "#p=" + p.id;
+    const step = el("span", "step"); step.append(el("b", "", r1(typ(p)).toFixed(1) + "★"), el("small", "", p.n + " rated"));
+    a.append(el("span", "md", ["🥇", "🥈", "🥉"][i]), face(p, i === 0 ? 58 : 46), el("strong", "", p.name), el("small", "", p.household_name), step);
+    w.appendChild(a); pod.appendChild(w);
+  });
+  bl.appendChild(pod);
+  // everyone after the podium
+  list.slice(3, 10).forEach((p, i) => {
+    const a = el("a", "brow" + (isMe(p) ? " me" : "") + sure(p)); a.href = "#p=" + p.id;
+    a.append(el("span", "rk", String(i + 4)), face(p, 36));
+    const d = el("div"); d.append(el("strong", "", p.name), el("small", "", sub(p))); a.appendChild(d);
+    a.appendChild(el("b", "bst", r1(typ(p)).toFixed(1) + "★"));
     bl.appendChild(a);
   });
+  // little titles, for fun
+  const tt = [], busy = list.slice().sort((a, b) => b.brews - a.brews)[0];
+  if (busy && busy.brews > 0) tt.push(["💪", "Busiest", busy.name + " · " + busy.brews + " brews"]);
+  const best = list.filter(p => p.best != null).sort((a, b) => Number(b.best) - Number(a.best) || typ(b) - typ(a))[0];
+  if (best && Number(best.best) >= 4) tt.push(["⭐", "Best cup", best.name + " · " + r1(Number(best.best)).toFixed(1) + "★"]);
+  if (tt.length) { const t2 = el("div", "btitles"); tt.forEach(([e, k, v]) => { const x = el("span"); x.append(document.createTextNode(e + " " + k + " "), el("b", "", v)); t2.appendChild(x); }); bl.appendChild(t2); }
 }
 // a person's profile
 async function showPerson(uid) {
