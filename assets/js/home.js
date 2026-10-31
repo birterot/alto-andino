@@ -40,8 +40,8 @@
   if (shelf) showStat(shelf.my);
   box.appendChild(top);
 
-  // the month in review: big, right under the greeting (from what the last visit remembered, so it is there at once),
-  // and the first time in each review a card over the whole screen. Fresh numbers replace it when they arrive.
+  // the month in review: big, right under the greeting (from what the last visit remembered, so it is there at once).
+  // Fresh numbers replace it when they arrive.
   var mslot = el("div", "mslot"); box.appendChild(mslot);
   var monthShown = null;
   (function () {
@@ -331,9 +331,9 @@
       best: best && best.s >= 4 && (!fav || best.n !== fav[0] || best.s > fav[1]) ? { n: best.n, s: best.s, t: best.t } : null,
       dev: topDev && made >= 3 ? [topDev, dev[topDev]] : null, grams: Math.round(grams) };
   }
-  // the review as a card: at the top of Home, or big over the whole screen (once per review)
-  function monthCard(d, big) {
-    var c = el("section", "mrev" + (big ? " big" : "")); c.setAttribute("aria-label", "Your " + d.mon);
+  // the review as a card at the top of Home
+  function monthCard(d) {
+    var c = el("section", "mrev"); c.setAttribute("aria-label", "Your " + d.mon);
     var hd = el("div", "mh"); hd.appendChild(el("span", "mk", d.sofar ? "Your month so far" : "Your month in review"));
     c.appendChild(hd);
     c.appendChild(el("p", "mt", d.mon));
@@ -356,28 +356,7 @@
   function showMonth(d) {
     mslot.textContent = ""; monthShown = d;
     if (!d) return;
-    mslot.appendChild(monthCard(d, false));
-    var seen = get("alto.month.seen");
-    if (seen !== d.key) whenOpen(function () { if (monthShown && monthShown.key === d.key && get("alto.month.seen") !== d.key) popMonth(monthShown); });
-  }
-  // after the opening animation (it takes the "intro" class away from the page when it is done)
-  function whenOpen(cb) {
-    var root = document.documentElement;
-    if (!root.classList.contains("intro")) { setTimeout(cb, 250); return; }
-    var mo = new MutationObserver(function () { if (!root.classList.contains("intro")) { mo.disconnect(); setTimeout(cb, 650); } });
-    mo.observe(root, { attributes: true, attributeFilter: ["class"] });
-  }
-  function popMonth(d) {
-    if (document.querySelector(".mpop")) return;
-    try { localStorage.setItem("alto.month.seen", d.key); } catch (e) {}
-    var ov = el("div", "mpop"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
-    var c = monthCard(d, true), ok = el("button", "mok", "Nice!"); ok.type = "button";
-    c.querySelector(".mrow").appendChild(ok);
-    var close = function () { ov.classList.add("out"); setTimeout(function () { ov.remove(); }, 220); document.removeEventListener("keydown", esc); };
-    var esc = function (e) { if (e.key === "Escape") close(); };
-    ok.onclick = close; ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
-    document.addEventListener("keydown", esc);
-    ov.appendChild(c); document.body.appendChild(ov); ok.focus({ preventScroll: true });
+    mslot.appendChild(monthCard(d));
   }
   function showRate(list, nm) { rateNote = swapNote(rateNote, toRate(list, nm), PR.rate); }
   // your cups still to rate: one = which one (and who made it), several = how many, to My brews
@@ -540,8 +519,8 @@
 
   // the little bag from the Coffee Shelf, filled as far as there is coffee left
   // small line icons, in the drawing style of the rest of the app (a name, or a path of its own)
-  var LINE = { trophy: "M8 4h8v5a4 4 0 01-8 0z M8 6H5a3 3 0 003 4 M16 6h3a3 3 0 01-3 4 M12 13v4 M8 20h8 M9 17h6v3H9z", star: "M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z", device: "M4 5h16l-6 9h-4L4 5z M12 14v3 M7 20h10", bean: "M12 3c4 0 6.5 4 6.5 9S16 21 12 21s-6.5-4-6.5-9S8 3 12 3z M12 3.5c-2 2.8-2 5.8 0 8.5s2 5.7 0 8.5" };
   function lineIco(d, cls) {
+    var LINE = { trophy: "M8 4h8v5a4 4 0 01-8 0z M8 6H5a3 3 0 003 4 M16 6h3a3 3 0 01-3 4 M12 13v4 M8 20h8 M9 17h6v3H9z", star: "M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z", device: "M4 5h16l-6 9h-4L4 5z M12 14v3 M7 20h10", bean: "M12 3c4 0 6.5 4 6.5 9S16 21 12 21s-6.5-4-6.5-9S8 3 12 3z M12 3.5c-2 2.8-2 5.8 0 8.5s2 5.7 0 8.5" };
     var NS = "http://www.w3.org/2000/svg", sv = document.createElementNS(NS, "svg"), pa = document.createElementNS(NS, "path");
     sv.setAttribute("viewBox", "0 0 24 24"); sv.setAttribute("aria-hidden", "true"); if (cls) sv.setAttribute("class", cls);
     pa.setAttribute("d", LINE[d] || d); sv.appendChild(pa); return sv;
