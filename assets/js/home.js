@@ -43,7 +43,6 @@
   // the month in review: big, right under the greeting (from what the last visit remembered, so it is there at once).
   // Fresh numbers replace it when they arrive.
   var mslot = el("div", "mslot"); box.appendChild(mslot);
-  var monthShown = null;
   (function () {
     var per = monthPeriod(); if (!session || !per) return;
     var c = null; try { c = JSON.parse(get("alto.month.v1") || "null"); } catch (e) {}
@@ -354,7 +353,7 @@
     return c;
   }
   function showMonth(d) {
-    mslot.textContent = ""; monthShown = d;
+    mslot.textContent = "";
     if (!d) return;
     mslot.appendChild(monthCard(d));
   }
