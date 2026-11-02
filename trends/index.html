@@ -73,6 +73,7 @@ details.brest[open] summary::after{transform:rotate(90deg)}
 .brows{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;margin-top:4px}
 .brows div{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
 .brows div.wide{grid-column:1/-1}
+.bopen{display:inline-block;margin:10px 0 4px;font-size:14.5px;font-weight:600;color:var(--one);text-decoration:none}
 .brows span{color:var(--mut)}.brows b{font-weight:600;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
 .typecard .tl{margin:6px 0 8px;font-size:15.5px;line-height:1.45;color:var(--ink)}
 /* every card: the title with a small (i) for the explanation */
@@ -513,13 +514,17 @@ function whatWorked(list, c, devNote) {
   const keys = [[ratioOf(best) ? "1:" + r1(ratioOf(best)) : null, "ratio"], [best.time != null ? (esp && best.time < 90 ? best.time + " s" : mmss(best.time)) : null, esp ? "shot time" : "brew time"]].filter(k => k[0]);
   if (keys.length) { const kr = el("div", "bkeys"); keys.forEach(([v, k]) => { const d = el("div", "bkey"); d.append(el("b", "", v), el("small", "", k)); kr.appendChild(d); }); bx.appendChild(kr); }
   const pi = [best.piBar != null ? best.piBar + " bar" : null, best.piS != null ? best.piS + " s" : null].filter(Boolean).join(", ");
-  const rest = [["Coffee in", best.dose ? best.dose + " g" : null], esp ? ["Out", best.yld ? best.yld + " g" : null] : ["Water", best.water ? best.water + " g" : best.yld ? best.yld + " g" : null],
+  const bag = coffeeOf(best.coffeeId);
+  const rest = [["Beans", bag ? bag.name + (bag.roaster ? ", " + bag.roaster : "") : null], ["Bag", best.dRoast != null && best.dRoast >= 0 ? "day " + best.dRoast + " after roasting" : null],
+    ["Coffee in", best.dose ? best.dose + " g" : null], esp ? ["Out", best.yld ? best.yld + " g" : null] : ["Water", best.water ? best.water + " g" : best.yld ? best.yld + " g" : null],
     ["Temperature", best.temp ? best.temp + " \u00B0C" : null], ["Pressure", best.pressure != null ? best.pressure + " bar" : null], ["Pre-infusion", pi || null],
     ["Bloom", best.bloom != null ? best.bloom + " s" : null], ["Recipe", best.recipe || null]].filter(r => r[1]);
   if (rest.length) {
     const dt = el("details", "brest"), sm = el("summary", "", "The whole recipe"), g = el("div", "brows");
-    rest.forEach(([k, v]) => { const r = el("div", k === "Recipe" ? "wide" : ""); r.append(el("span", "", k), el("b", "", v)); g.appendChild(r); });
-    dt.append(sm, g); bx.appendChild(dt);
+    rest.forEach(([k, v]) => { const r = el("div", ["Beans", "Bag", "Recipe"].includes(k) ? "wide" : ""); r.append(el("span", "", k), el("b", "", v)); g.appendChild(r); });
+    dt.append(sm, g);
+    if (!state.demo && best.id) { const a = el("a", "bopen", "Open this brew \u2192"); a.href = "../journal/index.html#c=" + encodeURIComponent(best.coffeeId) + "&b=" + encodeURIComponent(best.id); dt.appendChild(a); }
+    bx.appendChild(dt);
   }
   bx.appendChild(el("p", "ts", stars(best.rating) + ", " + fmtDate(best.t) + (nameOf(best.who) ? ", made by " + nameOf(best.who) : "") + (rated.length > 1 ? " \u00B7 from " + rated.length + " rated brews" : "")));
   m.appendChild(bx);

@@ -40,14 +40,12 @@
   if (shelf) showStat(shelf.my);
   box.appendChild(top);
 
-  // the month in review: big, right under the greeting (from what the last visit remembered, so it is there at once).
-  // Fresh numbers replace it when they arrive.
-  var mslot = el("div", "mslot"); box.appendChild(mslot);
-  var monthShown = null;
-  (function () {
-    var per = monthPeriod(); if (!session || !per) return;
+  // the month in review (on the last two days of a month and the first week of the next): the first note under
+  // "Log a brew", from what the last visit remembered so it is there at once; fresh numbers replace it when they arrive
+  var monthCached = (function () {
+    var per = monthPeriod(); if (!session || !per) return null;
     var c = null; try { c = JSON.parse(get("alto.month.v1") || "null"); } catch (e) {}
-    if (c && c.u === session.user.id && c.key === per.key && c.d) showMonth(c.d);
+    return c && c.u === session.user.id && c.key === per.key && c.d ? c.d : null;
   })();
 
   // a short tour, once per phone (Settings can show it again): the five things that matter, each with a way there
@@ -133,10 +131,11 @@
   var sleepLogs = shelf && Array.isArray(shelf.sl) ? shelf.sl : null;
 
   // one note at a time: your caffeine first (when there was coffee today), then to do, Friends, the fact of the day
-  var notes = [], cafNote = null, rateNote = null, tipNote = null, todoNote = null, trendNote = null;
+  var notes = [], cafNote = null, rateNote = null, tipNote = null, todoNote = null, trendNote = null, monthNote = null;
   function todoOf(n) { return n > 0 ? { k: "To do", text: n + (n === 1 ? " of your brews still needs" : " of your brews still need") + " a Balance rating.", href: "journal/index.html#nobal", go: "Rate them", tap: true } : null; }
   // the order on Home: what is open to rate (a cup, then a Balance to give), the caffeine, the sleep tip, then the rest (friends, a bag running low, a fact)
-  var PR = { rate: 0, todo: 1, caf: 2, tip: 3, trend: 4 };
+  var PR = { month: -1, rate: 0, todo: 1, caf: 2, tip: 3, trend: 4 };
+  if (monthCached) { monthNote = monthOf(monthCached); monthNote.pr = PR.month; notes.push(monthNote); }
   var tr = session && shelf ? toRate(shelf.tr, shelf.nm) : null;
   if (tr) { tr.pr = PR.rate; notes.push(rateNote = tr); }
   var caf = session ? caffeine(shelf && shelf.cb) : null;
@@ -169,7 +168,8 @@
         notes.forEach(function (_, j) { dots.appendChild(el("i", j === i ? "on" : "")); });
         head.appendChild(dots);
       }
-      card.appendChild(head); card.appendChild(el("p", "nt", n.text));
+      card.classList.toggle("dark", !!n.dark);
+      card.appendChild(head); if (n.body) card.appendChild(n.body()); else card.appendChild(el("p", "nt", n.text));
       if (n.curve) card.appendChild(n.curve);
       if (n.small) {   // the explanation stays folded behind a small (i), so the note stays short
         var ib = el("button", "info", "i"); ib.type = "button"; ib.setAttribute("aria-label", "How to read this"); ib.setAttribute("aria-expanded", String(!!infoOpen));
@@ -263,7 +263,7 @@
           showStat(mine); showRate(pend, nm); showCaffeine(rows);
           var md = monthReview(q.data, gc, my);
           try { if (md) localStorage.setItem("alto.month.v1", JSON.stringify({ u: my, key: md.key, d: md })); else localStorage.removeItem("alto.month.v1"); } catch (e) {}
-          showMonth(md);
+          monthNote = swapNote(monthNote, md ? monthOf(md) : null, PR.month);
           if (nob != null) todoNote = swapNote(todoNote, todoOf(nob), PR.todo);
           var tr = res[6] && !res[6].error && Array.isArray(res[6].data) ? res[6].data[0] : null;
           trendNote = swapNote(trendNote, tr ? { k: "From your friends", text: "Trending among your friends: " + tr.name + (tr.roaster ? " from " + tr.roaster : "") + ", " + (Math.round(tr.stars * 10) / 10).toFixed(1) + "\u2605 at " + tr.household_name + ".", href: "friends/index.html#f=" + tr.household + "&c=" + tr.id, go: "Their recipe" } : null, PR.trend);
@@ -332,31 +332,24 @@
       dev: topDev && made >= 3 ? [topDev, dev[topDev]] : null, grams: Math.round(grams) };
   }
   // the review as a card at the top of Home
-  function monthCard(d) {
-    var c = el("section", "mrev"); c.setAttribute("aria-label", "Your " + d.mon);
-    var hd = el("div", "mh"); hd.appendChild(el("span", "mk", d.sofar ? "Your month so far" : "Your month in review"));
-    c.appendChild(hd);
-    c.appendChild(el("p", "mt", d.mon));
-    var nums = el("div", "mnums"), num = function (v, k) { var x = el("div"); x.append(el("b", "", v), el("small", "", k)); nums.appendChild(x); };
-    num(String(d.cups), d.cups === 1 ? "cup" : "cups");
-    num(String(d.made), d.made === 1 ? "brew made" : "brews made");
-    if (d.avg != null) num((Math.round(d.avg * 10) / 10).toFixed(1) + "★", "on average");
-    c.appendChild(nums);
-    var ul = el("ul", "mlist"), li = function (e, t) { var x = el("li"); x.append(lineIco(e, "me"), el("span", "", t)); ul.appendChild(x); };
-    var f1 = function (v) { return (Math.round(v * 10) / 10).toFixed(1) + "★"; };
-    if (d.fav) li("trophy", "Favourite: " + d.fav[0] + ", " + f1(d.fav[1]) + " over " + d.fav[2] + " cups");
-    if (d.best) { var bd = new Date(d.best.t); li("star", "Best cup: " + d.best.n + ", " + String(d.best.s).replace(/\.0$/, "") + "★ on " + bd.toLocaleDateString("en-GB", { weekday: "long" }) + " " + bd.getDate() + "."); }
-    if (d.dev) li("device", "Most used: " + d.dev[0] + " (" + d.dev[1] + " of " + d.made + ")");
-    if (d.grams >= 30) li("bean", "About " + d.grams + " g of beans" + (d.grams >= 200 ? ", " + (Math.round(d.grams / 250 * 10) / 10) + " bags of 250 g" : ""));
-    if (ul.children.length) c.appendChild(ul);
-    var row = el("div", "mrow"), go = el("a", "mgo", "See your brews →"); go.href = "journal/index.html#mine"; row.appendChild(go);
-    c.appendChild(row);
-    return c;
-  }
-  function showMonth(d) {
-    mslot.textContent = ""; monthShown = d;
-    if (!d) return;
-    mslot.appendChild(monthCard(d));
+  // the month in review as a note: the month, three numbers, the highlights
+  function monthOf(d) {
+    return { k: d.sofar ? "Your " + d.mon + " so far" : "Your " + d.mon, dark: true, href: "journal/index.html#mine", go: "See your brews", body: function () {
+      var c = el("div", "mrev");
+      var nums = el("div", "mnums"), num = function (v, k) { var x = el("div"); x.append(el("b", "", v), el("small", "", k)); nums.appendChild(x); };
+      num(String(d.cups), d.cups === 1 ? "cup" : "cups");
+      num(String(d.made), d.made === 1 ? "brew made" : "brews made");
+      if (d.avg != null) num((Math.round(d.avg * 10) / 10).toFixed(1) + "\u2605", "on average");
+      c.appendChild(nums);
+      var ul = el("ul", "mlist"), li = function (e, t) { var x = el("li"); x.append(lineIco(e, "me"), el("span", "", t)); ul.appendChild(x); };
+      var f1 = function (v) { return (Math.round(v * 10) / 10).toFixed(1) + "\u2605"; };
+      if (d.fav) li("trophy", "Favourite: " + d.fav[0] + ", " + f1(d.fav[1]) + " over " + d.fav[2] + " cups");
+      if (d.best) { var bd = new Date(d.best.t); li("star", "Best cup: " + d.best.n + ", " + String(d.best.s).replace(/\.0$/, "") + "\u2605 on " + bd.toLocaleDateString("en-GB", { weekday: "long" }) + " " + bd.getDate()); }
+      if (d.dev) li("device", "Most used: " + d.dev[0] + " (" + d.dev[1] + " of " + d.made + ")");
+      if (d.grams >= 30) li("bean", "About " + d.grams + "\u00A0g of beans" + (d.grams >= 200 ? ", " + (Math.round(d.grams / 250 * 10) / 10) + " bags of 250\u00A0g" : ""));
+      if (ul.children.length) c.appendChild(ul);
+      return c;
+    } };
   }
   function showRate(list, nm) { rateNote = swapNote(rateNote, toRate(list, nm), PR.rate); }
   // your cups still to rate: one = which one (and who made it), several = how many, to My brews
