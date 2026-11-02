@@ -40,7 +40,7 @@
   if (shelf) showStat(shelf.my);
   box.appendChild(top);
 
-  // the month in review (on the last two days of a month and the first week of the next): the first note under
+  // the month in review (on the last two days of a month and the first two of the next): the first note under
   // "Log a brew", from what the last visit remembered so it is there at once; fresh numbers replace it when they arrive
   var monthCached = (function () {
     var per = monthPeriod(); if (!session || !per) return null;
@@ -299,11 +299,11 @@
     if (notes.length) draw();
     return nu;
   }
-  // The month in review: on the last two days of a month ("so far") and the first week of the next.
+  // The month in review: on the last two days of a month ("so far") and the first two days of the next.
   function monthPeriod() {
     var now = new Date(), d = now.getDate(), last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(), m0, sofar;
     if (d >= last - 1) { m0 = new Date(now.getFullYear(), now.getMonth(), 1); sofar = true; }
-    else if (d <= 7) { m0 = new Date(now.getFullYear(), now.getMonth() - 1, 1); sofar = false; }
+    else if (d <= 2) { m0 = new Date(now.getFullYear(), now.getMonth() - 1, 1); sofar = false; }
     else return null;
     return { m0: m0, m1: new Date(m0.getFullYear(), m0.getMonth() + 1, 1), sofar: sofar, mon: m0.toLocaleDateString("en-GB", { month: "long" }),
       key: m0.getFullYear() + "-" + (m0.getMonth() + 1) + (sofar ? "-sofar" : "") };
