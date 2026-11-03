@@ -624,6 +624,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
   </div>
   <div id="listview">
   <div id="listhost">
+  <div id="cdraft"></div>
   <details class="add" id="addbox">
     <summary id="addsum">Add a coffee</summary>
     <form id="cf">
@@ -667,8 +668,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
         <input id="f-roast-new" hidden>
       </label>
       <fieldset class="sfor adv" id="f-sfor"><legend>Suitable for</legend></fieldset>
-      <details class="sfordef adv"><summary>What do these mean?</summary><dl id="f-sfordef"></dl></details>
-      <p class="hint adv">Tick the kind when the roaster only says that (“for espresso”), or the devices they name (“for V60 and AeroPress”). Log a brew suggests coffees by this. An omni roast suits them all: tick all four kinds.</p>
+      <details class="sfordef adv"><summary>What do these mean?</summary><p class="hint">Tick the kind when the roaster only says that (“for espresso”), or the devices they name (“for V60 and AeroPress”). Log a brew suggests coffees by this. An omni roast suits them all: tick all four kinds.</p><dl id="f-sfordef"></dl></details>
       <div id="pk-tags"></div>
       <label id="rdlab">Roast date<input type="date" id="f-rd"></label>
       <label class="chk"><input type="checkbox" id="f-rdx"> Roast date unknown</label>
@@ -684,6 +684,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
       <label class="adv">Where to buy (link, optional)<input id="f-url" type="url" inputmode="url" placeholder="https://..."></label>
       <button class="go" id="save">Save coffee</button>
       <button class="lnk" id="cancel" type="button" hidden>Cancel</button>
+      <button class="lnk" id="cdiscard" type="button" hidden>Discard this draft</button>
     </form>
   </details>
   </div>
@@ -1565,6 +1566,7 @@ function setSel(id, v) {
   s.value = v || "";
 }
 function endEdit() {
+  const wasNew = !editing && !newBagOf;   // closing an edit keeps your unsaved new coffee
   editing = null; newBagOf = null;
   if ($("addbox").parentNode === $("dedithost")) $("listhost").appendChild($("addbox"));   // edited from the coffee's page: back to the list
   $("cf").reset();
@@ -1575,8 +1577,9 @@ function endEdit() {
   $("cancel").hidden = true;
   $("photohint").hidden = true;
   $("addbox").open = false;
-  setSfor([]); store.del(COFFEE_DRAFT); restoredCoffee = false; syncRoastUnknown(); renderVarieties(); syncDecaf(); renderPickers();
+  setSfor([]); if (wasNew) store.del(COFFEE_DRAFT); restoredCoffee = false; coffeeTried = false; syncRoastUnknown(); renderVarieties(); syncDecaf(); renderPickers();
   $("pfit").hidden = true; $("pfimg").removeAttribute("src"); $("f-ppos").value = "";
+  renderCoffeeDraft();
 }
 function altText(c) {
   if (c.altitude_min_m == null) return null;
@@ -1855,7 +1858,26 @@ function saveCoffeeDraft() {
   if (!any) { store.del(COFFEE_DRAFT); return; }
   store.set(COFFEE_DRAFT, JSON.stringify({ f, blend: $("f-blend").checked, decaf: $("f-decaf").checked, sfor: sforVals(), t: Date.now() }));
 }
-function tryRestoreCoffee() {
+// the unsaved coffee: a row to continue it (or throw it away), and the form filled in but closed until you open it
+const coffeeDraft = () => { try { const d = JSON.parse(store.get(COFFEE_DRAFT) || "null"); return d && d.f && Date.now() - d.t <= 7 * 864e5 ? d : null; } catch (e) { return null; } };
+function draftLabel(d) { return [d.f["f-name"], d.f["f-roaster"]].filter(Boolean).join(", ") || "no name yet"; }
+function discardCoffeeDraft() {
+  if (!confirm("Discard your unsaved coffee? What you filled in is gone.")) return;
+  store.del(COFFEE_DRAFT); endEdit(); renderCoffeeDraft(); say("Discarded.");
+}
+function renderCoffeeDraft() {
+  const box = $("cdraft"); if (!box) return; box.textContent = "";
+  const d = coffeeDraft(), open = $("addbox").open;
+  $("cdiscard").hidden = !(d && restoredCoffee && !editing && !newBagOf);
+  if (!d || open || editing || newBagOf) return;
+  const row = el("div", "draftrow"), a = el("a", "draftc"); a.href = "#addcoffee";
+  a.append(el("strong", "", "Continue your unsaved coffee"), el("span", "", draftLabel(d)));
+  a.onclick = e => { if ($("addbox").parentNode === $("listhost")) { e.preventDefault(); tryRestoreCoffee(); $("addbox").open = true; renderCoffeeDraft(); $("addbox").scrollIntoView({ block: "start", behavior: "smooth" }); } };
+  row.append(a, ibtn("Discard this unsaved coffee", "close", discardCoffeeDraft)); box.appendChild(row);
+}
+$("cdiscard").onclick = discardCoffeeDraft;
+$("addbox").addEventListener("toggle", renderCoffeeDraft);
+function tryRestoreCoffee(open) {
   if (coffeeTried || editing || newBagOf) return;
   coffeeTried = true;
   const raw = store.get(COFFEE_DRAFT); if (!raw) return;
@@ -1866,8 +1888,9 @@ function tryRestoreCoffee() {
   ["f-decafp", "f-roast"].forEach(i => { $(i + "-new").hidden = $(i).value !== "__other"; }); $("f-decaf").checked = !!d.decaf; syncDecaf(); renderPickers();
   $("f-blend").checked = !!d.blend; syncBlend(); setSfor(d.sfor); restoredCoffee = true; renderVarieties();
   $("f-rdx").checked = !!d.f["f-pd"]; syncRoastUnknown(); if (d.f["f-pd"]) $("f-pd").value = d.f["f-pd"];
-  syncBag(); $("addbox").open = true; $("addsum").textContent = "Add a coffee (unsaved draft)";
-  say("Your unsaved coffee was restored.");
+  syncBag(); $("addsum").textContent = "Add a coffee (unsaved draft)";
+  if (open) { $("addbox").open = true; say("Your unsaved coffee is back. Carry on, or discard it at the bottom."); }
+  renderCoffeeDraft();
 }
 $("cf").addEventListener("input", e => { if (e.isTrusted) saveCoffeeDraft(); });
 $("cf").addEventListener("change", e => { if (e.isTrusted) saveCoffeeDraft(); });
@@ -2865,6 +2888,12 @@ function renderDrafts() {
     const d = JSON.parse(localStorage.getItem(k) || "null"), id = k.slice("alto.draft.brew.".length), c = logCoffees.find(x => x.id === id) || coffeeData.find(x => x.id === id);
     if (d && d.f && Date.now() - d.t <= 7 * 864e5 && c) list.push({ c, d });
   }); } catch (e) {}
+  const cd = coffeeDraft();
+  if (cd) {
+    const row = el("div", "draftrow"), a = el("a", "draftc"); a.href = "#addcoffee";
+    a.append(el("strong", "", "Continue your unsaved coffee"), el("span", "", draftLabel(cd)));
+    row.append(a, ibtn("Discard this unsaved coffee", "close", () => { if (!confirm("Discard your unsaved coffee?")) return; store.del(COFFEE_DRAFT); renderDrafts(); })); box.appendChild(row);
+  }
   list.sort((x, y) => y.d.t - x.d.t).slice(0, 3).forEach(({ c, d }) => {
     const row = el("div", "draftrow"), a = el("a", "draftc"); a.href = "#c=" + c.id + "&new";
     const what = [d.f["b-device"] && d.f["b-device"] !== "__other" ? d.f["b-device"] : null, d.f["b-dose"] ? d.f["b-dose"] + "\u00A0g" : null].filter(Boolean).join(", ");
@@ -3102,7 +3131,7 @@ function route() {
   if ($("addbox").parentNode !== host) host.appendChild($("addbox"));
   logAfter = add ? { dev: add[1] ? decodeURIComponent(add[1]) : (logDev || null) } : null;
   if (add) {
-    if (!editing && !newBagOf) { tryRestoreCoffee(); const t = typeOf(logAfter.dev); document.querySelectorAll("#f-sfor input").forEach(i => { if (!i.checked && t && i.value === t && !restoredCoffee) i.checked = true; }); }
+    if (!editing && !newBagOf) { tryRestoreCoffee(true); const t = typeOf(logAfter.dev); document.querySelectorAll("#f-sfor input").forEach(i => { if (!i.checked && t && i.value === t && !restoredCoffee) i.checked = true; }); }
     $("addbox").open = true; $("addsum").textContent = "New coffee"; load();
   } else if (m) {
     const ps = new URLSearchParams(m[2].slice(1));
@@ -3122,7 +3151,7 @@ function route() {
   else if (isRecent) loadFeed();
   else if (isMine) loadMine();
   else if (isHH) { /* the household page needs nothing else */ }
-  else { tryRestoreCoffee(); load(); }
+  else { tryRestoreCoffee(false); renderCoffeeDraft(); load(); }
 }
 
 // ---------- Recent activity: brews, new coffees and bags, cuppings, newest first ----------
