@@ -184,6 +184,11 @@ details.ccm[open] summary{background:color-mix(in srgb,var(--t) 10%,transparent)
 dialog.dlg{border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);padding:22px 20px 16px;max-width:360px;width:calc(100% - 32px);box-shadow:0 18px 50px rgba(20,14,10,.3)}
 dialog.dlg::backdrop{background:rgba(20,14,10,.45)}
 dialog.dlg h3{margin:0 0 6px;font-size:18px}
+#outdlg label{display:block;margin-top:10px;font-size:14px;color:var(--mut)}#outdlg label input{margin-top:4px}
+#outdlg .modes{flex-wrap:wrap}#outdlg .outr button{min-height:36px;font-size:13.5px}
+#douts{margin-top:12px}#douts .hk{margin:0 0 4px;font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.7}
+.orow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0;font-size:14px}
+.orow b{font-variant-numeric:tabular-nums}.orow span{opacity:.85}.orow .ib{width:32px;height:32px}
 dialog.dlg p{margin:0 0 4px;font-size:14.5px;color:var(--mut)}
 .sum{margin:10px 0 0;padding:0;list-style:none;font-size:14.5px}
 .sum li{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line)}
@@ -733,7 +738,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
 
   <div id="detail" hidden>
     <a class="back" id="dback" href="#">All coffees</a>
-    <section id="dhead" class="cc"><button type="button" class="phb" id="dphotob" hidden><img id="dphoto" alt=""></button><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><p class="darch" id="darch" hidden></p><p class="frshare" id="frshare" hidden></p><div class="acts dacts"><span id="dbuy" class="stk"></span><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button></div></div></section>
+    <section id="dhead" class="cc"><button type="button" class="phb" id="dphotob" hidden><img id="dphoto" alt=""></button><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><div id="douts"></div><p class="darch" id="darch" hidden></p><p class="frshare" id="frshare" hidden></p><div class="acts dacts"><span id="dbuy" class="stk"></span><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button></div></div></section>
     <div id="dedithost"></div>
     <details class="add" id="brewbox">
       <summary id="brewsum">Log a brew</summary>
@@ -870,6 +875,25 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
   <div class="dlgacts">
     <button class="go" id="sd-ok" type="button">Save</button>
     <button class="lnk" id="sd-back" type="button">Keep editing</button>
+  </div>
+</dialog>
+<dialog id="outdlg" class="dlg" aria-labelledby="outtitle">
+  <h3 id="outtitle">Beans out</h3>
+  <p id="outsub"></p>
+  <div class="modes" id="outmode"><button type="button" data-m="out" class="on">Take some out</button><button type="button" data-m="weigh">Weigh the bag</button></div>
+  <div id="outpart">
+    <label>Grams<input id="out-g" type="number" inputmode="decimal" min="0.5" max="2000" step="0.5"></label>
+    <div class="modes outr" id="outr"><button type="button" data-r="cooking">Baking &amp; cooking</button><button type="button" data-r="spilled">Spilled</button><button type="button" data-r="gift">Gave away</button><button type="button" data-r="other">Other</button></div>
+    <label>Note (optional)<input id="out-note" maxlength="120" placeholder="e.g. tiramisu" autocomplete="off"></label>
+  </div>
+  <div id="weighpart" hidden>
+    <label>What is in the bag now (g)<input id="out-left" type="number" inputmode="decimal" min="0" max="5000" step="1"></label>
+    <p class="hint" id="weighhint"></p>
+  </div>
+  <p class="hint" id="outmsg" role="status"></p>
+  <div class="dlgacts">
+    <button class="go" id="out-ok" type="button">Save</button>
+    <button class="lnk" id="out-cancel" type="button">Cancel</button>
   </div>
 </dialog>
 <dialog id="deldlg" class="dlg" aria-labelledby="dlgtitle">
@@ -1281,6 +1305,7 @@ function cardMenu(c) {
   const fav = favBtn("coffee", gk(c)); fav.classList.remove("ib"); fav.classList.add("mi"); fav.appendChild(el("span", "", "Favourite")); box.appendChild(fav);
   box.appendChild(abtn("mi", "Edit", "edit", () => { close(); startEdit(c); }));
   box.appendChild(abtn("mi", "New bag", "plus", () => { close(); startNewBag(c); }));
+  if (c.bag_size_g && !c.finished_at) box.appendChild(abtn("mi", "Beans out\u2026", "bag", () => { close(); openOut(c); }));
   bagActions(c, load).forEach(x => { x.className = "mi"; box.appendChild(x); });
   const bl = buyLink(c); if (bl) { bl.className = "mi"; box.appendChild(bl); }
   box.appendChild(abtn("mi del", "Archive or delete", "trash", async () => {
@@ -1297,6 +1322,79 @@ function cardMenu(c) {
   return d;
 }
 document.addEventListener("click", e => { if (!e.target.closest("details.ccm")) document.querySelectorAll("details.ccm[open]").forEach(o => { o.open = false; }); });
+// Beans out: coffee that left the bag without a brew (a tiramisu, spilled, given away), or a correction after weighing
+// the bag (supabase/51_bean_outs.sql). It counts for what is left, not as a brew.
+const OUT_WHY = { cooking: "baking & cooking", spilled: "spilled", gift: "given away", other: "other", weighed: "weighed (correction)" };
+let outFor = null, outMode = "out", outWhy = null;
+const bagLeftOf = c => c.bag_size_g ? c.bag_size_g - (coffeeUsed[c.id] || 0) : null;
+function openOut(c) {
+  outFor = c; outWhy = null; setOutMode("out");
+  const left = bagLeftOf(c);
+  $("outsub").textContent = c.name + (left != null ? " · about " + Math.max(0, Math.round(left)) + " g left" : "");
+  $("out-g").value = coffeeDose[c.id] || (window.DEFAULTS && DEFAULTS.BREW && DEFAULTS.BREW.dose_g) || 18; $("out-note").value = ""; $("out-left").value = ""; $("outmsg").textContent = "";
+  document.querySelectorAll("#outr button").forEach(b => b.classList.remove("on"));
+  document.querySelector('#outmode [data-m="weigh"]').hidden = left == null;
+  weighHint(); $("outdlg").showModal();
+}
+function setOutMode(m) {
+  outMode = m; document.querySelectorAll("#outmode button").forEach(b => b.classList.toggle("on", b.dataset.m === m));
+  $("outpart").hidden = m !== "out"; $("weighpart").hidden = m !== "weigh"; weighHint();
+}
+function weighHint() {
+  const c = outFor; if (!c) return;
+  const left = bagLeftOf(c), now = Number(String($("out-left").value).replace(",", "."));
+  if (left == null) { $("weighhint").textContent = ""; return; }
+  const d = $("out-left").value === "" ? null : Math.round((left - now) * 10) / 10;
+  $("weighhint").textContent = "The app counts about " + Math.max(0, Math.round(left)) + " g left (the bag size, less the brews and beans out)." +
+    (d == null ? " Weigh the beans (without the bag, or take its weight off) and type what is there." : d === 0 ? " That matches: nothing to correct." : d > 0 ? " This books " + d + " g out as a correction." : " This gives " + (-d) + " g back as a correction.");
+}
+document.querySelectorAll("#outmode button").forEach(b => { b.onclick = () => setOutMode(b.dataset.m); });
+document.querySelectorAll("#outr button").forEach(b => { b.onclick = () => { outWhy = b.dataset.r; document.querySelectorAll("#outr button").forEach(x => x.classList.toggle("on", x === b)); }; });
+$("out-left").addEventListener("input", weighHint);
+$("out-cancel").onclick = () => $("outdlg").close();
+$("out-ok").onclick = async () => {
+  const c = outFor; if (!c) return;
+  let row;
+  if (outMode === "out") {
+    const g = Number(String($("out-g").value).replace(",", "."));
+    if (!(g > 0) || g > 2000) { $("outmsg").textContent = "How many grams? (more than 0)"; return; }
+    row = { coffee_id: c.id, grams: Math.round(g * 10) / 10, reason: outWhy || "other", note: $("out-note").value.trim() || null };
+  } else {
+    const left = bagLeftOf(c), now = Number(String($("out-left").value).replace(",", "."));
+    if ($("out-left").value === "" || !(now >= 0)) { $("outmsg").textContent = "Type what is in the bag now, in grams."; return; }
+    const d = Math.round((left - now) * 10) / 10;
+    if (d === 0) { $("outdlg").close(); say("That matches: nothing to correct."); return; }
+    row = { coffee_id: c.id, grams: d, reason: "weighed", note: null };
+  }
+  $("out-ok").disabled = true;
+  const { error } = await db.from("bean_outs").insert(row);
+  $("out-ok").disabled = false;
+  if (error) { $("outmsg").textContent = /relation|does not exist|schema cache/i.test(error.message) ? "This needs a small database update first (supabase/51_bean_outs.sql)." : "Not saved: " + error.message; return; }
+  $("outdlg").close();
+  say(row.reason === "weighed" ? "Corrected: " + (row.grams > 0 ? row.grams + " g out." : (-row.grams) + " g back.") : row.grams + " g out of " + c.name + ".");
+  await load(); if (cur && cur.id === c.id) drawOuts(cur);
+};
+// on the coffee's page: the beans out of this bag, with a way to take one back, and the button
+function drawOuts(c) {
+  const box = $("douts"); box.textContent = "";
+  const list = (coffeeOuts[c.id] || []).slice().reverse();
+  if (list.length) {
+    box.appendChild(el("p", "hk", "Beans out"));
+    list.forEach(o => {
+      const r = el("div", "orow"), t = el("span");
+      t.append(el("b", "", (o.grams > 0 ? "−" : "+") + Math.abs(Number(o.grams)) + " g"), document.createTextNode(" · " + (OUT_WHY[o.reason] || o.reason) + (o.note ? " · " + o.note : "") + " · " + new Date(o.at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })));
+      r.append(t, ibtn("Take this back", "close", async () => {
+        if (!confirm("Take back these " + Math.abs(Number(o.grams)) + " g? They count as in the bag again.")) return;
+        const { error } = await db.from("bean_outs").delete().eq("id", o.id);
+        if (error) { say("Not removed: " + error.message); return; }
+        await load(); if (cur && cur.id === c.id) drawOuts(cur);
+      }));
+      box.appendChild(r);
+    });
+  }
+  const st = $("dbuy"); st.querySelectorAll(".outbtn").forEach(x => x.remove());
+  if (c.bag_size_g && !c.finished_at) { const b = abtn("btn ghost outbtn", "Beans out", "bag", () => openOut(c)); st.appendChild(b); }
+}
 function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
   const a = el("article", "cc cca");
   applyLook(a, c);
@@ -1366,14 +1464,15 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
 
 let coffeeDose = {}, noBalance = 0;
 let loadId = 0, coffeeData = [], coffeeUrls = {}, coffeeCounts = {}, coffeeRates = {}, coffeeUsed = {}, coffeeCups = {};
-let cupRows = [];
+let cupRows = [], outRows = [], coffeeOuts = {};
 async function load() {
   const my = ++loadId;   // only the newest load may draw, so parallel loads cannot add cards twice
   const [{ data, error }, { data: bs }] = await Promise.all([
     inHH(db.from("coffees").select("*")).order("created_at", { ascending: false }),
     db.from("brews").select("coffee_id,rating,is_dialin,brewed_at,device,dose_g,yield_g,water_g,made_by,created_by,brew_ratings(rating,balance,rater_id,is_guest,drank_at)").order("brewed_at"),
-    db.from("cuppings").select("coffee_id,total")   // cupping (supabase/21_sca_cupping.sql); before that it just fails and is left out
-  ]).then(r => [r[0], r[1], r[2] && !r[2].error ? r[2] : { data: [] }]).then(r => { cupRows = r[2].data || []; return r; });
+    db.from("cuppings").select("coffee_id,total"),   // cupping (supabase/21_sca_cupping.sql); before that it just fails and is left out
+    db.from("bean_outs").select("id,coffee_id,grams,reason,note,at").order("at")   // beans out (supabase/51_bean_outs.sql); before that: none
+  ]).then(r => [r[0], r[1], r[2] && !r[2].error ? r[2] : { data: [] }, r[3] && !r[3].error ? r[3] : { data: [] }]).then(r => { cupRows = r[2].data || []; outRows = r[3].data || []; return r; });
   const counts = {}, rates = {}, used = {};
   const doses = {};
   (bs || []).forEach(b => { if (Number(b.dose_g) > 0) (doses[b.coffee_id] = doses[b.coffee_id] || []).push(Number(b.dose_g)); });
@@ -1390,6 +1489,7 @@ async function load() {
   const first = {}; (bs || []).forEach(b => { if (b.brewed_at && !first[b.coffee_id]) first[b.coffee_id] = b.brewed_at; });   // brews come oldest first
   const late = data.filter(c => !c.open_date && !c.finished_at && !c.archived && first[c.id]);
   late.forEach(c => { const d = new Date(first[c.id]); c.open_date = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); db.from("coffees").update({ open_date: c.open_date }).eq("id", c.id).is("open_date", null).then(() => {}, () => {}); });
+  coffeeOuts = {}; outRows.forEach(o => { used[o.coffee_id] = (used[o.coffee_id] || 0) + Number(o.grams); (coffeeOuts[o.coffee_id] = coffeeOuts[o.coffee_id] || []).push(o); });   // beans out count for what is left
   coffeeData = data; coffeeCounts = counts; coffeeRates = rates; coffeeUsed = used;
   // the brews of the last day and a half, for the caffeine on Home (assets/js/caffeine.js; they count for whoever they were for)
   const byId = {}, since = Date.now() - 36 * 3600e3; data.forEach(c => { byId[c.id] = c; });
@@ -3636,6 +3736,7 @@ async function openCoffee(id, dev, wantForm, rid) {
   bagActions(c, () => { load(); openCoffee(c.id); }).forEach(x => bx.appendChild(x));
   const t = $("dtags"); t.textContent = "";
   (c.flavour_tags || []).forEach(x => t.appendChild(noteChip(x)));
+  drawOuts(c);
   // devices you do not own (ticked in Settings) stay out, even if used for this coffee before; your own names ("French press (1 l)") stay in
   const std = deviceList(true), devs = deviceList(), owns = devs.length < std.length;
   fill("b-device", devs, [...new Set((dv || []).map(b => DEV_OLD[b.device] || b.device).filter(Boolean))].filter(d => !owns || !std.includes(d)));

@@ -214,10 +214,11 @@
               var cl = list || (shelf && shelf.coffees) || [];
               var ids = cl.filter(function (c) { return !c.finished_at && !c.archived; }).map(function (c) { return c.id; });
               var bq = ids.length ? db.from("brews").select("coffee_id,dose_g,brewed_at").in("coffee_id", ids).order("brewed_at") : Promise.resolve({ data: [] });
-              return bq.then(function (b) {
+              var oq = ids.length ? db.from("bean_outs").select("coffee_id,grams").in("coffee_id", ids).then(function (r) { return r; }, function () { return { data: [] }; }) : Promise.resolve({ data: [] });   // beans out (supabase/51)
+              return Promise.all([bq, oq]).then(function (two) { var b = two[0], o = two[1] && !two[1].error ? two[1].data || [] : [];
                 var first = {}; ((b && b.data) || []).forEach(function (x) { if (!first[x.coffee_id]) first[x.coffee_id] = x.brewed_at; });
                 if (list) list.forEach(function (c) { if (!c.open_date && !c.finished_at && first[c.id]) c.open_date = String(first[c.id]).slice(0, 10); });
-                return { data: b && b.data, error: b && b.error, coffees: list };
+                return { data: (b && b.data || []).concat(o.map(function (x) { return { coffee_id: x.coffee_id, dose_g: Number(x.grams), out: true }; })), error: b && b.error, coffees: list };
               });
             });
           })(),

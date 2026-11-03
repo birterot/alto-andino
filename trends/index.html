@@ -1247,7 +1247,7 @@ function bagSvg(frac) {
 function beansLeft() {
   const bl = card("Beans left", "Your open bags with a bag size, emptiest first: what is left after the brews logged so far.");
   const bags = state.coffees.filter(c => !c.archived && !c.finished_at && c.bag_g && c.open_date).map(c => {
-    const mine = state.brews.filter(b => b.coffeeId === c.id), used = mine.reduce((x, b) => x + (b.dose || 0), 0);
+    const mine = state.brews.filter(b => b.coffeeId === c.id), used = mine.reduce((x, b) => x + (b.dose || 0), 0) + (state.outs || []).filter(o => o.coffee_id === c.id).reduce((x, o) => x + Number(o.grams), 0);   // beans out too
     const doses = mine.map(b => b.dose).filter(Boolean).sort((x, y) => x - y), typical = doses.length ? doses[Math.floor(doses.length / 2)] : 18;
     const left = Math.max(0, c.bag_g - used);
     return { c, used, left, typical, n: mine.length, cups: Math.floor(left / typical) };
@@ -1667,6 +1667,7 @@ async function loadMine() {
   state.coffees = cs.data.map(c => Object.assign({}, c, { bag_g: c.bag_size_g || null }));
   state.hh = hh; state.noteFam = {};
   if (hh) { const nf = await db.from("households").select("note_families").eq("id", hh).maybeSingle(); if (!nf.error && nf.data) state.noteFam = nf.data.note_families || {}; }   // after supabase/49_notes.sql
+  state.outs = []; { const bo = await db.from("bean_outs").select("coffee_id,grams"); if (!bo.error && bo.data) state.outs = bo.data; }   // after supabase/51
   state.merges = [];
   if (hh) { const nm = await db.from("note_merges").select("id,from_note,to_note,created_at").eq("household_id", hh).is("undone_at", null).order("created_at", { ascending: false }).limit(20); if (!nm.error && nm.data) state.merges = nm.data; }   // after supabase/50
   state.names = {}; state.prefs = {};
