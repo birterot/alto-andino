@@ -1137,6 +1137,7 @@ function safeUrl(u) {
 // Small line icons. ico("edit", 18) returns an <svg>. Add an icon by adding a line of path data (24x24 grid).
 const ICONS = {
   more: "M5 12h.01 M12 12h.01 M19 12h.01",
+  beanout: "M9.5 4.5c2.9 0 4.8 3.1 4.8 7.3s-1.9 7.7-4.8 7.7-4.8-3.4-4.8-7.6 1.9-7.4 4.8-7.4z M9.5 5c-1 2.2-1 4.6 0 6.9s1 4.8 0 7.1 M16.5 12h5 M19.3 9.6l2.2 2.4-2.2 2.4",   // a bean, and out it goes
   edit: "M4 20h4L19 9l-4-4L4 16v4z M13 7l4 4",
   trash: "M4 7h16 M10 7V4h4v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6",
   bag: "M6.5 8h11l1 12.5h-13z M9 8V6.5a3 3 0 016 0V8",
@@ -1276,7 +1277,7 @@ function cardMenu(c, page) {
   const here = () => { if (page) $("dedithost").appendChild($("addbox")); };
   box.appendChild(abtn("mi", "Edit", "edit", () => { close(); here(); startEdit(page ? cur : c); }));
   box.appendChild(abtn("mi", "New bag", "plus", () => { close(); here(); startNewBag(c); }));
-  if (c.bag_size_g && !c.finished_at) box.appendChild(abtn("mi", "Beans out\u2026", "bag", () => { close(); openOut(c); }));
+  if (c.bag_size_g && !c.finished_at) box.appendChild(abtn("mi", "Beans out\u2026", "beanout", () => { close(); openOut(c); }));
   bagActions(c, page ? () => { load(); openCoffee(c.id); } : load).forEach(x => { x.className = "mi"; box.appendChild(x); });
   const bl = buyLink(c); if (bl) { bl.className = "mi"; box.appendChild(bl); }
   box.appendChild(abtn("mi del", "Archive or delete", "trash", async () => {
