@@ -88,6 +88,51 @@ details.add summary{cursor:pointer;font-weight:600}
 .cc .lnk{border-color:var(--line);color:var(--t)}
 .cc .meta{opacity:.9}
 .cc .fin{font-weight:600}
+.pfit{margin-top:10px}.pfit .vl{display:block;font-size:14px;color:var(--mut);margin-bottom:6px}
+.pfr{width:156px;height:200px;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--bg);touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.pfr:active{cursor:grabbing}
+.pfr img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.decaf.inl{position:static;display:inline-block;margin-left:8px;vertical-align:3px;font-family:system-ui,sans-serif}
+.pzoom input{accent-color:var(--act)}
+.pzoom{display:flex;align-items:center;gap:10px;max-width:260px;margin-top:8px;font-size:14px;color:var(--mut)}.pzoom input{flex:1}
+/* the coffee card as a bag label: the bag, what it is and its stars; the label; the notes; what is left and the brews */
+.cca{border-top-width:1px;border-top-color:var(--line)}
+.cca .ctop{display:flex;gap:14px;padding:16px 12px 0 16px}
+.cca .cph{position:relative;flex:none;width:78px;height:100px;border-radius:10px;overflow:hidden;background:color-mix(in srgb,var(--t) 8%,transparent)}
+.cca .cph .phb{display:block;width:100%;height:100%;padding:0;border:0;background:none}
+.cca .cph img{display:block;width:100%;height:100%;object-fit:cover}
+.cca .cph .zm{display:none}
+.cca .cph.none{display:grid;place-items:center}
+.cca .cph.none svg{width:36px;height:46px;fill:none;stroke:var(--s);stroke-width:1.8;stroke-linejoin:round}
+.decaf{position:absolute;left:5px;bottom:5px;padding:3px 7px;border-radius:999px;background:var(--t);color:var(--f);font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;line-height:1.2;pointer-events:none}
+.cca .ctt{flex:1;min-width:0;padding-top:2px}
+.cca .ccap{margin:0;font-size:11.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;opacity:.75}
+.cca h3{margin:4px 0 2px;font-size:20px;line-height:1.2}
+.cca .cro{margin:0;font-size:14.5px;opacity:.85}
+.cca .crate{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 0;font-size:14px}
+.cca .crate b{font-weight:700}.cca .crate span{opacity:.8}
+.cca .in{padding:0 16px 16px}
+.cca .cspec{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-top:14px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--t) 16%,transparent)}
+.cca .cspec .wide{grid-column:1/-1}
+.cca .cspec small{display:block;margin-bottom:3px;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.65}
+.cca .cspec b,.cca .cspec .cupl{font-weight:600;font-size:14.5px;color:inherit}
+.cca .crst .rscale{display:flex;margin-top:5px}
+.cca .tags{margin-top:14px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--t) 16%,transparent)}
+.cca .cfoot{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-top:14px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--t) 16%,transparent)}
+.cca .cleft{flex:1;min-width:0;font-size:13px}.cca .cleft b{display:block;font-size:14px}.cca .cleft span{opacity:.8}
+.cmeter{height:6px;margin:6px 0 5px;border-radius:3px;background:color-mix(in srgb,var(--t) 14%,transparent);overflow:hidden}.cmeter i{display:block;height:100%;background:var(--s)}
+.cca .cfoot .brewbtn{flex:none}
+details.ccm{position:relative;flex:none;align-self:flex-start}
+details.ccm summary{list-style:none;width:40px;height:40px;display:grid;place-items:center;border-radius:50%;cursor:pointer;color:var(--t)}
+details.ccm summary::-webkit-details-marker{display:none}
+details.ccm summary svg{stroke-width:2.8}
+details.ccm[open] summary{background:color-mix(in srgb,var(--t) 10%,transparent)}
+.ccmenu{position:absolute;right:0;top:44px;z-index:20;min-width:210px;padding:6px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);box-shadow:0 10px 28px rgba(20,14,10,.16)}
+.ccmenu .mi{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:0 12px;border:0;border-radius:8px;background:none;color:inherit;font:inherit;font-size:14.5px;text-align:left;text-decoration:none;cursor:pointer}
+.ccmenu .mi:hover{background:var(--bg)}
+.ccmenu .mi svg{width:18px;height:18px;flex:none}
+.ccmenu .mi.del{color:var(--bad,#b3412e)}
+.ccmenu .mi.fav.on svg{fill:currentColor}
 .vfield{display:block;margin-top:14px;max-width:420px}
 .vfield>.vl{display:block;font-size:14px;color:var(--mut)}
 .vcombo{position:relative;margin-top:6px}
@@ -581,6 +626,13 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
     <form id="cf">
       <label>Bag photo<input type="file" id="f-photo" accept="image/*"></label>
       <p class="hint" id="photohint" hidden>Leave empty to keep the current photo (a new bag uses the same photo).</p>
+      <div class="pfit" id="pfit" hidden>
+        <span class="vl">How it sits on the card</span>
+        <div class="pfr" id="pfr"><img id="pfimg" alt="" draggable="false"></div>
+        <label class="pzoom">Zoom<input type="range" id="pfz" min="1" max="3" step="0.05" value="1"></label>
+        <p class="hint">Drag the photo to choose what shows on the card. <button class="lnk" type="button" id="pfreset">Reset</button></p>
+        <input id="f-ppos" hidden>
+      </div>
       <label>Roaster or brand<input id="f-roaster" placeholder="e.g. 80 Cup, or Lavazza"></label>
       <label>Name, as they call it<input id="f-name" required placeholder="e.g. Colombia Huila, or Qualità Oro"></label>
       <p class="hint">Specialty coffee: the roaster and the coffee's name. Supermarket coffee: the brand and the product name.</p>
@@ -1088,6 +1140,7 @@ function rateBlock(list, ofBag) {
 }
 // Small line icons. ico("edit", 18) returns an <svg>. Add an icon by adding a line of path data (24x24 grid).
 const ICONS = {
+  more: "M5 12h.01 M12 12h.01 M19 12h.01",
   edit: "M4 20h4L19 9l-4-4L4 16v4z M13 7l4 4",
   trash: "M4 7h16 M10 7V4h4v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6",
   bag: "M6.5 8h11l1 12.5h-13z M9 8V6.5a3 3 0 016 0V8",
@@ -1184,78 +1237,102 @@ function buyLink(c) {
 
 const gk = c => c.group_id || c.id;   // bags of one coffee share this key
 
-// How much is left in an opened bag: a little bag that is as full as the coffee in it.
-// When coffee was taken out since the card was last shown (a brew was logged), it empties down to the new level.
-function bagMeter(c, left) {
-  const NS = "http://www.w3.org/2000/svg", mk = (t, at) => { const e = document.createElementNS(NS, t); for (const k in at) e.setAttribute(k, at[k]); return e; };
-  const frac = Math.max(0, Math.min(1, left / c.bag_size_g)), key = "alto.bagfill." + c.id;
-  const prev = Number(store.get(key)); store.set(key, String(frac));
-  const w = el("div", "bagm"), s = mk("svg", { viewBox: "0 0 40 52", width: 38, height: 49, "aria-hidden": "true" });
-  const BODY = "M7.5 14h25l2.3 31.5a3 3 0 01-3 3.2H8.2a3 3 0 01-3-3.2z", cid = "bagc-" + c.id;
-  const cp = mk("clipPath", { id: cid }); cp.appendChild(mk("path", { d: BODY })); const df = mk("defs", {}); df.appendChild(cp); s.appendChild(df);
-  const fill = mk("rect", { x: 0, y: 14, width: 40, height: 35, class: "bf" }), g = mk("g", { "clip-path": "url(#" + cid + ")" });   // the clip stays put, the coffee inside moves
-  g.appendChild(fill); s.appendChild(g);
-  s.appendChild(mk("path", { d: BODY, class: "bo" }));                                         // the bag
-  s.appendChild(mk("path", { d: "M6.5 7.5h27v6.5h-27z", class: "bo" }));                         // the rolled-up top
-  s.appendChild(mk("path", { d: "M10 10.75h20", class: "bo thin" }));
-  s.appendChild(mk("circle", { cx: 20, cy: 22.5, r: 2.4, class: "bo thin" }));                    // the little aroma valve
-  const pct = Math.round(frac * 100);
-  const txt = el("p", "", "About " + Math.round(left) + " g of " + c.bag_size_g + " g left" + (frac <= 0.15 ? ", almost empty" : ""));
-  // how many more cups that is, at the dose you usually use for this coffee (18 g until you have brewed it)
-  const dose = coffeeDose[c.id] || (window.DEFAULTS && DEFAULTS.BREW && DEFAULTS.BREW.dose_g) || 18, n = Math.floor(left / dose), dt = (Math.round(dose * 10) / 10) + "\u00A0g";
-  txt.appendChild(el("small", "cups", n >= 1 ? "Enough for about " + n + (n === 1 ? " more cup" : " more cups") + " at " + dt : "Not quite enough for another " + dt + " cup"));
-  w.setAttribute("role", "img"); w.setAttribute("aria-label", "The bag is about " + pct + " percent full");
-  w.append(s, txt);
-  const at = f => { fill.style.transform = "scaleY(" + f + ")"; };
-  if (prev > frac && prev <= 1) {   // it got emptier: show it going down
-    at(prev); requestAnimationFrame(() => requestAnimationFrame(() => { fill.classList.add("go"); at(frac); }));
-  } else at(frac);
-  return w;
+// "ETHIOPIA · GUJI, SIDAMO" above the name; a blend: its countries
+function originCaps(c) {
+  const o = splitOrigin(c.origin);
+  if (c.is_blend) return "Blend" + (o.countries.length ? " · " + o.countries.join(", ") : "");
+  return [o.countries[0] || o.country, o.region].filter(Boolean).join(" · ");
 }
-function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
-  const a = el("article", "cc");
-  applyLook(a, c);
-  if (photoUrl || thumbUrl) { const i = el("img", "ph"); i.src = thumbUrl || photoUrl; i.alt = "Bag of " + c.name; i.loading = "lazy"; i.decoding = "async"; a.appendChild(photoBtn(i, photoUrl || thumbUrl, c.name)); }
-  const b = el("div", "in");
-  const hd = el("div", "hd"); hd.appendChild(el("h3", "", c.name)); b.appendChild(hd);
-  const meta = [c.is_decaf ? "Decaf" + (c.decaf_process ? " (" + c.decaf_process + ")" : "") : null, c.roaster, originText(c), c.variety, altText(c)].filter(Boolean).join(", ");
-  if (meta) b.appendChild(el("p", "meta", meta));
-  b.appendChild(factsBlock(c, true));
-  if (bags && bags.length > 1) b.appendChild(el("p", "age", "Bag " + bags.length + " of " + bags.length));
-  if (c.flavour_tags && c.flavour_tags.length) {
-    const t = el("div", "tags"); c.flavour_tags.forEach(x => t.appendChild(noteChip(x))); b.appendChild(t);
-  }
-  const rt = rateBlock(ratings, bags && bags.length > 1); if (rt) b.appendChild(rt);
-  else if (bags && bags.length > 1) {   // a new bag without rated brews yet: the bag before as a hint
-    const bagAvg = o => { const c = (coffeeRates[o.id] || []).filter(x => x.r != null && !x.d); return c.length ? c.reduce((a, x) => a + x.r, 0) / c.length : null; };
-    const k = bags.slice(1).findIndex(o => bagAvg(o) != null);
-    if (k >= 0) { const v = bagAvg(bags[k + 1]), p = el("p", "lastbag", "Not rated yet. The bag before: "); p.append(Stars.row(v, v.toFixed(1) + " of 5 stars"), document.createTextNode(" " + v.toFixed(1))); b.appendChild(p); }
-  }
-  if (c.roast_date) b.appendChild(el("p", "", "Roasted " + ago(c.roast_date) + " (" + fmtD(c.roast_date) + ")"));
-  else if (c.purchase_date) b.appendChild(el("p", "", "Bought " + ago(c.purchase_date) + " (" + fmtD(c.purchase_date) + "), roast date unknown"));
-  if (c.open_date) b.appendChild(el("p", "", "Opened " + ago(c.open_date) + " (" + fmtD(c.open_date) + ")"));
-  else b.appendChild(el("p", "", "Not opened yet"));
-  if (c.finished_at) b.appendChild(el("p", "fin", "Finished on " + fmtD(c.finished_at)));
-  if (c.bag_size_g && c.open_date && !c.finished_at) b.appendChild(bagMeter(c, Math.max(0, c.bag_size_g - (coffeeUsed[c.id] || 0))));
-  if (c.notes) b.appendChild(el("p", "", c.notes));
-  // the buttons, as on the coffee's page: Buy again, New bag and the bag on the left (one under the other), the brews bottom right
-  const acts = el("div", "acts dacts"), stk = el("span", "stk");
-  const bl = buyLink(c); if (bl) stk.appendChild(bl);
-  stk.appendChild(abtn("btn ghost", "New bag", "plus", () => startNewBag(c)));
-  bagActions(c, load).forEach(x => stk.appendChild(x));
-  acts.append(stk, abtn("btn brewbtn", nBrews ? "Brews (" + nBrews + ")" : "Brews", "brew", () => { location.hash = "c=" + c.id; }));
-  const del = ibtn("Archive or delete", "trash", async () => {
+const decafBadge = c => { const d = el("span", "decaf", "Decaf"); d.title = c.decaf_process ? "Decaf, " + c.decaf_process : "Decaf"; return d; };
+function bagDrawing() {
+  const NS = "http://www.w3.org/2000/svg", s1 = document.createElementNS(NS, "svg"); s1.setAttribute("viewBox", "0 0 40 52"); s1.setAttribute("aria-hidden", "true");
+  ["M7.5 14h25l2.3 31.5a3 3 0 01-3 3.2H8.2a3 3 0 01-3-3.2z", "M6.5 7.5h27v6.5h-27z"].forEach(d => { const p1 = document.createElementNS(NS, "path"); p1.setAttribute("d", d); s1.appendChild(p1); });
+  return s1;
+}
+// how the photo sits in its frame: "x y zoom" (where the middle is, in %, and how far in), as chosen when editing the coffee
+function fitPhoto(img, pos) {
+  const [x, y, z] = String(pos || "").split(" ").map(Number);
+  if (!isFinite(x) || !isFinite(y)) return;
+  img.style.objectPosition = x + "% " + y + "%";
+  if (z > 1) { img.style.transformOrigin = x + "% " + y + "%"; img.style.transform = "scale(" + z + ")"; } else { img.style.transform = ""; }
+}
+// everything else you can do with the bag, behind one button
+function cardMenu(c) {
+  const d = el("details", "ccm"), sm = el("summary"), box = el("div", "ccmenu");
+  sm.setAttribute("aria-label", "More for " + c.name); sm.appendChild(ico("more", 20)); d.appendChild(sm);
+  const close = () => { d.open = false; };
+  const fav = favBtn("coffee", gk(c)); fav.classList.remove("ib"); fav.classList.add("mi"); fav.appendChild(el("span", "", "Favourite")); box.appendChild(fav);
+  box.appendChild(abtn("mi", "Edit", "edit", () => { close(); startEdit(c); }));
+  box.appendChild(abtn("mi", "New bag", "plus", () => { close(); startNewBag(c); }));
+  bagActions(c, load).forEach(x => { x.className = "mi"; box.appendChild(x); });
+  const bl = buyLink(c); if (bl) { bl.className = "mi"; box.appendChild(bl); }
+  box.appendChild(abtn("mi del", "Archive or delete", "trash", async () => {
+    close();
     const what = await askRemove(c, coffeeCounts[c.id] || 0);
     if (what === "archive") { if (await setArchived(c, true)) load(); }
     else if (what === "delete") {
       if (!confirm("Delete this bag of \"" + c.name + "\" and its " + (coffeeCounts[c.id] || 0) + " brews for good? This cannot be undone.")) return;
       if (await deleteBag(c)) load();
     }
-  }, "del");
-  const ed = ibtn("Edit", "edit", () => startEdit(c));
-  const grp = el("div", "ibs"); grp.append(favBtn("coffee", gk(c)), ed, del);
-  hd.appendChild(grp);
-  b.appendChild(acts);
+  }));
+  d.appendChild(box);
+  d.addEventListener("toggle", () => { if (d.open) document.querySelectorAll("details.ccm[open]").forEach(o => { if (o !== d) o.open = false; }); });
+  return d;
+}
+document.addEventListener("click", e => { if (!e.target.closest("details.ccm")) document.querySelectorAll("details.ccm[open]").forEach(o => { o.open = false; }); });
+function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
+  const a = el("article", "cc cca");
+  applyLook(a, c);
+  // the top: the bag (its photo, framed as you chose, or a drawing), what it is, and its stars
+  const top = el("div", "ctop"), fr = el("div", "cph");
+  if (photoUrl || thumbUrl) { const im = el("img"); im.src = thumbUrl || photoUrl; im.alt = "Bag of " + c.name; im.loading = "lazy"; im.decoding = "async"; fitPhoto(im, c.photo_pos); fr.appendChild(photoBtn(im, photoUrl || thumbUrl, c.name)); }
+  else { fr.classList.add("none"); fr.appendChild(bagDrawing()); }
+  if (c.is_decaf) fr.appendChild(decafBadge(c));
+  const tt = el("div", "ctt"), where = originCaps(c);
+  if (where) tt.appendChild(el("p", "ccap", where));
+  tt.appendChild(el("h3", "", c.name));
+  if (c.roaster) tt.appendChild(el("p", "cro", c.roaster));
+  const rated = (ratings || []).filter(x => x.r != null && !x.d), rr = el("p", "crate");
+  if (rated.length) { const v = rated.reduce((s1, x) => s1 + x.r, 0) / rated.length; rr.append(Stars.row(v, v.toFixed(1) + " of 5 stars"), el("b", "", v.toFixed(1)), el("span", "", "· " + rated.length + (rated.length === 1 ? " brew" : " brews"))); }
+  else {
+    const bagAvg = o => { const x = (coffeeRates[o.id] || []).filter(y => y.r != null && !y.d); return x.length ? x.reduce((s1, y) => s1 + y.r, 0) / x.length : null; };
+    const k = bags && bags.length > 1 ? bags.slice(1).findIndex(o => bagAvg(o) != null) : -1;
+    if (k >= 0) { const v = bagAvg(bags[k + 1]); rr.append(el("span", "", "The bag before: "), Stars.row(v, v.toFixed(1) + " of 5 stars"), el("b", "", v.toFixed(1))); }
+    else rr.appendChild(el("span", "", nBrews ? "No rated brews yet" : "Not brewed yet"));
+  }
+  tt.appendChild(rr);
+  top.append(fr, tt, cardMenu(c));
+  a.appendChild(top);
+  const b = el("div", "in");
+  // the label: process, roast, altitude, variety (and what else there is), two by two
+  const spec = el("div", "cspec"), item = (k, v, wide) => { if (!v) return; const d = el("div", wide ? "wide" : ""); d.append(el("small", "", k), typeof v === "string" ? el("b", "", v) : v); spec.appendChild(d); };
+  item(listOf(c.process).length > 1 ? "Processes" : "Process", listOf(c.process).join(", "));
+  const ri = roastIdx(c.roast_level);
+  if (c.roast_level) { const v = el("div", "crst"); v.appendChild(el("b", "", c.roast_level)); if (ri >= 0) { const sc = el("span", "rscale"); sc.setAttribute("aria-hidden", "true"); ROASTS.forEach((_, n) => sc.appendChild(el("i", n <= ri ? "on" : ""))); v.appendChild(sc); } item("Roast", v); }
+  item("Altitude", altText(c));
+  item(listOf(c.variety).length > 1 ? "Varieties" : "Variety", c.variety);
+  if (c.is_decaf) item("Decaf", c.decaf_process || "yes");
+  const cu = coffeeCups[c.id];
+  if (cu && cu.length) { const v = el("a", "cupl"); v.href = "../cupping/#c=" + c.id; v.textContent = (Math.round(cu.reduce((x, y) => x + y, 0) / cu.length * 10) / 10).toFixed(1) + " cupped"; item("Cupping", v); }
+  if (c.sca_score != null) item("SCA score", String(Number(c.sca_score)));
+  if (c.suitable_for && c.suitable_for.length) item("Ideal for", cap(idealText(c.suitable_for)), true);
+  if (spec.children.length) b.appendChild(spec);
+  if (c.flavour_tags && c.flavour_tags.length) { const t = el("div", "tags"); c.flavour_tags.forEach(x => t.appendChild(noteChip(x))); b.appendChild(t); }
+  // the bottom: what is left and how fresh it is, and the brews
+  const ft = el("div", "cfoot"), lf = el("div", "cleft");
+  const left = c.bag_size_g ? Math.max(0, c.bag_size_g - (coffeeUsed[c.id] || 0)) : null;
+  if (left != null && c.open_date && !c.finished_at) {
+    const dose = coffeeDose[c.id] || (window.DEFAULTS && DEFAULTS.BREW && DEFAULTS.BREW.dose_g) || 18, n = Math.floor(left / dose);
+    lf.appendChild(el("b", "", n >= 1 ? "About " + n + (n === 1 ? " cup" : " cups") + " left" : "Almost empty"));
+    const m = el("div", "cmeter"), f = el("i"); f.style.width = Math.round(Math.max(0, Math.min(1, left / c.bag_size_g)) * 100) + "%"; m.appendChild(f); lf.appendChild(m);
+  }
+  const days = iso => Math.max(0, Math.round((new Date().setHours(0, 0, 0, 0) - new Date(iso + "T00:00:00")) / 864e5));
+  const fresh = [bags && bags.length > 1 ? "Bag " + bags.length : null,
+    c.roast_date ? "day " + days(c.roast_date) + " after roasting" : c.purchase_date ? "bought " + ago(c.purchase_date) : null,
+    c.finished_at ? "finished " + fmtD(c.finished_at) : c.open_date ? (days(c.open_date) ? "open " + days(c.open_date) + (days(c.open_date) === 1 ? " day" : " days") : "opened today") : "not opened yet"].filter(Boolean).join(" · ");
+  lf.appendChild(el("span", "", cap(fresh)));
+  ft.append(lf, abtn("btn brewbtn", nBrews ? "Brews (" + nBrews + ")" : "Brews", "brew", () => { location.hash = "c=" + c.id; }));
+  b.appendChild(ft);
   if (bags && bags.length > 1) {
     const d = el("details", "older"); d.appendChild(el("summary", "", "Earlier bags (" + (bags.length - 1) + ")"));
     bags.slice(1).forEach((o, i) => {
@@ -1483,6 +1560,7 @@ function endEdit() {
   $("photohint").hidden = true;
   $("addbox").open = false;
   setSfor([]); store.del(COFFEE_DRAFT); restoredCoffee = false; syncRoastUnknown(); renderVarieties(); syncDecaf(); renderPickers();
+  $("pfit").hidden = true; $("pfimg").removeAttribute("src"); $("f-ppos").value = "";
 }
 function altText(c) {
   if (c.altitude_min_m == null) return null;
@@ -1498,6 +1576,7 @@ function startEdit(c) {
   $("f-blend").checked = !!c.is_blend; syncBlend(); $("f-decaf").checked = !!c.is_decaf; syncDecaf(); setSfor(c.suitable_for); renderVarieties();
   $("f-process").value = listOf(c.process).join(", "); setSel("f-roast", c.roast_level); setSel("f-decafp", c.decaf_process || "");
   $("f-tags").value = (c.flavour_tags || []).join(", "); renderPickers();
+  $("f-ppos").value = c.photo_pos || ""; showFit(c.photo_path ? (coffeeThumbs[c.photo_path] || coffeeUrls[c.photo_path] || "") : "", c.photo_pos);
   $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || ""; $("f-url").value = c.buy_url || ""; $("f-pd").value = c.purchase_date || ""; $("f-rdx").checked = !c.roast_date && !!c.purchase_date; syncRoastUnknown(); $("f-bag").value = c.bag_size_g || ""; $("f-price").value = c.price_eur == null ? "" : Number(c.price_eur); syncBag(); $("f-sca").value = c.sca_score == null ? "" : Number(c.sca_score);
   $("addsum").textContent = "Edit coffee";
   $("save").textContent = "Save changes";
@@ -1690,6 +1769,32 @@ makePicker({ mount: "pk-tags", id: "f-tags", label: "Flavour notes", ph: "Choose
     const ours = usedValues(c => (c.flavour_tags || []).map(x => String(x).toLowerCase())), fam = (window.FLAVOURS && FLAVOURS.families) || [];
     return [["Yours", ours]].concat(fam.map(f => [f[0], f[1].filter(n => !ours.includes(n))]));
   } });
+// the photo in the card's frame: drag it to choose what shows, zoom in if the bag is small in the photo
+let pf = { x: 50, y: 50, z: 1 };
+function showFit(url, pos) {
+  const [x, y, z] = String(pos || "").split(" ").map(Number);
+  pf = { x: isFinite(x) ? x : 50, y: isFinite(y) ? y : 50, z: z >= 1 ? z : 1 };
+  $("pfimg").src = url; $("pfit").hidden = !url; $("pfz").value = pf.z; drawFit(false);
+}
+function drawFit(touched) {   // touched: you moved it, so it is saved
+  const v = Math.round(pf.x) + " " + Math.round(pf.y) + " " + (Math.round(pf.z * 100) / 100);
+  fitPhoto($("pfimg"), v); if (touched) $("f-ppos").value = v;
+}
+(function () {
+  const fr = $("pfr"); let st = null;
+  fr.addEventListener("pointerdown", e => { st = { x: e.clientX, y: e.clientY, px: pf.x, py: pf.y }; fr.setPointerCapture(e.pointerId); });
+  fr.addEventListener("pointermove", e => {
+    if (!st) return;
+    const w = fr.clientWidth, h = fr.clientHeight;
+    pf.x = Math.max(0, Math.min(100, st.px - (e.clientX - st.x) / w * 100 / pf.z * 1.6));
+    pf.y = Math.max(0, Math.min(100, st.py - (e.clientY - st.y) / h * 100 / pf.z * 1.6));
+    drawFit(true);
+  });
+  ["pointerup", "pointercancel"].forEach(ev => fr.addEventListener(ev, () => { st = null; }));
+  $("pfz").addEventListener("input", () => { pf.z = Number($("pfz").value) || 1; drawFit(true); });
+  $("pfreset").onclick = () => { pf = { x: 50, y: 50, z: 1 }; $("pfz").value = 1; drawFit(true); };
+  $("f-photo").addEventListener("change", () => { const f = $("f-photo").files[0]; if (f) { $("f-ppos").value = ""; showFit(URL.createObjectURL(f), null); drawFit(true); } });
+})();
 function syncRoastUnknown() {
   const x = $("f-rdx").checked;
   $("rdlab").hidden = x; $("pdlab").hidden = !x; $("pdhint").hidden = !x;
@@ -2011,10 +2116,15 @@ $("cf").onsubmit = async e => {
       try { await db.storage.from("bag-photos").upload(thumbOf(path), await shrink(f, 640, 0.78), { contentType: "image/jpeg", cacheControl: "31536000" }); } catch (e) {}   // the small copy for the cards
     }
     if (path) row.photo_path = path; else if (newBagOf) row.photo_path = newBagOf.photo_path || null; else if (!editing) row.photo_path = null;
+    if ($("f-ppos").value) row.photo_pos = $("f-ppos").value; else if (path && editing && editing.photo_pos) row.photo_pos = null;
     if (newBagOf) row.group_id = gk(newBagOf);
-    // before supabase/47_decaf_process.sql there is no decaf process yet: save the rest
+    // before supabase/47 and 48 there is no decaf process and no photo framing yet: save the rest
     let noDp = false;
-    const retry = async run => { let r = await run(); if (r.error && "decaf_process" in row && /decaf_process/.test(r.error.message || "")) { delete row.decaf_process; noDp = true; r = await run(); } return r; };
+    const retry = async run => {
+      let r = await run();
+      for (const k of ["decaf_process", "photo_pos"]) if (r.error && k in row && new RegExp(k).test(r.error.message || "")) { delete row[k]; noDp = true; r = await run(); }
+      return r;
+    };
     if (editing) {
       const { data: done, error } = await retry(() => db.from("coffees").update(row).eq("id", editing.id).select());
       if (error) throw error;
@@ -2033,7 +2143,7 @@ $("cf").onsubmit = async e => {
     }
     const after = logAfter;
     const onPage = $("addbox").parentNode === $("dedithost") && cur;
-    endEdit(); say(noDp ? "Saved, but not the decaf process yet: that needs a small database update (supabase/47_decaf_process.sql)." : "Saved."); load();
+    endEdit(); say(noDp ? "Saved, but not the decaf process or the photo framing yet: they need a small database update (supabase/47 and 48)." : "Saved."); load();
     if (onPage) openCoffee(cur.id);
     if (newId && after) { location.hash = "c=" + newId + (after.dev ? "&d=" + encodeURIComponent(after.dev) : "") + "&new"; }
   } catch (err) { say("Could not save: " + err.message); }
@@ -3425,7 +3535,7 @@ function renderPick() {
   const go = c => { location.hash = "c=" + c.id + (dev ? "&d=" + encodeURIComponent(dev) : "") + "&new"; };
   const add = list => list.forEach(c => {
     const b = el("button", "pick"); b.type = "button"; applyLook(b, c);
-    b.appendChild(el("strong", "", c.name));
+    { const nm = el("strong", "", c.name); if (c.is_decaf) { const d = decafBadge(c); d.classList.add("inl"); nm.appendChild(d); } b.appendChild(nm); }
     const sub = [c.roaster, c.process, c.roast_level].filter(Boolean).join(", ");
     if (sub) b.appendChild(el("small", "", sub));
     b.onclick = () => go(c); box.appendChild(b);
@@ -3464,7 +3574,7 @@ async function openCoffee(id, dev, wantForm, rid) {
   const fx = $("dfacts"); fx.textContent = ""; fx.appendChild(factsBlock(c, true));
   const da = $("darch"); da.textContent = ""; da.hidden = !c.archived;
   if (c.archived) { da.append(document.createTextNode("This bag is archived. Its brews still count in Trends.")); da.appendChild(abtn("btn ghost", "Restore", "check", async () => { if (await setArchived(c, false)) openCoffee(c.id); })); }
-  $("dname").textContent = c.name; document.title = c.name + " | Alto Andino";
+  $("dname").textContent = c.name; if (c.is_decaf) { const d = decafBadge(c); d.classList.add("inl"); $("dname").appendChild(d); } document.title = c.name + " | Alto Andino";
   drawFriendShare(c);
   const oldFav = $("dhead").querySelector(".dfav"); if (oldFav) oldFav.remove();
   { const fb = favBtn("coffee", gk(c)); fb.classList.add("dfav"); $("dhead").appendChild(fb); }
@@ -3472,6 +3582,7 @@ async function openCoffee(id, dev, wantForm, rid) {
   if (c.photo_path && !coffeeUrls[c.photo_path]) { const got = await photoLinks([c.photo_path]); coffeeUrls = Object.assign({}, coffeeUrls, got.full); coffeeThumbs = Object.assign({}, coffeeThumbs, got.thumb); }   // opened straight from a link
   const ph = $("dphoto"), pu = c.photo_path ? coffeeUrls[c.photo_path] : null, pt = c.photo_path ? (coffeeThumbs[c.photo_path] || pu) : null;
   const pb = $("dphotob"); pb.hidden = !pu; if (!pb.querySelector(".zm")) pb.appendChild(zoomBadge());
+  ph.style.objectPosition = ""; ph.style.transform = ""; fitPhoto(ph, c.photo_pos);
   if (pu) { ph.src = pt; ph.alt = "Bag of " + c.name; pb.setAttribute("aria-label", "Show the photo of " + c.name + " bigger"); pb.onclick = () => showPhoto(pu, c.name); } else ph.removeAttribute("src");
   $("dmeta").textContent = [c.is_decaf ? "Decaf" + (c.decaf_process ? " (" + c.decaf_process + ")" : "") : null, c.roaster, originText(c), c.variety, altText(c)].filter(Boolean).join(", ") +
     (c.roast_date ? ". Roasted " + fmtD(c.roast_date) : c.purchase_date ? ". Bought " + fmtD(c.purchase_date) + " (roast date unknown)" : "") + (c.open_date ? ", opened " + fmtD(c.open_date) : "") + (c.finished_at ? ", finished " + fmtD(c.finished_at) : "") + ".";
