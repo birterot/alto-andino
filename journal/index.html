@@ -429,6 +429,10 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .sfor label.chk{display:inline-flex;gap:8px;margin:8px 8px 0 0;padding:0 14px;min-height:40px;border:1px solid var(--line);border-radius:999px;background:var(--card);font-size:14px;cursor:pointer}
 .sfor label.chk:has(input:checked){border-color:var(--act);background:var(--act);color:var(--on-act)}
 .sfor label.chk input{width:16px;height:16px;accent-color:var(--bg)}
+.sft{margin-top:8px}.sft label.chk{margin-top:0}
+.sfd{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px 14px;padding:2px 0 2px 14px;border-left:1.5px solid var(--line)}
+.sdev{min-height:34px;padding:0 12px;border-radius:999px;border:1px dashed var(--line);background:none;color:var(--mut);font:inherit;font-size:13.5px;cursor:pointer}
+.sdev[aria-pressed=true]{border:1px solid var(--act);background:color-mix(in srgb,var(--act) 14%,var(--card));color:var(--ink)}
 .sfor legend{margin-bottom:2px}
 .sfordef{margin:8px 0 0;font-size:13px;color:var(--mut)}
 .sfordef summary{cursor:pointer;padding:4px 0}
@@ -607,7 +611,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
       </label>
       <fieldset class="sfor adv" id="f-sfor"><legend>Suitable for</legend></fieldset>
       <details class="sfordef adv"><summary>What do these mean?</summary><dl id="f-sfordef"></dl></details>
-      <p class="hint adv">How you would brew it. The log a brew page suggests coffees by this. An omni roast suits them all: tick all four.</p>
+      <p class="hint adv">Tick the kind when the roaster only says that (“for espresso”), or the devices they name (“for V60 and AeroPress”). Log a brew suggests coffees by this. An omni roast suits them all: tick all four kinds.</p>
       <div id="pk-tags"></div>
       <label id="rdlab">Roast date<input type="date" id="f-rd"></label>
       <label class="chk"><input type="checkbox" id="f-rdx"> Roast date unknown</label>
@@ -891,12 +895,45 @@ const DECAF_PROCESSES = ["Swiss Water", "Mountain Water", "Sugarcane (EA)", "CO\
 fill("f-decafp", DECAF_PROCESSES, []); otherBox("f-decafp");
 const syncDecaf = () => { $("dplab").hidden = !$("f-decaf").checked; };
 $("f-decaf").addEventListener("change", syncDecaf);
-((window.DEFAULTS && window.DEFAULTS.BREW_TYPES) || []).forEach(t => {
-  const l = el("label", "chk"), i = el("input"); i.type = "checkbox"; i.value = t[0]; l.append(i, document.createTextNode(" " + t[1])); if (t[2]) l.title = t[2]; $("f-sfor").appendChild(l);
-  if (t[2]) { const d = $("f-sfordef"); d.append(el("dt", "", t[1]), el("dd", "", t[2])); }   // what each one means, e.g. the AeroPress is immersion
-});
-const sforVals = () => [...document.querySelectorAll("#f-sfor input:checked")].map(i => i.value);
-const setSfor = arr => document.querySelectorAll("#f-sfor input").forEach(i => { i.checked = (arr || []).includes(i.value); });
+// Suitable for: the kind of brewing, and under each kind its devices. Tick only the kind ("espresso") when the roaster says
+// just that, or the devices they name ("V60, AeroPress"): a device ticks its kind too, so suggestions keep working.
+// Saved together in suitable_for: the kinds by their key, the devices by their name.
+const SFOR_DEVS = { espresso: [["Manual espresso machine", "Manual"], ["Semi-automatic espresso machine", "Semi-automatic"], ["Fully automatic machine", "Fully automatic"]],
+  filter: [["Hario V60", "V60"], ["Chemex", "Chemex"], ["Kalita Wave", "Kalita Wave"], ["Filter coffee machine", "Filter machine"]],
+  immersion: [["French press", "French press"], ["AeroPress", "AeroPress"], ["Clever Dripper", "Clever Dripper"], ["Cold brew", "Cold brew"]], moka: [] };
+const SFOR_KEYS = ((window.DEFAULTS && window.DEFAULTS.BREW_TYPES) || []).map(t => t[0]);
+function drawSfor() {
+  const fs = $("f-sfor"), keep = sforVals(); fs.querySelectorAll(".sft").forEach(x => x.remove());
+  let own = {}; try { own = JSON.parse(localStorage.getItem("alto.customdevs") || "{}") || {}; } catch (e) { /* none */ }
+  ((window.DEFAULTS && window.DEFAULTS.BREW_TYPES) || []).forEach(t => {
+    const row = el("div", "sft"), l = el("label", "chk"), i = el("input"); i.type = "checkbox"; i.value = t[0]; l.append(i, document.createTextNode(" " + t[1])); if (t[2]) l.title = t[2];
+    row.appendChild(l);
+    const devs = SFOR_DEVS[t[0]].slice(); Object.keys(own).forEach(n => { if (own[n] === t[0] && !devs.some(d => d[0].toLowerCase() === n.toLowerCase())) devs.push([n, n]); });
+    if (devs.length) {
+      const sub = el("div", "sfd");
+      devs.forEach(([v, lab]) => { const b = el("button", "sdev", lab); b.type = "button"; b.dataset.v = v; b.setAttribute("aria-pressed", "false");
+        b.onclick = () => { const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", String(on)); if (on) i.checked = true; saveCoffeeDraft(); };
+        sub.appendChild(b); });
+      row.appendChild(sub);
+    }
+    i.addEventListener("change", () => { if (!i.checked) row.querySelectorAll(".sdev").forEach(b => b.setAttribute("aria-pressed", "false")); });   // the kind off: its devices too
+    fs.appendChild(row);
+  });
+  setSfor(keep);
+}
+((window.DEFAULTS && window.DEFAULTS.BREW_TYPES) || []).forEach(t => { if (t[2]) { const d = $("f-sfordef"); d.append(el("dt", "", t[1]), el("dd", "", t[2])); } });   // what each one means, e.g. the AeroPress is immersion
+const sforVals = () => [...document.querySelectorAll("#f-sfor input:checked")].map(i => i.value).concat([...document.querySelectorAll("#f-sfor .sdev[aria-pressed=true]")].map(b => b.dataset.v));
+const setSfor = arr => {
+  const a = (arr || []).map(x => String(x).toLowerCase());
+  document.querySelectorAll("#f-sfor input").forEach(i => { i.checked = a.includes(i.value); });
+  document.querySelectorAll("#f-sfor .sdev").forEach(b => { const on = a.includes(b.dataset.v.toLowerCase()); b.setAttribute("aria-pressed", String(on)); if (on) b.closest(".sft").querySelector("input").checked = true; });
+};
+drawSfor();
+// "Ideal for": a kind on its own, or the devices named for it
+function idealText(sf) {
+  const a = sf || [], devs = a.filter(x => !SFOR_KEYS.includes(x));
+  return andList(SFOR_KEYS.filter(k => a.includes(k) || devs.some(d => typeOf(d) === k)).flatMap(k => { const ds = devs.filter(d => typeOf(d) === k); return ds.length ? ds : [typeLabel(k).toLowerCase()]; }));
+}
 let logAfter = null, restoredCoffee = false, coffeeTried = false;
 
 function shrink(file, max = 2000, quality = 0.82) {
@@ -984,7 +1021,7 @@ function factsBlock(c, withTag) {
   if (tag) box.appendChild(el("p", "ptag", tag));
   if (c.suitable_for && c.suitable_for.length) {
     const p = el("p", "ideal"); p.appendChild(ico("cup", 18));
-    p.append(document.createTextNode("Ideal for "), el("b", "", andList(c.suitable_for.map(typeLabel)).toLowerCase()));
+    p.append(document.createTextNode("Ideal for "), el("b", "", idealText(c.suitable_for)));
     box.appendChild(p);
   }
   return box;
@@ -1822,7 +1859,7 @@ const COFFEE_FIELDS = [
   ["process", "Process"], ["roast_level", "Roast level"], ["is_blend", "Blend"], ["is_decaf", "Decaf"], ["decaf_process", "Decaf process"],
   ["roast_date", "Roasted", fmtD], ["purchase_date", "Bought", fmtD], ["open_date", "Opened", fmtD],
   ["bag_size_g", "Bag size", v => v == null ? "" : v + " g"], ["price_eur", "Price", v => v == null ? "" : "\u20AC" + Number(v).toFixed(2)], ["sca_score", "SCA score", v => v == null ? "" : String(Number(v))],
-  ["flavour_tags", "Flavour tags"], ["suitable_for", "Ideal for", v => (v || []).map(typeLabel).join(", ")],
+  ["flavour_tags", "Flavour tags"], ["suitable_for", "Ideal for", v => idealText(v)],
   ["notes", "Notes"], ["buy_url", "Link"]
 ];
 const coffeeChanges = (old, row) => changes(old, row, COFFEE_FIELDS);
@@ -3392,7 +3429,8 @@ function renderPick() {
   });
   if (!logCoffees.length) box.appendChild(el("p", "hint", "No coffees yet. Add your first one below."));
   else if (dev && t) {
-    const fits = logCoffees.filter(c => (c.suitable_for || []).includes(t)), rest = logCoffees.filter(c => !fits.includes(c));
+    const named = c => (c.suitable_for || []).some(x => x.toLowerCase() === String(dev).toLowerCase());   // made for this very device: first
+    const fits = logCoffees.filter(c => (c.suitable_for || []).includes(t)).sort((a, b) => named(b) - named(a)), rest = logCoffees.filter(c => !fits.includes(c));
     box.appendChild(el("h3", "sh", "Suggested for " + dev));
     if (fits.length) add(fits); else box.appendChild(el("p", "hint", "No coffee is marked as suitable for " + t + " yet. You can mark them with \"Suitable for\" when you edit a coffee."));
     if (rest.length) { box.appendChild(el("h3", "sh", "Other coffees")); add(rest); }
