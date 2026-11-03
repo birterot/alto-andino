@@ -213,7 +213,8 @@ dialog.dlg p{margin:0 0 4px;font-size:14.5px;color:var(--mut)}
 .ib.del:hover{color:light-dark(#9A4A32,#E0A08A)}
 .ico{display:block;flex:none}
 #dhead{margin:8px 0 16px}
-#dhead h2{margin:0;font-size:24px}
+#dhead h2{margin:4px 0 2px;font-size:22px;line-height:1.2}
+#dhead .dnote{margin:12px 0 0;font-size:14px;opacity:.9}
 .sc{--ac:var(--accent);display:grid;grid-template-columns:auto 1fr auto auto;grid-template-areas:"i l v x" "r r r r";gap:0 10px;align-items:center;margin-top:16px;max-width:420px}
 .sc .si{grid-area:i;color:var(--ac)}
 .sc .slb{grid-area:l;font-weight:600;font-size:15px;text-transform:capitalize}
@@ -738,7 +739,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
 
   <div id="detail" hidden>
     <a class="back" id="dback" href="#">All coffees</a>
-    <section id="dhead" class="cc"><button type="button" class="phb" id="dphotob" hidden><img id="dphoto" alt=""></button><div class="in"><h2 id="dname"></h2><p id="dmeta"></p><div id="dfacts"></div><div id="drate"></div><div class="tags" id="dtags"></div><div id="douts"></div><p class="darch" id="darch" hidden></p><p class="frshare" id="frshare" hidden></p><div class="acts dacts"><span id="dbuy" class="stk"></span><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button></div></div></section>
+    <section id="dhead" class="cc cca"><button type="button" class="btn logbtn" id="newbrew" aria-controls="brewbox"></button><div id="douts"></div><p class="darch" id="darch" hidden></p><p class="frshare" id="frshare" hidden></p></section>
     <div id="dedithost"></div>
     <details class="add" id="brewbox">
       <summary id="brewsum">Log a brew</summary>
@@ -1085,40 +1086,8 @@ function applyLook(a, c) {
   const p = ROASTS[i][1];
   [["--f", 0], ["--s", 2], ["--t", 4]].forEach(([k, j]) => a.style.setProperty(k, "light-dark(" + p[j] + "," + p[j + 1] + ")"));
 }
-// Process: an icon and the one-line cup profile from the processing chapter (data/processing.js).
-const PROC_ICON = { "washed": "washed", "natural": "natural", "honey": "honey", "pulped natural": "pulped", "semi-washed": "semi" };
-function procInfo(name) {
-  const n = String(name || "").trim().toLowerCase();
-  const d = ((window.CHAPTER && window.CHAPTER.D) || []).find(x => x.n.toLowerCase() === n);
-  const tag = d && d.tag && !/still to add/i.test(d.tag) ? d.tag : null;
-  return { icon: PROC_ICON[n] || "leaf", tag };
-}
 const typeLabel = t => { const x = ((window.DEFAULTS && window.DEFAULTS.BREW_TYPES) || []).find(y => y[0] === t); return x ? x[1] : t; };
 const andList = arr => arr.length < 2 ? arr.join("") : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1];
-// Roast scale, process and "ideal for" lines, used on the cards and the coffee page.
-function factsBlock(c, withTag) {
-  const box = el("div");
-  const facts = el("div", "cfacts");
-  const i = roastIdx(c.roast_level);
-  if (c.roast_level) {
-    const f = el("span", "f");
-    if (i >= 0) { const sc = el("span", "rscale"); sc.setAttribute("aria-hidden", "true"); ROASTS.forEach((_, k) => sc.appendChild(el("i", k <= i ? "on" : ""))); f.appendChild(sc); }
-    f.appendChild(el("span", "", c.roast_level + " roast")); facts.appendChild(f);
-  }
-  if (c.process) { const f = el("span", "f"); f.append(ico(procInfo(listOf(c.process)[0]).icon, 18), el("span", "", listOf(c.process).join(", "))); facts.appendChild(f); }
-  const cu = coffeeCups[c.id];
-  if (cu && cu.length) { const f = el("a", "f cupd"); f.href = "../cupping/#c=" + c.id; f.title = "Cupped " + cu.length + "\u00D7, see the cuppings"; f.append(el("b", "", (Math.round(cu.reduce((a, b) => a + b, 0) / cu.length * 10) / 10).toString()), el("span", "", "cupped" + (cu.length > 1 ? " " + cu.length + "\u00D7" : ""))); facts.appendChild(f); }
-  if (c.sca_score != null) { const f = el("span", "f sca"); f.title = "Official SCA cupping score"; f.append(el("b", "", String(Number(c.sca_score))), el("span", "", "SCA")); facts.appendChild(f); }
-  if (facts.children.length) box.appendChild(facts);
-  const tag = withTag && c.process && listOf(c.process).length === 1 ? procInfo(c.process).tag : null;
-  if (tag) box.appendChild(el("p", "ptag", tag));
-  if (c.suitable_for && c.suitable_for.length) {
-    const p = el("p", "ideal"); p.appendChild(ico("cup", 18));
-    p.append(document.createTextNode("Ideal for "), el("b", "", idealText(c.suitable_for)));
-    box.appendChild(p);
-  }
-  return box;
-}
 
 // Removing a bag: archive it (brews stay) or delete it with its brews.
 function askRemove(c, n) {
@@ -1154,30 +1123,6 @@ async function deleteBag(c) {
 
 function safeUrl(u) {
   try { const x = new URL(u); return x.protocol === "https:" || x.protocol === "http:" ? x.href : null; } catch (e) { return null; }
-}
-// list: [{r: stars or null, d: dial-in?}], oldest first.
-// Dial-in brews are not counted. Headline = average of all counted brews, below it the best counted brew.
-function rateBlock(list, ofBag) {
-  const rated = (list || []).filter(x => x.r != null);
-  if (!rated.length) return null;
-  const counted = rated.filter(x => !x.d), dial = rated.length - counted.length;
-  const box = el("div", "rate");
-  if (!counted.length) {
-    box.appendChild(el("p", "lbl", "Only dial-in brews rated so far (" + dial + "). They do not count toward the rating."));
-    return box;
-  }
-  const avg = counted.reduce((a, b) => a + b.r, 0) / counted.length;   // all counted brews (dial-ins left out)
-  const top = el("div", "avg");
-  top.appendChild(el("span", "num", avg.toFixed(1)));
-  const st = Stars.row(avg, avg.toFixed(1) + " of 5 stars"); st.classList.add("st"); top.appendChild(st);
-  top.appendChild(el("span", "lbl", (counted.length === 1 ? "from 1 counted brew" : "average of all " + counted.length + " counted brews") + (ofBag ? " of this bag" : "")));
-  box.appendChild(top);
-  if (counted.length > 1) {
-    const best = Math.max(...counted.map(x => x.r));
-    const b = el("p", "best", "Best brew "); b.appendChild(Stars.row(best, best + " of 5 stars")); box.appendChild(b);
-  }
-  if (dial) box.appendChild(el("p", "cnt", counted.length + " counted, " + dial + " dial-in"));
-  return box;
 }
 // Small line icons. ico("edit", 18) returns an <svg>. Add an icon by adding a line of path data (24x24 grid).
 const ICONS = {
@@ -1297,24 +1242,40 @@ function fitPhoto(img, pos) {
   img.style.objectPosition = x + "% " + y + "%";
   if (z > 1) { img.style.transformOrigin = x + "% " + y + "%"; img.style.transform = "scale(" + z + ")"; } else { img.style.transform = ""; }
 }
-// everything else you can do with the bag, behind one button
-function cardMenu(c) {
+// the stars under the name: the average of the counted brews, or the bag before's
+function starsLine(ratings, bags, nBrews) {
+  const all = (ratings || []).filter(x => x.r != null), rated = all.filter(x => !x.d), rr = el("p", "crate");
+  if (rated.length) {
+    const v = rated.reduce((s1, x) => s1 + x.r, 0) / rated.length;
+    rr.append(Stars.row(v, v.toFixed(1) + " of 5 stars"), el("b", "", v.toFixed(1)), el("span", "", "\u00B7 " + rated.length + (rated.length === 1 ? " brew" : " brews")));
+    if (rated.length > 1) rr.appendChild(el("span", "", "\u00B7 best " + String(Math.max(...rated.map(x => x.r))).replace(/\.0$/, "") + "\u2605"));
+    return rr;
+  }
+  const bagAvg = o => { const x = (coffeeRates[o.id] || []).filter(y => y.r != null && !y.d); return x.length ? x.reduce((s1, y) => s1 + y.r, 0) / x.length : null; };
+  const k = bags && bags.length > 1 ? bags.slice(1).findIndex(o => bagAvg(o) != null) : -1;
+  if (k >= 0) { const v = bagAvg(bags[k + 1]); rr.append(el("span", "", "The bag before: "), Stars.row(v, v.toFixed(1) + " of 5 stars"), el("b", "", v.toFixed(1))); }
+  else rr.appendChild(el("span", "", all.length ? "Only dial-ins rated so far" : nBrews ? "No rated brews yet" : "Not brewed yet"));
+  return rr;
+}
+// everything else you can do with the bag, behind one button (on its page: the form opens right there)
+function cardMenu(c, page) {
   const d = el("details", "ccm"), sm = el("summary"), box = el("div", "ccmenu");
   sm.setAttribute("aria-label", "More for " + c.name); sm.appendChild(ico("more", 20)); d.appendChild(sm);
   const close = () => { d.open = false; };
   const fav = favBtn("coffee", gk(c)); fav.classList.remove("ib"); fav.classList.add("mi"); fav.appendChild(el("span", "", "Favourite")); box.appendChild(fav);
-  box.appendChild(abtn("mi", "Edit", "edit", () => { close(); startEdit(c); }));
-  box.appendChild(abtn("mi", "New bag", "plus", () => { close(); startNewBag(c); }));
+  const here = () => { if (page) $("dedithost").appendChild($("addbox")); };
+  box.appendChild(abtn("mi", "Edit", "edit", () => { close(); here(); startEdit(page ? cur : c); }));
+  box.appendChild(abtn("mi", "New bag", "plus", () => { close(); here(); startNewBag(c); }));
   if (c.bag_size_g && !c.finished_at) box.appendChild(abtn("mi", "Beans out\u2026", "bag", () => { close(); openOut(c); }));
-  bagActions(c, load).forEach(x => { x.className = "mi"; box.appendChild(x); });
+  bagActions(c, page ? () => { load(); openCoffee(c.id); } : load).forEach(x => { x.className = "mi"; box.appendChild(x); });
   const bl = buyLink(c); if (bl) { bl.className = "mi"; box.appendChild(bl); }
   box.appendChild(abtn("mi del", "Archive or delete", "trash", async () => {
     close();
     const what = await askRemove(c, coffeeCounts[c.id] || 0);
-    if (what === "archive") { if (await setArchived(c, true)) load(); }
+    if (what === "archive") { if (await setArchived(c, true)) { load(); if (page) openCoffee(c.id); } }
     else if (what === "delete") {
       if (!confirm("Delete this bag of \"" + c.name + "\" and its " + (coffeeCounts[c.id] || 0) + " brews for good? This cannot be undone.")) return;
-      if (await deleteBag(c)) load();
+      if (await deleteBag(c)) { load(); if (page) location.hash = ""; }
     }
   }));
   d.appendChild(box);
@@ -1392,11 +1353,10 @@ function drawOuts(c) {
       box.appendChild(r);
     });
   }
-  const st = $("dbuy"); st.querySelectorAll(".outbtn").forEach(x => x.remove());
-  if (c.bag_size_g && !c.finished_at) { const b = abtn("btn ghost outbtn", "Beans out", "bag", () => openOut(c)); st.appendChild(b); }
 }
-function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
-  const a = el("article", "cc cca");
+function card(c, photoUrl, nBrews, ratings, bags, thumbUrl, opt) {
+  opt = opt || {};   // opt.page: the coffee's own page (a heading, its button for the brew form)
+  const a = el(opt.page ? "section" : "article", "cc cca");
   applyLook(a, c);
   // the top: the bag (its photo, framed as you chose, or a drawing), what it is, and its stars
   const top = el("div", "ctop"), fr = el("div", "cph");
@@ -1405,18 +1365,10 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
   if (c.is_decaf) fr.appendChild(decafBadge(c));
   const tt = el("div", "ctt"), where = originCaps(c);
   if (where) tt.appendChild(el("p", "ccap", where));
-  tt.appendChild(el("h3", "", c.name));
+  const h = el(opt.page ? "h2" : "h3", "", c.name); if (opt.page) h.id = "dname"; tt.appendChild(h);
   if (c.roaster) tt.appendChild(el("p", "cro", c.roaster));
-  const rated = (ratings || []).filter(x => x.r != null && !x.d), rr = el("p", "crate");
-  if (rated.length) { const v = rated.reduce((s1, x) => s1 + x.r, 0) / rated.length; rr.append(Stars.row(v, v.toFixed(1) + " of 5 stars"), el("b", "", v.toFixed(1)), el("span", "", "· " + rated.length + (rated.length === 1 ? " brew" : " brews"))); }
-  else {
-    const bagAvg = o => { const x = (coffeeRates[o.id] || []).filter(y => y.r != null && !y.d); return x.length ? x.reduce((s1, y) => s1 + y.r, 0) / x.length : null; };
-    const k = bags && bags.length > 1 ? bags.slice(1).findIndex(o => bagAvg(o) != null) : -1;
-    if (k >= 0) { const v = bagAvg(bags[k + 1]); rr.append(el("span", "", "The bag before: "), Stars.row(v, v.toFixed(1) + " of 5 stars"), el("b", "", v.toFixed(1))); }
-    else rr.appendChild(el("span", "", nBrews ? "No rated brews yet" : "Not brewed yet"));
-  }
-  tt.appendChild(rr);
-  top.append(fr, tt, cardMenu(c));
+  const rr = starsLine(ratings, bags, nBrews); if (opt.page) rr.id = "drate"; tt.appendChild(rr);
+  top.append(fr, tt, cardMenu(c, opt.page));
   a.appendChild(top);
   const b = el("div", "in");
   // the label: process, roast, altitude, variety (and what else there is), two by two
@@ -1446,8 +1398,9 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
     c.roast_date ? "day " + days(c.roast_date) + " after roasting" : c.purchase_date ? "bought " + ago(c.purchase_date) : null,
     c.finished_at ? "finished " + fmtD(c.finished_at) : c.open_date ? (days(c.open_date) ? "open " + days(c.open_date) + (days(c.open_date) === 1 ? " day" : " days") : "opened today") : "not opened yet"].filter(Boolean).join(" · ");
   lf.appendChild(el("span", "", cap(fresh)));
-  ft.append(lf, abtn("btn brewbtn", nBrews ? "Brews (" + nBrews + ")" : "Brews", "brew", () => { location.hash = "c=" + c.id; }));
+  ft.append(lf, opt.button || abtn("btn brewbtn", nBrews ? "Brews (" + nBrews + ")" : "Brews", "brew", () => { location.hash = "c=" + c.id; }));
   b.appendChild(ft);
+  if (opt.page && c.notes) b.appendChild(el("p", "dnote", c.notes));
   if (bags && bags.length > 1) {
     const d = el("details", "older"); d.appendChild(el("summary", "", "Earlier bags (" + (bags.length - 1) + ")"));
     bags.slice(1).forEach((o, i) => {
@@ -1923,13 +1876,6 @@ $("f-rdx").addEventListener("change", syncRoastUnknown);
 
 // A new coffee that was not saved yet is kept on this phone, so leaving the page does not lose it.
 const COFFEE_DRAFT = "alto.draft.coffee";
-// On the cards: the origin as it is, or for a blend "Blend: Brazil, Ethiopia" (its countries)
-function originText(c) {
-  if (!c.is_blend) return c.origin || null;
-  const o = splitOrigin(c.origin);
-  const where = o.countries.length ? o.countries.join(", ") + (o.countries.length === 1 && o.region ? ", " + o.region : "") : (c.origin || "").replace(/\s*\/\s*/g, ", ");
-  return "Blend" + (where ? ": " + where : "");
-}
 // Origin: country and region in two fields, saved together as "Country, Region" (so the stats can group by country)
 (function () { const dl = $("countrylist"); ((window.DEFAULTS && DEFAULTS.COUNTRIES) || []).forEach(c => { const o = el("option"); o.value = c; dl.appendChild(o); }); })();
 const splitOrigin = t => window.DEFAULTS && DEFAULTS.splitOrigin ? DEFAULTS.splitOrigin(t) : { country: t || null, region: null, countries: [] };
@@ -3715,28 +3661,9 @@ async function openCoffee(id, dev, wantForm, rid) {
   cur = c;
   fillCoffeeSwitch(c, all || []);
   ["bflt-device", "bflt-recipe", "bflt-who", "bflt-sort"].forEach(i => { $(i).value = ""; });
-  applyLook($("dhead"), c);
-  const fx = $("dfacts"); fx.textContent = ""; fx.appendChild(factsBlock(c, true));
-  const da = $("darch"); da.textContent = ""; da.hidden = !c.archived;
-  if (c.archived) { da.append(document.createTextNode("This bag is archived. Its brews still count in Trends.")); da.appendChild(abtn("btn ghost", "Restore", "check", async () => { if (await setArchived(c, false)) openCoffee(c.id); })); }
-  $("dname").textContent = c.name; if (c.is_decaf) { const d = decafBadge(c); d.classList.add("inl"); $("dname").appendChild(d); } document.title = c.name + " | Alto Andino";
-  drawFriendShare(c);
-  const oldFav = $("dhead").querySelector(".dfav"); if (oldFav) oldFav.remove();
-  { const fb = favBtn("coffee", gk(c)); fb.classList.add("dfav"); $("dhead").appendChild(fb); }
-  if (!$("dedit")) { const eb = ibtn("Edit coffee", "edit", () => { $("dedithost").appendChild($("addbox")); startEdit(cur); }); eb.id = "dedit"; eb.classList.add("dedit"); $("dhead").appendChild(eb); }
   if (c.photo_path && !coffeeUrls[c.photo_path]) { const got = await photoLinks([c.photo_path]); coffeeUrls = Object.assign({}, coffeeUrls, got.full); coffeeThumbs = Object.assign({}, coffeeThumbs, got.thumb); }   // opened straight from a link
-  const ph = $("dphoto"), pu = c.photo_path ? coffeeUrls[c.photo_path] : null, pt = c.photo_path ? (coffeeThumbs[c.photo_path] || pu) : null;
-  const pb = $("dphotob"); pb.hidden = !pu; if (!pb.querySelector(".zm")) pb.appendChild(zoomBadge());
-  ph.style.objectPosition = ""; ph.style.transform = ""; fitPhoto(ph, c.photo_pos);
-  if (pu) { ph.src = pt; ph.alt = "Bag of " + c.name; pb.setAttribute("aria-label", "Show the photo of " + c.name + " bigger"); pb.onclick = () => showPhoto(pu, c.name); } else ph.removeAttribute("src");
-  $("dmeta").textContent = [c.is_decaf ? "Decaf" + (c.decaf_process ? " (" + c.decaf_process + ")" : "") : null, c.roaster, originText(c), c.variety, altText(c)].filter(Boolean).join(", ") +
-    (c.roast_date ? ". Roasted " + fmtD(c.roast_date) : c.purchase_date ? ". Bought " + fmtD(c.purchase_date) + " (roast date unknown)" : "") + (c.open_date ? ", opened " + fmtD(c.open_date) : "") + (c.finished_at ? ", finished " + fmtD(c.finished_at) : "") + ".";
-  const bx = $("dbuy"); bx.textContent = ""; const bl = buyLink(c); if (bl) bx.appendChild(bl);
-  bx.appendChild(abtn("btn ghost", "New bag", "plus", () => { $("dedithost").appendChild($("addbox")); startNewBag(c); }));
-  bagActions(c, () => { load(); openCoffee(c.id); }).forEach(x => bx.appendChild(x));
-  const t = $("dtags"); t.textContent = "";
-  (c.flavour_tags || []).forEach(x => t.appendChild(noteChip(x)));
-  drawOuts(c);
+  drawHead(c, all || []);
+  document.title = c.name + " | Alto Andino";
   // devices you do not own (ticked in Settings) stay out, even if used for this coffee before; your own names ("French press (1 l)") stay in
   const std = deviceList(true), devs = deviceList(), owns = devs.length < std.length;
   fill("b-device", devs, [...new Set((dv || []).map(b => DEV_OLD[b.device] || b.device).filter(Boolean))].filter(d => !owns || !std.includes(d)));
@@ -3749,6 +3676,22 @@ async function openCoffee(id, dev, wantForm, rid) {
   await loadBrews();
 }
 
+// The top of a coffee's page: the same card as on the shelf, with "Log a brew", the bag's notes, its beans out,
+// an archived note and whether friends see it
+function drawHead(c, all) {
+  const pu = c.photo_path ? coffeeUrls[c.photo_path] : null, pt = c.photo_path ? (coffeeThumbs[c.photo_path] || pu) : null;
+  const grp = (all.length ? all : coffeeData).filter(x => gk(x) === gk(c)).sort((x, y) => String(y.created_at).localeCompare(String(x.created_at)));
+  const bags = grp.length > 1 && grp[0].id === c.id ? grp : null;   // "Bag 3" and the earlier bags: on the newest bag's page
+  const keep = ["douts", "darch", "frshare"].map(id => $(id));
+  const art = card(c, pu, coffeeCounts[c.id] || 0, coffeeRates[c.id] || [], bags, pt, { page: true, button: $("newbrew") });
+  art.id = "dhead";
+  const inn = art.querySelector(".in"); keep.forEach(x => inn.appendChild(x));
+  $("dhead").replaceWith(art);
+  const da = $("darch"); da.textContent = ""; da.hidden = !c.archived;
+  if (c.archived) { da.append(document.createTextNode("This bag is archived. Its brews still count in Trends.")); da.appendChild(abtn("btn ghost", "Restore", "check", async () => { if (await setArchived(c, false)) openCoffee(c.id); })); }
+  drawFriendShare(c);
+  drawOuts(c);
+}
 // "Coffee" at the top of the brew form: switch to another coffee without leaving the form.
 // The newest bag of each coffee is listed (opened ones first); what you typed stays as a draft for this coffee.
 function fillCoffeeSwitch(c, all) {
@@ -3904,7 +3847,7 @@ async function loadBrews() {
   brewData = data;
   // tasting notes used on earlier brews of this coffee are offered again
   if (!editingBrew) data.forEach(b => (b.brew_scores || []).forEach(s => { if (!SCALE.isCore(s.attribute)) addNote(s.attribute); }));
-  const dr = $("drate"); dr.textContent = ""; const rb = rateBlock(data.slice().reverse().map(b => ({ r: brewAvg(b), d: !!b.is_dialin }))); if (rb) dr.appendChild(rb);
+  { const dr = $("drate"); if (dr) { const n = starsLine(data.map(b => ({ r: brewAvg(b), d: !!b.is_dialin })), null, data.length); n.id = "drate"; dr.replaceWith(n); } }
   const uniq = k => [...new Set(data.map(b => b[k]).filter(Boolean))].sort();
   fillFilter("bflt-device", "Device", uniq("device"));
   fillFilter("bflt-recipe", "Recipe", uniq("recipe"));
