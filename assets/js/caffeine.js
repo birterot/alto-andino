@@ -11,7 +11,7 @@
      measured from about 50 to over 300 mg). So "low" and "high" are the estimate minus and plus 25 % (30 % for espresso).
    - In the body: it rises for about 45 minutes, then halves about every 5 hours (a one-compartment curve, absorption
      4.5 per hour). People differ a lot (the 5 hours can be 2 to 10), so this is a rough average.
-   A brew is { g: dose in grams, y: yield in g, w: water in g, dv: device name, k: "decaf" | "robusta" | "blend" | "", rl: roast level },
+   A brew is { g: dose in grams, y: yield in g, w: water in g, dv: device name, k: "decaf" | "robusta" | "blend" | "", rp: Robusta share in % (a blend, if the bag says), rl: roast level },
    plus for Home: t (brewed at), m (made by), r (who it is for: ids, "g" for a guest), rt (when each of them drank it, or null). */
 window.CAFFEINE = (function () {
   var MGG = { "": 12, arabica: 12, blend: 16, robusta: 22, decaf: 0.5 };
@@ -33,6 +33,7 @@ window.CAFFEINE = (function () {
   function mg(b) {
     var t = kind(b.dv), g = Number(b.g) || 0;
     var per = MGG[b.k || ""] != null ? MGG[b.k || ""] : 12, roast = ROAST[String(b.rl || "").toLowerCase()] || 1;
+    if (b.k === "blend" && b.rp != null && isFinite(b.rp)) per = MGG.arabica + (MGG.robusta - MGG.arabica) * Math.max(0, Math.min(100, b.rp)) / 100;   // the share from the bag
     var m = g * per * roast * pulled(t, b), spread = t === "espresso" ? 0.3 : 0.25;
     return { mg: m, lo: m * (1 - spread), hi: m * (1 + spread), kind: t };
   }
@@ -45,7 +46,7 @@ window.CAFFEINE = (function () {
   function row(b, c) {
     var rs = b.brew_ratings || [];
     return { t: b.brewed_at, g: Number(b.dose_g) || 0, y: b.yield_g == null ? null : Number(b.yield_g), w: b.water_g == null ? null : Number(b.water_g),
-      dv: b.device || "", rl: (c && c.roast_level) || "", k: species(c), m: b.made_by || b.created_by || null,
+      dv: b.device || "", rl: (c && c.roast_level) || "", k: species(c), rp: c && c.robusta_pct != null ? Number(c.robusta_pct) : null, m: b.made_by || b.created_by || null,
       r: rs.map(function (x) { return x.is_guest ? "g" : x.rater_id; }), rt: rs.map(function (x) { return x.drank_at || null; }) };
   }
   // still counts at all: some coffee, and brewed (or drunk) since the given time (ms)
