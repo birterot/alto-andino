@@ -136,16 +136,17 @@ ul.rank li:has(.medal){grid-template-columns:auto minmax(0,1fr) 64px var(--vw,au
 /* the barista race */
 .fwbox{max-width:380px;margin:4px auto 0}
 svg.fwheel{display:block;width:100%;height:auto}
-svg.fwheel .ff,svg.fwheel .fs{stroke:var(--card);stroke-width:1.2;cursor:pointer;transition:opacity .15s}
+svg.fwheel .ff,svg.fwheel .fg,svg.fwheel .fs{stroke:var(--card);stroke-width:1.2;cursor:pointer;transition:opacity .15s}
 svg.fwheel .off{opacity:.62}
 svg.fwheel .fl{font:600 10.5px system-ui,sans-serif;fill:#fff;pointer-events:none}svg.fwheel .fl.dim{fill:var(--mut)}
 svg.fwheel .fmid{fill:var(--card)}
 svg.fwheel .fn{font:500 26px "Iowan Old Style",Palatino,Georgia,serif;fill:var(--ink)}svg.fwheel .fo{font:11px system-ui,sans-serif;fill:var(--mut)}
-.leg i.fsw{width:12px;height:12px;border-radius:3px;background:var(--one)}
+.leg i.fsw{width:12px;height:12px;border-radius:3px;background:var(--ink)}
 .fdet{margin-top:10px;padding:12px 14px;border-radius:12px;background:var(--one-track);border-left:4px solid var(--fc,var(--one))}
 .fdet .fdh{margin:0 0 6px;font-size:15.5px;font-weight:600;color:var(--ink)}
 .frow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14.5px}.frow b{font-weight:500;color:var(--mut);font-variant-numeric:tabular-nums}
-.fdet .small{margin:8px 0 0}
+.fdet .small{margin:4px 0 6px}
+.fdet .fgh{margin:10px 0 2px;font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
 details.ftidy{margin-top:4px}
 details.ftidy summary{cursor:pointer;font-size:14.5px;font-weight:600;color:var(--one);padding:8px 0}
 .ftrow.fum button{flex:none;min-height:34px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--one);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
@@ -873,12 +874,15 @@ function likeGroups(list) {
   const org = pick("Origin"), who = adj.join(", ") + (org && org.rows[0].label !== "Several countries" ? (adj.length ? " " : "") + org.rows[0].label : "");
   return { res, who };
 }
-// ---------- the flavour wheel: every note of the wheel, the ones you found stick out, coloured by how you liked them ----------
-const FAMCOL = { Floral: "#B9718F", Berry: "#94455F", Fruit: "#C86A45", Citrus: "#C9A030", "Dried fruit": "#8A563A", Fermented: "#77558A",
-  Green: "#6F8C4E", Sweet: "#B9834A", "Nutty & cocoa": "#6B4632", Spice: "#A65A36", Roasted: "#5B4A43" };
+// ---------- the flavour wheel: the SCA / WCR Coffee Taster's Flavor Wheel (data/flavours.js). Every note of the wheel
+// has its slot; the ones you found stick out, coloured by how you liked them ----------
 const NOFAM = "-";   // a note you said has no family ("juicy")
 const noteKey = n => String(n || "").trim().toLowerCase();
-function famOfNote(n) { const k = noteKey(n), own = (state.noteFam || {})[k]; return own ? (own === NOFAM ? null : own) : (window.FLAVOURS ? FLAVOURS.familyOf(k) : null); }
+function famOfNote(n) {   // yours first (also an older family name of this app), else the wheel's
+  const k = noteKey(n), own = (state.noteFam || {})[k];
+  if (own) return own === NOFAM ? null : (window.FLAVOURS ? FLAVOURS.family(own) : own);
+  return window.FLAVOURS ? FLAVOURS.familyOf(k) : null;
+}
 // your notes: from the cups (a tasting note you gave) and from the bag (the roaster's notes) of the brews in this time frame
 function myNotes(list) {
   const out = {};
@@ -888,73 +892,87 @@ function myNotes(list) {
     ((c && c.flavour_tags) || []).forEach(t => ns.add(noteKey(t)));
     ns.forEach(n => { if (!n) return; const o = out[n] = out[n] || { n, cups: 0, st: [] }; o.cups++; if (b.rating != null) o.st.push(b.rating); });
   });
-  Object.values(out).forEach(o => { o.avg = o.st.length ? avg(o.st) : null; o.fam = famOfNote(o.n); o.own = !(window.FLAVOURS && FLAVOURS.families.some(f => f[1].includes(o.n))); });
+  Object.values(out).forEach(o => { o.avg = o.st.length ? avg(o.st) : null; o.fam = famOfNote(o.n); o.wheel = !!(window.FLAVOURS && FLAVOURS.onWheel(o.n)); o.own = !(window.FLAVOURS && FLAVOURS.families.some(f => f[1].includes(o.n))); });
   return out;
 }
 function flavourWheel() {
-  if (!window.FLAVOURS) return;
-  const m = card("Your flavour wheel", "Every note of the coffee flavour wheel has its slot. The ones you found (on the bag, or as a tasting note on a cup) stick out: the further, the more cups; the stronger the colour, the more you liked those cups. Faint slots are still to discover. Inside are the families. Tap a family for its notes.");
+  if (!window.FLAVOURS || !FLAVOURS.wheel) return;
+  const m = card("Your flavour wheel", "The Coffee Taster's Flavor Wheel of the SCA and World Coffee Research: 9 families inside, their groups around them, and outside every note of the wheel. The notes you found (on the bag, or as a tasting note on a cup) stick out: the further, the more cups; the stronger the colour, the more you liked those cups. Faint slots are still to discover. Notes of yours that are not on the wheel (bergamot, toffee, ...) join the group they belong to, but do not count as found. The Other family is mostly faults (papery, musty, chemical), so it is not counted either. Tap a family for its notes.");
   const list = filtered(false).filter(b => !b.dialin), mine = myNotes(list), found = Object.values(mine);
   if (!found.length) { empty(m, "Add flavour notes to your bags, or tasting notes when you rate a cup, and your wheel fills up."); tidyNotes(m, mine); return; }
   // the colour: how you liked a note against your other notes (your best ones the strongest)
   const avs = found.map(o => o.avg).filter(v => v != null), lo = Math.min(...avs, 5), hi = Math.max(...avs, 0);
   const op = v => v == null ? 0.45 : hi - lo < 0.3 ? 0.8 : 0.35 + 0.65 * (v - lo) / (hi - lo);
-  const fams = FLAVOURS.families.map(([f, ns]) => {
-    const slots = ns.map(n => ({ n, t: mine[n] && mine[n].fam === f ? mine[n] : null }));
-    found.filter(o => o.fam === f && !ns.includes(o.n)).forEach(o => slots.push({ n: o.n, t: o }));   // your own notes get a slot of their own
-    slots.sort((a, b) => (b.t ? 1 : 0) - (a.t ? 1 : 0));
-    const got = slots.filter(x => x.t), cups = got.reduce((x, s) => x + s.t.cups, 0), st = got.flatMap(s => s.t.st);
-    return { f, col: FAMCOL[f] || "var(--one)", slots, got: got.length, cups, avg: st.length ? avg(st) : null };
+  // the wheel's notes in their groups, and yours (found, not on the wheel) in the group they belong to
+  const fams = FLAVOURS.wheel.map(w => {
+    const groups = w.groups.map(g => {
+      const slots = g.notes.map(n => ({ n, t: mine[n] && mine[n].fam === w.f ? mine[n] : null, wheel: true }));
+      found.filter(o => o.fam === w.f && !o.wheel && (FLAVOURS.groupOf(o.n) || w.groups[w.groups.length - 1].g) === g.g && !g.notes.includes(o.n)).forEach(o => slots.push({ n: o.n, t: o, wheel: false }));
+      return { g: g.g, slots: slots.sort((a, b) => (b.t ? 1 : 0) - (a.t ? 1 : 0)) };
+    });
+    const slots = groups.flatMap(g => g.slots), got = slots.filter(x => x.t), st = got.flatMap(x => x.t.st);
+    return { f: w.f, col: w.col, count: w.count, groups, slots, got: got.length, gotW: got.filter(x => x.wheel).length, cups: got.reduce((x, y) => x + y.t.cups, 0), avg: st.length ? avg(st) : null };
   });
-  const all = fams.reduce((a, f) => a + f.slots.length, 0), gotN = fams.reduce((a, f) => a + f.got, 0);
+  const counted = fams.filter(f => f.count), all = fams.reduce((a, f) => a + f.slots.length, 0);
+  const gotN = counted.reduce((a, f) => a + f.gotW, 0), ofN = counted.reduce((a, f) => a + f.slots.filter(x => x.wheel).length, 0);
+  const extra = found.filter(o => o.fam && !o.wheel).length;
   // the take: how far you got, the best families, what is still to find
-  const liked = fams.filter(f => f.avg != null && f.cups >= 2).sort((a, b) => b.avg - a.avg).slice(0, 2), none = fams.filter(f => !f.got).map(f => f.f);
-  m.appendChild(el("p", "take", "You found " + gotN + " of " + all + " notes." + (liked.length ? " Your best cups taste of " + andList(liked.map(f => f.f)) + (liked[0] ? " (" + fmtS(liked[0].avg) + ")" : "") + "." : "")
+  const liked = counted.filter(f => f.avg != null && f.cups >= 2).sort((a, b) => b.avg - a.avg).slice(0, 2), none = counted.filter(f => !f.got).map(f => f.f);
+  m.appendChild(el("p", "take", "You found " + gotN + " of the wheel’s " + ofN + " notes" + (extra ? ", and " + extra + " of your own" : "") + "." + (liked.length ? " Your best cups taste of " + andList(liked.map(f => f.f)) + " (" + fmtS(liked[0].avg) + ")." : "")
     + (none.length && none.length <= 3 ? " Still undiscovered: " + andList(none) + "." : "")));
   const NS = "http://www.w3.org/2000/svg", S = 380, c = S / 2, mx = Math.max(1, ...found.map(o => o.cups));
   const arc = (r0, r1, a0, a1) => { const p = (r, a) => [c + r * Math.sin(a), c - r * Math.cos(a)], lg = a1 - a0 > Math.PI ? 1 : 0, [x0, y0] = p(r1, a0), [x1, y1] = p(r1, a1), [x2, y2] = p(r0, a1), [x3, y3] = p(r0, a0);
     return "M" + x0 + " " + y0 + "A" + r1 + " " + r1 + " 0 " + lg + " 1 " + x1 + " " + y1 + "L" + x2 + " " + y2 + "A" + r0 + " " + r0 + " 0 " + lg + " 0 " + x3 + " " + y3 + "Z"; };
   const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 " + S + " " + S); svg.setAttribute("class", "fwheel"); svg.setAttribute("role", "img");
-  svg.setAttribute("aria-label", "Flavour wheel: " + gotN + " of " + all + " notes found");
+  svg.setAttribute("aria-label", "Flavour wheel: " + gotN + " of " + ofN + " notes found");
   const mk = (t, at) => { const e = document.createElementNS(NS, t); Object.keys(at).forEach(k => e.setAttribute(k, at[k])); svg.appendChild(e); return e; };
   const det = el("div", "fdet");
   let a0 = 0, sel = (liked[0] || fams.find(f => f.got) || fams[0]).f;
-  const groups = [];
+  const parts = [];
   fams.forEach(f => {
     const span = f.slots.length / all * Math.PI * 2, g = [];
-    g.push(mk("path", { d: arc(54, 104, a0, a0 + span), fill: f.col, "fill-opacity": f.got ? op(f.avg) : 0.16, class: "ff" }));
-    f.slots.forEach((x, k) => {
-      const b0 = a0 + span * k / f.slots.length, b1 = a0 + span * (k + 1) / f.slots.length;
-      const p = mk("path", { d: x.t ? arc(107, 146 + 32 * Math.sqrt(x.t.cups / mx), b0, b1) : arc(107, 136, b0, b1), fill: f.col, "fill-opacity": x.t ? op(x.t.avg) : 0.09, class: "fs" });
-      const tt = document.createElementNS(NS, "title"); tt.textContent = x.n + (x.t ? ": " + x.t.cups + (x.t.cups === 1 ? " cup" : " cups") + (x.t.avg != null ? ", " + fmtS(x.t.avg) : "") : ", not found yet"); p.appendChild(tt); g.push(p);
+    g.push(mk("path", { d: arc(50, 92, a0, a0 + span), fill: f.col, "fill-opacity": f.got ? Math.max(0.55, op(f.avg)) : 0.22, class: "ff" }));
+    let b0 = a0;
+    f.groups.forEach(gr => {   // the middle ring: the groups
+      const gs = gr.slots.length / f.slots.length * span, has = gr.slots.some(x => x.t);
+      const gp = mk("path", { d: arc(94, 108, b0, b0 + gs), fill: f.col, "fill-opacity": has ? 0.6 : 0.16, class: "fg" });
+      const tt = document.createElementNS(NS, "title"); tt.textContent = f.f + " › " + gr.g; gp.appendChild(tt); g.push(gp);
+      gr.slots.forEach((x, k) => {
+        const s0 = b0 + gs * k / gr.slots.length, s1 = b0 + gs * (k + 1) / gr.slots.length;
+        const p = mk("path", { d: x.t ? arc(111, 146 + 32 * Math.sqrt(x.t.cups / mx), s0, s1) : arc(111, 136, s0, s1), fill: f.col, "fill-opacity": x.t ? op(x.t.avg) : 0.09, class: "fs" + (x.wheel ? "" : " ext") });
+        const t2 = document.createElementNS(NS, "title"); t2.textContent = x.n + (x.wheel ? "" : " (not on the SCA wheel)") + (x.t ? ": " + x.t.cups + (x.t.cups === 1 ? " cup" : " cups") + (x.t.avg != null ? ", " + fmtS(x.t.avg) : "") : ", not found yet"); p.appendChild(t2); g.push(p);
+      });
+      b0 += gs;
     });
     if (span > 0.3) {   // the family's name, along its slice
-      const a = a0 + span / 2, x = c + 79 * Math.sin(a), y = c - 79 * Math.cos(a); let deg = a * 180 / Math.PI - 90; if (deg > 90) deg -= 180;
-      const t = mk("text", { x, y, "text-anchor": "middle", "dominant-baseline": "middle", transform: "rotate(" + deg + " " + x + " " + y + ")", class: "fl" + (f.got ? "" : " dim") }); t.textContent = f.f.replace(" & cocoa", "").replace("Dried fruit", "Dried");
+      const a = a0 + span / 2, x = c + 71 * Math.sin(a), y = c - 71 * Math.cos(a); let deg = a * 180 / Math.PI - 90; if (deg > 90) deg -= 180;
+      const t = mk("text", { x, y, "text-anchor": "middle", "dominant-baseline": "middle", transform: "rotate(" + deg + " " + x + " " + y + ")", class: "fl" + (f.got ? "" : " dim") }); t.textContent = f.f.split("/")[0];   // short: Sour, Green, Nutty
     }
     g.forEach(p => { p.addEventListener("click", () => { sel = f.f; show(); }); });
-    groups.push({ f: f.f, g }); a0 += span;
+    parts.push({ f: f.f, g }); a0 += span;
   });
-  mk("circle", { cx: c, cy: c, r: 52, class: "fmid" });
+  mk("circle", { cx: c, cy: c, r: 48, class: "fmid" });
   const t1 = mk("text", { x: c, y: c - 5, "text-anchor": "middle", class: "fn" }); t1.textContent = String(gotN);
-  const t2 = mk("text", { x: c, y: c + 15, "text-anchor": "middle", class: "fo" }); t2.textContent = "of " + all + " found";
+  const t2 = mk("text", { x: c, y: c + 15, "text-anchor": "middle", class: "fo" }); t2.textContent = "of " + ofN + " found";
   const box = el("div", "fwbox"); box.appendChild(svg); m.appendChild(box);
-  const lg = el("div", "legend"); [["loved", 1], ["so-so", 0.4], ["not found yet", 0.09]].forEach(([k, o]) => { const s = el("span", "leg"); const i = el("i", "fsw"); i.style.opacity = o; s.append(i, document.createTextNode(k)); lg.appendChild(s); }); m.appendChild(lg);
+  const lg = el("div", "legend"); [["loved", 1], ["so-so", 0.4], ["not found yet", 0.09]].forEach(([k, o]) => { const s1 = el("span", "leg"); const i = el("i", "fsw"); i.style.opacity = o; s1.append(i, document.createTextNode(k)); lg.appendChild(s1); }); m.appendChild(lg);
   m.appendChild(det);
   function show() {
-    groups.forEach(x => x.g.forEach(p => p.classList.toggle("off", x.f !== sel)));
+    parts.forEach(x => x.g.forEach(p => p.classList.toggle("off", x.f !== sel)));
     const f = fams.find(x => x.f === sel); det.textContent = "";
     det.style.setProperty("--fc", f.col);
-    det.appendChild(el("p", "fdh", f.f + " · " + f.got + " of " + f.slots.length + " found"));
-    f.slots.filter(x => x.t).sort((a, b) => (b.t.avg || 0) - (a.t.avg || 0) || b.t.cups - a.t.cups).forEach(x => {
-      const r = el("div", "frow"); r.append(el("span", "", x.n), el("b", "", (x.t.avg != null ? fmtS(x.t.avg) + " · " : "") + x.t.cups + (x.t.cups === 1 ? " cup" : " cups"))); det.appendChild(r);
+    const ofF = f.slots.filter(x => x.wheel).length;
+    det.appendChild(el("p", "fdh", f.f + " · " + f.gotW + " of " + ofF + " found" + (f.count ? "" : " (not counted: mostly faults)")));
+    f.groups.forEach(gr => {
+      const got = gr.slots.filter(x => x.t).sort((a, b) => (b.t.avg || 0) - (a.t.avg || 0) || b.t.cups - a.t.cups), rest = gr.slots.filter(x => !x.t).map(x => x.n);
+      if (f.groups.length > 1 || gr.g !== f.f) det.appendChild(el("p", "fgh", gr.g));
+      got.forEach(x => { const r = el("div", "frow"); r.append(el("span", "", x.n + (x.wheel ? "" : " · yours")), el("b", "", (x.t.avg != null ? fmtS(x.t.avg) + " · " : "") + x.t.cups + (x.t.cups === 1 ? " cup" : " cups"))); det.appendChild(r); });
+      if (rest.length) det.appendChild(el("p", "small", (got.length ? "Still to find: " : "") + rest.join(", ")));
     });
-    const rest = f.slots.filter(x => !x.t).map(x => x.n);
-    if (rest.length) det.appendChild(el("p", "small", "Still to find: " + rest.join(", ")));
   }
   show();
   tidyNotes(m, mine);
-  numbers(m, ["Note", "Family", "Cups", "Stars"], found.sort((a, b) => b.cups - a.cups).map(o => [o.n, o.fam || "not sorted", o.cups, o.avg != null ? r1(o.avg).toFixed(1) : null]));
+  numbers(m, ["Note", "Family", "Group", "On the SCA wheel", "Cups", "Stars"], found.sort((a, b) => b.cups - a.cups).map(o => [o.n, o.fam || "not sorted", o.fam ? FLAVOURS.groupOf(o.n) || "" : "", o.wheel ? "yes" : "no", o.cups, o.avg != null ? r1(o.avg).toFixed(1) : null]));
 }
 // your own notes: give them a family, or merge them into the note they mean (on all bags and cups of the household)
 function tidyNotes(m, mine) {
@@ -972,7 +990,7 @@ function tidyNotes(m, mine) {
     const fs = el("select"); fs.setAttribute("aria-label", "Family of " + o.n);
     const cur = (state.noteFam || {})[o.n], auto = window.FLAVOURS ? FLAVOURS.familyOf(o.n) : null;
     [["", auto ? auto + " (guessed)" : "Family?"]].concat(fams.map(f => [f, f])).concat([[NOFAM, "No family"]]).forEach(([v, t]) => { const op = el("option", "", t); op.value = v; fs.appendChild(op); });
-    fs.value = cur || "";
+    fs.value = cur === NOFAM ? NOFAM : cur ? (FLAVOURS.family(cur) || "") : "";   // an older family name of this app: as on the SCA wheel
     fs.onchange = async () => {
       if (state.demo) { say("Example data: nothing is saved."); return; }
       const r = await db.rpc("set_note_family", { p_household: state.hh, p_note: o.n, p_family: fs.value });
@@ -1733,7 +1751,7 @@ function demo() {
   return { coffees, brews, names: { pa: "Birte (example)", pb: "Andres (example)" } };
 }
 function enterDemo() {
-  const d = demo(); state.demo = true; state.noteFam = { juicy: "-" }; state.merges = [{ id: "dm", from_note: "blue berry", to_note: "blueberry", created_at: new Date(Date.now() - 2 * 864e5).toISOString() }];
+  const d = demo(); state.demo = true; state.noteFam = { juicy: "-", "earl grey": "Floral" }; state.merges = [{ id: "dm", from_note: "blue berry", to_note: "blueberry", created_at: new Date(Date.now() - 2 * 864e5).toISOString() }];
   state.coffees = d.coffees.map(c => Object.assign({}, c, { bag_g: c.bag_size_g || null })); state.names = d.names; state.brews = shape(d.brews, state.coffees);
   state.coffee = ""; state.device = ""; state.who = ""; state.rater = "";
   $("f-demo").textContent = "Back to my data"; fillFilters(); render();
