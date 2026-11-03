@@ -126,6 +126,8 @@ details.add summary{cursor:pointer;font-weight:600}
 .cmeter{height:6px;margin:6px 0 5px;border-radius:3px;background:color-mix(in srgb,var(--t) 14%,transparent);overflow:hidden}.cmeter i{display:block;height:100%;background:var(--s)}
 .cca .cfoot .brewbtn{flex:none}
 details.ccm{position:relative;flex:none;align-self:flex-start}
+.cca .cside{flex:none;align-self:flex-start;display:flex;flex-direction:column;align-items:center;gap:2px}
+.cca .cside .fav{border-radius:50%;opacity:1;color:var(--t,var(--mut))}.cca .cside .fav:not(.on) svg{opacity:.7}.cca .cside .fav.on{color:#c0392b}.cca .cside .fav:hover{border-color:transparent}
 details.ccm summary{list-style:none;width:40px;height:40px;display:grid;place-items:center;border-radius:50%;cursor:pointer;color:var(--t)}
 details.ccm summary::-webkit-details-marker{display:none}
 details.ccm summary svg{stroke-width:2.8}
@@ -1273,7 +1275,6 @@ function cardMenu(c, page) {
   const d = el("details", "ccm"), sm = el("summary"), box = el("div", "ccmenu");
   sm.setAttribute("aria-label", "More for " + c.name); sm.appendChild(ico("more", 20)); d.appendChild(sm);
   const close = () => { d.open = false; };
-  const fav = favBtn("coffee", gk(c)); fav.classList.remove("ib"); fav.classList.add("mi"); fav.appendChild(el("span", "", "Favourite")); box.appendChild(fav);
   const here = () => { if (page) $("dedithost").appendChild($("addbox")); };
   box.appendChild(abtn("mi", "Edit", "edit", () => { close(); here(); startEdit(page ? cur : c); }));
   box.appendChild(abtn("mi", "New bag", "plus", () => { close(); here(); startNewBag(c); }));
@@ -1379,7 +1380,8 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl, opt) {
   const h = el(opt.page ? "h2" : "h3", "", c.name); if (opt.page) h.id = "dname"; tt.appendChild(h);
   if (c.roaster) tt.appendChild(el("p", "cro", c.roaster));
   const rr = starsLine(ratings, bags, nBrews); if (opt.page) rr.id = "drate"; tt.appendChild(rr);
-  top.append(fr, tt, cardMenu(c, opt.page));
+  const side = el("div", "cside"); side.append(cardMenu(c, opt.page), favBtn("coffee", gk(c)));   // the heart always in sight, under the menu
+  top.append(fr, tt, side);
   a.appendChild(top);
   const b = el("div", "in");
   // the label: process, roast, altitude, variety (and what else there is), two by two
