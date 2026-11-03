@@ -1,7 +1,7 @@
 /* Tasting notes, as on the Coffee Taster's Flavor Wheel of the SCA and World Coffee Research (2016, built on the WCR
    Sensory Lexicon): 9 families inside, their groups in the middle, the notes outside, in the wheel's order and colours.
    "extra": words roasters often use that are not on the SCA wheel; they sit with the nearest group, can be picked,
-   but do not count as notes of the wheel ("found 18 of 75").
+   but do not count as notes of the wheel ("found 18 of 69").
    FLAVOURS.wheel       [{ f, col, count, groups: [{ g, notes: [...], extra: [...] }] }]   (count: false = defects, left out of the count)
    FLAVOURS.families    [family, [every note of it, the wheel's first, then the extras]]
    FLAVOURS.familyOf(n) the family of a note (also from a word in it: "dark cherry" is Fruity), or null
@@ -9,38 +9,38 @@
    FLAVOURS.family(n)   a family name, also an older one of this app ("Berry" -> "Fruity") */
 window.FLAVOURS = (function () {
   var wheel = [
-    { f: "Floral", col: "#DA1D81", groups: [
+    { f: "Floral", col: "#EB028C", groups: [
       { g: "Black tea", notes: ["black tea"] },
       { g: "Floral", notes: ["chamomile", "rose", "jasmine"], extra: ["floral", "orange blossom", "elderflower", "lavender", "hibiscus"] }] },
-    { f: "Fruity", col: "#DA2A2C", groups: [
+    { f: "Fruity", col: "#EC1D26", groups: [
       { g: "Berry", notes: ["blackberry", "raspberry", "blueberry", "strawberry"], extra: ["berry", "red fruit", "blackcurrant", "redcurrant", "cranberry"] },
       { g: "Dried fruit", notes: ["raisin", "prune"], extra: ["dried fruit", "fig", "date"] },
       { g: "Other fruit", notes: ["coconut", "cherry", "pomegranate", "pineapple", "grape", "apple", "peach", "pear"], extra: ["fruity", "apricot", "plum", "mango", "passion fruit", "lychee", "melon", "stone fruit", "tropical fruit"] },
       { g: "Citrus fruit", notes: ["grapefruit", "orange", "lemon", "lime"], extra: ["citrus", "bergamot", "mandarin"] }] },
-    { f: "Sour/Fermented", col: "#D9B81B", groups: [
+    { f: "Sour/Fermented", col: "#E9C70A", groups: [
       { g: "Sour", notes: ["sour aromatics", "acetic acid", "butyric acid", "isovaleric acid", "citric acid", "malic acid"] },
       { g: "Alcohol/Fermented", notes: ["winey", "whiskey", "fermented", "overripe"], extra: ["whisky", "rum", "boozy"] }] },
-    { f: "Green/Vegetative", col: "#1E7B3A", groups: [
+    { f: "Green/Vegetative", col: "#267F39", groups: [
       { g: "Olive oil", notes: ["olive oil"] },
       { g: "Raw", notes: ["raw"] },
       { g: "Green/Vegetative", notes: ["under-ripe", "peapod", "fresh", "dark green", "vegetative", "hay-like", "herb-like"], extra: ["herbal", "green tea", "grassy", "cucumber"] },
       { g: "Beany", notes: ["beany"] }] },
-    { f: "Other", col: "#1D9EB3", count: false, groups: [
-      { g: "Papery/Musty", notes: ["stale", "cardboard", "papery", "woody", "moldy/damp", "musty/dusty", "musty/earthy", "animalic"] },
+    { f: "Other", col: "#43AAD5", count: false, groups: [
+      { g: "Papery/Musty", notes: ["stale", "cardboard", "papery", "woody", "moldy/damp", "musty/dusty", "musty/earthy", "animalic", "meaty brothy", "phenolic"] },
       { g: "Chemical", notes: ["bitter", "salty", "medicinal", "petroleum", "skunky", "rubber"] }] },
-    { f: "Roasted", col: "#C4502E", groups: [
+    { f: "Roasted", col: "#D42D24", groups: [
       { g: "Pipe tobacco", notes: ["pipe tobacco"] },
       { g: "Tobacco", notes: ["tobacco"] },
       { g: "Burnt", notes: ["acrid", "ashy", "smoky", "brown roast"], extra: ["roasted", "dark roast"] },
       { g: "Cereal", notes: ["grain", "malt"], extra: ["cereal", "toast", "biscuit"] }] },
-    { f: "Spices", col: "#A8243F", groups: [
+    { f: "Spices", col: "#B91740", groups: [
       { g: "Pungent", notes: ["pungent"] },
-      { g: "Pepper", notes: ["black pepper"] },
+      { g: "Pepper", notes: ["pepper"], extra: ["black pepper", "pink pepper"] },
       { g: "Brown spice", notes: ["anise", "nutmeg", "cinnamon", "clove"], extra: ["spicy", "cardamom", "ginger"] }] },
-    { f: "Nutty/Cocoa", col: "#A5745A", groups: [
+    { f: "Nutty/Cocoa", col: "#957273", groups: [
       { g: "Nutty", notes: ["peanuts", "hazelnut", "almond"], extra: ["nutty", "peanut", "walnut", "pecan"] },
       { g: "Cocoa", notes: ["chocolate", "dark chocolate"], extra: ["cocoa", "milk chocolate", "chocolaty"] }] },
-    { f: "Sweet", col: "#E2622F", groups: [
+    { f: "Sweet", col: "#F1521C", groups: [
       { g: "Brown sugar", notes: ["molasses", "maple syrup", "caramelized", "honey"], extra: ["brown sugar", "caramel", "toffee"] },
       { g: "Vanilla", notes: ["vanilla"] },
       { g: "Vanillin", notes: ["vanillin"] },

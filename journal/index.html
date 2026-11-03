@@ -1475,7 +1475,7 @@ async function load() {
   renderVarieties();
   // the notes to choose from when rating a cup: yours first, then the ones of the flavour wheel
   (function () { const dl = $("notelist"), seen = new Set(); dl.textContent = "";
-    data.flatMap(c => c.flavour_tags || []).concat(((window.FLAVOURS && FLAVOURS.families) || []).filter(f => f[0] !== "Other").flatMap(f => f[1])).forEach(n => { n = String(n).toLowerCase(); if (!seen.has(n)) { seen.add(n); const o = el("option"); o.value = n; dl.appendChild(o); } }); })();
+    data.flatMap(c => c.flavour_tags || []).concat(((window.FLAVOURS && FLAVOURS.families) || []).flatMap(f => f[1])).forEach(n => { n = String(n).toLowerCase(); if (!seen.has(n)) { seen.add(n); const o = el("option"); o.value = n; dl.appendChild(o); } }); })();
   fillFilter("flt-process", "All processes", [...new Set(data.flatMap(c => listOf(c.process)))].sort());
   fillFilter("flt-roast", "All roast levels", uniq("roast_level").sort());
   renderCoffees();
@@ -1865,7 +1865,7 @@ makePicker({ mount: "pk-process", id: "f-process", label: "Process", ph: "Choose
 makePicker({ mount: "pk-tags", id: "f-tags", label: "Flavour notes", ph: "Choose or type a note", more: "Another note", norm: v => v.toLowerCase(), keepOpen: true,
   hint: "From the bag. Pick notes you used before, so they count as one in Trends, or add a new one.",
   known: () => {
-    const ours = usedValues(c => (c.flavour_tags || []).map(x => String(x).toLowerCase())), fam = ((window.FLAVOURS && FLAVOURS.families) || []).filter(f => f[0] !== "Other");   // the SCA wheel's families (Other is faults: not for a bag)
+    const ours = usedValues(c => (c.flavour_tags || []).map(x => String(x).toLowerCase())), fam = (window.FLAVOURS && FLAVOURS.families) || [];   // every family of the SCA wheel, Other (woody, salty, ...) too
     return [["Yours", ours]].concat(fam.map(f => [f[0], f[1].filter(n => !ours.includes(n))]));
   } });
 // the photo in the card's frame: drag it to choose what shows, zoom in if the bag is small in the photo
