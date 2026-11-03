@@ -2012,8 +2012,11 @@ $("cf").onsubmit = async e => {
     }
     if (path) row.photo_path = path; else if (newBagOf) row.photo_path = newBagOf.photo_path || null; else if (!editing) row.photo_path = null;
     if (newBagOf) row.group_id = gk(newBagOf);
+    // before supabase/47_decaf_process.sql there is no decaf process yet: save the rest
+    let noDp = false;
+    const retry = async run => { let r = await run(); if (r.error && "decaf_process" in row && /decaf_process/.test(r.error.message || "")) { delete row.decaf_process; noDp = true; r = await run(); } return r; };
     if (editing) {
-      const { data: done, error } = await db.from("coffees").update(row).eq("id", editing.id).select();
+      const { data: done, error } = await retry(() => db.from("coffees").update(row).eq("id", editing.id).select());
       if (error) throw error;
       if (!done.length) throw new Error("nothing was changed");
       if (path && editing.photo_path) await releasePhoto(editing.photo_path);
@@ -2023,14 +2026,14 @@ $("cf").onsubmit = async e => {
       const all = await db.from("coffees").update({ name: row.name, roaster: row.roaster }).or("group_id.eq." + k + ",id.eq." + k).neq("id", editing.id);
       if (all.error) say("Saved, but the other bags kept the old name: " + all.error.message);
     } else {
-      const { data: made, error } = await db.from("coffees").insert(row).select().single();
+      const { data: made, error } = await retry(() => db.from("coffees").insert(row).select().single());
       if (error) throw error;
       newId = made && made.id;
       if (newId) tell("coffee", newId, newBagOf ? "bag" : "added");
     }
     const after = logAfter;
     const onPage = $("addbox").parentNode === $("dedithost") && cur;
-    endEdit(); say("Saved."); load();
+    endEdit(); say(noDp ? "Saved, but not the decaf process yet: that needs a small database update (supabase/47_decaf_process.sql)." : "Saved."); load();
     if (onPage) openCoffee(cur.id);
     if (newId && after) { location.hash = "c=" + newId + (after.dev ? "&d=" + encodeURIComponent(after.dev) : "") + "&new"; }
   } catch (err) { say("Could not save: " + err.message); }
