@@ -110,7 +110,7 @@ details.add summary{cursor:pointer;font-weight:600}
 .cca h3{margin:4px 0 2px;font-size:20px;line-height:1.2}
 .cca .cro{margin:0;font-size:14.5px;opacity:.85}
 .cca .crate{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 0;font-size:14px}
-.cca .crate b{font-weight:700}.cca .crate span{opacity:.8}
+.cca .crate b{font-weight:700}.cca .crate span{opacity:.8}.cca .crate .crsub{flex-basis:100%;margin-top:-3px;font-size:13px}
 .cca .in{padding:0 16px 16px}
 .cca .cspec{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-top:14px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--t) 16%,transparent)}
 .cca .cspec .wide{grid-column:1/-1}
@@ -1258,8 +1258,8 @@ function starsLine(ratings, bags, nBrews) {
   const all = (ratings || []).filter(x => x.r != null), rated = all.filter(x => !x.d), rr = el("p", "crate");
   if (rated.length) {
     const v = rated.reduce((s1, x) => s1 + x.r, 0) / rated.length;
-    rr.append(Stars.row(v, v.toFixed(1) + " of 5 stars"), el("b", "", v.toFixed(1)), el("span", "", "\u00B7 " + rated.length + (rated.length === 1 ? " brew" : " brews")));
-    if (rated.length > 1) rr.appendChild(el("span", "", "\u00B7 best " + String(Math.max(...rated.map(x => x.r))).replace(/\.0$/, "") + "\u2605"));
+    rr.append(Stars.row(v, v.toFixed(1) + " of 5 stars"), el("b", "", v.toFixed(1)),   // the brews and the best cup on a line of their own
+      el("span", "crsub", rated.length + (rated.length === 1 ? " brew" : " brews") + (rated.length > 1 ? " \u00B7 best " + String(Math.max(...rated.map(x => x.r))).replace(/\.0$/, "") + "\u2605" : "")));
     return rr;
   }
   const bagAvg = o => { const x = (coffeeRates[o.id] || []).filter(y => y.r != null && !y.d); return x.length ? x.reduce((s1, y) => s1 + y.r, 0) / x.length : null; };
