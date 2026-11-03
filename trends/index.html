@@ -146,9 +146,11 @@ svg.fwheel .fn{font:500 26px "Iowan Old Style",Palatino,Georgia,serif;fill:var(-
 .fdet .fdh{margin:0 0 6px;font-size:15.5px;font-weight:600;color:var(--ink)}
 .frow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14.5px}.frow b{font-weight:500;color:var(--mut);font-variant-numeric:tabular-nums}
 .fdet .small{margin:8px 0 0}
-details.ftidy{margin-top:12px}
-details.ftidy summary{cursor:pointer;font-size:14.5px;font-weight:600;color:var(--one);min-height:36px;display:flex;align-items:center}
+details.ftidy{margin-top:4px}
+details.ftidy summary{cursor:pointer;font-size:14.5px;font-weight:600;color:var(--one);padding:8px 0}
+.ftrow.fum button{flex:none;min-height:34px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--one);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
 .ftrow{padding:10px 0;border-bottom:1px solid var(--line)}
+.ftrow.fum{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .ftn{display:flex;align-items:baseline;gap:8px}.ftn b{font-size:15px}.ftn small{color:var(--mut);font-size:12.5px}
 .fta{display:flex;gap:6px;margin-top:6px}.fta select{flex:1;min-width:0;font:inherit;font-size:13.5px;min-height:38px;padding:0 26px 0 10px;border-radius:999px}
 .card h2 .h2i{width:24px;height:24px;vertical-align:-4px;margin-right:6px;color:var(--one)}
@@ -950,10 +952,11 @@ function flavourWheel() {
 // your own notes: give them a family, or merge them into the note they mean (on all bags and cups of the household)
 function tidyNotes(m, mine) {
   const own = Object.values(mine).filter(o => o.own).sort((a, b) => (a.fam ? 1 : 0) - (b.fam ? 1 : 0) || b.cups - a.cups);
+  undoMerges(m);
   if (!own.length) return;
   const unsorted = own.filter(o => !o.fam && (state.noteFam || {})[o.n] !== NOFAM).length;
-  const d = el("details", "ftidy"); if (unsorted) d.open = true;
-  d.appendChild(el("summary", "", unsorted ? "Not sorted yet (" + unsorted + ")" : "Your own notes (" + own.length + ")"));
+  const d = el("details", "ftidy");   // folded, so the wheel stays calm
+  d.appendChild(el("summary", "", "Your own notes (" + own.length + ")" + (unsorted ? " \u00B7 " + unsorted + " not sorted" : "")));
   d.appendChild(el("p", "small", "Notes not on the wheel as you wrote them. Give each a family, or merge it into the note it means (renamed on all your bags and cups)."));
   const fams = FLAVOURS.families.map(f => f[0]);
   const say = t => { $("msg").textContent = t || ""; };
@@ -982,6 +985,26 @@ function tidyNotes(m, mine) {
     };
     const acts = el("div", "fta"); acts.append(fs, ms);
     row.append(nm, acts); d.appendChild(row);
+  });
+  m.insertBefore(d, m.querySelector("details.fundo"));
+}
+// the merges of the last while, each can be put back (supabase/50_note_merges.sql)
+function undoMerges(m) {
+  const ms = state.merges || []; if (!ms.length) return;
+  const d = el("details", "ftidy fundo"); d.appendChild(el("summary", "", "Undo past merges (" + ms.length + ")"));
+  ms.forEach(x => {
+    const row = el("div", "ftrow fum"), t = el("div", "ftn");
+    t.append(el("b", "", x.from_note + " \u2192 " + x.to_note), el("small", "", fmtDate(new Date(x.created_at))));
+    const u = el("button", "lnk", "Undo"); u.type = "button";
+    u.onclick = async () => {
+      if (state.demo) { $("msg").textContent = "Example data: nothing is saved."; return; }
+      if (!confirm("Put \u201C" + x.from_note + "\u201D back on its bags and cups?")) return;
+      u.disabled = true;
+      const r = await db.rpc("undo_note_merge", { p_id: x.id });
+      if (r.error) { u.disabled = false; $("msg").textContent = /function|schema cache/i.test(r.error.message) ? "This needs a small database update first (supabase/50_note_merges.sql)." : "Not undone: " + r.error.message; return; }
+      $("msg").textContent = "\u201C" + x.from_note + "\u201D is back."; loadMine();
+    };
+    row.append(t, u); d.appendChild(row);
   });
   m.appendChild(d);
 }
@@ -1644,6 +1667,8 @@ async function loadMine() {
   state.coffees = cs.data.map(c => Object.assign({}, c, { bag_g: c.bag_size_g || null }));
   state.hh = hh; state.noteFam = {};
   if (hh) { const nf = await db.from("households").select("note_families").eq("id", hh).maybeSingle(); if (!nf.error && nf.data) state.noteFam = nf.data.note_families || {}; }   // after supabase/49_notes.sql
+  state.merges = [];
+  if (hh) { const nm = await db.from("note_merges").select("id,from_note,to_note,created_at").eq("household_id", hh).is("undone_at", null).order("created_at", { ascending: false }).limit(20); if (!nm.error && nm.data) state.merges = nm.data; }   // after supabase/50
   state.names = {}; state.prefs = {};
   (ps.data || []).forEach(p => { state.names[p.id] = p.display_name; state.prefs[p.id] = p.prefs || {}; });
   (ps.data || []).forEach(p => { const m = {}; ((p.prefs || {}).custom_devices || []).forEach(d => { if (d && d.n) m[d.n] = d.t; }); if (window.DEVICES && DEVICES.register) DEVICES.register(m); });   // their own devices, with their kind
@@ -1700,7 +1725,7 @@ function demo() {
   return { coffees, brews, names: { pa: "Birte (example)", pb: "Andres (example)" } };
 }
 function enterDemo() {
-  const d = demo(); state.demo = true; state.noteFam = { juicy: "-" };
+  const d = demo(); state.demo = true; state.noteFam = { juicy: "-" }; state.merges = [{ id: "dm", from_note: "blue berry", to_note: "blueberry", created_at: new Date(Date.now() - 2 * 864e5).toISOString() }];
   state.coffees = d.coffees.map(c => Object.assign({}, c, { bag_g: c.bag_size_g || null })); state.names = d.names; state.brews = shape(d.brews, state.coffees);
   state.coffee = ""; state.device = ""; state.who = ""; state.rater = "";
   $("f-demo").textContent = "Back to my data"; fillFilters(); render();
