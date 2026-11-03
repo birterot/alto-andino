@@ -117,6 +117,9 @@ details.add summary{cursor:pointer;font-weight:600}
 .cca .cspec small{display:block;margin-bottom:3px;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.65}
 .cca .cspec b,.cca .cspec .cupl{font-weight:600;font-size:14.5px;color:inherit}
 .cca .crst .rscale{display:flex;margin-top:5px}
+.ideals{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:2px}
+.idl{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600}
+.idl svg.idi{width:22px;height:22px;flex:none;color:var(--s)}
 .cca .tags{margin-top:14px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--t) 16%,transparent)}
 .cca .cfoot{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-top:14px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--t) 16%,transparent)}
 .cca .cleft{flex:1;min-width:0;font-size:13px}.cca .cleft b{display:block;font-size:14px}.cca .cleft span{opacity:.8}
@@ -888,6 +891,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
 <script src="../data/processing.js"></script>
 <script src="../data/defaults.js"></script>
 <script src="../data/flavours.js"></script>
+<script src="../assets/js/devicons.js"></script>
 <script src="../assets/js/people.js"></script>
 <script src="../data/drinks.js"></script>
 <script src="../assets/js/calcui.js"></script>
@@ -981,6 +985,18 @@ const setSfor = arr => {
   document.querySelectorAll("#f-sfor .sdev").forEach(b => { const on = a.includes(b.dataset.v.toLowerCase()); b.setAttribute("aria-pressed", String(on)); if (on) b.closest(".sft").querySelector("input").checked = true; });
 };
 drawSfor();
+// "Ideal for" on the card: the device icons, each with a short name (a kind on its own: its icon and the kind)
+function idealIcons(sf) {
+  const a = sf || [], devs = a.filter(x => !SFOR_KEYS.includes(x)), row = el("div", "ideals"), short = {};
+  Object.values(SFOR_DEVS).forEach(l => l.forEach(([v, lab]) => { short[v.toLowerCase()] = lab; }));
+  SFOR_KEYS.filter(k => a.includes(k) || devs.some(d => typeOf(d) === k)).forEach(k => {
+    const ds = devs.filter(d => typeOf(d) === k);
+    (ds.length ? ds.map(d => [d, short[d.toLowerCase()] || d]) : [[null, typeLabel(k)]]).forEach(([d, lab]) => {
+      const s1 = el("span", "idl"); s1.title = d || typeLabel(k); if (window.DEVICONS) s1.appendChild(DEVICONS.svg(d || "", k, "idi")); s1.appendChild(document.createTextNode(lab)); row.appendChild(s1);
+    });
+  });
+  return row;
+}
 // "Ideal for": a kind on its own, or the devices named for it
 function idealText(sf) {
   const a = sf || [], devs = a.filter(x => !SFOR_KEYS.includes(x));
@@ -1315,7 +1331,7 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
   const cu = coffeeCups[c.id];
   if (cu && cu.length) { const v = el("a", "cupl"); v.href = "../cupping/#c=" + c.id; v.textContent = (Math.round(cu.reduce((x, y) => x + y, 0) / cu.length * 10) / 10).toFixed(1) + " cupped"; item("Cupping", v); }
   if (c.sca_score != null) item("SCA score", String(Number(c.sca_score)));
-  if (c.suitable_for && c.suitable_for.length) item("Ideal for", cap(idealText(c.suitable_for)), true);
+  if (c.suitable_for && c.suitable_for.length) item("Ideal for", idealIcons(c.suitable_for), true);
   if (spec.children.length) b.appendChild(spec);
   if (c.flavour_tags && c.flavour_tags.length) { const t = el("div", "tags"); c.flavour_tags.forEach(x => t.appendChild(noteChip(x))); b.appendChild(t); }
   // the bottom: what is left and how fresh it is, and the brews
