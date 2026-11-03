@@ -3690,7 +3690,7 @@ async function openCoffee(id, dev, wantForm, rid) {
   fillCoffeeSwitch(c, all || []);
   ["bflt-device", "bflt-recipe", "bflt-who", "bflt-sort"].forEach(i => { $(i).value = ""; });
   if (c.photo_path && !coffeeUrls[c.photo_path]) { const got = await photoLinks([c.photo_path]); coffeeUrls = Object.assign({}, coffeeUrls, got.full); coffeeThumbs = Object.assign({}, coffeeThumbs, got.thumb); }   // opened straight from a link
-  drawHead(c, all || []);
+  headAll = all || []; drawHead(c, headAll);
   document.title = c.name + " | Alto Andino";
   // devices you do not own (ticked in Settings) stay out, even if used for this coffee before; your own names ("French press (1 l)") stay in
   const std = deviceList(true), devs = deviceList(), owns = devs.length < std.length;
@@ -3867,6 +3867,7 @@ function brewCard(b, opt) {
   return a;
 }
 
+let headAll = [];
 async function loadBrews() {
   const my = ++brewLoadId;
   const { data, error } = await db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,note,created_at,drank_at), brew_scores(attribute,score,rating_id)").eq("coffee_id", cur.id).order("brewed_at", { ascending: false });
@@ -3875,7 +3876,16 @@ async function loadBrews() {
   brewData = data;
   // tasting notes used on earlier brews of this coffee are offered again
   if (!editingBrew) data.forEach(b => (b.brew_scores || []).forEach(s => { if (!SCALE.isCore(s.attribute)) addNote(s.attribute); }));
-  { const dr = $("drate"); if (dr) { const n = starsLine(data.map(b => ({ r: brewAvg(b), d: !!b.is_dialin })), null, data.length); n.id = "drate"; dr.replaceWith(n); } }
+  // what is left, its stars and your usual dose, fresh from this coffee's own brews and beans out (also when the page
+  // was opened straight from a link, before the shelf was loaded), and the card at the top drawn again with them
+  const ob = await db.from("bean_outs").select("id,coffee_id,grams,reason,note,at").eq("coffee_id", cur.id).order("at");
+  if (my !== brewLoadId) return;
+  const outs = !ob.error && ob.data ? ob.data : (coffeeOuts[cur.id] || []); coffeeOuts[cur.id] = outs;
+  coffeeUsed[cur.id] = data.reduce((x, b) => x + (Number(b.dose_g) || 0), 0) + outs.reduce((x, o) => x + Number(o.grams), 0);
+  const ds = data.filter(b => Number(b.dose_g) > 0).sort((a, b) => String(a.brewed_at).localeCompare(String(b.brewed_at))).slice(-5).map(b => Number(b.dose_g)).sort((x, y) => x - y);
+  if (ds.length) coffeeDose[cur.id] = ds[Math.floor(ds.length / 2)];
+  coffeeCounts[cur.id] = data.length; coffeeRates[cur.id] = data.map(b => ({ r: brewAvg(b), d: !!b.is_dialin }));
+  drawHead(cur, headAll);
   const uniq = k => [...new Set(data.map(b => b[k]).filter(Boolean))].sort();
   fillFilter("bflt-device", "Device", uniq("device"));
   fillFilter("bflt-recipe", "Recipe", uniq("recipe"));
