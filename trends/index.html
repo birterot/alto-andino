@@ -826,18 +826,18 @@ function viewYourTaste() {
 }
 function likeKinds() {
   return [   // title, how to read it in the headline, icon, the kind of a coffee
-    ["Process", x => x.toLowerCase(), "M12 3c3 4 5 6.5 5 9.5a5 5 0 01-10 0C7 9.5 9 7 12 3z", c => c.process],
+    ["Process", x => x.toLowerCase(), "M12 3c3 4 5 6.5 5 9.5a5 5 0 01-10 0C7 9.5 9 7 12 3z", c => String(c.process || "").split(",").map(x => x.trim()).filter(Boolean)],   // a mix of processes counts for each
     ["Roast", x => x.toLowerCase() + " roast", "M12 3c1 3 4 4.5 4 8.5a4 4 0 01-8 0c0-1.8.8-3 2-4 0 1.5.6 2.5 1.6 2.5C11.6 7.5 11 5 12 3z M7 20h10", c => c.roast_level],
     ["Origin", x => x, "M12 21s-6-5.5-6-10a6 6 0 1112 0c0 4.5-6 10-6 10z M12 9v.01", c => { const o = splitOrigin(c.origin); return o.countries.length > 1 ? "Several countries" : o.countries[0] || o.country; }],
     ["Altitude", x => /^Below/.test(x) ? "low-grown" : /2,100|1,800/.test(x) ? "high-grown" : null, "M3 19l6-10 4 6 2-3 6 7z", c => { const a = c.altitude_max_m != null ? (c.altitude_min_m + c.altitude_max_m) / 2 : c.altitude_min_m; if (a == null) return null; return a < 1200 ? "Below 1,200 m" : a < 1500 ? "1,200 to 1,500 m" : a < 1800 ? "1,500 to 1,800 m" : a < 2100 ? "1,800 to 2,100 m" : "2,100 m and up"; }],
-    ["Region", x => null, "M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2z M9 4v14 M15 6v14", c => { const o = splitOrigin(c.origin); return o.region && o.countries.length < 2 ? o.region.split(",")[0].trim() + " (" + (o.countries[0] || o.country) + ")" : null; }]
+    ["Region", x => null, "M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2z M9 4v14 M15 6v14", c => { const o = splitOrigin(c.origin); return o.region && o.countries.length < 2 ? o.region.split(",").map(r => r.trim()).filter(Boolean).map(r => r + " (" + (o.countries[0] || o.country) + ")") : null; }]   // each region of the coffee
   ];
 }
 function likeGroups(list) {
   const groups = likeKinds(), res = [];
   groups.forEach(([title, word, icon, key]) => {
     const by = {};
-    list.forEach(b => { const c = coffeeOf(b.coffeeId); const k = c && key(c); if (k) (by[k] = by[k] || []).push(b.rating); });
+    list.forEach(b => { const c = coffeeOf(b.coffeeId), k = c && key(c); (Array.isArray(k) ? k : [k]).forEach(x => { if (x) (by[x] = by[x] || []).push(b.rating); }); });
     const rows = Object.keys(by).map(k => ({ label: k, value: avg(by[k]), n: by[k].length })).sort((x, y) => y.value - x.value || y.n - x.n);
     if (rows.length) res.push({ title, word, icon, rows, clear: rows.length > 1 && rows[0].n >= 2 && rows[0].value - rows[1].value >= 0.25 });
   });
@@ -1062,7 +1062,7 @@ function viewUs() {
 function explored(list) {
   const m = $("views").lastElementChild; if (!m) return;
   const ks = new Set(list.map(grpOf)), cs = [...ks].map(groupCoffee).filter(Boolean), cnt = f => new Set(cs.flatMap(f).filter(Boolean)).size;
-  const countries = cnt(c => { const o = splitOrigin(c.origin); return o.countries.length ? o.countries : [o.country]; }), roasters = cnt(c => [c.roaster]), procs = cnt(c => [c.process]);
+  const countries = cnt(c => { const o = splitOrigin(c.origin); return o.countries.length ? o.countries : [o.country]; }), roasters = cnt(c => [c.roaster]), procs = cnt(c => String(c.process || "").split(",").map(x => x.trim()));
   const vars = cnt(c => String(c.variety || "").split(",").map(x => x.trim()));
   const m0 = new Date(); m0.setDate(1); m0.setHours(0, 0, 0, 0);
   const fresh = [...ks].filter(k => { const bs = bagsOf(k); return bs.length && Math.min(...bs.map(c => Date.parse(c.created_at) || Date.now())) >= m0.getTime(); }).length;

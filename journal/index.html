@@ -578,9 +578,14 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
       <label>Roaster or brand<input id="f-roaster" placeholder="e.g. 80 Cup, or Lavazza"></label>
       <label>Name, as they call it<input id="f-name" required placeholder="e.g. Colombia Huila, or Qualità Oro"></label>
       <p class="hint">Specialty coffee: the roaster and the coffee's name. Supermarket coffee: the brand and the product name.</p>
-      <div class="row2"><label>Country<input id="f-country" list="countrylist" placeholder="e.g. Colombia" autocomplete="off" autocapitalize="words"></label><label>Region (optional)<input id="f-region" placeholder="e.g. Huila" autocomplete="off" autocapitalize="words"></label></div>
+      <label>Country<input id="f-country" list="countrylist" placeholder="e.g. Colombia" autocomplete="off" autocapitalize="words"></label>
+      <div id="pk-region"></div>
       <input id="f-origin" type="hidden"><datalist id="countrylist"></datalist>
       <div class="chkrow"><label class="chk"><input type="checkbox" id="f-blend"> Blend</label><label class="chk"><input type="checkbox" id="f-decaf"> Decaf</label></div>
+      <label id="dplab" hidden>Decaf process
+        <select id="f-decafp"></select>
+        <input id="f-decafp-new" placeholder="Name of the decaf process" hidden>
+      </label>
       <div class="vfield adv">
         <span class="vl" id="vlab">Botanical variety</span>
         <div class="vcombo" id="vcombo">
@@ -595,10 +600,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
         <label>Altitude from (m)<input id="f-alt-min" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="1700"></label>
         <label>to (m, optional)<input id="f-alt-max" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="1900"></label>
       </div>
-      <label>Process
-        <select id="f-process"></select>
-        <input id="f-process-new" placeholder="Name of the new process" hidden>
-      </label>
+      <div id="pk-process"></div>
       <label>Roast level
         <select id="f-roast"></select>
         <input id="f-roast-new" hidden>
@@ -606,8 +608,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
       <fieldset class="sfor adv" id="f-sfor"><legend>Suitable for</legend></fieldset>
       <details class="sfordef adv"><summary>What do these mean?</summary><dl id="f-sfordef"></dl></details>
       <p class="hint adv">How you would brew it. The log a brew page suggests coffees by this. An omni roast suits them all: tick all four.</p>
-      <label>Flavour notes<input id="f-tags" placeholder="chocolaty, nutty, red fruit"></label>
-      <p class="hint">Separate with commas. The sour, sweet and bitter sliders and the Balance rating are always there when logging a brew.</p>
+      <div id="pk-tags"></div>
       <label id="rdlab">Roast date<input type="date" id="f-rd"></label>
       <label class="chk"><input type="checkbox" id="f-rdx"> Roast date unknown</label>
       <label id="pdlab" hidden>Purchase date<input type="date" id="f-pd"></label>
@@ -770,7 +771,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
         <h3 class="sh">Tasting notes</h3>
         <p class="hint">Did you find it? None, a little, or clearly there. Flavour or tasting notes you leave alone are not saved.</p>
         <div id="notebox"></div>
-        <div class="addnote"><input id="b-newnote" placeholder="Another note, e.g. jasmine" autocomplete="off" aria-label="Add a tasting note"><button type="button" class="btn ghost" id="b-addnote"></button></div>
+        <div class="addnote"><input id="b-newnote" list="notelist" placeholder="Another note, e.g. jasmine" autocomplete="off" aria-label="Add a tasting note"><datalist id="notelist"></datalist><button type="button" class="btn ghost" id="b-addnote"></button></div>
         </div>
         <label id="tnlab">Your comment<textarea id="b-tnote" rows="3" maxlength="1000" placeholder="What you thought of your cup"></textarea></label>
         </div>
@@ -830,6 +831,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
 <script src="../data/devices.js"></script>
 <script src="../data/processing.js"></script>
 <script src="../data/defaults.js"></script>
+<script src="../data/flavours.js"></script>
 <script src="../assets/js/people.js"></script>
 <script src="../data/drinks.js"></script>
 <script src="../assets/js/calcui.js"></script>
@@ -883,8 +885,12 @@ function chosen(id) {
   const same = [...s.options].find(o => o.value && o.value !== "__other" && o.text.toLowerCase() === t.toLowerCase());
   return same ? same.value : t;
 }
-fill("f-process", Object.keys(PAL), []); fill("f-roast", window.LISTS.roast, [], true);   // roast level: light to dark only (omni is "Suitable for")
-otherBox("f-process");
+fill("f-roast", window.LISTS.roast, [], true);   // roast level: light to dark only (omni is "Suitable for")
+// how the decaf was made: only asked for a decaf
+const DECAF_PROCESSES = ["Swiss Water", "Mountain Water", "Sugarcane (EA)", "CO\u2082", "Methylene chloride"];
+fill("f-decafp", DECAF_PROCESSES, []); otherBox("f-decafp");
+const syncDecaf = () => { $("dplab").hidden = !$("f-decaf").checked; };
+$("f-decaf").addEventListener("change", syncDecaf);
 ((window.DEFAULTS && window.DEFAULTS.BREW_TYPES) || []).forEach(t => {
   const l = el("label", "chk"), i = el("input"); i.type = "checkbox"; i.value = t[0]; l.append(i, document.createTextNode(" " + t[1])); if (t[2]) l.title = t[2]; $("f-sfor").appendChild(l);
   if (t[2]) { const d = $("f-sfordef"); d.append(el("dt", "", t[1]), el("dd", "", t[2])); }   // what each one means, e.g. the AeroPress is immersion
@@ -945,7 +951,7 @@ function drawRoastLegend(show) {
 }
 function applyLook(a, c) {
   const i = roastIdx(c.roast_level);
-  if (i < 0) { applyPal(a, c.process); return; }
+  if (i < 0) { applyPal(a, listOf(c.process)[0]); return; }
   const p = ROASTS[i][1];
   [["--f", 0], ["--s", 2], ["--t", 4]].forEach(([k, j]) => a.style.setProperty(k, "light-dark(" + p[j] + "," + p[j + 1] + ")"));
 }
@@ -969,12 +975,12 @@ function factsBlock(c, withTag) {
     if (i >= 0) { const sc = el("span", "rscale"); sc.setAttribute("aria-hidden", "true"); ROASTS.forEach((_, k) => sc.appendChild(el("i", k <= i ? "on" : ""))); f.appendChild(sc); }
     f.appendChild(el("span", "", c.roast_level + " roast")); facts.appendChild(f);
   }
-  if (c.process) { const f = el("span", "f"); f.append(ico(procInfo(c.process).icon, 18), el("span", "", c.process)); facts.appendChild(f); }
+  if (c.process) { const f = el("span", "f"); f.append(ico(procInfo(listOf(c.process)[0]).icon, 18), el("span", "", listOf(c.process).join(", "))); facts.appendChild(f); }
   const cu = coffeeCups[c.id];
   if (cu && cu.length) { const f = el("a", "f cupd"); f.href = "../cupping/#c=" + c.id; f.title = "Cupped " + cu.length + "\u00D7, see the cuppings"; f.append(el("b", "", (Math.round(cu.reduce((a, b) => a + b, 0) / cu.length * 10) / 10).toString()), el("span", "", "cupped" + (cu.length > 1 ? " " + cu.length + "\u00D7" : ""))); facts.appendChild(f); }
   if (c.sca_score != null) { const f = el("span", "f sca"); f.title = "Official SCA cupping score"; f.append(el("b", "", String(Number(c.sca_score))), el("span", "", "SCA")); facts.appendChild(f); }
   if (facts.children.length) box.appendChild(facts);
-  const tag = withTag && c.process ? procInfo(c.process).tag : null;
+  const tag = withTag && c.process && listOf(c.process).length === 1 ? procInfo(c.process).tag : null;
   if (tag) box.appendChild(el("p", "ptag", tag));
   if (c.suitable_for && c.suitable_for.length) {
     const p = el("p", "ideal"); p.appendChild(ico("cup", 18));
@@ -1175,7 +1181,7 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl) {
   if (photoUrl || thumbUrl) { const i = el("img", "ph"); i.src = thumbUrl || photoUrl; i.alt = "Bag of " + c.name; i.loading = "lazy"; i.decoding = "async"; a.appendChild(photoBtn(i, photoUrl || thumbUrl, c.name)); }
   const b = el("div", "in");
   const hd = el("div", "hd"); hd.appendChild(el("h3", "", c.name)); b.appendChild(hd);
-  const meta = [c.is_decaf ? "Decaf" : null, c.roaster, originText(c), c.variety, altText(c)].filter(Boolean).join(", ");
+  const meta = [c.is_decaf ? "Decaf" + (c.decaf_process ? " (" + c.decaf_process + ")" : "") : null, c.roaster, originText(c), c.variety, altText(c)].filter(Boolean).join(", ");
   if (meta) b.appendChild(el("p", "meta", meta));
   b.appendChild(factsBlock(c, true));
   if (bags && bags.length > 1) b.appendChild(el("p", "age", "Bag " + bags.length + " of " + bags.length));
@@ -1248,7 +1254,7 @@ async function load() {
   if (error) { say("Could not load coffees: " + error.message); return; }
   coffeeCups = {}; cupRows.forEach(r => { if (r.total != null) (coffeeCups[r.coffee_id] = coffeeCups[r.coffee_id] || []).push(Number(r.total)); });
   const uniq = k => [...new Set(data.map(c => c[k]).filter(Boolean))];
-  fill("f-process", Object.keys(PAL), uniq("process")); fill("f-roast", window.LISTS.roast, [], true);
+  fill("f-decafp", DECAF_PROCESSES, uniq("decaf_process")); fill("f-roast", window.LISTS.roast, [], true);
   // bags that were brewed with but never marked as opened (from before this was automatic): opened on the day of their first brew
   const first = {}; (bs || []).forEach(b => { if (b.brewed_at && !first[b.coffee_id]) first[b.coffee_id] = b.brewed_at; });   // brews come oldest first
   const late = data.filter(c => !c.open_date && !c.finished_at && !c.archived && first[c.id]);
@@ -1269,7 +1275,10 @@ async function load() {
   const known = photoLinks(paths, true);   // links still valid from earlier visits: no waiting
   coffeeUrls = known.full; coffeeThumbs = known.thumb;
   renderVarieties();
-  fillFilter("flt-process", "All processes", uniq("process").sort());
+  // the notes to choose from when rating a cup: yours first, then the ones of the flavour wheel
+  (function () { const dl = $("notelist"), seen = new Set(); dl.textContent = "";
+    data.flatMap(c => c.flavour_tags || []).concat(((window.FLAVOURS && FLAVOURS.families) || []).flatMap(f => f[1])).forEach(n => { n = String(n).toLowerCase(); if (!seen.has(n)) { seen.add(n); const o = el("option"); o.value = n; dl.appendChild(o); } }); })();
+  fillFilter("flt-process", "All processes", [...new Set(data.flatMap(c => listOf(c.process)))].sort());
   fillFilter("flt-roast", "All roast levels", uniq("roast_level").sort());
   renderCoffees();
   saveShelf();
@@ -1359,7 +1368,7 @@ function passCoffee(c, g) {
   const q = $("flt-q").value.trim().toLowerCase();
   if (q && ![c.name, c.roaster, c.origin, c.variety, ...(c.flavour_tags || [])].filter(Boolean).join(" ").toLowerCase().includes(q)) return false;
   const p = $("flt-process").value, r = $("flt-roast").value, o = $("flt-open").value;
-  if (p && c.process !== p) return false;
+  if (p && !listOf(c.process).includes(p)) return false;
   if (r && c.roast_level !== r) return false;
   if (o === "open" && (!c.open_date || c.finished_at)) return false;   // the bag on the shelf: opened and not finished yet
   if (o === "closed" && c.open_date) return false;
@@ -1429,14 +1438,14 @@ function endEdit() {
   editing = null; newBagOf = null;
   if ($("addbox").parentNode === $("dedithost")) $("listhost").appendChild($("addbox"));   // edited from the coffee's page: back to the list
   $("cf").reset();
-  ["f-process", "f-roast"].forEach(i => { $(i + "-new").hidden = true; $(i + "-new").required = false; });
+  ["f-decafp", "f-roast"].forEach(i => { $(i + "-new").hidden = true; $(i + "-new").required = false; });
   syncBlend();
   $("addsum").textContent = "Add a coffee";
   $("save").textContent = "Save coffee";
   $("cancel").hidden = true;
   $("photohint").hidden = true;
   $("addbox").open = false;
-  setSfor([]); store.del(COFFEE_DRAFT); restoredCoffee = false; syncRoastUnknown(); renderVarieties();
+  setSfor([]); store.del(COFFEE_DRAFT); restoredCoffee = false; syncRoastUnknown(); renderVarieties(); syncDecaf(); renderPickers();
 }
 function altText(c) {
   if (c.altitude_min_m == null) return null;
@@ -1449,9 +1458,9 @@ function startEdit(c) {
   $("cf").reset();
   $("f-name").value = c.name; $("f-roaster").value = c.roaster || ""; $("f-origin").value = c.origin || ""; originToParts();
   $("f-variety").value = c.variety || ""; $("f-alt-min").value = c.altitude_min_m ?? ""; $("f-alt-max").value = (c.altitude_max_m != null && c.altitude_max_m !== c.altitude_min_m) ? c.altitude_max_m : "";
-  $("f-blend").checked = !!c.is_blend; syncBlend(); $("f-decaf").checked = !!c.is_decaf; setSfor(c.suitable_for); renderVarieties();
-  setSel("f-process", c.process); setSel("f-roast", c.roast_level);
-  $("f-tags").value = (c.flavour_tags || []).join(", ");
+  $("f-blend").checked = !!c.is_blend; syncBlend(); $("f-decaf").checked = !!c.is_decaf; syncDecaf(); setSfor(c.suitable_for); renderVarieties();
+  $("f-process").value = listOf(c.process).join(", "); setSel("f-roast", c.roast_level); setSel("f-decafp", c.decaf_process || "");
+  $("f-tags").value = (c.flavour_tags || []).join(", "); renderPickers();
   $("f-rd").value = c.roast_date || ""; $("f-od").value = c.open_date || ""; $("f-notes").value = c.notes || ""; $("f-url").value = c.buy_url || ""; $("f-pd").value = c.purchase_date || ""; $("f-rdx").checked = !c.roast_date && !!c.purchase_date; syncRoastUnknown(); $("f-bag").value = c.bag_size_g || ""; $("f-price").value = c.price_eur == null ? "" : Number(c.price_eur); syncBag(); $("f-sca").value = c.sca_score == null ? "" : Number(c.sca_score);
   $("addsum").textContent = "Edit coffee";
   $("save").textContent = "Save changes";
@@ -1550,6 +1559,100 @@ $("f-vq").addEventListener("keydown", e => {
 });
 $("f-vq").addEventListener("blur", () => { if ($("f-vq").value.trim()) addVariety($("f-vq").value); closeVList(); });   // typed but not added yet: keep it
 renderVarieties();
+
+// Lists you pick from, or add to: the regions, the processes and the flavour notes of a coffee. What you chose sits
+// in a hidden field as "a, b, c" (saved like that: process and origin as text, the notes as a list).
+const listOf = t => String(t || "").split(",").map(x => x.trim()).filter(Boolean);
+const PICKERS = [];
+function makePicker(o) {   // o: { mount, id, label, hint, ph, more, known() -> [[group, [values]]], norm(v, known) }
+  const w = el("div", "vfield"); w.id = "pk-" + o.id; const lab = el("span", "vl", o.label); lab.id = o.id + "-lab"; w.appendChild(lab);
+  const combo = el("div", "vcombo"), box = el("div", "vbox"), q = el("input"), tog = el("button", "vtog"), list = el("ul", "vlist");
+  q.id = o.id + "-q"; q.setAttribute("role", "combobox"); q.setAttribute("aria-labelledby", lab.id); q.setAttribute("aria-autocomplete", "list"); q.setAttribute("aria-expanded", "false");
+  q.autocomplete = "off"; q.setAttribute("autocapitalize", o.caps ? "words" : "none"); q.setAttribute("enterkeyhint", "done"); box.appendChild(q);
+  tog.type = "button"; tog.tabIndex = -1; tog.setAttribute("aria-label", "Show the list");
+  tog.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+  list.id = o.id + "-list"; list.setAttribute("role", "listbox"); list.hidden = true; q.setAttribute("aria-controls", list.id);
+  const val = el("input"); val.id = o.id; val.hidden = true;
+  combo.append(box, tog, list); w.append(combo, val);
+  if (o.hint) w.appendChild(el("p", "hint", o.hint));
+  $(o.mount).replaceWith(w);
+  let act = -1;
+  const parts = () => listOf(val.value), allKnown = () => o.known().flatMap(g => g[1]);
+  const setParts = ps => { val.value = ps.join(", "); render(); if (o.onChange) o.onChange(); saveCoffeeDraft(); };
+  const add = v => {
+    v = String(v || "").replace(/,/g, " ").replace(/\s+/g, " ").trim(); if (!v) return;
+    const same = allKnown().find(x => x.toLowerCase() === v.toLowerCase());
+    v = same || (o.norm ? o.norm(v) : v);   // the same spelling as before, so it counts as one in Trends
+    const ps = parts(); if (!ps.some(x => x.toLowerCase() === v.toLowerCase())) ps.push(v);
+    q.value = ""; setParts(ps);
+  };
+  function render() {
+    box.querySelectorAll(".vtok").forEach(t => t.remove());
+    parts().forEach((v, i) => {
+      const t = el("span", "vtok"); t.appendChild(document.createTextNode(v));
+      const x = el("button", "", "\u00D7"); x.type = "button"; x.setAttribute("aria-label", "Remove " + v);
+      x.onclick = e => { e.stopPropagation(); const ps = parts(); ps.splice(i, 1); setParts(ps); };
+      t.appendChild(x); box.insertBefore(t, q);
+    });
+    q.placeholder = parts().length ? o.more : o.ph;
+    if (!list.hidden) draw();
+  }
+  function draw() {
+    const qq = q.value.trim(), ql = qq.toLowerCase(), have = parts().map(x => x.toLowerCase());
+    const fit = v => !have.includes(v.toLowerCase()) && (!ql || v.toLowerCase().includes(ql));
+    list.textContent = "";
+    const opt = v => {
+      const isNew = v === null, li = el("li", isNew ? "add" : "", isNew ? "Add \u201C" + qq + "\u201D" : v);
+      li.setAttribute("role", "option"); li.id = o.id + "-o" + list.children.length;
+      li.onclick = () => { add(isNew ? qq : v); if (o.keepOpen) { q.focus(); draw(); } else close(); };
+      list.appendChild(li);
+    };
+    if (qq && !allKnown().some(v => v.toLowerCase() === ql) && !have.includes(ql)) opt(null);
+    const groups = o.known().map(([g, vs]) => [g, vs.filter(fit)]).filter(g => g[1].length);
+    groups.forEach(([g, vs]) => { if (g && (groups.length > 1 || !qq)) list.appendChild(el("li", "grp", g)); vs.forEach(opt); });
+    if (!list.querySelector("[role=option]")) list.appendChild(el("li", "none", have.length ? "Everything listed is chosen. Type a new one." : "Type to add one."));
+    const os = list.querySelectorAll("[role=option]"); act = Math.min(act, os.length - 1);
+    os.forEach((x, i) => { x.classList.toggle("act", i === act); x.setAttribute("aria-selected", String(i === act)); });
+    q.setAttribute("aria-activedescendant", act >= 0 && os[act] ? os[act].id : "");
+  }
+  const open = () => { list.hidden = false; combo.classList.add("open"); q.setAttribute("aria-expanded", "true"); act = -1; draw(); };
+  const close = () => { list.hidden = true; combo.classList.remove("open"); q.setAttribute("aria-expanded", "false"); act = -1; };
+  ["pointerdown", "mousedown"].forEach(ev => { list.addEventListener(ev, e => e.preventDefault()); tog.addEventListener(ev, e => e.preventDefault()); });
+  box.addEventListener("click", e => { if (e.target === box) q.focus(); });
+  tog.onclick = () => { if (list.hidden) { q.focus(); open(); } else close(); };
+  q.addEventListener("focus", open);
+  q.addEventListener("input", () => { if (q.value.includes(",")) { q.value.split(",").slice(0, -1).forEach(add); q.value = q.value.split(",").pop(); } act = -1; if (list.hidden) open(); else draw(); });
+  q.addEventListener("keydown", e => {
+    const os = list.querySelectorAll("[role=option]");
+    if (e.key === "ArrowDown") { e.preventDefault(); if (list.hidden) open(); act = Math.min(act + 1, os.length - 1); draw(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); act = Math.max(act - 1, 0); draw(); }
+    else if (e.key === "Enter") { e.preventDefault(); if (act >= 0 && os[act]) os[act].click(); else if (q.value.trim()) { add(q.value); draw(); } }
+    else if (e.key === "Escape") { if (!list.hidden) { e.preventDefault(); e.stopPropagation(); close(); } }
+    else if (e.key === "Backspace" && !q.value && parts().length) { const ps = parts(); ps.pop(); setParts(ps); }
+  });
+  q.addEventListener("blur", () => { if (q.value.trim()) add(q.value); close(); });   // typed but not added yet: keep it
+  PICKERS.push(render); render();
+}
+const renderPickers = () => PICKERS.forEach(r => r());
+const cap = v => v.charAt(0).toUpperCase() + v.slice(1);
+const usedValues = f => { const seen = new Map(); (coffeeData || []).forEach(c => f(c).forEach(v => { const k = v.toLowerCase(); if (!seen.has(k)) seen.set(k, v); })); return [...seen.values()].sort((a, b) => a.localeCompare(b)); };
+makePicker({ mount: "pk-region", id: "f-region", label: "Region (optional)", ph: "e.g. Huila", more: "Another region", caps: true, norm: cap, onChange: originFromParts,
+  hint: "One or more: a coffee from several regions of one country gets each of them.",
+  known: () => {   // the regions you used before: the ones of this country first
+    const k = splitOrigin($("f-country").value).countries[0] || $("f-country").value.trim(), here = [], other = [];
+    usedValues(c => { const o = splitOrigin(c.origin); return listOf(o.region).map(r => r + "\u0000" + (o.countries[0] || o.country || "")); })
+      .forEach(x => { const [r, ck] = x.split("\u0000"); if (!here.concat(other).some(y => y.toLowerCase() === r.toLowerCase())) (k && ck === k ? here : other).push(r); });
+    return [[k ? "In " + k : "", here], [k && here.length ? "Elsewhere" : "", other]];
+  } });
+makePicker({ mount: "pk-process", id: "f-process", label: "Process", ph: "Choose or type a process", more: "Another process", caps: true, norm: cap,
+  hint: "Tick several if the coffee is a mix of processes.",
+  known: () => { const base = Object.keys(PAL), ours = usedValues(c => listOf(c.process)).filter(v => !base.some(b => b.toLowerCase() === v.toLowerCase())); return [["Common", base], ["Yours", ours]]; } });
+makePicker({ mount: "pk-tags", id: "f-tags", label: "Flavour notes", ph: "Choose or type a note", more: "Another note", norm: v => v.toLowerCase(), keepOpen: true,
+  hint: "From the bag. Pick notes you used before, so they count as one in Trends, or add a new one.",
+  known: () => {
+    const ours = usedValues(c => (c.flavour_tags || []).map(x => String(x).toLowerCase())), fam = (window.FLAVOURS && FLAVOURS.families) || [];
+    return [["Yours", ours]].concat(fam.map(f => [f[0], f[1].filter(n => !ours.includes(n))]));
+  } });
 function syncRoastUnknown() {
   const x = $("f-rdx").checked;
   $("rdlab").hidden = x; $("pdlab").hidden = !x; $("pdhint").hidden = !x;
@@ -1577,21 +1680,22 @@ function originFromParts() {
 function originToParts() {
   const o = splitOrigin($("f-origin").value);
   $("f-country").value = o.countries.length > 1 ? o.countries.join(" / ") : (o.country || ""); $("f-region").value = o.region || "";
+  renderPickers();
 }
-["f-country", "f-region"].forEach(id => $(id).addEventListener("input", originFromParts));
+$("f-country").addEventListener("input", originFromParts);
 function syncBlend() {   // a blend: several countries in the country field
   const b = $("f-blend").checked;
   $("f-country").previousSibling.textContent = b ? "Countries" : "Country";
   $("f-country").placeholder = b ? "e.g. Brazil, Ethiopia" : "e.g. Colombia";
 }
 $("f-blend").addEventListener("change", () => { syncBlend(); if ($("f-blend").checked) $("f-country").focus(); });
-const CF = ["f-name", "f-roaster", "f-origin", "f-variety", "f-alt-min", "f-alt-max", "f-process", "f-process-new", "f-roast", "f-roast-new", "f-tags", "f-rd", "f-od", "f-notes", "f-url", "f-bag", "f-price", "f-pd"];
+const CF = ["f-name", "f-roaster", "f-origin", "f-variety", "f-alt-min", "f-alt-max", "f-process", "f-decafp", "f-decafp-new", "f-roast", "f-roast-new", "f-tags", "f-rd", "f-od", "f-notes", "f-url", "f-bag", "f-price", "f-pd"];
 function saveCoffeeDraft() {
   if (editing || newBagOf || !me) return;
   const f = {}; CF.forEach(i => { f[i] = $(i).value; });
-  const any = CF.some(i => f[i] && !["f-process", "f-roast"].includes(i)) || sforVals().length;
+  const any = CF.some(i => f[i] && !["f-decafp", "f-roast"].includes(i)) || sforVals().length;
   if (!any) { store.del(COFFEE_DRAFT); return; }
-  store.set(COFFEE_DRAFT, JSON.stringify({ f, blend: $("f-blend").checked, sfor: sforVals(), t: Date.now() }));
+  store.set(COFFEE_DRAFT, JSON.stringify({ f, blend: $("f-blend").checked, decaf: $("f-decaf").checked, sfor: sforVals(), t: Date.now() }));
 }
 function tryRestoreCoffee() {
   if (coffeeTried || editing || newBagOf) return;
@@ -1599,9 +1703,9 @@ function tryRestoreCoffee() {
   const raw = store.get(COFFEE_DRAFT); if (!raw) return;
   let d; try { d = JSON.parse(raw); } catch (e) { return; }
   if (!d || !d.f || Date.now() - d.t > 7 * 864e5) return;
-  CF.forEach(i => { if (d.f[i] == null) return; if (i === "f-process" || i === "f-roast") setSel(i, d.f[i]); else $(i).value = d.f[i]; });
+  CF.forEach(i => { if (d.f[i] == null) return; if (i === "f-decafp" || i === "f-roast") setSel(i, d.f[i]); else $(i).value = d.f[i]; });
   originToParts();
-  ["f-process", "f-roast"].forEach(i => { $(i + "-new").hidden = $(i).value !== "__other"; });
+  ["f-decafp", "f-roast"].forEach(i => { $(i + "-new").hidden = $(i).value !== "__other"; }); $("f-decaf").checked = !!d.decaf; syncDecaf(); renderPickers();
   $("f-blend").checked = !!d.blend; syncBlend(); setSfor(d.sfor); restoredCoffee = true; renderVarieties();
   $("f-rdx").checked = !!d.f["f-pd"]; syncRoastUnknown(); if (d.f["f-pd"]) $("f-pd").value = d.f["f-pd"];
   syncBag(); $("addbox").open = true; $("addsum").textContent = "Add a coffee (unsaved draft)";
@@ -1715,7 +1819,7 @@ function changes(old, row, fields) {
 const COFFEE_FIELDS = [
   ["roaster", "Roaster or brand"], ["name", "Name"], ["origin", "Origin"], ["variety", "Variety"],
   [r => r.altitude_min_m == null ? "" : r.altitude_max_m != null ? r.altitude_min_m + "\u2013" + r.altitude_max_m + " m" : r.altitude_min_m + " m", "Altitude"],
-  ["process", "Process"], ["roast_level", "Roast level"], ["is_blend", "Blend"], ["is_decaf", "Decaf"],
+  ["process", "Process"], ["roast_level", "Roast level"], ["is_blend", "Blend"], ["is_decaf", "Decaf"], ["decaf_process", "Decaf process"],
   ["roast_date", "Roasted", fmtD], ["purchase_date", "Bought", fmtD], ["open_date", "Opened", fmtD],
   ["bag_size_g", "Bag size", v => v == null ? "" : v + " g"], ["price_eur", "Price", v => v == null ? "" : "\u20AC" + Number(v).toFixed(2)], ["sca_score", "SCA score", v => v == null ? "" : String(Number(v))],
   ["flavour_tags", "Flavour tags"], ["suitable_for", "Ideal for", v => (v || []).map(typeLabel).join(", ")],
@@ -1810,7 +1914,8 @@ function coffeeRow() {
   const row = {
     altitude_min_m: amin, altitude_max_m: amax, variety: v("f-variety") || null,
     name: v("f-name"), roaster: v("f-roaster") || null, origin: v("f-origin") || null,
-    is_blend: $("f-blend").checked, ...($("f-decaf").checked || (editing && editing.is_decaf) || (newBagOf && newBagOf.is_decaf) ? { is_decaf: $("f-decaf").checked } : {}), process: chosen("f-process") || null, roast_level: chosen("f-roast") || null,
+    is_blend: $("f-blend").checked, ...($("f-decaf").checked || (editing && editing.is_decaf) || (newBagOf && newBagOf.is_decaf) ? { is_decaf: $("f-decaf").checked } : {}), process: v("f-process") || null, roast_level: chosen("f-roast") || null,
+    ...($("f-decaf").checked && chosen("f-decafp") ? { decaf_process: chosen("f-decafp") } : editing && editing.decaf_process ? { decaf_process: null } : {}),
     flavour_tags: v("f-tags").split(",").map(t => t.trim().toLowerCase()).filter(Boolean),
     suitable_for: sforVals(),
     ...(hhOk && hh && !editing ? { household_id: newBagOf ? newBagOf.household_id || hh : hh } : {}),
@@ -1849,7 +1954,7 @@ $("cf").onsubmit = async e => {
       ok = await confirmSave("Save these changes?", ch, "Save changes", ch.length === 1 ? "You changed one thing:" : "You changed " + ch.length + " things:");
     } else {
       ok = await confirmSave(newBagOf ? "Save the new bag?" : "Save this coffee?", [
-        ["Roaster or brand", v("f-roaster")], ["Name", v("f-name")], ["Origin", v("f-origin")], ["Variety", v("f-variety")], ["Process", chosen("f-process")], ["Roast level", chosen("f-roast")],
+        ["Roaster or brand", v("f-roaster")], ["Name", v("f-name")], ["Origin", v("f-origin")], ["Variety", v("f-variety")], ["Process", v("f-process")], ["Decaf process", $("f-decaf").checked ? chosen("f-decafp") : null], ["Roast level", chosen("f-roast")],
         ["Roasted", $("f-rdx").checked ? null : fmtD(v("f-rd"))], ["Bought", $("f-rdx").checked ? fmtD(v("f-pd")) : null], ["Opened", fmtD(v("f-od"))], ["Photo", photo ? "new photo" : null]
       ], "Save");
     }
@@ -3327,7 +3432,7 @@ async function openCoffee(id, dev, wantForm, rid) {
   const ph = $("dphoto"), pu = c.photo_path ? coffeeUrls[c.photo_path] : null, pt = c.photo_path ? (coffeeThumbs[c.photo_path] || pu) : null;
   const pb = $("dphotob"); pb.hidden = !pu; if (!pb.querySelector(".zm")) pb.appendChild(zoomBadge());
   if (pu) { ph.src = pt; ph.alt = "Bag of " + c.name; pb.setAttribute("aria-label", "Show the photo of " + c.name + " bigger"); pb.onclick = () => showPhoto(pu, c.name); } else ph.removeAttribute("src");
-  $("dmeta").textContent = [c.is_decaf ? "Decaf" : null, c.roaster, originText(c), c.variety, altText(c)].filter(Boolean).join(", ") +
+  $("dmeta").textContent = [c.is_decaf ? "Decaf" + (c.decaf_process ? " (" + c.decaf_process + ")" : "") : null, c.roaster, originText(c), c.variety, altText(c)].filter(Boolean).join(", ") +
     (c.roast_date ? ". Roasted " + fmtD(c.roast_date) : c.purchase_date ? ". Bought " + fmtD(c.purchase_date) + " (roast date unknown)" : "") + (c.open_date ? ", opened " + fmtD(c.open_date) : "") + (c.finished_at ? ", finished " + fmtD(c.finished_at) : "") + ".";
   const bx = $("dbuy"); bx.textContent = ""; const bl = buyLink(c); if (bl) bx.appendChild(bl);
   bx.appendChild(abtn("btn ghost", "New bag", "plus", () => { $("dedithost").appendChild($("addbox")); startNewBag(c); }));
