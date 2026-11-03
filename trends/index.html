@@ -143,7 +143,7 @@ svg.fwheel .fmid{fill:var(--card)}
 svg.fwheel .fn{font:500 26px "Iowan Old Style",Palatino,Georgia,serif;fill:var(--ink)}svg.fwheel .fo{font:11px system-ui,sans-serif;fill:var(--mut)}
 .leg i.fsw{width:12px;height:12px;border-radius:3px;background:var(--one)}
 .fdet{margin-top:10px;padding:12px 14px;border-radius:12px;background:var(--one-track);border-left:4px solid var(--fc,var(--one))}
-.fdet h3{margin:0 0 6px;font-size:15.5px}
+.fdet .fdh{margin:0 0 6px;font-size:15.5px;font-weight:600;color:var(--ink)}
 .frow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14.5px}.frow b{font-weight:500;color:var(--mut);font-variant-numeric:tabular-nums}
 .fdet .small{margin:8px 0 0}
 details.ftidy{margin-top:12px}
@@ -936,7 +936,7 @@ function flavourWheel() {
     groups.forEach(x => x.g.forEach(p => p.classList.toggle("off", x.f !== sel)));
     const f = fams.find(x => x.f === sel); det.textContent = "";
     det.style.setProperty("--fc", f.col);
-    det.appendChild(el("h3", "", f.f + " · " + f.got + " of " + f.slots.length + " found"));
+    det.appendChild(el("p", "fdh", f.f + " · " + f.got + " of " + f.slots.length + " found"));
     f.slots.filter(x => x.t).sort((a, b) => (b.t.avg || 0) - (a.t.avg || 0) || b.t.cups - a.t.cups).forEach(x => {
       const r = el("div", "frow"); r.append(el("span", "", x.n), el("b", "", (x.t.avg != null ? fmtS(x.t.avg) + " · " : "") + x.t.cups + (x.t.cups === 1 ? " cup" : " cups"))); det.appendChild(r);
     });
@@ -954,7 +954,7 @@ function tidyNotes(m, mine) {
   const unsorted = own.filter(o => !o.fam && (state.noteFam || {})[o.n] !== NOFAM).length;
   const d = el("details", "ftidy"); if (unsorted) d.open = true;
   d.appendChild(el("summary", "", unsorted ? "Not sorted yet (" + unsorted + ")" : "Your own notes (" + own.length + ")"));
-  d.appendChild(el("p", "small", "Notes that are not on the wheel as you wrote them. Give one a family, or merge it into the note it means: it is then renamed on all your bags and cups, so the two count as one."));
+  d.appendChild(el("p", "small", "Notes not on the wheel as you wrote them. Give each a family, or merge it into the note it means (renamed on all your bags and cups)."));
   const fams = FLAVOURS.families.map(f => f[0]);
   const say = t => { $("msg").textContent = t || ""; };
   own.forEach(o => {
