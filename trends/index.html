@@ -851,6 +851,13 @@ function likeKinds() {
     ["Roast", x => x.toLowerCase() + " roast", "M12 3c1 3 4 4.5 4 8.5a4 4 0 01-8 0c0-1.8.8-3 2-4 0 1.5.6 2.5 1.6 2.5C11.6 7.5 11 5 12 3z M7 20h10", c => c.roast_level],
     ["Origin", x => x, "M12 21s-6-5.5-6-10a6 6 0 1112 0c0 4.5-6 10-6 10z M12 9v.01", c => { const o = splitOrigin(c.origin); return o.countries.length > 1 ? "Several countries" : o.countries[0] || o.country; }],
     ["Altitude", x => /^Below/.test(x) ? "low-grown" : /2,100|1,800/.test(x) ? "high-grown" : null, "M3 19l6-10 4 6 2-3 6 7z", c => { const a = c.altitude_max_m != null ? (c.altitude_min_m + c.altitude_max_m) / 2 : c.altitude_min_m; if (a == null) return null; return a < 1200 ? "Below 1,200 m" : a < 1500 ? "1,200 to 1,500 m" : a < 1800 ? "1,500 to 1,800 m" : a < 2100 ? "1,800 to 2,100 m" : "2,100 m and up"; }],
+    ["Beans", x => null, "M12 4c3.3 0 5 3.4 5 8s-1.7 8-5 8-5-3.4-5-8 1.7-8 5-8z M12 4c-1.2 2.5-1.2 5.5 0 8s1.2 5.5 0 8", c => {   // Arabica, Robusta, and how much of each
+      const v = String(c.variety || "").toLowerCase(), ro = /robusta/.test(v), p = c.robusta_pct != null ? Number(c.robusta_pct) : null;
+      if (!v) return null;
+      if (!ro || p === 0) return "100% Arabica";
+      if (!/arabica/.test(v) || p === 100) return "100% Robusta";
+      return p == null ? "Arabica and Robusta" : p <= 30 ? "Up to 30% Robusta" : "Over 30% Robusta";
+    }],
     ["Region", x => null, "M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2z M9 4v14 M15 6v14", c => { const o = splitOrigin(c.origin); return o.region && o.countries.length < 2 ? o.region.split(",").map(r => r.trim()).filter(Boolean).map(r => r + " (" + (o.countries[0] || o.country) + ")") : null; }]   // each region of the coffee
   ];
 }
@@ -1015,7 +1022,7 @@ function whatYouLike() {
   else {
     const all = avg(list.map(b => b.rating)), { res } = likeGroups(list);
     // one small block per kind of coffee: your stars for each, best first (the winners are the badges under Your taste)
-    const BI = { Process: "process", Roast: "roast", Origin: "origin", Altitude: "altitude", Region: "origin" };
+    const BI = { Process: "process", Roast: "roast", Origin: "origin", Altitude: "altitude", Region: "origin", Beans: "dose" };
     const body = el("div", "likes");
     res.forEach(g => { const d = el("div", "lg"), h = el("h3", "lgh"); h.append(ic(BI[g.title] || "star"), document.createTextNode(g.title)); d.appendChild(h);
       d.appendChild(rankList(g.rows.slice(0, 4).map(r => ({ label: r.label, sub: "(" + r.n + ")", value: r.value, max: 5, text: r1(r.value).toFixed(1) + "\u2605" })))); body.appendChild(d); });

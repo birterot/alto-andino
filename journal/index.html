@@ -138,6 +138,10 @@ details.ccm[open] summary{background:color-mix(in srgb,var(--t) 10%,transparent)
 .ccmenu .mi.fav.on svg{fill:currentColor}
 .vfield{display:block;margin-top:14px;max-width:420px}
 .vfield>.vl{display:block;font-size:14px;color:var(--mut)}
+.spl{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card)}
+.splh{display:flex;justify-content:space-between;font-size:14px;color:var(--mut)}.splh b{color:var(--ink);font-variant-numeric:tabular-nums}
+.spl input[type=range]{width:100%;margin:8px 0 2px;accent-color:var(--act)}.spl .hint{margin:2px 0 0}
+.spl.unset .splh b{color:var(--mut);font-weight:400}
 .vcombo{position:relative;margin-top:6px}
 .vbox{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:48px;padding:6px 44px 6px 8px;border:1px solid var(--line);border-radius:12px;background:var(--card);cursor:text}
 .vbox:focus-within{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
@@ -663,6 +667,12 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
         </div>
         <input id="f-variety" hidden>
         <p class="hint">Pick from the list, or type a new one and tap "Add". You can choose several.</p>
+        <div class="spl" id="spfield" hidden>
+          <div class="splh"><span>Arabica <b id="sp-a"></b></span><span>Robusta <b id="sp-r"></b></span></div>
+          <input type="range" id="sp-range" min="0" max="100" step="5" value="20" aria-label="Robusta share, in percent">
+          <p class="hint" id="sp-hint"></p>
+          <input id="f-robusta" hidden>
+        </div>
       </div>
       <div class="row2 adv">
         <label>Altitude from (m)<input id="f-alt-min" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="1700"></label>
@@ -1127,6 +1137,7 @@ function safeUrl(u) {
 // Small line icons. ico("edit", 18) returns an <svg>. Add an icon by adding a line of path data (24x24 grid).
 const ICONS = {
   more: "M5 12h.01 M12 12h.01 M19 12h.01",
+  beanout: "M9.5 4.5c2.9 0 4.8 3.1 4.8 7.3s-1.9 7.7-4.8 7.7-4.8-3.4-4.8-7.6 1.9-7.4 4.8-7.4z M9.5 5c-1 2.2-1 4.6 0 6.9s1 4.8 0 7.1 M16.5 12h5 M19.3 9.6l2.2 2.4-2.2 2.4",   // a bean, and out it goes
   edit: "M4 20h4L19 9l-4-4L4 16v4z M13 7l4 4",
   trash: "M4 7h16 M10 7V4h4v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6",
   bag: "M6.5 8h11l1 12.5h-13z M9 8V6.5a3 3 0 016 0V8",
@@ -1266,7 +1277,7 @@ function cardMenu(c, page) {
   const here = () => { if (page) $("dedithost").appendChild($("addbox")); };
   box.appendChild(abtn("mi", "Edit", "edit", () => { close(); here(); startEdit(page ? cur : c); }));
   box.appendChild(abtn("mi", "New bag", "plus", () => { close(); here(); startNewBag(c); }));
-  if (c.bag_size_g && !c.finished_at) box.appendChild(abtn("mi", "Beans out\u2026", "bag", () => { close(); openOut(c); }));
+  if (c.bag_size_g && !c.finished_at) box.appendChild(abtn("mi", "Beans out\u2026", "beanout", () => { close(); openOut(c); }));
   bagActions(c, page ? () => { load(); openCoffee(c.id); } : load).forEach(x => { x.className = "mi"; box.appendChild(x); });
   const bl = buyLink(c); if (bl) { bl.className = "mi"; box.appendChild(bl); }
   box.appendChild(abtn("mi del", "Archive or delete", "trash", async () => {
@@ -1377,7 +1388,10 @@ function card(c, photoUrl, nBrews, ratings, bags, thumbUrl, opt) {
   const ri = roastIdx(c.roast_level);
   if (c.roast_level) { const v = el("div", "crst"); v.appendChild(el("b", "", c.roast_level)); if (ri >= 0) { const sc = el("span", "rscale"); sc.setAttribute("aria-hidden", "true"); ROASTS.forEach((_, n) => sc.appendChild(el("i", n <= ri ? "on" : ""))); v.appendChild(sc); } item("Roast", v); }
   item("Altitude", altText(c));
-  item(listOf(c.variety).length > 1 ? "Varieties" : "Variety", c.variety);
+  if (c.robusta_pct != null) {   // "Arabica 80% · Robusta 20%", the other varieties on their own
+    item("Beans", "Arabica " + (100 - c.robusta_pct) + "% \u00B7 Robusta " + c.robusta_pct + "%");
+    const ov = listOf(c.variety).filter(x => !/^(arabica|robusta)$/i.test(x)); item(ov.length > 1 ? "Varieties" : "Variety", ov.join(", "));
+  } else item(listOf(c.variety).length > 1 ? "Varieties" : "Variety", c.variety);
   if (c.is_decaf) item("Decaf", c.decaf_process || "yes");
   const cu = coffeeCups[c.id];
   if (cu && cu.length) { const v = el("a", "cupl"); v.href = "../cupping/#c=" + c.id; v.textContent = (Math.round(cu.reduce((x, y) => x + y, 0) / cu.length * 10) / 10).toFixed(1) + " cupped"; item("Cupping", v); }
@@ -1454,7 +1468,7 @@ async function load() {
     const drank = rs.some(r => !r.is_guest && r.rater_id === me.id);
     return made || drank ? [Date.parse(b.brewed_at), made ? 1 : 0, drank ? 1 : 0] : null;
   }).filter(Boolean);
-  recentBrews = (bs || []).filter(b => CAFFEINE.recent(b, since)).map(b => CAFFEINE.row(b, byId[b.coffee_id]));
+  recentBrews = (bs || []).filter(b => CAFFEINE.recent(b, since)).map(b => CAFFEINE.row(b, byId[b.coffee_id]));   // with its Robusta share
   const paths = data.map(c => c.photo_path).filter(Boolean);
   const known = photoLinks(paths, true);   // links still valid from earlier visits: no waiting
   coffeeUrls = known.full; coffeeThumbs = known.thumb;
@@ -1644,7 +1658,7 @@ function startEdit(c) {
   editing = c;
   $("cf").reset();
   $("f-name").value = c.name; $("f-roaster").value = c.roaster || ""; $("f-origin").value = c.origin || ""; originToParts();
-  $("f-variety").value = c.variety || ""; $("f-alt-min").value = c.altitude_min_m ?? ""; $("f-alt-max").value = (c.altitude_max_m != null && c.altitude_max_m !== c.altitude_min_m) ? c.altitude_max_m : "";
+  $("f-variety").value = c.variety || ""; $("f-robusta").value = c.robusta_pct ?? ""; $("f-alt-min").value = c.altitude_min_m ?? ""; $("f-alt-max").value = (c.altitude_max_m != null && c.altitude_max_m !== c.altitude_min_m) ? c.altitude_max_m : "";
   $("f-blend").checked = !!c.is_blend; syncBlend(); $("f-decaf").checked = !!c.is_decaf; syncDecaf(); setSfor(c.suitable_for); renderVarieties();
   $("f-process").value = listOf(c.process).join(", "); setSel("f-roast", c.roast_level); setSel("f-decafp", c.decaf_process || "");
   $("f-tags").value = (c.flavour_tags || []).join(", "); renderPickers();
@@ -1695,6 +1709,18 @@ function addVariety(v) {
   const parts = varParts(); if (!parts.some(x => x.toLowerCase() === v.toLowerCase())) parts.push(v);
   $("f-vq").value = ""; setVarParts(parts);
 }
+// Arabica and Robusta in one bag: how much of each, as the bag says (it matters for the caffeine, and for the taste)
+function syncSpecies() {
+  const ps = varParts().map(x => x.toLowerCase()), both = ps.includes("arabica") && ps.includes("robusta"), f = $("spfield"); if (!f) return;
+  f.hidden = !both; if (!both) { $("f-robusta").value = ""; return; }
+  const v = $("f-robusta").value, set = v !== "";
+  f.classList.toggle("unset", !set); if (set) $("sp-range").value = v;
+  $("sp-a").textContent = set ? (100 - Number(v)) + "%" : "?"; $("sp-r").textContent = set ? v + "%" : "?";
+  $("sp-hint").innerHTML = "";
+  $("sp-hint").append(document.createTextNode(set ? "As on the bag. " : "Slide to the share on the bag, if it says. "));
+  if (set) { const x = el("button", "lnk", "Not on the bag"); x.type = "button"; x.onclick = () => { $("f-robusta").value = ""; syncSpecies(); saveCoffeeDraft(); }; $("sp-hint").appendChild(x); }
+}
+$("sp-range").addEventListener("input", () => { $("f-robusta").value = $("sp-range").value; syncSpecies(); saveCoffeeDraft(); });
 function renderVarieties() {   // the tokens for what is chosen
   const box = $("vbox"), q = $("f-vq");
   box.querySelectorAll(".vtok").forEach(t => t.remove());
@@ -1705,6 +1731,7 @@ function renderVarieties() {   // the tokens for what is chosen
     t.appendChild(x); box.insertBefore(t, q);
   });
   q.placeholder = varParts().length ? "Add another" : "Choose or type a variety";
+  syncSpecies();
   if (!$("vlist").hidden) drawVList();
 }
 function drawVList() {
@@ -1896,7 +1923,7 @@ function syncBlend() {   // a blend: several countries in the country field
   $("f-country").placeholder = b ? "e.g. Brazil, Ethiopia" : "e.g. Colombia";
 }
 $("f-blend").addEventListener("change", () => { syncBlend(); if ($("f-blend").checked) $("f-country").focus(); });
-const CF = ["f-name", "f-roaster", "f-origin", "f-variety", "f-alt-min", "f-alt-max", "f-process", "f-decafp", "f-decafp-new", "f-roast", "f-roast-new", "f-tags", "f-rd", "f-od", "f-notes", "f-url", "f-bag", "f-price", "f-pd"];
+const CF = ["f-name", "f-roaster", "f-origin", "f-variety", "f-robusta", "f-alt-min", "f-alt-max", "f-process", "f-decafp", "f-decafp-new", "f-roast", "f-roast-new", "f-tags", "f-rd", "f-od", "f-notes", "f-url", "f-bag", "f-price", "f-pd"];
 function saveCoffeeDraft() {
   if (editing || newBagOf || !me) return;
   const f = {}; CF.forEach(i => { f[i] = $(i).value; });
@@ -2044,7 +2071,7 @@ function changes(old, row, fields) {
   return out;
 }
 const COFFEE_FIELDS = [
-  ["roaster", "Roaster or brand"], ["name", "Name"], ["origin", "Origin"], ["variety", "Variety"],
+  ["roaster", "Roaster or brand"], ["name", "Name"], ["origin", "Origin"], ["variety", "Variety"], ["robusta_pct", "Robusta share", v => v == null ? "" : v + "%"],
   [r => r.altitude_min_m == null ? "" : r.altitude_max_m != null ? r.altitude_min_m + "\u2013" + r.altitude_max_m + " m" : r.altitude_min_m + " m", "Altitude"],
   ["process", "Process"], ["roast_level", "Roast level"], ["is_blend", "Blend"], ["is_decaf", "Decaf"], ["decaf_process", "Decaf process"],
   ["roast_date", "Roasted", fmtD], ["purchase_date", "Bought", fmtD], ["open_date", "Opened", fmtD],
@@ -2140,6 +2167,7 @@ function coffeeRow() {
   if (amax === amin) amax = null;
   const row = {
     altitude_min_m: amin, altitude_max_m: amax, variety: v("f-variety") || null,
+    ...(!$("spfield").hidden && v("f-robusta") !== "" ? { robusta_pct: Number(v("f-robusta")) } : editing && editing.robusta_pct != null ? { robusta_pct: null } : {}),
     name: v("f-name"), roaster: v("f-roaster") || null, origin: v("f-origin") || null,
     is_blend: $("f-blend").checked, ...($("f-decaf").checked || (editing && editing.is_decaf) || (newBagOf && newBagOf.is_decaf) ? { is_decaf: $("f-decaf").checked } : {}), process: v("f-process") || null, roast_level: chosen("f-roast") || null,
     ...($("f-decaf").checked && chosen("f-decafp") ? { decaf_process: chosen("f-decafp") } : editing && editing.decaf_process ? { decaf_process: null } : {}),
@@ -2181,7 +2209,7 @@ $("cf").onsubmit = async e => {
       ok = await confirmSave("Save these changes?", ch, "Save changes", ch.length === 1 ? "You changed one thing:" : "You changed " + ch.length + " things:");
     } else {
       ok = await confirmSave(newBagOf ? "Save the new bag?" : "Save this coffee?", [
-        ["Roaster or brand", v("f-roaster")], ["Name", v("f-name")], ["Origin", v("f-origin")], ["Variety", v("f-variety")], ["Process", v("f-process")], ["Decaf process", $("f-decaf").checked ? chosen("f-decafp") : null], ["Roast level", chosen("f-roast")],
+        ["Roaster or brand", v("f-roaster")], ["Name", v("f-name")], ["Origin", v("f-origin")], ["Variety", v("f-variety")], ["Robusta share", !$("spfield").hidden && v("f-robusta") !== "" ? v("f-robusta") + "%" : null], ["Process", v("f-process")], ["Decaf process", $("f-decaf").checked ? chosen("f-decafp") : null], ["Roast level", chosen("f-roast")],
         ["Roasted", $("f-rdx").checked ? null : fmtD(v("f-rd"))], ["Bought", $("f-rdx").checked ? fmtD(v("f-pd")) : null], ["Opened", fmtD(v("f-od"))], ["Photo", photo ? "new photo" : null]
       ], "Save");
     }
@@ -2207,7 +2235,7 @@ $("cf").onsubmit = async e => {
     let noDp = false;
     const retry = async run => {
       let r = await run();
-      for (const k of ["decaf_process", "photo_pos"]) if (r.error && k in row && new RegExp(k).test(r.error.message || "")) { delete row[k]; noDp = true; r = await run(); }
+      for (const k of ["decaf_process", "photo_pos", "robusta_pct"]) if (r.error && k in row && new RegExp(k).test(r.error.message || "")) { delete row[k]; noDp = true; r = await run(); }
       return r;
     };
     if (editing) {
@@ -2228,7 +2256,7 @@ $("cf").onsubmit = async e => {
     }
     const after = logAfter;
     const onPage = $("addbox").parentNode === $("dedithost") && cur;
-    endEdit(); say(noDp ? "Saved, but not the decaf process or the photo framing yet: they need a small database update (supabase/47 and 48)." : "Saved."); load();
+    endEdit(); say(noDp ? "Saved, but not everything: the decaf process, the photo framing or the Robusta share need a small database update first (supabase/47, 48, 52)." : "Saved."); load();
     if (onPage) openCoffee(cur.id);
     if (newId && after) { location.hash = "c=" + newId + (after.dev ? "&d=" + encodeURIComponent(after.dev) : "") + "&new"; }
   } catch (err) { say("Could not save: " + err.message); }

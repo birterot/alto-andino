@@ -203,7 +203,7 @@
         var ses = r && r.data && r.data.session; if (!ses || ses.user.id !== session.user.id) return;
         var my = ses.user.id, since2 = new Date(Date.now() - 62 * 864e5).toISOString();
         return Promise.all([
-          db.from("brews").select("id,coffee_id,brewed_at,device,dose_g,yield_g,water_g,is_dialin,made_by,created_by,coffees(name,is_decaf,variety,roast_level),brew_ratings(id,rater_id,is_guest,rating,balance,drank_at),brew_scores(rating_id)").gte("brewed_at", since2).order("brewed_at"),
+          db.from("brews").select("id,coffee_id,brewed_at,device,dose_g,yield_g,water_g,is_dialin,made_by,created_by,coffees(*),brew_ratings(id,rater_id,is_guest,rating,balance,drank_at),brew_scores(rating_id)").gte("brewed_at", since2).order("brewed_at"),
           db.from("profiles").select("id,display_name,prefs"),
           (function () {   // the coffees, fresh (a bag opened on its own page, or by someone else, shows at once), then all brews of the open bags (for the cups left)
             var hid = (shelf && shelf.hh) || get("alto.household");
