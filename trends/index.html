@@ -143,8 +143,7 @@ svg.fwheel .fmid{fill:var(--card)}
 svg.fwheel .fn{font:500 26px "Iowan Old Style",Palatino,Georgia,serif;fill:var(--ink)}svg.fwheel .fo{font:11px system-ui,sans-serif;fill:var(--mut)}
 .leg i.fsw{width:12px;height:12px;border-radius:3px;background:var(--ink)}
 .fdet{margin-top:10px;padding:12px 14px;border-radius:12px;background:var(--one-track);border-left:4px solid var(--fc,var(--one))}
-.fother{display:flex;align-items:flex-start;gap:8px;margin:8px 2px 0;font-size:13px;line-height:1.45;color:var(--mut);cursor:pointer}
-.fother .fsw{flex:none;width:10px;height:10px;border-radius:3px;margin-top:4px}
+.card .info.tinfo{display:inline-block;width:19px;height:19px;margin:0 0 0 5px;vertical-align:2px;font-size:11px;line-height:17px;padding:0}
 .fdet .fdh{margin:0 0 6px;font-size:15.5px;font-weight:600;color:var(--ink)}
 .frow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14.5px}.frow b{font-weight:500;color:var(--mut);font-variant-numeric:tabular-nums}
 .fdet .small{margin:4px 0 6px}
@@ -920,7 +919,13 @@ function flavourWheel() {
   const extra = found.filter(o => o.fam && !o.wheel).length;
   // the take: how far you got, the best families, what is still to find
   const liked = counted.filter(f => f.avg != null && f.cups >= 2).sort((a, b) => b.avg - a.avg).slice(0, 2), none = counted.filter(f => !f.got).map(f => f.f);
-  m.appendChild(el("p", "take", "You found " + gotN + " of the wheel’s " + ofN + " notes" + (extra ? ", and " + extra + " of your own" : "") + "." + (liked.length ? " Your best cups taste of " + andList(liked.map(f => f.f)) + " (" + fmtS(liked[0].avg) + ")." : "")
+  const tk = el("p", "take", "You found " + gotN + " of the wheel’s " + ofN + " notes"); m.appendChild(tk);
+  { const oth = fams.find(f => !f.count); if (oth) {   // why Other is not in the count: behind a small (i), right at the number
+    const p = el("p", "what", "\u201C" + oth.f + "\u201D on the SCA wheel are the off-notes: papery, musty, chemical. They are left out of your " + ofN + ", because they point to old beans, storage or the roast rather than to the coffee itself. You can still log them, and they show on the wheel."), b = el("button", "info tinfo", "i");
+    p.hidden = true; b.type = "button"; b.setAttribute("aria-label", "Why is Other not counted?"); b.setAttribute("aria-expanded", "false");
+    b.onclick = () => { p.hidden = !p.hidden; b.setAttribute("aria-expanded", String(!p.hidden)); };
+    tk.appendChild(b); m.appendChild(p); } }
+  tk.appendChild(document.createTextNode((extra ? ", and " + extra + " of your own" : "") + "." + (liked.length ? " Your best cups taste of " + andList(liked.map(f => f.f)) + " (" + fmtS(liked[0].avg) + ")." : "")
     + (none.length && none.length <= 3 ? " Still undiscovered: " + andList(none) + "." : "")));
   const NS = "http://www.w3.org/2000/svg", S = 380, c = S / 2, mx = Math.max(1, ...found.map(o => o.cups));
   const arc = (r0, r1, a0, a1) => { const p = (r, a) => [c + r * Math.sin(a), c - r * Math.cos(a)], lg = a1 - a0 > Math.PI ? 1 : 0, [x0, y0] = p(r1, a0), [x1, y1] = p(r1, a1), [x2, y2] = p(r0, a1), [x3, y3] = p(r0, a0);
@@ -958,10 +963,6 @@ function flavourWheel() {
   const t2 = mk("text", { x: c, y: c + 15, "text-anchor": "middle", class: "fo" }); t2.textContent = "of " + ofN + " found";
   const box = el("div", "fwbox"); box.appendChild(svg); m.appendChild(box);
   const lg = el("div", "legend"); [["loved", 1], ["so-so", 0.4], ["not found yet", 0.09]].forEach(([k, o]) => { const s1 = el("span", "leg"); const i = el("i", "fsw"); i.style.opacity = o; s1.append(i, document.createTextNode(k)); lg.appendChild(s1); }); m.appendChild(lg);
-  { const oth = fams.find(f => !f.count); if (oth) {   // what Other is, and why it does not count
-    const n = el("p", "fother"), i = el("i", "fsw"); i.style.background = oth.col;
-    n.append(i, el("span", "", oth.f + " holds the wheel\u2019s off-notes: papery, musty, chemical. You can log them, but they don\u2019t count towards the " + ofN + "."));
-    n.onclick = () => { sel = oth.f; show(); }; m.appendChild(n); } }
   m.appendChild(det);
   function show() {
     parts.forEach(x => x.g.forEach(p => p.classList.toggle("off", x.f !== sel)));
@@ -969,7 +970,6 @@ function flavourWheel() {
     det.style.setProperty("--fc", f.col);
     const ofF = f.slots.filter(x => x.wheel).length;
     det.appendChild(el("p", "fdh", f.f + " · " + f.gotW + " of " + ofF + " found" + (f.count ? "" : " · not counted")));
-    if (!f.count) det.appendChild(el("p", "small", "These are the wheel\u2019s off-notes. A cup that tastes of them usually says more about the beans\u2019 age, storage or roast than about the coffee, so they are not part of your count."));
     f.groups.forEach(gr => {
       const got = gr.slots.filter(x => x.t).sort((a, b) => (b.t.avg || 0) - (a.t.avg || 0) || b.t.cups - a.t.cups), rest = gr.slots.filter(x => !x.t).map(x => x.n);
       if (f.groups.length > 1 || gr.g !== f.f) det.appendChild(el("p", "fgh", gr.g));
