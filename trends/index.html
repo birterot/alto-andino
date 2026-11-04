@@ -137,7 +137,7 @@ ul.rank li:has(.medal){grid-template-columns:auto minmax(0,1fr) 64px var(--vw,au
 .fwbox{max-width:380px;margin:4px auto 0}
 svg.fwheel{display:block;width:100%;height:auto}
 svg.fwheel .ff,svg.fwheel .fg,svg.fwheel .fs{stroke:var(--card);stroke-width:1.2;cursor:pointer;transition:opacity .15s}
-svg.fwheel .off{opacity:.5}svg.fwheel .ff,svg.fwheel .fg,svg.fwheel .fs{transition:opacity .2s,transform .25s cubic-bezier(.3,.8,.25,1)}
+svg.fwheel .off{opacity:.5}svg.fwheel .ff,svg.fwheel .fg,svg.fwheel .fs,svg.fwheel .flg{transition:opacity .2s,transform .25s cubic-bezier(.3,.8,.25,1)}svg.fwheel .flg.off{opacity:.75}
 svg.fwheel .fl{font:600 10.5px system-ui,sans-serif;fill:#fff;pointer-events:none}svg.fwheel .fl.dk{fill:#2B2723}svg.fwheel .fl.dim{fill:var(--mut)}
 svg.fwheel .fmid{fill:var(--card)}
 svg.fwheel .fn{font:500 26px "Iowan Old Style",Palatino,Georgia,serif;fill:var(--ink)}svg.fwheel .fo{font:11px system-ui,sans-serif;fill:var(--mut)}
@@ -964,6 +964,7 @@ function flavourWheel() {
     if (span > 0.3) {   // the family's name, along its slice
       const a = a0 + span / 2, x = c + 71 * Math.sin(a), y = c - 71 * Math.cos(a); let deg = a * 180 / Math.PI - 90; if (deg > 90) deg -= 180;
       const t = mk("text", { x, y, "text-anchor": "middle", "dominant-baseline": "middle", transform: "rotate(" + deg + " " + x + " " + y + ")", class: "fl" + (f.got ? (lum(f.col) > 0.55 ? " dk" : "") : " dim") }); t.textContent = f.f.split("/")[0];   // short: Sour, Green, Nutty
+      const lgp = mk("g", { class: "flg" }); lgp.appendChild(t); g.push(lgp);   // in a group of its own: it moves with its slice (its turn stays on the text)
     }
     g.forEach(p => { p.addEventListener("click", () => { sel = f.f; show(); }); });
     parts.push({ f: f.f, g, mid: a0 + span / 2 }); a0 += span;
