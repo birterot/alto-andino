@@ -84,10 +84,19 @@
     // it floats, as in WhatsApp or Instagram, but flat: a capsule with a thin line, no shadow, no glass
     ".tbar{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);z-index:55;max-width:520px;margin:0 auto;background:var(--card,#fff);border:1px solid var(--line,#ccc);border-radius:999px;padding:5px 6px;transition:opacity .5s}" +
     "html.intro .tbar{opacity:0}body.kbd .tbar{display:none}" +
-    ".tbar .tbrow{display:grid;grid-template-columns:repeat(5,1fr);gap:2px}" +
+    ".tbar .tbrow{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:2px}" +
+    // one soft capsule under the lit button, sliding over when you tap another (as in iPhone apps)
+    ".tbar .tbsel{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:color-mix(in srgb,var(--brand,#6B4A2E) 10%,transparent);pointer-events:none;transition:transform .34s cubic-bezier(.3,.8,.25,1),width .34s cubic-bezier(.3,.8,.25,1),opacity .2s}" +
+    ".tbar .tbrow>a,.tbar .tbrow>button{position:relative;transition:color .25s}" +
+    ".tbar .tbi{transition:transform .18s cubic-bezier(.3,.8,.25,1)}.tbar .tbrow>a:active .tbi,.tbar .tbrow>button:active .tbi{transform:scale(.88)}" +
+    "@media (prefers-reduced-motion:reduce){.tbar .tbsel,.tbar .tbi{transition:none}}" +
     ".tbar a,.tbar button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 3px;min-height:50px;border:0;border-radius:999px;background:none;color:var(--mut,#666);text-decoration:none;font:500 10.5px/1.2 system-ui,-apple-system,sans-serif;letter-spacing:.01em;cursor:pointer;-webkit-tap-highlight-color:transparent}" +
     ".tbar .tbi{display:grid;place-items:center;height:32px}" +
-    ".tbar [aria-current],.tbar .tbon{color:var(--brand,#6B4A2E);background:color-mix(in srgb,var(--brand,#6B4A2E) 10%,transparent)}.tbar .tbmid[aria-current]{background:none}.tbar.tbopen [aria-current]:not(.tbmid){background:none;color:var(--mut,#666)}.tbar.tbopen [aria-current] svg{stroke-width:1.6}.tbar [data-k=more] svg{stroke-width:3.4!important}.tbar [aria-current] svg,.tbar .tbon svg{stroke-width:2.1}" +
+    ".tbar .tblit{color:var(--brand,#6B4A2E)}.tbar .tblit svg{stroke-width:2.1}.tbar [data-k=more] svg{stroke-width:3.4!important}" +
+    // the app: pages change with a short cross-fade, the bars stay where they are (browsers that know view transitions)
+    "@view-transition{navigation:auto}html.isapp .tbar{view-transition-name:tbar}html.isapp .topnav{view-transition-name:topnav}" +
+    "::view-transition-old(root),::view-transition-new(root){animation-duration:.18s}" +
+    "@media (prefers-reduced-motion:reduce){@view-transition{navigation:none}}" +
     ".tbar .tbmid .tbi{width:50px;border-radius:999px;background:var(--act,#4A2F1C);color:var(--on-act,#fff)}.tbar .tbmid{color:var(--ink,#222)}" +
     ".tbar a:focus-visible,.tbar button:focus-visible{outline:2px solid currentColor;outline-offset:-2px;border-radius:10px}" +
     "body.hasbar{padding-bottom:84px}" +
@@ -263,6 +272,29 @@
   // the bar at the bottom
   var tbar = document.createElement("nav"); tbar.className = "tbar"; tbar.setAttribute("aria-label", "Main");
   var trow = document.createElement("div"); trow.className = "tbrow"; tbar.appendChild(trow);
+  var tsel = document.createElement("span"); tsel.className = "tbsel"; tsel.setAttribute("aria-hidden", "true");
+  var still = matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches, selReady = false;
+  function moveSel(el, slide) {   // the capsule to this button (none under Log a brew: it has its own)
+    if (!el) { tsel.style.opacity = "0"; return; }
+    if (!slide) tsel.style.transition = "none";
+    tsel.style.width = el.offsetWidth + "px"; tsel.style.transform = "translateX(" + el.offsetLeft + "px)";
+    tsel.style.opacity = el.classList.contains("tbmid") ? "0" : "1";
+    if (!slide) { void tsel.offsetWidth; tsel.style.transition = ""; }
+  }
+  function light(el, slide) {
+    Array.prototype.forEach.call(trow.children, function (a) { if (a !== tsel) a.classList.toggle("tblit", a === el); });
+    moveSel(el, slide);
+  }
+  // a tap: the capsule slides over first, then the page changes; the button you are on again takes you to the top
+  trow.addEventListener("click", function (e) {
+    var a = e.target.closest("a"); if (!a || !trow.contains(a) || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    var to = new URL(a.href, location.href), same = to.pathname === location.pathname && to.hash === location.hash;
+    if (!same && to.pathname === location.pathname && to.hash === "" && /^#?$/.test(location.hash)) same = true;
+    e.preventDefault(); if (!menu.hidden) setOpen(false);
+    if (same) { window.scrollTo({ top: 0, behavior: still ? "auto" : "smooth" }); return; }
+    light(a, true);
+    setTimeout(function () { location.href = a.href; }, still ? 0 : 170);
+  });
   function tab(el, key, label, ic) {
     var i = document.createElement("span"); i.className = "tbi"; i.appendChild(key === "more" ? svgEl(25, function (s) { s.setAttribute("stroke-width", "3.4"); s.appendChild(pathEl("M5 12h.01M12 12h.01M19 12h.01")); }) : icon(ic, key === "log" ? 22 : 25));
     if (key !== "log" && key !== "more") i.firstChild.setAttribute("stroke-width", "1.6");
@@ -280,21 +312,28 @@
     });
     while (btn.firstChild) btn.removeChild(btn.firstChild);
     tab(btn, "more", "More");
+    trow.insertBefore(tsel, trow.firstChild); selReady = false;
     markBar();
   }
   function markBar() {
     if (!isApp) return;
     var now = current(); if (/^ch-/.test(now)) now = "book";
     var hit = false;
+    var lit = null;
     Array.prototype.forEach.call(trow.children, function (a) {
-      if (a === btn) return;
-      var on = a.dataset.k === now; hit = hit || on;
+      if (a === btn || a === tsel) return;
+      var on = a.dataset.k === now; hit = hit || on; if (on) lit = a;
       if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     });
-    btn.classList.toggle("tbon", !hit || !menu.hidden);   // a page from More (Settings, Feedback ...): More is lit
-    tbar.classList.toggle("tbopen", !menu.hidden);   // More open: only More is lit
+    if (!hit || !menu.hidden) lit = btn;   // a page from More (Settings, Feedback ...), or More open: More is lit
+    if (!tbar.isConnected) return;
+    light(lit, selReady); selReady = true;
   }
-  if (isApp) { document.body.appendChild(tbar); document.body.classList.add("hasbar"); }
+  if (isApp) {
+    document.body.appendChild(tbar); document.body.classList.add("hasbar");
+    window.addEventListener("pageshow", function (e) { if (e.persisted) { selReady = false; markBar(); } });   // back to a kept page: lit as it should be
+    window.addEventListener("resize", function () { selReady = false; markBar(); });
+  }
   // typing: the bar makes room for the keyboard
   if (isApp) document.addEventListener("focusin", function (e) { var t = e.target; if (t && (t.tagName === "TEXTAREA" || t.tagName === "SELECT" || (t.tagName === "INPUT" && !/^(checkbox|radio|range|button|submit|reset|file|color)$/i.test(t.type)) || t.isContentEditable)) document.body.classList.add("kbd"); });
   if (isApp) document.addEventListener("focusout", function () { setTimeout(function () { var a = document.activeElement; if (!a || !/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) document.body.classList.remove("kbd"); }, 50); });
