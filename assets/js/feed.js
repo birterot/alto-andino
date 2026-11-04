@@ -128,7 +128,7 @@ window.ALTO_FEED = (function () {
       const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
       const say = () => {};   // a quiet part of Home: when the activity cannot load, it simply is not there
       const me = { id: ctx.me };
-      let names = {}, prefsOf = {}, open = false, feedN = 40, feedId = 0, feedMore = false, feedItems = [];
+      let names = {}, prefsOf = {}, open = false, feedN = 40, feedId = 0, feedMore = false, feedItems = [], feedTimed = false;
       // sorting: dates and ids letter by letter (ISO dates sort right that way), names with one shared collator (fast, unlike localeCompare on each pair)
       const cmpRaw = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
       let collator = null; const cmpText = (a, b) => (collator || (collator = new Intl.Collator())).compare(a, b);
@@ -154,6 +154,7 @@ window.ALTO_FEED = (function () {
         const ids = cs.map(c => c.id), byId = {}; cs.forEach(c => { byId[c.id] = c; });
         let brews = [], cups = [];
         const rg = whenRange("r");   // a time frame: everything in it (no "Show older")
+        feedTimed = !!rg;
         if (ids.length) {
           const [rb, rc] = await Promise.all([
             (rg ? db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,note,created_at)").in("coffee_id", ids).gte("brewed_at", rg.a.toISOString()).lt("brewed_at", rg.b.toISOString()).order("brewed_at", { ascending: false }).limit(1000)
@@ -520,7 +521,12 @@ window.ALTO_FEED = (function () {
       function openAll(on, quiet) {
         open = on; $("afull").hidden = !on; const f = $("afold"); f.setAttribute("aria-expanded", String(on)); f.firstChild.textContent = on ? "Show less" : "Show all activity";
         if (!on) { $("rflt-kind").value = ""; $("rflt-who").value = ""; $("rflt-when").value = ""; $("rwhen").hidden = true; [...$("rflt-when").options].filter(o => o.value.startsWith("d:")).forEach(o => o.remove()); feedN = 40; }
-        if (!quiet) loadFeed().then(() => { if (!on) host.scrollIntoView({ behavior: "smooth", block: "start" }); });
+        if (quiet) return;
+        // at once, from what is already there (folding needs nothing new; unfolding shows the first entries right away),
+        // then fresh from the database: on a slow connection the list used to stay open until the answer came
+        const timed = !on && feedTimed; renderFeed();
+        if (!on) host.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (on || timed) loadFeed();
       }
       $("afold").onclick = () => openAll(!open);
       ["rflt-kind", "rflt-who"].forEach(id => $(id).addEventListener("change", renderFeed));
