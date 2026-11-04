@@ -722,18 +722,6 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
   <div id="archived"></div>
   </div>
 
-  <div id="recentview" hidden>
-    <section class="lhead" id="rhead" hidden></section>
-    <div class="filters" id="rfilters">
-      <select id="rflt-kind" aria-label="What to show"><option value="">Everything</option><option value="brew">Brews</option><option value="bag">Coffees and bags</option><option value="cup">Cuppings</option></select>
-      <select id="rflt-who" aria-label="Who"></select>
-      <select id="rflt-when" aria-label="When"><option value="">Any time</option><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="month">This month</option><option value="custom">Dates…</option></select>
-    </div>
-    <div class="when2" id="rwhen" hidden><label>From<input type="date" id="rw-from"></label><label>To<input type="date" id="rw-to"></label></div>
-    <div id="feed"></div>
-    <button type="button" class="btn ghost" id="rmore" hidden>Show older</button>
-  </div>
-
   <div id="mineview" hidden>
     <section class="lhead" id="mhead" hidden></section>
     <p class="hint" style="margin-top:0" id="mhint">Every brew you made or rated, newest first.</p>
@@ -934,7 +922,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
 <script src="../data/drinks.js"></script>
 <script src="../assets/js/calcui.js"></script>
 <script src="../assets/js/photoview.js"></script>
-<script src="../assets/js/nav.js?v=4" defer></script>
+<script src="../assets/js/nav.js?v=5" defer></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
 const $ = id => document.getElementById(id);
@@ -3184,22 +3172,22 @@ function route() {
   if (!me) return;
   const noHH = hhOk && !hhs.length;   // signed in, but not in a household yet: start or join one first
   $("hhview").hidden = !noHH;
-  if (noHH) { $("addc").hidden = true; ["listview", "recentview", "mineview", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); checkAccess(); return; }
+  if (noHH) { $("addc").hidden = true; ["listview", "mineview", "detail", "pickview", "addview"].forEach(i => { $(i).hidden = true; }); checkAccess(); return; }
   if (store.get("alto.friend")) { location.href = "../friends/index.html"; return; }   // came with a friend link: back to it, now signed in
-  const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)((?:&[^&]*)*)$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/), isRecent = hash === "#recent", isMine = hash === "#mine" || hash === "#torate" || hash === "#nobal", isHH = hash === "#household";
+  const hash = location.hash, m = hash.match(/^#c=([0-9a-f-]+)((?:&[^&]*)*)$/), isLog = hash === "#log", add = hash.match(/^#addcoffee(?:&d=(.*))?$/), isMine = hash === "#mine" || hash === "#torate" || hash === "#nobal", isHH = hash === "#household";
+  if (hash === "#recent") { location.replace("../index.html#activity"); return; }   // the activity is on Home now
   if (hash === "#torate") { $("mflt-person").value = "me"; $("mflt-who").value = "torate"; $("mflt-bal").value = ""; history.replaceState(null, "", location.pathname + location.search + "#mine"); }
   if (hash === "#nobal") { $("mflt-person").value = "me"; $("mflt-who").value = ""; $("mflt-bal").value = "none"; history.replaceState(null, "", location.pathname + location.search + "#mine"); }
-  $("listview").hidden = !!m || isLog || !!add || isRecent || isMine || isHH;
+  $("listview").hidden = !!m || isLog || !!add || isMine || isHH;
   $("addc").hidden = $("listview").hidden;
   // the household (name, members, invites, switching) has its own page, reached from Settings
-  $("hhpage").hidden = !isHH; $("pttext").textContent = isHH ? "Household" : isRecent ? "Recent activity" : isMine ? "My brews" : isLog ? "Log a brew" : add ? "New coffee" : "Coffee Shelf";
-  document.title = (isHH ? "Household" : isRecent ? "Recent Activity" : isMine ? "My Brews" : isLog ? "Log a Brew" : add ? "New Coffee" : "Coffee Shelf") + " | Alto Andino";   // the coffee's own page puts its name (openCoffee)
+  $("hhpage").hidden = !isHH; $("pttext").textContent = isHH ? "Household" : isMine ? "My brews" : isLog ? "Log a brew" : add ? "New coffee" : "Coffee Shelf";
+  document.title = (isHH ? "Household" : isMine ? "My Brews" : isLog ? "Log a Brew" : add ? "New Coffee" : "Coffee Shelf") + " | Alto Andino";   // the coffee's own page puts its name (openCoffee)
   if (isHH && $("hhbox").parentNode !== $("hhhost")) $("hhhost").appendChild($("hhbox"));
   if (isHH) { renderHousehold(); $("hhbox").open = true; }
-  $("recentview").hidden = !isRecent;
   $("mineview").hidden = !isMine;
-  // switching between Coffee Shelf, Recent activity and My brews: the section tabs under the top bar (nav.js)
-  if (!m) { $("dback").href = isRecent ? "#recent" : isMine ? "#mine" : "#"; $("dback").textContent = isRecent ? "Recent activity" : isMine ? "My brews" : "All coffees"; }
+  // switching between Coffee Shelf and My brews: the bar at the bottom in the app, the section tabs on the website (nav.js)
+  if (!m) { $("dback").href = isMine ? "#mine" : "#"; $("dback").textContent = isMine ? "My brews" : "All coffees"; }
   $("detail").hidden = !m;
   $("pickview").hidden = !isLog;
   $("addview").hidden = !add;
@@ -3224,26 +3212,15 @@ function route() {
     });
   }
   else if (isLog) pickList();
-  else if (isRecent) loadFeed();
   else if (isMine) loadMine();
   else if (isHH) { /* the household page needs nothing else */ }
   else { tryRestoreCoffee(false); renderCoffeeDraft(); load(); }
 }
 
-// ---------- Recent activity: brews, new coffees and bags, cuppings, newest first ----------
-let focusBrew = null, feedN = 40, feedId = 0, feedItems = [], feedMore = false;
-const hhmm = d => String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
-const localDay = (iso, h) => { const [y, m, d] = String(iso).slice(0, 10).split("-").map(Number); return new Date(y, m - 1, d, h, h ? 59 : 0); };
-function dayLabel(d) {
-  const t = new Date(); t.setHours(0, 0, 0, 0); const x = new Date(d); x.setHours(0, 0, 0, 0);
-  const n = Math.round((t - x) / 864e5);
-  if (n === 0) return "Today";
-  if (n === 1) return "Yesterday";
-  if (n > 1 && n < 7) return x.toLocaleDateString("en-GB", { weekday: "long" });
-  return x.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", ...(x.getFullYear() !== t.getFullYear() ? { year: "numeric" } : {}) });
-}
-// "When": any time, a few ready time frames, one day (from a cup in This week) or dates you pick. A range from a (incl.) to b (excl.)
-function whenRange(k) {   // k = "r" (Recent activity) or "m" (My brews)
+// ---------- times and dates for My brews (the activity, on Home, is assets/js/feed.js) ----------
+let focusBrew = null;
+// "When": any time, a few ready time frames or dates you pick. A range from a (incl.) to b (excl.)
+function whenRange(k) {   // k = "m" (My brews; Home's activity has its own copy, assets/js/feed.js)
   const v = $(k + "flt-when").value, t0 = dayStart(new Date(), 0), plus = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
   if (!v) return null;
   if (v === "today") return { a: t0, b: plus(t0, 1) };
@@ -3257,12 +3234,6 @@ function whenRange(k) {   // k = "r" (Recent activity) or "m" (My brews)
   return { a: f ? day(f) : new Date(2000, 0, 1), b: to ? plus(day(to), 1) : plus(t0, 1) };
 }
 const inWhen = (r, t) => !r || (t >= r.a && t < r.b);
-function setWhenDay(k, d) {   // one day, as its own option ("Thu 22 Oct")
-  const sel = $(k + "flt-when"); [...sel.options].filter(o => o.value.startsWith("d:")).forEach(o => o.remove());
-  const o = el("option", "", WD[d.getDay()] + " " + d.getDate() + " " + d.toLocaleDateString("en-GB", { month: "short" }));
-  o.value = "d:" + d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-  sel.insertBefore(o, sel.options[1]); sel.value = o.value; $(k + "when").hidden = true;
-}
 function whenUi(k, redo) {
   $(k + "flt-when").addEventListener("change", () => {
     const c = $(k + "flt-when").value === "custom"; $(k + "when").hidden = !c;
@@ -3270,71 +3241,6 @@ function whenUi(k, redo) {
     redo();
   });
   [k + "w-from", k + "w-to"].forEach(id => $(id).addEventListener("change", redo));
-}
-async function loadFeed() {
-  const my = ++feedId;
-  const { data: cs, error } = await inHH(db.from("coffees").select("*")).order("created_at", { ascending: false });
-  if (my !== feedId) return;
-  if (error) { say("Could not load the activity: " + error.message); return; }
-  const ids = cs.map(c => c.id), byId = {}; cs.forEach(c => { byId[c.id] = c; });
-  let brews = [], cups = [];
-  const rg = whenRange("r");   // a time frame: everything in it (no "Show older")
-  if (ids.length) {
-    const [rb, rc] = await Promise.all([
-      (rg ? db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,note,created_at)").in("coffee_id", ids).gte("brewed_at", rg.a.toISOString()).lt("brewed_at", rg.b.toISOString()).order("brewed_at", { ascending: false }).limit(1000)
-        : db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,note,created_at)").in("coffee_id", ids).order("brewed_at", { ascending: false }).limit(feedN + 1)),
-      db.from("cuppings").select("session_id,coffee_id,cupped_at,cupper_id,is_guest,guest_name,total").in("coffee_id", ids).order("cupped_at", { ascending: false }).limit(500)
-    ]);
-    if (my !== feedId) return;
-    if (rb.error) { say("Could not load the brews: " + rb.error.message); return; }
-    brews = rb.data || []; cups = rc.error ? [] : (rc.data || []);   // before supabase/21 has run, there are no cuppings
-  }
-  drawWeek(ids, byId, my);
-  // only as far back as the brews go: older coffees and cuppings come with "Show older"
-  feedMore = !rg && brews.length > feedN; if (feedMore) brews = brews.slice(0, feedN);
-  const cutoff = feedMore ? new Date(brews[brews.length - 1].brewed_at) : null;
-  const items = [];
-  brews.forEach(b => items.push({ k: "brew", t: new Date(b.brewed_at), b, c: byId[b.coffee_id], who: [b.made_by || b.created_by, ...(b.brew_ratings || []).filter(r => !r.is_guest).map(r => r.rater_id)] }));
-  const first = {};
-  cs.slice().sort((x, y) => String(x.created_at || "").localeCompare(String(y.created_at || ""))).forEach(c => { if (!first[gk(c)]) first[gk(c)] = c.id; });
-  cs.forEach(c => {
-    if (c.created_at) items.push({ k: "add", t: new Date(c.created_at), c, again: first[gk(c)] !== c.id, who: [c.created_by] });
-    if (c.open_date) items.push({ k: "open", t: localDay(c.open_date, 0), c, who: [] });   // a date without a time: opened at the start of the day,
-    if (c.finished_at) items.push({ k: "fin", t: localDay(c.finished_at, 23), c, who: [] });   // finished at its end
-  });
-  const ses = {};
-  cups.forEach(r => {
-    const s = ses[r.session_id] = ses[r.session_id] || { k: "cup", sid: r.session_id, t: new Date(r.cupped_at), coffees: [], people: [], who: [], best: null };
-    const t = new Date(r.cupped_at); if (t < s.t) s.t = t;
-    if (!s.coffees.includes(r.coffee_id)) s.coffees.push(r.coffee_id);
-    const p = { rater_id: r.is_guest ? null : r.cupper_id, guest: !!r.is_guest, guest_name: r.guest_name || null }, pk = p.guest ? "g:" + (p.guest_name || "") : p.rater_id;
-    if (!s.people.some(q => (q.guest ? "g:" + (q.guest_name || "") : q.rater_id) === pk)) s.people.push(p);
-    if (!r.is_guest && r.cupper_id) s.who.push(r.cupper_id);
-    if (r.total != null && (s.best == null || Number(r.total) > s.best)) s.best = Number(r.total);
-  });
-  Object.values(ses).forEach(s => { s.cs = s.coffees.map(id => byId[id]).filter(Boolean); items.push(s); });
-  feedItems = items.filter(x => (!cutoff || x.t >= cutoff) && inWhen(rg, x.t)).sort((x, y) => y.t - x.t);
-  // who: everyone in the household who shows up in the activity
-  const ppl = hhPeople(), s = $("rflt-who"), keep = s.value; s.textContent = "";
-  opt0(s, "", "Everyone"); ppl.forEach(id => opt0(s, id, me && id === me.id ? (names[id] ? names[id] + " (you)" : "You") : nameOf(id) || "Someone"));
-  s.value = ppl.includes(keep) ? keep : ""; s.hidden = ppl.length < 2;
-  renderFeed();
-}
-function opt0(s, v, t) { const o = el("option", "", t); o.value = v; s.appendChild(o); }
-function renderFeed() {
-  const kind = $("rflt-kind").value, who = $("rflt-who").value, KIND = { brew: ["brew"], bag: ["add", "open", "fin"], cup: ["cup"] };
-  const list = feedItems.filter(x => (!kind || KIND[kind].includes(x.k)) && (!who || x.who.includes(who)));
-  const box = $("feed"); box.textContent = "";
-  $("rmore").hidden = !feedMore;
-  if (!feedItems.length && whenRange("r")) { box.appendChild(el("p", "hint", "Nothing happened in this time frame.")); return; }
-  if (!feedItems.length) { box.appendChild(el("p", "hint", "Nothing here yet. Brews, new coffees and bags, and cuppings show up here, newest first.")); return; }
-  if (!list.length) { box.appendChild(el("p", "hint", feedMore ? "Nothing matches in the latest activity. \"Show older\" looks further back." : "Nothing matches these filters.")); return; }
-  let day = "";
-  list.forEach(x => {
-    const dk = x.t.toDateString();
-    if (dk !== day) { day = dk; box.appendChild(el("h3", "day", dayLabel(x.t))); }
-    box.appendChild(feedCard(x));
-  });
 }
 // a person's initial in a circle, always in the same colour for the same person: the one they chose in Settings,
 // otherwise one of their own (the people of the household in a fixed order, so it never changes)
@@ -3344,59 +3250,6 @@ const avatar = (id, name) => PEOPLE.avatar(id, name && name !== "You" ? name : (
 function personTag(t, bold) {
   const n = tName(t), s = el("span", "pt"); s.append(avatar(t.guest ? null : t.rater_id, t.guest ? (t.guest_name || "Guest") : n), el(bold ? "b" : "span", "", n)); return s;
 }
-// one rating line on a feed or My brews card: stars | face | "Name, drink…" (the text wraps in its own column, under itself)
-function rateLine(rr, rating, label, t, rest, note) {
-  rr.appendChild(rating != null ? Stars.row(rating, label) : el("span"));
-  if (t) rr.appendChild(avatar(t.guest ? null : t.rater_id, t.guest ? (t.guest_name || "Guest") : tName(t)));
-  const tx = el("span", "rt"); if (t) tx.appendChild(el("span", "rn", tName(t))); tx.appendChild(document.createTextNode(rest)); rr.appendChild(tx);
-  if (!t) tx.classList.add("wide");
-  if (note) rr.appendChild(el("span", "rcm", "\u201C" + note + "\u201D"));   // their comment, in the text column
-}
-function feedCard(x) {
-  const line = (href, icon, parts, time, c) => {   // a short line: added, opened, finished, cupped
-    const a = el("a", "fe"); a.href = href; if (c) applyLook(a, c);
-    const t = el("span"); parts.forEach(p => t.append(typeof p === "string" ? document.createTextNode(p) : p));
-    a.append(ico(icon, 20), t); if (time) a.appendChild(el("time", "", time)); return a;
-  };
-  const cname = c => el("b", "", c ? c.name : "a coffee");
-  if (x.k === "brew") {
-    const b = x.b, c = x.c, a = el("a", "fi who"); a.href = "#c=" + b.coffee_id + "&b=" + b.id; if (c) applyLook(a, c);
-    const maker = b.made_by || b.created_by, by = maker ? tName({ rater_id: maker }) : null;
-    // who brewed it comes first: their initial in a circle, then "Andrés brewed <coffee>"
-    const top = el("div", "ft"), hd = el("span", "fh");
-    hd.append(el("b", "", by || "Someone"), document.createTextNode(" brewed "), el("span", "fc", c ? c.name : "a coffee"));
-    top.append(avatar(maker, by), hd); top.appendChild(el("time", "", hhmm(x.t))); a.appendChild(top);
-    const nums = [b.dose_g != null ? b.dose_g + "\u00A0g in" : null, b.yield_g != null ? b.yield_g + "\u00A0g out" : b.water_g != null ? b.water_g + "\u00A0g water" : null,
-      b.time_s != null ? (isEsp(typeOf(b.device)) && b.time_s < 90 ? b.time_s + "\u00A0s" : mmss(b.time_s) + "\u00A0min") : null].filter(Boolean).join(", ");
-    const dev = DEV_OLD[b.device] || b.device, devT = dev && /^(Manual|Semi-automatic|Moka|French|Pour|Cold|Turkish|Drip)\b/.test(dev) ? dev[0].toLowerCase() + dev.slice(1) : dev;
-    const what = [devT ? (devT[0].toUpperCase() + devT.slice(1)) : null, nums, b.is_dialin ? "dial-in" : null].filter(Boolean).join(" · ");
-    a.appendChild(el("p", "", what));
-    const ts = tastersOf(b);
-    if (ts.length) {
-      const rr = el("div", "rr");
-      ts.forEach(t => rateLine(rr, t.rating, tName(t) + ": " + Stars.text(t.rating) + " of 5", t,
-        isPending(t) ? ": to rate" : (t.drink ? ", " + drinkText(t.drink, t.milk).toLowerCase() : "") + (t.rating == null ? ", taste only" : ""), t.note));
-      a.appendChild(rr);
-    } else a.appendChild(el("p", "", "Not rated yet"));
-    if (b.notes) { const n = el("p", "note"); n.append(el("span", "nl", "Brew comment: "), document.createTextNode(b.notes)); a.appendChild(n); }
-    return a;
-  }
-  const who = id => id ? tName({ rater_id: id }) : null;
-  if (x.k === "add") { const w = who(x.c.created_by); return line("#c=" + x.c.id, x.again ? "cart" : "plus", [(w || "Someone") + (x.again ? " got a new bag of " : " added "), cname(x.c)], hhmm(x.t), x.c); }
-  if (x.k === "open") return line("#c=" + x.c.id, "bag", ["Opened a bag of ", cname(x.c)], "", x.c);
-  if (x.k === "fin") return line("#c=" + x.c.id, "check", ["Finished the bag of ", cname(x.c)], "", x.c);
-  // a cupping session
-  const cs = x.cs, shown = cs.slice(0, 2), parts = ["Cupping: "];
-  shown.forEach((c, i) => { if (i) parts.push(cs.length === 2 ? " and " : ", "); parts.push(cname(c)); });
-  if (cs.length > 2) parts.push(" and " + (cs.length - 2) + " more");
-  parts.push(", by ");
-  x.people.forEach((p, i) => { if (i) parts.push(i === x.people.length - 1 ? " and " : ", "); parts.push(personTag(p)); });
-  if (x.best != null) parts.push(", best " + (Math.round(x.best * 4) / 4));
-  return line("../cupping/#s=" + x.sid, "cup", parts, hhmm(x.t), cs[0]);
-}
-["rflt-kind", "rflt-who"].forEach(id => $(id).addEventListener("change", renderFeed));
-whenUi("r", () => loadFeed());
-
 // ---------- My brews: every brew you made or rated, to go through them (and change your Balance on the spot) ----------
 let mineData = [], mineRaw = [], mineCoffees = {}, mineShow = 30, mineId = 0;
 async function loadMine() {
@@ -3456,8 +3309,8 @@ function renderMine() {
   list.slice(0, mineShow).forEach(x => box.appendChild(mineCard(x)));
   $("mmore").hidden = list.length <= mineShow;
 }
-// ---------- the headers: this week (Recent activity) and this month (My brews) ----------
-const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], WDL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+// ---------- the header of My brews: this month ----------
+const WDL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const dayStart = (d, back) => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - (back || 0)); return x; };
 // one fun line at a time; tap it for the next (a different first one every day)
 function funLine(box, lines) {   // the fun facts: swipe left or right (or tap) to go through them
@@ -3489,99 +3342,6 @@ function funLine(box, lines) {   // the fun facts: swipe left or right (or tap) 
   b.addEventListener("pointerup", end); b.addEventListener("pointercancel", end);
   b.onclick = () => { if (swiped) { swiped = false; return; } go(1); };
   b.append(t, n); draw(); box.appendChild(b);
-}
-async function drawWeek(ids, byId, my) {
-  const box = $("rhead");
-  if (!ids.length) { box.hidden = true; return; }
-  const from = dayStart(new Date(), 13);
-  const { data, error } = await db.from("brews").select("id,coffee_id,brewed_at,made_by,created_by,dose_g").in("coffee_id", ids).gte("brewed_at", from.toISOString()).order("brewed_at");
-  if (my !== feedId) return;
-  if (error) { box.hidden = true; return; }
-  const wk0 = dayStart(new Date(), 6), all = data || [];
-  const week = all.filter(b => new Date(b.brewed_at) >= wk0), before = all.length - week.length;
-  box.textContent = ""; box.hidden = false;
-  box.appendChild(el("div", "lk", "This week"));
-  const big = el("div", "big"); big.append(el("b", "", String(week.length)), el("span", "", (week.length === 1 ? "brew" : "brews") + " in the last 7 days" + (before ? (week.length > before ? ", " + (week.length - before) + " more than the week before" : week.length < before ? ", " + (before - week.length) + " fewer than the week before" : ", as many as the week before") : "")));
-  box.appendChild(big);
-  // one little cup per day, filled up with that day's brews in the colours of who brewed (full at the busiest day, at least 3).
-  // Tap a cup: who made how many that day. Tap it again (or the button): those brews, below.
-  const who = b => b.made_by || b.created_by || null, ppl = [...new Set(week.map(who))];
-  const days = [...Array(7)].map((_, k) => { const d0 = dayStart(new Date(), 6 - k), d1 = dayStart(new Date(), 5 - k); return { d: d0, list: week.filter(b => { const t = new Date(b.brewed_at); return t >= d0 && t < d1; }) }; });
-  const max = Math.max(3, ...days.map(x => x.list.length));
-  const cupsRow = el("div", "wk"), panel = el("div", "wkp"); panel.hidden = true;
-  const NS = "http://www.w3.org/2000/svg", mk = (n, a) => { const e = document.createElementNS(NS, n); Object.entries(a).forEach(([k, v]) => e.setAttribute(k, v)); return e; };
-  // the cup sits in the middle of a 44 wide picture (its saucer centred under the number and the day), the handle sticks out to the right
-  const RIM = 13, BOT = 35, FULL = 15.5, hw = y => 12 - 2.2 * Math.max(0, y - RIM) / (BOT - RIM);   // half the width of the cup at height y
-  const BODY = "M10 13L12.2 30.5Q12.9 35 17.5 35H26.5Q31.1 35 31.8 30.5L34 13Z";
-  let sel = -1;
-  const showDay = x => {   // the brews of that day in the list below
-    setWhenDay("r", x.d); $("rflt-kind").value = "brew";
-    loadFeed().then(() => { const f = $("rfilters"); if (f) f.scrollIntoView({ behavior: "smooth", block: "start" }); });
-  };
-  const fillPanel = x => {
-    panel.textContent = ""; panel.hidden = false;
-    panel.appendChild(el("b", "wkh", (x.d.getTime() === dayStart(new Date(), 0).getTime() ? "Today" : WDL[x.d.getDay()]) + ", " + x.d.getDate() + " " + x.d.toLocaleDateString("en-GB", { month: "long" })));
-    if (!x.list.length) { panel.appendChild(el("p", "", "No brews that day.")); return; }
-    ppl.forEach(id => {
-      const mine = x.list.filter(b => who(b) === id); if (!mine.length) return;
-      const r = el("div", "wkr"), by = {}; mine.forEach(b => { const c = byId[b.coffee_id], n = c ? c.name : "a coffee"; by[n] = (by[n] || 0) + 1; });
-      const tx = el("span"); tx.append(el("b", "", id ? tName({ rater_id: id }) : "Not set"), document.createTextNode(" made " + mine.length + (mine.length === 1 ? " brew: " : " brews: ") + Object.entries(by).map(([n, k]) => n + (k > 1 ? " \u00D7" + k : "")).join(", ")));
-      r.append(avatar(id, id ? tName({ rater_id: id }) : "?"), tx); panel.appendChild(r);
-    });
-    const go = el("button", "wgo", "Show " + (x.list.length === 1 ? "this brew" : "these " + x.list.length + " brews") + " \u2193"); go.type = "button"; go.onclick = () => showDay(x); panel.appendChild(go);
-  };
-  days.forEach((x, k) => {
-    const c = el("button", "d" + (k === 6 ? " today" : "")), cid = "wkc" + k + "-" + my; c.type = "button";
-    c.setAttribute("aria-label", (k === 6 ? "Today" : WDL[x.d.getDay()]) + ": " + x.list.length + (x.list.length === 1 ? " brew" : " brews"));
-    const s = mk("svg", { viewBox: "3 2 38 39", "aria-hidden": "true" });
-    const cp = mk("clipPath", { id: cid }); cp.appendChild(mk("path", { d: BODY })); s.appendChild(cp);
-    s.appendChild(mk("ellipse", { cx: 22, cy: 36.6, rx: 16.5, ry: 2.7, class: "sc" }));   // the saucer, the cup stands on it
-    s.appendChild(mk("path", { d: BODY, class: "in" }));
-    const g = mk("g", { "clip-path": "url(#" + cid + ")" }); let y = BOT, topCol = null;
-    ppl.forEach(id => {
-      const n = x.list.filter(b => who(b) === id).length; if (!n) return;
-      const h = (BOT - FULL) * n / max; y -= h; topCol = id ? personColor(id) : "var(--mut)";
-      g.appendChild(mk("rect", { x: 0, y: y, width: 44, height: h + 0.4, fill: topCol }));
-    });
-    s.appendChild(g);
-    if (topCol) {   // the coffee's surface, with a little crema
-      s.appendChild(mk("ellipse", { cx: 22, cy: y, rx: hw(y), ry: 1.6, fill: topCol }));
-      s.appendChild(mk("ellipse", { cx: 22, cy: y, rx: hw(y) - 0.6, ry: 1.2, class: "crema" }));
-    }
-    s.appendChild(mk("ellipse", { cx: 22, cy: RIM, rx: 12, ry: 2, class: "rim" }));
-    s.appendChild(mk("path", { d: "M10 13L12.2 30.5Q12.9 35 17.5 35H26.5Q31.1 35 31.8 30.5L34 13 M33.6 17H35.3A4.4 4.4 0 0135.3 25.8H32.6", class: "ol" }));
-    if (k === 6 && x.list.length) s.appendChild(mk("path", { d: "M19 9c-1.6-1.6 1.6-2.6 0-4.8 M25 9c-1.6-1.6 1.6-2.6 0-4.8", class: "steam" }));   // today's cup is still warm
-    c.append(s, el("span", "n", String(x.list.length)), el("span", "dl", k === 6 ? "Today" : WD[x.d.getDay()]));
-    c.onclick = () => {
-      if (sel === k && x.list.length) { showDay(x); return; }
-      sel = k; cupsRow.querySelectorAll("button").forEach((bt, j) => bt.classList.toggle("on", j === k)); fillPanel(x);
-    };
-    cupsRow.appendChild(c);
-  });
-  box.appendChild(cupsRow);
-  if (ppl.length) { const lg = el("div", "wleg"); ppl.forEach(id => { const s = el("span"), i = el("i"); i.style.background = id ? personColor(id) : "var(--mut)"; s.append(i, document.createTextNode(id ? tName({ rater_id: id }) : "Not set")); lg.appendChild(s); }); lg.appendChild(el("span", "wtip", "Tap a cup")); box.appendChild(lg); }
-  box.appendChild(panel);
-  // the fun lines
-  const lines = [];
-  if (week.length >= 3 && ppl.filter(Boolean).length >= 2) {
-    const top = ppl.filter(Boolean).map(id => [id, week.filter(b => who(b) === id).length]).sort((a, b) => b[1] - a[1]);
-    lines.push(top[0][1] === top[1][1] ? "A draw: " + tName({ rater_id: top[0][0] }) + " and " + tName({ rater_id: top[1][0] }) + " made " + top[0][1] + " brews each." : tName({ rater_id: top[0][0] }) + " made " + top[0][1] + " of the " + week.length + " brews.");
-  }
-  const byC = {}; week.forEach(b => { const c = byId[b.coffee_id]; if (c) { const k = c.name; byC[k] = (byC[k] || 0) + 1; } });
-  const topC = Object.entries(byC).sort((a, b) => b[1] - a[1])[0];
-  if (topC && topC[1] >= 2) lines.push("Most brewed: " + topC[0] + ", " + topC[1] + " times.");
-  if (week.length) {
-    const early = week.slice().sort((a, b) => { const x = new Date(a.brewed_at), y = new Date(b.brewed_at); return (x.getHours() * 60 + x.getMinutes()) - (y.getHours() * 60 + y.getMinutes()); })[0], t = new Date(early.brewed_at);
-    lines.push("Earliest brew: " + (who(early) ? tName({ rater_id: who(early) }) : "someone") + ", " + WDL[t.getDay()] + " at " + hhmm(t) + ".");
-    const late = week.slice().sort((a, b) => { const x = new Date(a.brewed_at), y = new Date(b.brewed_at); return (y.getHours() * 60 + y.getMinutes()) - (x.getHours() * 60 + x.getMinutes()); })[0], tl = new Date(late.brewed_at);
-    if (tl.getHours() >= 15) lines.push("Latest brew: " + WDL[tl.getDay()] + " at " + hhmm(tl) + (who(late) ? ", by " + tName({ rater_id: who(late) }) : "") + ".");
-  }
-  const busy = days.slice().sort((a, b) => b.list.length - a.list.length)[0];
-  if (busy && busy.list.length >= 2) lines.push("Busiest day: " + (busy === days[6] ? "today" : WDL[busy.d.getDay()]) + ", with " + busy.list.length + " brews.");
-  const g = week.reduce((t, b) => t + (Number(b.dose_g) || 0), 0);
-  if (g >= 30) lines.push("About " + Math.round(g) + " g of beans this week" + (g >= 200 ? ", " + (g >= 375 ? "about " + (Math.round(g / 250 * 2) / 2).toString().replace(".5", " and a half") + " bags of 250 g" : "almost a whole 250 g bag") : "") + ".");
-  if (!week.length) lines.push("No brews this week yet. The first one of the week is waiting.");
-  funLine(box, lines);
 }
 function drawMonth() {
   const box = $("mhead"), p = $("mflt-person").value || "me", all = p === "all", pid = p === "me" ? me.id : p;
@@ -3628,7 +3388,6 @@ function mineCard(x) { return brewCard(x.b, { mine: x, coffee: mineCoffees[x.b.c
 ["mflt-person", "mflt-who", "mflt-bal"].forEach(id => $(id).addEventListener("change", () => { mineShow = 30; renderMine(); }));
 whenUi("m", () => { mineShow = 30; renderMine(); });
 $("mmore").onclick = () => { mineShow += 30; renderMine(); };
-$("rmore").onclick = () => { feedN += 40; loadFeed(); };
 
 // "Log a brew": choose the device first (or the coffee first). Coffees suitable for the device come first.
 let logMode = store.get("alto.logmode") === "coffee" ? "coffee" : "device", logDev = null, logCoffees = [];
@@ -3905,7 +3664,7 @@ function renderBrews() {
   if (!list.length) { box.appendChild(el("p", "hint", "No brews match these filters.")); return; }
   if (list.length !== brewData.length) box.appendChild(el("p", "hint", "Showing " + list.length + " of " + brewData.length + " brews."));
   list.forEach(b => box.appendChild(brewCard(b)));
-  // coming from Recent activity: straight to that brew, briefly outlined
+  // coming from the activity (on Home): straight to that brew, briefly outlined
   const fb = focusBrew && box.querySelector('[data-bid="' + focusBrew + '"]'); focusBrew = null;
   if (fb) requestAnimationFrame(() => {
     const bar = document.querySelector(".topnav"), y = fb.getBoundingClientRect().top + window.scrollY - (bar ? bar.offsetHeight : 0) - 12;
