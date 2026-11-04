@@ -137,7 +137,7 @@ ul.rank li:has(.medal){grid-template-columns:auto minmax(0,1fr) 64px var(--vw,au
 .fwbox{max-width:380px;margin:4px auto 0}
 svg.fwheel{display:block;width:100%;height:auto}
 svg.fwheel .ff,svg.fwheel .fg,svg.fwheel .fs{stroke:var(--card);stroke-width:1.2;cursor:pointer;transition:opacity .15s}
-svg.fwheel .off{opacity:.9}svg.fwheel .ff.on{stroke:var(--ink);stroke-width:2}
+svg.fwheel .off{opacity:.5}svg.fwheel .ff,svg.fwheel .fg,svg.fwheel .fs{transition:opacity .2s,transform .25s cubic-bezier(.3,.8,.25,1)}
 svg.fwheel .fl{font:600 10.5px system-ui,sans-serif;fill:#fff;pointer-events:none}svg.fwheel .fl.dk{fill:#2B2723}svg.fwheel .fl.dim{fill:var(--mut)}
 svg.fwheel .fmid{fill:var(--card)}
 svg.fwheel .fn{font:500 26px "Iowan Old Style",Palatino,Georgia,serif;fill:var(--ink)}svg.fwheel .fo{font:11px system-ui,sans-serif;fill:var(--mut)}
@@ -966,7 +966,7 @@ function flavourWheel() {
       const t = mk("text", { x, y, "text-anchor": "middle", "dominant-baseline": "middle", transform: "rotate(" + deg + " " + x + " " + y + ")", class: "fl" + (f.got ? (lum(f.col) > 0.55 ? " dk" : "") : " dim") }); t.textContent = f.f.split("/")[0];   // short: Sour, Green, Nutty
     }
     g.forEach(p => { p.addEventListener("click", () => { sel = f.f; show(); }); });
-    parts.push({ f: f.f, g }); a0 += span;
+    parts.push({ f: f.f, g, mid: a0 + span / 2 }); a0 += span;
   });
   mk("circle", { cx: c, cy: c, r: 48, class: "fmid" });
   const t1 = mk("text", { x: c, y: c - 5, "text-anchor": "middle", class: "fn" }); t1.textContent = String(gotN);
@@ -976,7 +976,9 @@ function flavourWheel() {
   const lg = el("div", "legend"), sws = []; [["loved", 1], ["so-so", 0.45], ["not found yet", 0.12]].forEach(([k, o]) => { const s1 = el("span", "leg"); const i = el("i", "fsw"); i.style.opacity = o; sws.push(i); s1.append(i, document.createTextNode(k)); lg.appendChild(s1); }); m.appendChild(lg);
   m.appendChild(det);
   function show() {
-    parts.forEach(x => x.g.forEach(p => { p.classList.toggle("off", x.f !== sel); p.classList.toggle("on", x.f === sel && p.classList.contains("ff")); }));   // the one you look at: outlined
+    // the one you look at comes forward: a little out of the wheel, the others step back
+    parts.forEach(x => { const on = x.f === sel, d = on ? 6 : 0, tr = d ? "translate(" + (d * Math.sin(x.mid)).toFixed(2) + "px," + (-d * Math.cos(x.mid)).toFixed(2) + "px)" : "";
+      x.g.forEach(p => { p.classList.toggle("off", !on); p.style.transform = tr; }); });
     const f = fams.find(x => x.f === sel); det.textContent = "";
     det.style.setProperty("--fc", f.col); sws.forEach(i => { i.style.background = f.col; });
     const ofF = f.slots.filter(x => x.wheel).length;
