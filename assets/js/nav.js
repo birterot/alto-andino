@@ -32,7 +32,6 @@
     ["log", "Log a brew", "journal/index.html#log"],
     ["calc", "Calculator", "calc/index.html"],
     ["journal", "Coffee Shelf", "journal/index.html"],
-    ["recent", "Recent activity", "journal/index.html#recent"],
     ["mine", "My brews", "journal/index.html#mine"],
     ["trends", "Trends", "trends/index.html"],
     ["cupping", "Cupping", "cupping/index.html"],
@@ -46,13 +45,17 @@
   // The bar at the bottom: Home and More stay, the three in between are yours (Settings, kept on this phone: alto.tabbar)
   var TABS = [                // key (as in ITEMS), short label, icon
     ["journal", "Shelf", "journal"], ["log", "Log a Brew", "log"], ["trends", "Trends", "trends"], ["friends", "Friends", "friends"],
-    ["cupping", "Cupping", "cupping"], ["recent", "Recent", "recent"], ["mine", "My Brews", "mine"], ["calc", "Calculator", "calc"], ["book", "Bean to Cup", "book"]
+    ["cupping", "Cupping", "cupping"], ["mine", "My Brews", "mine"], ["calc", "Calculator", "calc"], ["book", "Bean to Cup", "book"]
   ];
   var TABS_DEFAULT = ["journal", "log", "trends"];
   function tabsGet() {
     var t = null; try { t = JSON.parse(localStorage.getItem("alto.tabbar") || "null"); } catch (e) {}
     var ok = TABS.map(function (x) { return x[0]; });
-    if (!Array.isArray(t) || t.length !== 3 || t.some(function (k, i) { return ok.indexOf(k) < 0 || t.indexOf(k) !== i; })) t = TABS_DEFAULT.slice();
+    if (!Array.isArray(t) || t.length !== 3) return TABS_DEFAULT.slice();
+    // a button that is gone (Recent: the activity is on Home now) makes room for the first usual one not in the bar yet
+    t = t.map(function (k, i) { return ok.indexOf(k) >= 0 && t.indexOf(k) === i ? k : null; });
+    t = t.map(function (k) { return k || TABS_DEFAULT.concat(ok).filter(function (d) { return t.indexOf(d) < 0; })[0]; });
+    t.forEach(function (k, i) { if (t.indexOf(k) !== i) t[i] = ok.filter(function (d) { return t.indexOf(d) < 0; })[0]; });
     return t;
   }
   var CHAPTERS = [            // file name, label (order = menu order and the previous/next order)
@@ -289,7 +292,7 @@
   trow.addEventListener("click", function (e) {
     var a = e.target.closest("a"); if (!a || !trow.contains(a) || e.metaKey || e.ctrlKey || e.shiftKey) return;
     var to = new URL(a.href, location.href), same = to.pathname === location.pathname && to.hash === location.hash;
-    if (!same && to.pathname === location.pathname && to.hash === "" && /^#?$/.test(location.hash)) same = true;
+    if (!same && to.pathname === location.pathname && to.hash === "" && /^#?$|^#activity$/.test(location.hash)) same = true;
     e.preventDefault(); if (!menu.hidden) setOpen(false);
     if (same) { window.scrollTo({ top: 0, behavior: still ? "auto" : "smooth" }); return; }
     light(a, true);
@@ -347,7 +350,7 @@
   }
   function current() {
     if (inBook) return chapter ? "ch-" + chapter : "book";
-    if (/\/journal\//.test(path)) return location.hash === "#log" ? "log" : location.hash === "#recent" ? "recent" : location.hash === "#mine" ? "mine" : "journal";
+    if (/\/journal\//.test(path)) return location.hash === "#log" ? "log" : /^#(mine|torate|nobal)$/.test(location.hash) ? "mine" : "journal";
     if (/\/trends\//.test(path)) return "trends";
     if (isCalc) return "calc";
     if (/\/settings\//.test(path)) return "settings";
@@ -434,7 +437,7 @@
     add("Page", "Home", "Your open bags and today", "index.html", "start");
     add("Page", "Log a brew", "Pick a coffee, set the dial-in, rate the cup", "journal/index.html#log", "new brew add brew make coffee rate");
     add("Page", "Coffee Shelf", "Your coffees and bags", "journal/index.html", "coffees bags shelf journal add coffee");
-    add("Page", "Recent activity", "What happened lately", "journal/index.html#recent", "activity feed latest history");
+    add("Page", "Activity", "What happened lately, on Home", "index.html#activity", "recent activity feed latest history");
     add("Page", "My brews", "Everything you made or rated", "journal/index.html#mine", "my ratings balance stars rate again");
     add("Page", "Calculator", "Grams, water, yield and ratio", "calc/index.html", "ratio grams dose water yield recipe");
     add("Page", "Trends", "Dial-in, freshness, taste, who brews", "trends/index.html", "stats charts dial-in freshness taste sweet spot fingerprint compass");
@@ -588,53 +591,24 @@
     }
   }
 
-  // Section tabs, right under the bar: the shortcuts you chose for Home (Settings > Home), in your order,
-  // so you can jump between them. They show on those pages only (not on Home, Settings or Feedback).
+  // Section tabs on the website, right under the top bar, to jump between the sections.
+  // They show on those pages only (not on Home, Settings or Feedback).
   // the same names and links as in the menu (ITEMS); "shelf" is the menu's "journal", with an empty hash so it opens the coffees
-  var SECTIONS = ["shelf", "recent", "mine", "trends", "calc", "cupping", "friends", "book"].map(function (k) {
+  var SECTIONS = ["shelf", "mine", "trends", "calc", "cupping", "friends", "book"].map(function (k) {
     var it = ITEMS.filter(function (x) { return x[0] === (k === "shelf" ? "journal" : k); })[0];
     return [k, it[1], k === "shelf" ? it[2] + "#" : it[2]];
   });
   function section() {
     if (inBook) return "book";
-    if (/\/journal\//.test(path)) { var h = location.hash; return h === "#recent" ? "recent" : /^#(mine|torate|nobal)$/.test(h) ? "mine" : /^#(log|addcoffee)/.test(h) ? null : "shelf"; }
+    if (/\/journal\//.test(path)) { var h = location.hash; return /^#(mine|torate|nobal)$/.test(h) ? "mine" : /^#(log|addcoffee)/.test(h) ? null : "shelf"; }
     if (/\/trends\//.test(path)) return "trends";
     if (isCalc) return "calc";
     if (/\/cupping\//.test(path)) return "cupping";
     if (/\/friends\//.test(path)) return "friends";
     return undefined;   // not a section page: no tabs
   }
-  function tabOrder() {
-    var order = [], hide = [];
-    try { order = JSON.parse(localStorage.getItem("alto.homeorder") || "[]") || []; } catch (e) {}
-    try { hide = JSON.parse(localStorage.getItem("alto.homehide") || "[]") || []; } catch (e) {}
-    var keys = SECTIONS.map(function (x) { return x[0]; });
-    var list = order.filter(function (k, i) { return keys.indexOf(k) >= 0 && order.indexOf(k) === i; });
-    keys.forEach(function (k) { if (list.indexOf(k) < 0) list.push(k); });
-    return { list: list, hide: hide };
-  }
-  var JVIEWS = [["shelf", "Coffees"], ["recent", "Recent"], ["mine", "Mine"]];
-  if (main && isApp && /\/journal\//.test(path)) {   // the app: Coffees | Recent | Mine, as a switch under the title (the bar does the rest)
-    var sw = document.createElement("nav"); sw.className = "jseg"; sw.setAttribute("aria-label", "Views");
-    var drawSw = function () {
-      var now = /^(#?|#recent|#mine|#torate|#nobal)$/.test(location.hash) ? section() : null; sw.textContent = ""; sw.hidden = !now;   // not on a coffee's or a brew's own page
-      JVIEWS.forEach(function (v) {
-        var it = SECTIONS.filter(function (x) { return x[0] === v[0]; })[0], a = document.createElement("a");
-        a.href = root + it[2]; a.textContent = v[1]; if (v[0] === now) a.setAttribute("aria-current", "page"); sw.appendChild(a);
-      });
-    };
-    drawSw();
-    var ptrow = main.querySelector(".ptrow"); if (ptrow) ptrow.insertAdjacentElement("afterend", sw); else main.insertBefore(sw, main.firstChild);
-    window.addEventListener("hashchange", drawSw);
-    var scss = document.createElement("style");
-    scss.textContent = ".jseg{display:grid;grid-template-columns:repeat(3,1fr);max-width:420px;margin:4px 0 20px;border:1px solid var(--line,#ccc);border-radius:999px;overflow:hidden}" +
-      ".jseg[hidden]{display:none}" +
-      ".jseg a{display:grid;place-items:center;min-height:38px;padding:0 10px;background:var(--card,#fff);color:var(--mut,#666);font-size:14.5px;text-decoration:none;white-space:nowrap}" +
-      ".jseg a+a{border-left:1px solid var(--line,#ccc)}" +
-      ".jseg a[aria-current]{background:var(--act,#4a2f1c);color:var(--on-act,#fff);font-weight:600}";
-    document.head.appendChild(scss);
-  }
-  if (main && !isApp && section() !== undefined) {
+  function tabOrder() { return { list: SECTIONS.map(function (x) { return x[0]; }), hide: [] }; }   // always all of them, in this order
+  if (main && !isApp && section() !== undefined) {   // the website: tabs between the sections (the app has its bar at the bottom)
     var st = document.createElement("nav"); st.className = "sectabs"; st.setAttribute("aria-label", "Sections");
     var drawTabs = function () {
       var now = section(), o = tabOrder(); st.textContent = "";
@@ -652,7 +626,6 @@
     main.insertBefore(st, main.firstChild);
     document.body.classList.add("hastabs");
     window.addEventListener("hashchange", drawTabs);
-    window.addEventListener("storage", function (e) { if (e.key === "alto.homeorder" || e.key === "alto.homehide") drawTabs(); });
     var tcss = document.createElement("style");
     tcss.textContent = "body.hastabs main{padding-top:0}" +
       // tabs with a line under the one you are on, so they do not look like the filter buttons on the pages

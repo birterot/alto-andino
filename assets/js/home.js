@@ -85,20 +85,11 @@
     box.appendChild(so);
   }
 
-  // the tiles you chose in Settings > Home (all of them unless you took some away)
-  function applyTiles() {
-    var hide = [], order = []; try { hide = JSON.parse(localStorage.getItem("alto.homehide") || "[]") || []; order = JSON.parse(localStorage.getItem("alto.homeorder") || "[]") || []; } catch (e) {}
-    // your order (Settings > Home); shortcuts not in it keep their place at the end
-    var tl0 = document.querySelector(".tiles"), ts = Array.prototype.slice.call(document.querySelectorAll(".tiles .tile[data-k]"));
-    if (tl0 && order.length) ts.slice().sort(function (a, b) { var i = order.indexOf(a.dataset.k), j = order.indexOf(b.dataset.k); return (i < 0 ? 99 + ts.indexOf(a) : i) - (j < 0 ? 99 + ts.indexOf(b) : j); }).forEach(function (t) { tl0.appendChild(t); });
-    document.querySelectorAll(".tiles .tile[data-k]").forEach(function (t) { t.hidden = hide.indexOf(t.dataset.k) >= 0; });
-    var tl = document.querySelector(".tiles"); if (tl) tl.hidden = !tl.querySelector(".tile[data-k]:not([hidden])");
-  }
-  applyTiles();
 
   // the big "Log a brew" comes right after the greeting: it is what Home is for
   var main = document.querySelector(".tiles .tile.main");
   if (main) box.appendChild(main);
+  var tl = document.querySelector(".tiles"); if (tl) tl.hidden = true;   // the shortcut buttons are gone: the bar (or the menu) has them
 
   // open bags, with the cups left (drawn again when the fresh numbers arrive)
   var strip = el("div", "bags"); strip.setAttribute("aria-label", "Your open bags"); strip.hidden = true; box.appendChild(strip);
@@ -186,6 +177,14 @@
   // Then, quietly: your brews of the last two months straight from the database, for the line under the greeting and the
   // caffeine (also brews someone else logged and you rated). Supabase's own library renews the login if it ran out.
   if (session && window.CAFFEINE) setTimeout(freshen, 900);
+  // the activity at the end of Home (assets/js/feed.js): after the opening animation; off in Settings > Home (on this phone)
+  var act = document.getElementById("activity"), feedOff = get("alto.homefeed") === "off";
+  if (act && session && !feedOff) {
+    var startFeed = function () { if (window.ALTO_FEED) ALTO_FEED.mount(act, { getDb: getDb, me: session.user.id, hid: (shelf && shelf.hh) || get("alto.household"), root: "", open: location.hash === "#activity" }); };
+    var waitIntro = function () { if (document.documentElement.classList.contains("intro")) setTimeout(waitIntro, 400); else setTimeout(startFeed, 300); };
+    setTimeout(waitIntro, 600);
+    window.addEventListener("hashchange", function () { if (location.hash === "#activity") { var f = document.getElementById("afold"); if (f && f.getAttribute("aria-expanded") !== "true") f.click(); else act.scrollIntoView({ behavior: "smooth" }); } });
+  }
   var dbP = null;   // Supabase's library, loaded once when Home needs it (after the opening animation)
   function getDb() {
     if (dbP) return dbP;
@@ -435,7 +434,7 @@
   // else at the time of the brew. Settings > Caffeine (kept on this phone too, so Home has it at once):
   // "high" counts the upper end of the range, "midnight" starts every day at zero, "line" is your sleep line (5 to 400 mg, 50 unless you changed it).
   function cafPref() { try { return JSON.parse(localStorage.getItem("alto.cafpref") || "{}") || {}; } catch (e) { return {}; } }
-  function savePref(p) { try { localStorage.setItem("alto.homehide", JSON.stringify(Array.isArray(p.home_hide) ? p.home_hide : [])); localStorage.setItem("alto.homeorder", JSON.stringify(Array.isArray(p.home_order) ? p.home_order : [])); applyTiles(); } catch (e) {} try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "", line: p.caf_line != null ? p.caf_line : null, bed: p.caf_bed || "", show: p.caf_show || "", sleep: p.sleep === "on" && p.sleep_consent ? "on" : "" })); } catch (e) {} }   // the sleep check only with your consent
+  function savePref(p) { try { localStorage.setItem("alto.cafpref", JSON.stringify({ mode: p.caf_mode || "", day: p.caf_day || "", line: p.caf_line != null ? p.caf_line : null, bed: p.caf_bed || "", show: p.caf_show || "", sleep: p.sleep === "on" && p.sleep_consent ? "on" : "" })); } catch (e) {} }   // the sleep check only with your consent
   function caffeine(rows) {
     if (!Array.isArray(rows) || !session || !window.CAFFEINE || cafPref().show === "off") return null;   // turned off in Settings
     var my = session.user.id, now = Date.now(), pref = cafPref(), high = pref.mode === "high";
