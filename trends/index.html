@@ -151,7 +151,8 @@ svg.fwheel .fn{font:500 26px "Iowan Old Style",Palatino,Georgia,serif;fill:var(-
 .frow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 0;font-size:14.5px}.frow b{flex:none;font-weight:500;color:var(--mut);font-variant-numeric:tabular-nums;font-size:13.5px}
 .frow .fnm{display:flex;align-items:center;gap:8px;min-width:0}.fdot{flex:none;width:9px;height:9px;border-radius:50%;background:var(--fc)}
 .frow .fyou{font-size:11.5px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:0 7px;line-height:17px}
-.fchips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px}.fchips .fto{font-size:12.5px;color:var(--mut);margin-right:2px}
+.fchips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px}
+.frow .fgn{font-size:12.5px;color:var(--mut)}.fdet .fall{margin:10px 0 0;font-size:13.5px;color:var(--mut)}
 .fchip{font-size:13px;line-height:24px;padding:0 10px;border-radius:999px;border:1px dashed color-mix(in srgb,var(--fc) 55%,var(--line));color:var(--mut)}
 details.ftidy{margin-top:4px}
 details.ftidy summary{cursor:pointer;font-size:14.5px;font-weight:600;color:var(--one);padding:8px 0}
@@ -984,22 +985,23 @@ function flavourWheel() {
     hd.append(el("b", "", f.f), el("span", "", f.gotW + " of " + ofF + " found" + (ownF ? " \u00B7 " + ownF + " of your own" : "") + (f.count ? "" : " \u00B7 not counted")));
     const pb = el("div", "fpb"), pi = el("i"); pi.style.width = (ofF ? Math.round(100 * f.gotW / ofF) : 0) + "%"; pb.appendChild(pi);
     det.append(hd, pb);
-    // the groups: a group of one note with its own name (Black tea, Vanilla ...) goes with the others under "Also"
-    const solo = gr => gr.slots.length === 1 && gr.slots[0].n.toLowerCase() === gr.g.toLowerCase();
-    const blocks = f.groups.filter(gr => !solo(gr)).map(gr => [gr.g, gr.slots]);
-    const singles = f.groups.filter(solo).flatMap(gr => gr.slots);
-    if (singles.length) blocks.push([blocks.length ? "Also" : "", singles]);
-    blocks.forEach(([name, slots]) => {
-      const got = slots.filter(x => x.t).sort((a, b) => (b.t.avg || 0) - (a.t.avg || 0) || b.t.cups - a.t.cups), rest = slots.filter(x => !x.t);
-      const g = el("div", "fgr"); if (name) g.appendChild(el("p", "fgh", name));
-      got.forEach(x => {   // found: a dot in how much you liked it, the name, stars and cups
+    // two parts only: what you found (best first, with its group), and what is still to find (in the wheel's order)
+    const slots = f.groups.flatMap(gr => gr.slots.map(x => ({ x, g: gr.g })));
+    const got = slots.filter(o => o.x.t).sort((a, b) => (b.x.t.avg || 0) - (a.x.t.avg || 0) || b.x.t.cups - a.x.t.cups), rest = slots.filter(o => !o.x.t && o.x.wheel);
+    if (got.length) {
+      const g = el("div", "fgr"); g.appendChild(el("p", "fgh", "Found"));
+      got.forEach(({ x, g: gn }) => {   // a dot in how much you liked it, the name and its group, stars and cups
         const r = el("div", "frow"), dot = el("i", "fdot"), nm = el("span", "fnm"); dot.style.opacity = op(x.t.avg);
-        nm.append(dot, document.createTextNode(x.n)); if (!x.wheel) nm.appendChild(el("small", "fyou", "yours"));
+        nm.append(dot, document.createTextNode(x.n));
+        if (!x.wheel) nm.appendChild(el("small", "fyou", "yours")); else if (gn.toLowerCase() !== x.n.toLowerCase() && gn !== f.f) nm.appendChild(el("small", "fgn", gn));
         r.append(nm, el("b", "", (x.t.avg != null ? fmtS(x.t.avg) + " \u00B7 " : "") + x.t.cups + (x.t.cups === 1 ? " cup" : " cups"))); g.appendChild(r);
       });
-      if (rest.length) { const cs = el("div", "fchips"); rest.forEach(x => cs.appendChild(el("span", "fchip", x.n))); if (got.length) cs.prepend(el("span", "fto", "To find:")); g.appendChild(cs); }
       det.appendChild(g);
-    });
+    }
+    if (rest.length) {
+      const g = el("div", "fgr"), cs = el("div", "fchips"); g.appendChild(el("p", "fgh", "Still to find"));
+      rest.forEach(({ x, g: gn }) => { const c = el("span", "fchip", x.n); c.title = gn; cs.appendChild(c); }); g.appendChild(cs); det.appendChild(g);
+    } else if (got.length) det.appendChild(el("p", "fall", "You found every note of " + f.f + "."));
   }
   show();
   tidyNotes(m, mine);
