@@ -67,6 +67,7 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline
 .foot{display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--mut);font-size:14px;max-width:560px}
 .out{max-width:560px}
 .lab{margin:18px 0 0;font-size:13.5px;color:var(--mut)}
+.tabx{margin:14px 0 0}
 .me{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:10px 0 4px}
 .me .face{flex:none;display:grid;place-items:center;width:64px;height:64px;border-radius:50%;color:#fff;font-size:26px;font-weight:600;background:var(--mut) center/cover no-repeat}
 .me .mebtns{display:flex;gap:8px;flex-wrap:wrap}
@@ -165,9 +166,18 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
     <label>Milk<select id="s-milk"></select></label>
   </section>
 
+  <section class="set" id="tabset" data-tab="home">
+    <h2>Bottom bar</h2>
+    <p class="hint">Home and More always sit at the ends. Choose the three buttons in between; whatever is not in the bar is under More. It changes right away, on this phone.</p>
+    <label>Left<select id="s-tab0"></select></label>
+    <label>Middle<select id="s-tab1"></select></label>
+    <label>Right<select id="s-tab2"></select></label>
+    <p class="tabx"><button type="button" class="lnk" id="s-tabreset">Back to the usual</button></p>
+  </section>
+
   <section class="set" id="homeset" data-tab="home">
     <h2>Home</h2>
-    <p class="hint">Which shortcuts Home shows under “Log a brew”, and in which order. They are also the tabs at the top of those pages. Everything stays in the menu (☰) either way.</p>
+    <p class="hint">Which shortcuts Home shows under “Log a brew”, and in which order. They are also the tabs at the top of those pages. Everything stays under More either way.</p>
     <div class="tchk" id="s-tiles"></div>
   </section>
 
@@ -350,6 +360,20 @@ const ownedDevs = () => [...document.querySelectorAll("#s-devs button[aria-press
 const opt = (s, v, t) => { const o = el("option", "", t); o.value = v; s.appendChild(o); return o; };
 let hasProfile = false, photoPath = null;
 let me = null, profile = null, fm = "", color = "", others = [], cafMode = "", cafDay = "", cafLine = "", cafShow = "", sleepOn = "";
+// The bar at the bottom (nav.js keeps it, on this phone): three buttons between Home and More, each one once
+function initTabs() {
+  const T = window.altoTabs; if (!T) { setTimeout(initTabs, 60); return; }
+  const ids = ["s-tab0", "s-tab1", "s-tab2"], draw = () => { const cur = T.get(); ids.forEach((id, i) => { $(id).value = cur[i]; }); $("s-tabreset").hidden = cur.join() === "journal,log,trends"; };
+  ids.forEach((id, i) => {
+    const s = $(id); s.textContent = ""; T.list.forEach(([k, n]) => opt(s, k, n));
+    s.onchange = () => {   // taken by another slot: they swap
+      const cur = T.get(), j = cur.indexOf(s.value); if (j >= 0 && j !== i) cur[j] = cur[i]; cur[i] = s.value; T.set(cur); draw();
+    };
+  });
+  $("s-tabreset").onclick = () => { T.set(null); draw(); };
+  draw();
+}
+initTabs();
 const TILES = [   // the same keys and names as on Home (index.html, data-k) and in the section tabs (nav.js, SECTIONS)
   ["shelf", "Coffee Shelf"], ["recent", "Recent activity"], ["mine", "My brews"], ["trends", "Trends"], ["calc", "Calculator"], ["cupping", "Cupping"], ["friends", "Friends"], ["book", "Bean to Cup"]];
 let homeHide = [], homeOrder = TILES.map(t => t[0]);
