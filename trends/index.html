@@ -137,24 +137,33 @@ ul.rank li:has(.medal){grid-template-columns:auto minmax(0,1fr) 64px var(--vw,au
 .fwbox{max-width:380px;margin:4px auto 0}
 svg.fwheel{display:block;width:100%;height:auto}
 svg.fwheel .ff,svg.fwheel .fg,svg.fwheel .fs{stroke:var(--card);stroke-width:1.2;cursor:pointer;transition:opacity .15s}
-svg.fwheel .off{opacity:.62}
-svg.fwheel .fl{font:600 10.5px system-ui,sans-serif;fill:#fff;pointer-events:none}svg.fwheel .fl.dim{fill:var(--mut)}
+svg.fwheel .off{opacity:.9}svg.fwheel .ff.on{stroke:var(--ink);stroke-width:2}
+svg.fwheel .fl{font:600 10.5px system-ui,sans-serif;fill:#fff;pointer-events:none}svg.fwheel .fl.dk{fill:#2B2723}svg.fwheel .fl.dim{fill:var(--mut)}
 svg.fwheel .fmid{fill:var(--card)}
 svg.fwheel .fn{font:500 26px "Iowan Old Style",Palatino,Georgia,serif;fill:var(--ink)}svg.fwheel .fo{font:11px system-ui,sans-serif;fill:var(--mut)}
 .leg i.fsw{width:12px;height:12px;border-radius:3px;background:var(--ink)}
 .fdet{margin-top:10px;padding:12px 14px;border-radius:12px;background:var(--one-track);border-left:4px solid var(--fc,var(--one))}
 .card .info.tinfo{display:inline-block;width:19px;height:19px;margin:0 0 0 5px;vertical-align:2px;font-size:11px;line-height:17px;padding:0}
-.fdet .fdh{margin:0 0 6px;font-size:15.5px;font-weight:600;color:var(--ink)}
-.frow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14.5px}.frow b{font-weight:500;color:var(--mut);font-variant-numeric:tabular-nums}
-.fdet .small{margin:4px 0 6px}
-.fdet .fgh{margin:10px 0 2px;font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+.fdet .fdh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0}.fdet .fdh b{font-size:16px;font-weight:600;color:var(--ink)}.fdet .fdh span{font-size:13.5px;color:var(--mut)}
+.fdet .fpb{height:4px;margin:7px 0 2px;border-radius:2px;background:color-mix(in srgb,var(--fc) 18%,transparent);overflow:hidden}.fdet .fpb i{display:block;height:100%;background:var(--fc);border-radius:2px}
+.fdet .fgr{margin-top:12px}
+.fdet .fgh{margin:0 0 4px;font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+.frow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 0;font-size:14.5px}.frow b{flex:none;font-weight:500;color:var(--mut);font-variant-numeric:tabular-nums;font-size:13.5px}
+.frow .fnm{display:flex;align-items:center;gap:8px;min-width:0}.fdot{flex:none;width:9px;height:9px;border-radius:50%;background:var(--fc)}
+.frow .fyou{font-size:11.5px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:0 7px;line-height:17px}
+.fchips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px}
+.frow .fgn{font-size:12.5px;color:var(--mut)}.fdet .fall{margin:10px 0 0;font-size:13.5px;color:var(--mut)}
+.fchip{font-size:13px;line-height:24px;padding:0 10px;border-radius:999px;border:1px dashed color-mix(in srgb,var(--fc) 55%,var(--line));color:var(--mut)}
 details.ftidy{margin-top:4px}
 details.ftidy summary{cursor:pointer;font-size:14.5px;font-weight:600;color:var(--one);padding:8px 0}
 .ftrow.fum button{flex:none;min-height:34px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--one);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
 .ftrow{padding:10px 0;border-bottom:1px solid var(--line)}
 .ftrow.fum{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .ftn{display:flex;align-items:baseline;gap:8px}.ftn b{font-size:15px}.ftn small{color:var(--mut);font-size:12.5px}
-.fta{display:flex;gap:6px;margin-top:6px}.fta select{flex:1;min-width:0;font:inherit;font-size:13.5px;min-height:38px;padding:0 26px 0 10px;border-radius:999px}
+.ftrow.fum .ftn{flex-direction:column;gap:1px;min-width:0}.ftrow.fum .ftn b{font-weight:600}
+details.ftidy > .small{margin:0 0 4px;font-size:13.5px;color:var(--mut)}
+details.ftidy .ftrow:last-child{border-bottom:0}
+.fta{display:flex;gap:6px;margin-top:6px}.fta select{flex:1;min-width:0;font:inherit;font-size:14px;height:40px;min-height:0;padding:0 30px 0 12px;border-radius:999px}
 .card h2 .h2i{width:24px;height:24px;vertical-align:-4px;margin-right:6px;color:var(--one)}
 .lead{display:flex;align-items:center;gap:12px;margin:10px 0 6px;padding:12px 14px;border-radius:14px;background:var(--one-track)}
 .lead svg.crown{width:30px;height:30px;color:var(--accent);stroke-width:1.5}.lead p{margin:0;font-size:16px;font-weight:600;color:var(--ink);line-height:1.35}
@@ -934,26 +943,27 @@ function flavourWheel() {
   svg.setAttribute("aria-label", "Flavour wheel: " + gotN + " of " + ofN + " notes found");
   const mk = (t, at) => { const e = document.createElementNS(NS, t); Object.keys(at).forEach(k => e.setAttribute(k, at[k])); svg.appendChild(e); return e; };
   const det = el("div", "fdet");
+  const lum = h => { const n = parseInt(String(h).slice(1), 16); return (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) / 255; };
   let a0 = 0, sel = (liked[0] || fams.find(f => f.got) || fams[0]).f;
   const parts = [];
   fams.forEach(f => {
     const span = f.slots.length / all * Math.PI * 2, g = [];
-    g.push(mk("path", { d: arc(50, 92, a0, a0 + span), fill: f.col, "fill-opacity": f.got ? Math.max(0.55, op(f.avg)) : 0.22, class: "ff" }));
+    g.push(mk("path", { d: arc(50, 92, a0, a0 + span), fill: f.col, "fill-opacity": f.got ? 0.92 : 0.28, class: "ff" }));
     let b0 = a0;
     f.groups.forEach(gr => {   // the middle ring: the groups
       const gs = gr.slots.length / f.slots.length * span, has = gr.slots.some(x => x.t);
-      const gp = mk("path", { d: arc(94, 108, b0, b0 + gs), fill: f.col, "fill-opacity": has ? 0.6 : 0.16, class: "fg" });
+      const gp = mk("path", { d: arc(94, 108, b0, b0 + gs), fill: f.col, "fill-opacity": has ? 0.55 : 0.14, class: "fg" });
       const tt = document.createElementNS(NS, "title"); tt.textContent = f.f + " › " + gr.g; gp.appendChild(tt); g.push(gp);
       gr.slots.forEach((x, k) => {
         const s0 = b0 + gs * k / gr.slots.length, s1 = b0 + gs * (k + 1) / gr.slots.length;
-        const p = mk("path", { d: x.t ? arc(111, 146 + 32 * Math.sqrt(x.t.cups / mx), s0, s1) : arc(111, 136, s0, s1), fill: f.col, "fill-opacity": x.t ? op(x.t.avg) : 0.09, class: "fs" + (x.wheel ? "" : " ext") });
+        const p = mk("path", { d: x.t ? arc(111, 146 + 32 * Math.sqrt(x.t.cups / mx), s0, s1) : arc(111, 136, s0, s1), fill: f.col, "fill-opacity": x.t ? op(x.t.avg) : 0.1, class: "fs" + (x.wheel ? "" : " ext") });
         const t2 = document.createElementNS(NS, "title"); t2.textContent = x.n + (x.wheel ? "" : " (not on the SCA wheel)") + (x.t ? ": " + x.t.cups + (x.t.cups === 1 ? " cup" : " cups") + (x.t.avg != null ? ", " + fmtS(x.t.avg) : "") : ", not found yet"); p.appendChild(t2); g.push(p);
       });
       b0 += gs;
     });
     if (span > 0.3) {   // the family's name, along its slice
       const a = a0 + span / 2, x = c + 71 * Math.sin(a), y = c - 71 * Math.cos(a); let deg = a * 180 / Math.PI - 90; if (deg > 90) deg -= 180;
-      const t = mk("text", { x, y, "text-anchor": "middle", "dominant-baseline": "middle", transform: "rotate(" + deg + " " + x + " " + y + ")", class: "fl" + (f.got ? "" : " dim") }); t.textContent = f.f.split("/")[0];   // short: Sour, Green, Nutty
+      const t = mk("text", { x, y, "text-anchor": "middle", "dominant-baseline": "middle", transform: "rotate(" + deg + " " + x + " " + y + ")", class: "fl" + (f.got ? (lum(f.col) > 0.55 ? " dk" : "") : " dim") }); t.textContent = f.f.split("/")[0];   // short: Sour, Green, Nutty
     }
     g.forEach(p => { p.addEventListener("click", () => { sel = f.f; show(); }); });
     parts.push({ f: f.f, g }); a0 += span;
@@ -962,24 +972,40 @@ function flavourWheel() {
   const t1 = mk("text", { x: c, y: c - 5, "text-anchor": "middle", class: "fn" }); t1.textContent = String(gotN);
   const t2 = mk("text", { x: c, y: c + 15, "text-anchor": "middle", class: "fo" }); t2.textContent = "of " + ofN + " found";
   const box = el("div", "fwbox"); box.appendChild(svg); m.appendChild(box);
-  const lg = el("div", "legend"); [["loved", 1], ["so-so", 0.4], ["not found yet", 0.09]].forEach(([k, o]) => { const s1 = el("span", "leg"); const i = el("i", "fsw"); i.style.opacity = o; s1.append(i, document.createTextNode(k)); lg.appendChild(s1); }); m.appendChild(lg);
+  // the legend, in the colour of the family you look at: liked a lot, so-so, not found yet (the further out, the more cups)
+  const lg = el("div", "legend"), sws = []; [["loved", 1], ["so-so", 0.45], ["not found yet", 0.12]].forEach(([k, o]) => { const s1 = el("span", "leg"); const i = el("i", "fsw"); i.style.opacity = o; sws.push(i); s1.append(i, document.createTextNode(k)); lg.appendChild(s1); }); m.appendChild(lg);
   m.appendChild(det);
   function show() {
-    parts.forEach(x => x.g.forEach(p => p.classList.toggle("off", x.f !== sel)));
+    parts.forEach(x => x.g.forEach(p => { p.classList.toggle("off", x.f !== sel); p.classList.toggle("on", x.f === sel && p.classList.contains("ff")); }));   // the one you look at: outlined
     const f = fams.find(x => x.f === sel); det.textContent = "";
-    det.style.setProperty("--fc", f.col);
+    det.style.setProperty("--fc", f.col); sws.forEach(i => { i.style.background = f.col; });
     const ofF = f.slots.filter(x => x.wheel).length;
-    det.appendChild(el("p", "fdh", f.f + " · " + f.gotW + " of " + ofF + " found" + (f.count ? "" : " · not counted")));
-    f.groups.forEach(gr => {
-      const got = gr.slots.filter(x => x.t).sort((a, b) => (b.t.avg || 0) - (a.t.avg || 0) || b.t.cups - a.t.cups), rest = gr.slots.filter(x => !x.t).map(x => x.n);
-      if (f.groups.length > 1 || gr.g !== f.f) det.appendChild(el("p", "fgh", gr.g));
-      got.forEach(x => { const r = el("div", "frow"); r.append(el("span", "", x.n + (x.wheel ? "" : " · yours")), el("b", "", (x.t.avg != null ? fmtS(x.t.avg) + " · " : "") + x.t.cups + (x.t.cups === 1 ? " cup" : " cups"))); det.appendChild(r); });
-      if (rest.length) det.appendChild(el("p", "small", (got.length ? "Still to find: " : "") + rest.join(", ")));
-    });
+    // the family, how far you got (a thin bar in its colour)
+    const hd = el("div", "fdh"); const ownF = f.got - f.gotW;   // found, but not on the SCA wheel: yours
+    hd.append(el("b", "", f.f), el("span", "", f.gotW + " of " + ofF + " found" + (ownF ? " \u00B7 " + ownF + " of your own" : "") + (f.count ? "" : " \u00B7 not counted")));
+    const pb = el("div", "fpb"), pi = el("i"); pi.style.width = (ofF ? Math.round(100 * f.gotW / ofF) : 0) + "%"; pb.appendChild(pi);
+    det.append(hd, pb);
+    // two parts only: what you found (best first, with its group), and what is still to find (in the wheel's order)
+    const slots = f.groups.flatMap(gr => gr.slots.map(x => ({ x, g: gr.g })));
+    const got = slots.filter(o => o.x.t).sort((a, b) => (b.x.t.avg || 0) - (a.x.t.avg || 0) || b.x.t.cups - a.x.t.cups), rest = slots.filter(o => !o.x.t && o.x.wheel);
+    if (got.length) {
+      const g = el("div", "fgr"); g.appendChild(el("p", "fgh", "Found"));
+      got.forEach(({ x, g: gn }) => {   // a dot in how much you liked it, the name and its group, stars and cups
+        const r = el("div", "frow"), dot = el("i", "fdot"), nm = el("span", "fnm"); dot.style.opacity = op(x.t.avg);
+        nm.append(dot, document.createTextNode(x.n));
+        if (!x.wheel) nm.appendChild(el("small", "fyou", "yours")); else if (gn.toLowerCase() !== x.n.toLowerCase() && gn !== f.f) nm.appendChild(el("small", "fgn", gn));
+        r.append(nm, el("b", "", (x.t.avg != null ? fmtS(x.t.avg) + " \u00B7 " : "") + x.t.cups + (x.t.cups === 1 ? " cup" : " cups"))); g.appendChild(r);
+      });
+      det.appendChild(g);
+    }
+    if (rest.length) {
+      const g = el("div", "fgr"), cs = el("div", "fchips"); g.appendChild(el("p", "fgh", "Still to find"));
+      rest.forEach(({ x, g: gn }) => { const c = el("span", "fchip", x.n); c.title = gn; cs.appendChild(c); }); g.appendChild(cs); det.appendChild(g);
+    } else if (got.length) det.appendChild(el("p", "fall", "You found every note of " + f.f + "."));
   }
   show();
   tidyNotes(m, mine);
-  numbers(m, ["Note", "Family", "Group", "On the SCA wheel", "Cups", "Stars"], found.sort((a, b) => b.cups - a.cups).map(o => [o.n, o.fam || "not sorted", o.fam ? FLAVOURS.groupOf(o.n) || "" : "", o.wheel ? "yes" : "no", o.cups, o.avg != null ? r1(o.avg).toFixed(1) : null]));
+  numbers(m, ["Note", "Family", "Cups", "Stars"], found.sort((a, b) => b.cups - a.cups).map(o => [o.n + (o.wheel ? "" : " (yours)"), o.fam || "not sorted", o.cups, o.avg != null ? r1(o.avg).toFixed(1) : null]));
 }
 // your own notes: give them a family, or merge them into the note they mean (on all bags and cups of the household)
 function tidyNotes(m, mine) {
@@ -989,7 +1015,7 @@ function tidyNotes(m, mine) {
   const unsorted = own.filter(o => !o.fam && (state.noteFam || {})[o.n] !== NOFAM).length;
   const d = el("details", "ftidy");   // folded, so the wheel stays calm
   d.appendChild(el("summary", "", "Your own notes (" + own.length + ")" + (unsorted ? " \u00B7 " + unsorted + " not sorted" : "")));
-  d.appendChild(el("p", "small", "Notes not on the wheel as you wrote them. Give each a family, or merge it into the note it means (renamed on all your bags and cups)."));
+  d.appendChild(el("p", "small", "Notes that are not on the wheel. Give each a family, or merge it into the note it means (it is renamed on all your bags and cups)."));
   const fams = FLAVOURS.families.map(f => f[0]);
   const say = t => { $("msg").textContent = t || ""; };
   own.forEach(o => {
