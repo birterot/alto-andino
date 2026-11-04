@@ -89,7 +89,7 @@
     "html.intro .tbar{opacity:0}body.kbd .tbar{display:none}" +
     ".tbar .tbrow{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:2px}" +
     // one soft capsule under the lit button, sliding over when you tap another (as in iPhone apps)
-    ".tbar .tbsel{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:color-mix(in srgb,var(--brand,#6B4A2E) 10%,transparent);pointer-events:none;transition:transform .34s cubic-bezier(.3,.8,.25,1),width .34s cubic-bezier(.3,.8,.25,1),opacity .2s}" +
+    ".tbar .tbsel{position:absolute;left:0;top:0;bottom:0;width:calc((100% - 8px) / 5);border-radius:999px;background:color-mix(in srgb,var(--brand,#6B4A2E) 10%,transparent);pointer-events:none;transition:transform .34s cubic-bezier(.3,.8,.25,1),opacity .2s}" +
     ".tbar .tbrow>a,.tbar .tbrow>button{position:relative;transition:color .25s}" +
     ".tbar .tbi{transition:transform .18s cubic-bezier(.3,.8,.25,1)}.tbar .tbrow>a:active .tbi,.tbar .tbrow>button:active .tbi{transform:scale(.88)}" +
     "@media (prefers-reduced-motion:reduce){.tbar .tbsel,.tbar .tbi{transition:none}}" +
@@ -277,12 +277,15 @@
   var trow = document.createElement("div"); trow.className = "tbrow"; tbar.appendChild(trow);
   var tsel = document.createElement("span"); tsel.className = "tbsel"; tsel.setAttribute("aria-hidden", "true");
   var still = matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches, selReady = false;
-  function moveSel(el, slide) {   // the capsule to this button (none under Log a brew: it has its own)
+  // the capsule to this button (none under Log a brew: it has its own). Five equal columns, so its place is worked out
+  // in CSS from the button's number, without measuring anything (measuring makes the phone lay the page out at once)
+  function moveSel(el, slide) {
     if (!el) { tsel.style.opacity = "0"; return; }
+    var k = Array.prototype.indexOf.call(trow.children, el) - 1;   // the capsule itself is the first child
     if (!slide) tsel.style.transition = "none";
-    tsel.style.width = el.offsetWidth + "px"; tsel.style.transform = "translateX(" + el.offsetLeft + "px)";
+    tsel.style.transform = "translateX(calc(" + k + " * (100% + 2px)))";
     tsel.style.opacity = el.classList.contains("tbmid") ? "0" : "1";
-    if (!slide) { void tsel.offsetWidth; tsel.style.transition = ""; }
+    if (!slide) requestAnimationFrame(function () { requestAnimationFrame(function () { tsel.style.transition = ""; }); });
   }
   function light(el, slide) {
     Array.prototype.forEach.call(trow.children, function (a) { if (a !== tsel) a.classList.toggle("tblit", a === el); });
@@ -335,7 +338,6 @@
   if (isApp) {
     document.body.appendChild(tbar); document.body.classList.add("hasbar");
     window.addEventListener("pageshow", function (e) { if (e.persisted) { selReady = false; markBar(); } });   // back to a kept page: lit as it should be
-    window.addEventListener("resize", function () { selReady = false; markBar(); });
   }
   // typing: the bar makes room for the keyboard
   if (isApp) document.addEventListener("focusin", function (e) { var t = e.target; if (t && (t.tagName === "TEXTAREA" || t.tagName === "SELECT" || (t.tagName === "INPUT" && !/^(checkbox|radio|range|button|submit|reset|file|color)$/i.test(t.type)) || t.isContentEditable)) document.body.classList.add("kbd"); });
@@ -424,7 +426,7 @@
   caseIn(document.body);
 
   // ---------- search ----------
-  var srch = null, sIndex = null, sLoading = false;
+  var srch = null, sIndex = null, sLoading = false, coll = null;
   function norm(t) { return String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
   function needData(cb) {   // the chapter data, loaded once when you first search (it is already there on some pages)
     var want = [["DEVICES", "data/devices.js"], ["DRINKS", "data/drinks.js"], ["CHAPTER", "data/processing.js"], ["DEFAULTS", "data/defaults.js"]].filter(function (x) { return !window[x[0]]; });
@@ -467,7 +469,7 @@
     if (!q) { out.appendChild(srchHint("Search your coffees, pages, brewing devices, drinks and recipes.")); return; }
     var words = q.split(/\s+/), hits = (sIndex || []).filter(function (x) { return words.every(function (w) { return x.hay.indexOf(w) >= 0; }); });
     hits.forEach(function (x) { x.score = (x.name.indexOf(q) === 0 ? 0 : x.name.indexOf(q) >= 0 ? 1 : words.every(function (w) { return x.name.indexOf(w) >= 0; }) ? 2 : 3); });
-    hits.sort(function (a, b) { return ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind) || a.score - b.score || a.title.localeCompare(b.title); });
+    hits.sort(function (a, b) { return ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind) || a.score - b.score || (coll || (coll = new Intl.Collator())).compare(a.title, b.title); });
     if (!hits.length) { out.appendChild(srchHint(sLoading ? "Searching..." : "Nothing found for \u201C" + srch.input.value.trim() + "\u201D.")); return; }
     var last = null, n = {};
     hits.forEach(function (x) {
@@ -523,13 +525,20 @@
     var v = t.value, n = v.replace(/,/g, ".").replace(t.getAttribute("data-num") === "int" ? /[^0-9\-]/g : /[^0-9.\-]/g, "");
     if (n !== v) { var p = t.selectionStart, d = v.length - n.length; t.value = n; try { t.setSelectionRange(Math.max(0, p - d), Math.max(0, p - d)); } catch (x) {} }
   }, true);
-  new MutationObserver(function (ms) { ms.forEach(function (m) { m.addedNodes.forEach(function (x) { if (x.nodeType === 1) decimals(x); }); }); })
-    .observe(document.body, { childList: true, subtree: true });
-
+  // One watcher for everything added later (number fields, headings): drawings (SVG) are skipped, they have neither,
+  // and a part added inside another part of the same change is looked at once, with the outer one
   new MutationObserver(function (ms) {
+    var seen = [];
     ms.forEach(function (m) {
-      if (m.type === "characterData") { var pe = m.target.parentElement; if (pe && pe.closest(HEAD)) caseIn(pe.closest(HEAD)); }
-      else m.addedNodes.forEach(function (x) { if (x.nodeType === 1) { caseIn(x); var hh = x.parentElement && x.parentElement.closest(HEAD); if (hh) caseIn(hh); } else if (x.nodeType === 3 && x.parentElement && x.parentElement.closest(HEAD)) caseIn(x.parentElement.closest(HEAD)); });
+      if (m.type === "characterData") { var pe = m.target.parentElement, hd = pe && !(pe instanceof SVGElement) && pe.closest(HEAD); if (hd) caseIn(hd); return; }
+      m.addedNodes.forEach(function (x) {
+        if (x.nodeType === 3) { var hp = x.parentElement && !(x.parentElement instanceof SVGElement) && x.parentElement.closest(HEAD); if (hp) caseIn(hp); return; }
+        if (x.nodeType !== 1 || x instanceof SVGElement || !x.isConnected) return;
+        for (var k = 0; k < seen.length; k++) if (seen[k].contains(x)) return;
+        seen.push(x);
+        decimals(x); caseIn(x);
+        var hh = x.parentElement && x.parentElement.closest(HEAD); if (hh) caseIn(hh);
+      });
     });
   }).observe(document.body, { childList: true, subtree: true, characterData: true });
 
