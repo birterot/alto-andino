@@ -1,4 +1,5 @@
-/* Top bar (search, the logo, quick buttons) and a bar at the bottom as on the iPhone (Home, three of your choice, More), shared by every page, plus the Alto Andino wordmark,
+/* Top bar (search, the logo, quick buttons), shared by every page. Opened from the home screen (the app): a bar at the bottom
+   as on the iPhone (Home, three of your choice, More). In a browser (the website): the menu at the top left, as before. plus the Alto Andino wordmark,
    breadcrumbs and previous/next links in the book chapters.
    Add <script src="PATH/assets/js/nav.js" defer></script> to a page to get it.
    To rename a section or add a menu entry, change the lists right below.
@@ -66,6 +67,9 @@
   var isHome = !inBook && !/\/(journal|trends|calc|settings|cupping|friends|feedback|analytics|requests)\//.test(path) && !/privacy\.html$/.test(path);
   var isCalc = /\/calc\//.test(path);
   var NS = "http://www.w3.org/2000/svg";
+  var isApp = false;   // opened from the home screen
+  try { isApp = navigator.standalone === true || matchMedia("(display-mode: standalone)").matches || localStorage.getItem("alto.asapp") === "1"; } catch (e) {}   // alto.asapp: to try the app's look in a browser
+  document.documentElement.classList.toggle("isapp", isApp);
 
   var css = document.createElement("style");
   css.textContent =
@@ -92,7 +96,9 @@
     ".topnav .lockup{display:flex;align-items:flex-end;gap:9px}.topnav .lockup .wm{margin-bottom:-0.66px}" +
     ".navback{position:fixed;inset:0;background:rgba(20,14,10,.38);z-index:52;opacity:0;transition:opacity .18s}" +
     ".navback.on{opacity:1}" +
-    "#navmenu{position:fixed;left:0;right:0;bottom:0;z-index:54;max-width:560px;margin:0 auto;background:var(--card,#fff);border:1px solid var(--line,#ccc);border-bottom:0;border-radius:18px 18px 0 0;padding:8px 12px calc(env(safe-area-inset-bottom,0px) + 72px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - 70px);overflow:auto;overscroll-behavior:contain}" +
+    "#navmenu.drop{position:absolute;left:8px;right:8px;top:calc(100% + 6px);max-width:380px;background:var(--card,#fff);border:1px solid var(--line,#ccc);border-radius:16px;box-shadow:0 14px 36px rgba(20,14,10,.22);padding:8px;max-height:calc(100vh - 80px);overflow:auto}" +
+    ".navback.drop{z-index:40}" +
+    "#navmenu.sheet{position:fixed;left:0;right:0;bottom:0;z-index:54;max-width:560px;margin:0 auto;background:var(--card,#fff);border:1px solid var(--line,#ccc);border-bottom:0;border-radius:18px 18px 0 0;padding:8px 12px calc(env(safe-area-inset-bottom,0px) + 72px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - 70px);overflow:auto;overscroll-behavior:contain}" +
     "#navmenu .grab{width:38px;height:5px;border-radius:3px;background:var(--line,#ccc);margin:2px auto 8px}" +
     "#navmenu .mh{margin:0 8px 4px;font:400 22px/1.3 Georgia,\"Times New Roman\",serif;color:var(--ink,#222)}" +
     "#navmenu[hidden],#navmenu [hidden]{display:none}" +
@@ -174,7 +180,13 @@
     var nm = document.createElement("span"); lock.appendChild(nm); wordmark(nm);
   } else where.setAttribute("aria-hidden", "true");
   var left = document.createElement("div"); left.className = "side l";
-  var inBar = tabsGet();
+  var ICON_MENU = "M4 7h16M4 12h16M4 17h16", ICON_CLOSE = "M6 6l12 12M18 6L6 18";
+  var btn = document.createElement("button"); btn.type = "button"; btn.setAttribute("aria-expanded", "false"); btn.setAttribute("aria-controls", "navmenu");
+  if (!isApp) {   // the website: the menu at the top left
+    btn.className = "iconbtn"; btn.setAttribute("aria-label", "Menu");
+    btn.appendChild(svgEl(24, function (s) { s.appendChild(pathEl(ICON_MENU)); })); left.appendChild(btn);
+  }
+  var inBar = isApp ? tabsGet() : [];
   // 🔍   ALTO ANDINO   (cup+) 🧮 : log a brew and the calculator from anywhere, unless they are in the bar at the bottom
   var lb = document.createElement("a");
   lb.className = "iconbtn logbtn"; lb.href = root + "journal/index.html#log"; lb.setAttribute("aria-label", "Log a brew"); lb.title = "Log a brew";
@@ -199,8 +211,8 @@
   // the logo in the middle takes you home too
 
   var menu = document.createElement("nav");
-  menu.id = "navmenu"; menu.hidden = true; menu.setAttribute("aria-label", "More");
-  (function () { var g = document.createElement("div"); g.className = "grab"; menu.appendChild(g); var h = document.createElement("p"); h.className = "mh"; h.textContent = "More"; menu.appendChild(h); })();
+  menu.id = "navmenu"; menu.hidden = true; menu.className = isApp ? "sheet" : "drop"; menu.setAttribute("aria-label", isApp ? "More" : "Main");
+  if (isApp) { var g = document.createElement("div"); g.className = "grab"; menu.appendChild(g); var mh = document.createElement("p"); mh.className = "mh"; mh.textContent = "More"; menu.appendChild(mh); }
   var links = [];
   function addLink(key, label, href, sub, ic) {
     var a = document.createElement("a");
@@ -212,7 +224,7 @@
   // "Bean to cup" keeps its chapters folded away (open inside the book, or with the little arrow)
   var subs = null;
   ITEMS.forEach(function (it) {
-    if (it[0] === "home") return;   // More: everything that is not in the bar at the bottom (syncMenu)
+    if (it[0] === "home" && isApp) return;   // the app's More: everything that is not in the bar at the bottom (syncMenu)
     if ((it[0] === "analytics" || it[0] === "requests") && !isAdmin()) return;
     addLink(it[0], it[1], it[2], false, it[0]);
     if (it[0] === "book") {
@@ -229,14 +241,13 @@
     }
   });
   head.appendChild(bar);
-  var back = document.createElement("div"); back.className = "navback"; back.hidden = true;
+  var back = document.createElement("div"); back.className = "navback" + (isApp ? "" : " drop"); back.hidden = true;
   document.body.insertAdjacentElement("afterbegin", back);
   document.body.insertAdjacentElement("afterbegin", head);
-  document.body.appendChild(menu);
+  if (isApp) document.body.appendChild(menu); else head.appendChild(menu);
   // the bar at the bottom
   var tbar = document.createElement("nav"); tbar.className = "tbar"; tbar.setAttribute("aria-label", "Main");
   var trow = document.createElement("div"); trow.className = "tbrow"; tbar.appendChild(trow);
-  var btn = document.createElement("button"); btn.type = "button"; btn.setAttribute("aria-expanded", "false"); btn.setAttribute("aria-controls", "navmenu");
   function tab(el, key, label, ic) {
     var i = document.createElement("span"); i.className = "tbi"; i.appendChild(key === "more" ? svgEl(25, function (s) { s.setAttribute("stroke-width", "3"); s.appendChild(pathEl("M5 12h.01M12 12h.01M19 12h.01")); }) : icon(ic, key === "log" ? 22 : 25));
     if (key !== "log") i.firstChild.setAttribute("stroke-width", "1.6");
@@ -245,6 +256,7 @@
     trow.appendChild(el); return el;
   }
   function drawBar() {
+    if (!isApp) return;
     trow.textContent = "";
     var home = document.createElement("a"); home.href = root + "index.html"; tab(home, "home", "Home", "home");
     inBar.forEach(function (k) {
@@ -256,6 +268,7 @@
     markBar();
   }
   function markBar() {
+    if (!isApp) return;
     var now = current(); if (/^ch-/.test(now)) now = "book";
     var hit = false;
     Array.prototype.forEach.call(trow.children, function (a) {
@@ -265,14 +278,15 @@
     });
     btn.classList.toggle("tbon", !hit || !menu.hidden);   // a page from More (Settings, Feedback ...): More is lit
   }
-  document.body.appendChild(tbar); document.body.classList.add("hasbar");
+  if (isApp) { document.body.appendChild(tbar); document.body.classList.add("hasbar"); }
   // typing: the bar makes room for the keyboard
-  document.addEventListener("focusin", function (e) { var t = e.target; if (t && (t.tagName === "TEXTAREA" || t.tagName === "SELECT" || (t.tagName === "INPUT" && !/^(checkbox|radio|range|button|submit|reset|file|color)$/i.test(t.type)) || t.isContentEditable)) document.body.classList.add("kbd"); });
-  document.addEventListener("focusout", function () { setTimeout(function () { var a = document.activeElement; if (!a || !/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) document.body.classList.remove("kbd"); }, 50); });
+  if (isApp) document.addEventListener("focusin", function (e) { var t = e.target; if (t && (t.tagName === "TEXTAREA" || t.tagName === "SELECT" || (t.tagName === "INPUT" && !/^(checkbox|radio|range|button|submit|reset|file|color)$/i.test(t.type)) || t.isContentEditable)) document.body.classList.add("kbd"); });
+  if (isApp) document.addEventListener("focusout", function () { setTimeout(function () { var a = document.activeElement; if (!a || !/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) document.body.classList.remove("kbd"); }, 50); });
 
   function setOpen(open) {
     menu.hidden = !open;
     btn.setAttribute("aria-expanded", String(open)); markBar();
+    if (!isApp) btn.querySelector("path").setAttribute("d", open ? ICON_CLOSE : ICON_MENU);
     if (open) { back.hidden = false; requestAnimationFrame(function () { back.classList.add("on"); }); }
     else { back.classList.remove("on"); back.hidden = true; }
   }
@@ -301,7 +315,8 @@
   window.addEventListener("hashchange", markActive);
   function syncMenu() {   // More holds what is not in the bar; the top bar's quick buttons only when they are not in it either
     links.forEach(function (a) {
-      var k = a.dataset.k, off = inBar.indexOf(k) >= 0 || (k.indexOf("ch-") === 0 && inBar.indexOf("book") >= 0);
+      var k = a.dataset.k, off = isApp ? inBar.indexOf(k) >= 0 || (k.indexOf("ch-") === 0 && inBar.indexOf("book") >= 0)
+        : k === "log" || k === "calc";   // the website: both are buttons in the top bar
       var row = a.parentNode && a.parentNode.className === "mrow" ? a.parentNode : a; row.hidden = off;
     });
     if (subs && inBar.indexOf("book") >= 0) subs.hidden = true;
@@ -309,9 +324,9 @@
   }
   syncMenu(); drawBar(); markActive();
   // Settings changes the bar: redraw it here, and on other open pages
-  window.altoTabs = { list: TABS.map(function (x) { var it = ITEMS.filter(function (y) { return y[0] === x[0]; })[0]; return [x[0], x[0] === "book" ? BOOK : it[1]]; }), get: tabsGet, fixed: ["Home", "More"],
-    set: function (t) { try { if (t) localStorage.setItem("alto.tabbar", JSON.stringify(t)); else localStorage.removeItem("alto.tabbar"); } catch (e) {} inBar = tabsGet(); syncMenu(); drawBar(); return inBar; } };
-  window.addEventListener("storage", function (e) { if (e.key === "alto.tabbar") { inBar = tabsGet(); syncMenu(); drawBar(); } });
+  window.altoTabs = { list: TABS.map(function (x) { var it = ITEMS.filter(function (y) { return y[0] === x[0]; })[0]; return [x[0], x[0] === "book" ? BOOK : it[1]]; }), get: tabsGet, fixed: ["Home", "More"], isApp: isApp,
+    set: function (t) { try { if (t) localStorage.setItem("alto.tabbar", JSON.stringify(t)); else localStorage.removeItem("alto.tabbar"); } catch (e) {} if (isApp) { inBar = tabsGet(); syncMenu(); drawBar(); } return tabsGet(); } };
+  window.addEventListener("storage", function (e) { if (e.key === "alto.tabbar" && isApp) { inBar = tabsGet(); syncMenu(); drawBar(); } });
 
   // Headings in title case ("Golden Rules for Fresh Coffee"): every word capitalised except small words in the middle.
   // Words with capitals or digits of their own stay as they are (V60, SCA, iPhone), and so do names people typed:
@@ -543,7 +558,28 @@
     keys.forEach(function (k) { if (list.indexOf(k) < 0) list.push(k); });
     return { list: list, hide: hide };
   }
-  if (main && section() !== undefined) {
+  var JVIEWS = [["shelf", "Coffees"], ["recent", "Recent"], ["mine", "Mine"]];
+  if (main && isApp && /\/journal\//.test(path)) {   // the app: Coffees | Recent | Mine, as a switch under the title (the bar does the rest)
+    var sw = document.createElement("nav"); sw.className = "jseg"; sw.setAttribute("aria-label", "Views");
+    var drawSw = function () {
+      var now = /^(#?|#recent|#mine|#torate|#nobal)$/.test(location.hash) ? section() : null; sw.textContent = ""; sw.hidden = !now;   // not on a coffee's or a brew's own page
+      JVIEWS.forEach(function (v) {
+        var it = SECTIONS.filter(function (x) { return x[0] === v[0]; })[0], a = document.createElement("a");
+        a.href = root + it[2]; a.textContent = v[1]; if (v[0] === now) a.setAttribute("aria-current", "page"); sw.appendChild(a);
+      });
+    };
+    drawSw();
+    var ptrow = main.querySelector(".ptrow"); if (ptrow) ptrow.insertAdjacentElement("afterend", sw); else main.insertBefore(sw, main.firstChild);
+    window.addEventListener("hashchange", drawSw);
+    var scss = document.createElement("style");
+    scss.textContent = ".jseg{display:grid;grid-template-columns:repeat(3,1fr);max-width:420px;margin:4px 0 20px;border:1px solid var(--line,#ccc);border-radius:999px;overflow:hidden}" +
+      ".jseg[hidden]{display:none}" +
+      ".jseg a{display:grid;place-items:center;min-height:38px;padding:0 10px;background:var(--card,#fff);color:var(--mut,#666);font-size:14.5px;text-decoration:none;white-space:nowrap}" +
+      ".jseg a+a{border-left:1px solid var(--line,#ccc)}" +
+      ".jseg a[aria-current]{background:var(--act,#4a2f1c);color:var(--on-act,#fff);font-weight:600}";
+    document.head.appendChild(scss);
+  }
+  if (main && !isApp && section() !== undefined) {
     var st = document.createElement("nav"); st.className = "sectabs"; st.setAttribute("aria-label", "Sections");
     var drawTabs = function () {
       var now = section(), o = tabOrder(); st.textContent = "";
