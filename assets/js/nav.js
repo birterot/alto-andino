@@ -78,6 +78,8 @@
     ".topnav .bar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;max-width:900px;margin:0 auto;padding:6px 8px;height:57px}" +
     ".topnav .side{display:flex;align-items:center;gap:4px}.topnav .side.r{justify-content:flex-end}" +
     ".topnav .iconbtn[hidden]{display:none}" +
+    ".topnav .where.peek{opacity:0;transform:translateY(6px);pointer-events:none;transition:opacity .25s ease,transform .25s ease}" +
+    ".topnav .where.peek.on{opacity:1;transform:none;pointer-events:auto}" +
     // the bar at the bottom: Home, three of your choice (Settings), More; flat, the page you are on in the brand colour
     // it floats, as in WhatsApp or Instagram, but flat: a capsule with a thin line, no shadow, no glass
     ".tbar{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);z-index:55;max-width:520px;margin:0 auto;background:var(--card,#fff);border:1px solid var(--line,#ccc);border-radius:999px;padding:5px 6px;transition:opacity .5s}" +
@@ -175,12 +177,14 @@
   bar.className = "bar";
   var where = document.createElement("a");
   where.className = "where"; where.href = root + "index.html";
-  if (!isHome) {
-    var logo = brandSvg(MARK); logo.setAttribute("class", "logo");
-    var lock = document.createElement("span"); lock.className = "lockup"; where.appendChild(lock);
-    lock.appendChild(logo); where.setAttribute("aria-label", "Alto Andino, home");
-    var nm = document.createElement("span"); lock.appendChild(nm); wordmark(nm);
-  } else where.setAttribute("aria-hidden", "true");
+  var logo = brandSvg(MARK); logo.setAttribute("class", "logo");
+  var lock = document.createElement("span"); lock.className = "lockup"; where.appendChild(lock);
+  lock.appendChild(logo); where.setAttribute("aria-label", "Alto Andino, home");
+  var nm = document.createElement("span"); lock.appendChild(nm); wordmark(nm);
+  if (isHome) {   // Home: the small logo only once the big one has scrolled away under the top bar (and gone again when it is back)
+    where.classList.add("peek"); where.setAttribute("aria-hidden", "true"); where.tabIndex = -1;
+    where.addEventListener("click", function (e) { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+  }
   var left = document.createElement("div"); left.className = "side l";
   var ICON_MENU = "M4 7h16M4 12h16M4 17h16", ICON_CLOSE = "M6 6l12 12M18 6L6 18";
   var btn = document.createElement("button"); btn.type = "button"; btn.setAttribute("aria-expanded", "false"); btn.setAttribute("aria-controls", "navmenu");
@@ -243,6 +247,15 @@
     }
   });
   head.appendChild(bar);
+  if (isHome) {
+    var big = document.querySelector(".hero [data-wordmark]") || document.querySelector(".hero");
+    var peek = function (on) { where.classList.toggle("on", on); where.setAttribute("aria-hidden", String(!on)); where.tabIndex = on ? 0 : -1; };
+    if (big) {   // gone = its bottom has passed under the top bar (measured each time: the bar sits lower on phones with a notch)
+      var tk = false, look = function () { tk = false; peek(big.getBoundingClientRect().bottom <= head.getBoundingClientRect().bottom + 2); };
+      window.addEventListener("scroll", function () { if (!tk) { tk = true; requestAnimationFrame(look); } }, { passive: true });
+      window.addEventListener("resize", look); requestAnimationFrame(look);
+    } else peek(true);
+  }
   var back = document.createElement("div"); back.className = "navback" + (isApp ? "" : " drop"); back.hidden = true;
   document.body.insertAdjacentElement("afterbegin", back);
   document.body.insertAdjacentElement("afterbegin", head);
