@@ -57,13 +57,6 @@ details.add summary{cursor:pointer;font-weight:600}
 .brewhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}
 .brewhead h2{margin:0}
 /* "Log a brew" sits in the right corner of the coffee card ("Buy again" in the left) and stays put; the form opens right below the card */
-/* a coffee's buttons, the same on its card and on its page: Buy again, New bag and the bag stacked on the left,
-   Brews / Log a brew in the bottom right corner (a narrow phone: it goes under them, still on the right) */
-.cc .acts.dacts{justify-content:space-between;align-items:flex-end}
-.dacts .stk{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}
-.dacts .stk:empty{display:none}
-.dacts .stk .btn{white-space:nowrap}
-.dacts > .btn{margin-left:auto;flex:none}
 /* the brew buttons (Brews on a card, Log a brew on a coffee's page): one colour everywhere, whatever the roast */
 .btn.logbtn,.btn.brewbtn{margin-left:auto;background:var(--act);border-color:var(--act);color:var(--on-act)}
 .btn.logbtn[aria-expanded=true]{background:none;color:var(--act);border-color:var(--act)}
@@ -73,21 +66,11 @@ details.add summary{cursor:pointer;font-weight:600}
 .cc img{display:block;width:100%;height:180px;object-fit:cover}
 .cc .in{padding:18px 20px}
 .cc h3{margin:0;font-size:18px}
-.bagm{display:flex;align-items:center;gap:10px;margin-top:8px}
-.bagm svg{flex:none;overflow:visible}
-.bagm p{margin:0}
-.bagm .cups{display:block;font-size:13px;opacity:.8;margin-top:1px}
-.bagm .bo{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
-.bagm .bo.thin{stroke-width:1.3;opacity:.7}
-.bagm .bf{fill:var(--s);opacity:.75;transform-box:fill-box;transform-origin:50% 100%}
-.bagm .bf.go{transition:transform 1.4s cubic-bezier(.45,0,.25,1) .3s}
-@media (prefers-reduced-motion:reduce){.bagm .bf.go{transition:none}}
 .cc p{margin:4px 0 0;font-size:14px}
 .cc .tags{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:10px}
 .cc .acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}
 .cc .lnk{border-color:var(--line);color:var(--t)}
 .cc .meta{opacity:.9}
-.cc .fin{font-weight:600}
 .pfit{margin-top:10px}.pfit .vl{display:block;font-size:14px;color:var(--mut);margin-bottom:6px}
 .pfr{width:156px;height:200px;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--bg);touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 .pfr:active{cursor:grabbing}
@@ -159,24 +142,14 @@ details.ccm[open] summary{background:color-mix(in srgb,var(--t) 10%,transparent)
 .vlist li.add{color:var(--accent);font-weight:600}
 .vlist li.grp{min-height:28px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);cursor:default;background:none}
 .vlist li.none{color:var(--mut);cursor:default;background:none}
-.cfacts{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:6px 18px;margin-top:12px;font-size:14px}
-.cfacts .f{display:inline-flex;align-items:center;gap:7px}
-.cfacts .f.sca,.cfacts .f.cupd{gap:5px}.cfacts .f.sca b,.cfacts .f.cupd b{font-variant-numeric:tabular-nums}
-.cfacts a.f.cupd{color:inherit;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 /* bag photo: on the coffee page too, tap for the full picture */
 .phb{position:relative;display:block;width:100%;padding:0;margin:0;border:0;background:none;cursor:zoom-in;-webkit-tap-highlight-color:transparent}
 .phb img{display:block;width:100%;height:180px;object-fit:cover}
 .phb .zm{position:absolute;right:10px;bottom:10px;width:34px;height:34px;border-radius:999px;display:grid;place-items:center;background:rgba(20,14,10,.55);color:#fff;pointer-events:none}
 .phb:focus-visible{outline:2px solid var(--ink);outline-offset:-4px}
-#dphotob[hidden]{display:none}
-.cfacts svg{color:var(--s)}
 .rscale{display:inline-flex;gap:3px}
 .rscale i{display:block;width:12px;height:6px;border-radius:3px;background:currentColor;opacity:.18}
 .rscale i.on{background:var(--s);opacity:1}
-.cc .ptag{margin-top:6px;font-size:13.5px;font-style:italic;opacity:.85}
-.cc .ideal{display:flex;align-items:center;gap:7px;margin-top:6px;font-size:14px}
-.cc .ideal svg{color:var(--s)}
-.cc .ideal b{font-weight:600}
 .arch{margin-top:28px}
 .arch summary{font-size:15px;color:var(--mut)}
 .arow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:12px 0;border-bottom:1px solid var(--line)}
@@ -373,41 +346,16 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .draftrow .ib{flex:none;color:var(--mut)}
 .draftnote{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:var(--bg);font-size:14px;color:var(--mut)}
 .draftnote .lnk{font-size:14px;margin-left:2px}
-/* Coffees | Recent activity, at the top of the Coffee Shelf */
-/* the header of Recent activity and My brews: a few numbers about the week or the month, and one fun line */
+/* the header of My brews: a few numbers about the month, and one fun line */
 .lhead{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:16px 18px 14px;margin:14px 0 20px}
 .lhead .lk{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);font-weight:600;display:flex;align-items:center;gap:8px}
 .lhead .lk .av{width:22px;height:22px;font-size:11.5px;letter-spacing:0}
 .lhead .big{display:flex;align-items:baseline;gap:8px;margin:6px 0 2px;flex-wrap:wrap}
 .lhead .big b{font-size:34px;line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
 .lhead .big span{color:var(--mut);font-size:15px}
-.wk{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin:14px -4px 0}
-.wk button{display:flex;flex-direction:column;align-items:center;min-width:0;padding:4px 0 6px;border:0;border-radius:10px;background:none;font:inherit;color:var(--mut);cursor:pointer;-webkit-tap-highlight-color:transparent}
-.wk button.on{background:var(--bg)}
-.wk svg{display:block;width:100%;max-width:54px;overflow:visible}
-.wk .n{font-weight:600;color:var(--ink);font-size:12.5px;line-height:1.3;margin-top:1px}
-.wk .dl{font-size:11.5px;line-height:1.3}
-.wk .today .dl{color:var(--ink);font-weight:600}
-.wk .in{fill:var(--bg)}
-.wk .sc{fill:var(--line);stroke:var(--mut);stroke-width:1.2;opacity:.85}
-.wk .rim{fill:var(--line);stroke:var(--mut);stroke-width:1.5;opacity:.9}
-.wk .crema{fill:#fff;opacity:.28}
-.wk .ol,.wk .steam{fill:none;stroke:var(--mut);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.wk .today .ol,.wk .today .rim,.wk .today .sc{stroke:var(--ink);stroke-width:1.8}
-.wk .steam{opacity:.6;stroke-width:1.4}
-.wleg .wtip{margin-left:auto;font-size:12px}
-.wkp{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--bg);font-size:14px;color:var(--mut)}
-.wkp .wkh{display:block;color:var(--ink);font-weight:600;margin-bottom:6px}
-.wkp p{margin:0}
-.wkr{display:flex;align-items:flex-start;gap:8px;margin:4px 0;line-height:20px}
-.wkr .av{width:20px;height:20px;font-size:11px}
-.wkr b{color:var(--ink);font-weight:600}
-.wkp .wgo{display:block;margin-top:8px;padding:4px 0;border:0;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .when2{display:flex;gap:8px;margin:-8px 0 16px}
 .when2 label{flex:1;min-width:0;font-size:13px;color:var(--mut);margin:0}
 .when2 input{display:block;width:100%;min-width:0;box-sizing:border-box;margin-top:4px}
-.wleg{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:10px;font-size:13px;color:var(--mut)}
-.wleg span{display:inline-flex;align-items:center;gap:6px}.wleg i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .fun{display:flex;align-items:flex-start;gap:10px;width:100%;overflow:hidden;touch-action:pan-y;user-select:none;-webkit-user-select:none;margin:12px 0 0;padding:10px 12px;border:0;border-radius:12px;background:var(--bg);color:var(--ink);font:inherit;font-size:15px;line-height:1.4;text-align:left;cursor:pointer}
 .fun > span{flex:1;min-width:0;will-change:transform}
 .fun small{margin-left:auto;flex:none;color:var(--mut);font-size:12px;padding-top:2px}
@@ -417,18 +365,8 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .stt span{font-size:13px;color:var(--mut)}
 .stt .stars-row{font-size:15px;margin-top:3px}
 /* My brews: everything you made or rated, with your Balance to change right there */
-#mlist .fi{cursor:default}
 #mlist .pend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:8px 0 2px;font-size:14.5px;color:var(--ink)}
 #mlist .pend .btn{min-height:40px;text-decoration:none}
-.mine-bal{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
-.mine-bal{margin-top:6px}
-.mine-bal .balsum{padding:2px 0;border:0;background:none;font:inherit;font-size:13.5px;color:var(--mut);cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
-.mine-bal .bal[hidden],.mine-bal .balsum[hidden]{display:none}
-.mine-bal .bal{margin:0;gap:5px;max-width:300px;flex:1}
-.mine-bal .bal button{min-height:38px;font-size:15px}
-.mine-bal .ok{font-size:13px;color:var(--mut)}
-.fi .old{font-size:12.5px;color:var(--mut);margin-top:4px}
-.fi .open{display:inline-block;margin-top:8px;font-size:13.5px;color:var(--ink)}
 .modes a{display:inline-flex;align-items:center;font-size:14px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none}
 .modes a.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
 /* the Coffee Shelf title, with the bag+ button (add a coffee) on the right; the closed "Add a coffee" bar is not needed then */
@@ -450,38 +388,10 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .rleg > span:first-child{margin-right:2px}
 .rleg .sws{display:inline-flex;gap:3px}
 .rleg i{width:18px;height:14px;border-radius:4px;background:var(--f);border:1px solid var(--line);border-top:3px solid var(--s)}
-/* Recent activity: one day after the other, newest first */
-#feed h3.day{margin:24px 0 8px;font-size:14px;font-weight:600;color:var(--mut)}
-#feed h3.day:first-child{margin-top:4px}
-.fi{display:block;padding:12px 14px 13px;margin-bottom:8px;border:1px solid var(--line);border-left:4px solid var(--s,var(--line));border-radius:10px;background:var(--card);color:var(--ink);text-decoration:none}
-.fi:hover{border-color:var(--ink);border-left-color:var(--s,var(--ink))}
-.fi .ft{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-.fi strong{font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fi.who{padding-left:12px}
-.fi.who .ft{align-items:center;justify-content:flex-start}
-.fi.who .fh{flex:1;min-width:0;font-size:15.5px;line-height:1.3}
-.fi.who .fh b{font-weight:650}
-.fi.who .fc{font-weight:500}
-.fi.who > p,.fi.who > .rr{margin-left:44px}
 .av{flex:none;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;color:#fff;font-size:15px;font-weight:600;letter-spacing:0}
-.fi time,.fe time{flex:none;font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}
-.fi p{margin:3px 0 0;font-size:14px;color:var(--mut)}
-.fi .rr{display:grid;grid-template-columns:auto auto 1fr;gap:7px 7px;align-items:start;margin-top:8px;font-size:14px;line-height:20px}
-.fi .rr .stars-row{height:20px;align-items:center;font-size:13px;margin-right:3px}
-.fi .rr .av{width:20px;height:20px;font-size:11px}
-.fi .rr .rn{font-weight:600;color:var(--ink)}
-.fi .rr .rt.wide{grid-column:2 / -1}
-.fi .rr .rcm{grid-column:3;margin-top:-5px;color:var(--mut);font-style:italic;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.fi .note .nl,.bc .bnote .nl{color:var(--mut);font-style:normal}
+.bc .bnote .nl{color:var(--mut);font-style:normal}
 .bc .tcm{margin:6px 0 0;font-style:italic;color:var(--ink)}
 .bnote{margin:10px 0 0;padding:8px 12px;border-radius:10px;background:var(--bg);font-size:14px;color:var(--ink)}
-.fi .note{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fe{display:flex;align-items:flex-start;gap:10px;line-height:21px;padding:7px 4px 7px 8px;margin-bottom:6px;font-size:14px;color:var(--mut);text-decoration:none;border-radius:10px}
-.fe:hover{background:var(--card)}
-.fe svg{flex:none;margin-top:.5px;color:var(--s,var(--accent))}
-.fe > span{flex:1;min-width:0}
-.fe b{font-weight:600;color:var(--ink)}
-#rmore{margin-top:8px}
 .bc.hl{animation:bchl 2.6s ease-out}
 @keyframes bchl{0%,35%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
 .sfor{border:0;padding:0;margin:12px 0 0}
@@ -522,14 +432,10 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .bc .ib{color:var(--mut)}
 .bc .ibs{position:relative}
 #dhead{position:relative}
-#dhead .dedit{position:absolute;top:12px;right:12px;color:var(--mut)}
-#dhead .dfav{position:absolute;top:12px;right:56px}
 .fav{color:var(--mut)}
 .fav.on{color:#c0392b}
 .fav.on .ico{fill:currentColor}
 .fav[hidden]{display:none}
-.fi .ft .mfav{flex:none;width:36px;height:36px;margin:-8px -8px -8px 0}
-.fi .fheart{flex:none;color:#c0392b;fill:currentColor;align-self:center}
 #dhead #dname{padding-right:40px}
 .pmenu{position:absolute;right:0;top:calc(100% + 4px);z-index:20;display:flex;flex-direction:column;min-width:190px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 10px 28px rgba(20,14,10,.18)}
 .pmenu[hidden]{display:none}
@@ -539,20 +445,18 @@ details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:v
 .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0 0 16px}
 .filters input,.filters select{margin:0;max-width:none}
 @media (max-width:520px){#cfilters #flt-q{grid-column:1 / -1}}   /* phone: the search on its own line, the four choices two by two */
-#bfilters,#rfilters{display:flex;flex-wrap:nowrap;gap:6px}
-#bfilters select,#rfilters select{width:auto;flex:1 1 0;min-width:0;height:38px;min-height:38px;padding:0 30px 0 13px;font-size:14.5px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;background-position:calc(100% - 16px) 52%,calc(100% - 11px) 52%;background-size:5px 5px,5px 5px}
+#bfilters{display:flex;flex-wrap:nowrap;gap:6px}
+#bfilters select{width:auto;flex:1 1 0;min-width:0;height:38px;min-height:38px;padding:0 30px 0 13px;font-size:14.5px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;background-position:calc(100% - 16px) 52%,calc(100% - 11px) 52%;background-size:5px 5px,5px 5px}
 #bfilters select[hidden]{display:none}
 .pick{display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:12px;border-radius:10px;border:1px solid var(--line);border-top:3px solid var(--s);background:var(--f);color:var(--t);font:inherit;cursor:pointer}
 .pick small{display:block;margin-top:2px;opacity:.85}
 .older{margin-top:12px;font-size:13px}
-.lastbag{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--mut)}
 .older summary{cursor:pointer}
 .older .lnk{display:block;margin-top:6px;text-align:left}
 .rate{margin-top:10px}
 .rate .avg{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .rate .num{font-family:"Iowan Old Style",Palatino,Georgia,serif;font-size:28px;line-height:1;color:var(--accent)}
 
-.rate .lbl{font-size:13px;color:var(--mut)}
 .rate .best{margin-top:4px;font-size:14px;color:var(--ink)}
 .rate .best span{color:var(--accent);letter-spacing:2px}
 .rate .cnt{margin-top:2px;font-size:12px;color:var(--mut)}
@@ -922,7 +826,7 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
 <script src="../data/drinks.js"></script>
 <script src="../assets/js/calcui.js"></script>
 <script src="../assets/js/photoview.js"></script>
-<script src="../assets/js/nav.js?v=5" defer></script>
+<script src="../assets/js/nav.js?v=6" defer></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
 const $ = id => document.getElementById(id);
@@ -1223,6 +1127,9 @@ function buyLink(c) {
 }
 
 const gk = c => c.group_id || c.id;   // bags of one coffee share this key
+// sorting: dates and ids letter by letter (ISO dates sort right that way), names with one shared collator (fast, unlike localeCompare on each pair)
+const cmpRaw = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+let collator = null, baseCol = null; const cmpText = (a, b) => (collator || (collator = new Intl.Collator())).compare(a, b);
 
 // "ETHIOPIA · GUJI, SIDAMO" above the name; a blend: its countries
 function originCaps(c) {
@@ -1608,7 +1515,7 @@ function renderCoffees() {
   const stars = g => { const c = (coffeeRates[g[0].id] || []).filter(x => x.r != null && !x.d); return c.length ? c.reduce((a, x) => a + x.r, 0) / c.length : -1; };
   const cmp = sortBy === "new" ? (a, b) => bagT(b) - bagT(a)
     : sortBy === "stars" ? (a, b) => stars(b) - stars(a) || lastT(b) - lastT(a)
-    : sortBy === "name" ? (a, b) => String(a[0].name || "").localeCompare(String(b[0].name || ""), undefined, { sensitivity: "base" })
+    : sortBy === "name" ? (a, b) => (baseCol || (baseCol = new Intl.Collator(undefined, { sensitivity: "base" }))).compare(String(a[0].name || ""), String(b[0].name || ""))
     : (a, b) => lastT(b) - lastT(a);
   shown.sort(cmp);
   shown.forEach(g => list.appendChild(card(g[0], coffeeUrls[g[0].photo_path], coffeeCounts[g[0].id] || 0, coffeeRates[g[0].id] || [], g, coffeeThumbs[g[0].photo_path])));   // the stars of the current bag
@@ -1690,7 +1597,7 @@ function knownVarieties() {
   const add = (v, to) => { const k = v.toLowerCase(); if (v && !seen.has(k)) { seen.add(k); to.push(v); } };
   (coffeeData || []).forEach(c => String(c.variety || "").split(",").map(x => x.trim()).forEach(v => { if (!VARIETIES.some(x => x.toLowerCase() === v.toLowerCase())) add(v, ours); }));
   VARIETIES.forEach(v => add(v, common));
-  return { ours: ours.sort((x, y) => x.localeCompare(y)), common };
+  return { ours: ours.sort(cmpText), common };
 }
 function addVariety(v) {
   v = String(v || "").replace(/,/g, " ").trim(); if (!v) return;
@@ -1840,7 +1747,7 @@ function makePicker(o) {   // o: { mount, id, label, hint, ph, more, known() -> 
 }
 const renderPickers = () => PICKERS.forEach(r => r());
 const cap = v => v.charAt(0).toUpperCase() + v.slice(1);
-const usedValues = f => { const seen = new Map(); (coffeeData || []).forEach(c => f(c).forEach(v => { const k = v.toLowerCase(); if (!seen.has(k)) seen.set(k, v); })); return [...seen.values()].sort((a, b) => a.localeCompare(b)); };
+const usedValues = f => { const seen = new Map(); (coffeeData || []).forEach(c => f(c).forEach(v => { const k = v.toLowerCase(); if (!seen.has(k)) seen.set(k, v); })); return [...seen.values()].sort(cmpText); };
 makePicker({ mount: "pk-region", id: "f-region", label: "Region (optional)", ph: "e.g. Huila", more: "Another region", caps: true, norm: cap, onChange: originFromParts,
   hint: "One or more: a coffee from several regions of one country gets each of them.",
   known: () => {   // the regions you used before: the ones of this country first
@@ -2675,7 +2582,7 @@ function tName(t) {
 // everyone who can be picked: the people in this household (and you)
 function hhPeople() {
   const ids = hhOk && hh ? (hhMembers[hh] || []).map(m => m.user_id) : Object.keys(names);
-  return [...new Set([me && me.id, ...ids].filter(Boolean))].sort((x, y) => (x === (me && me.id) ? -1 : y === (me && me.id) ? 1 : String(nameOf(x) || "").localeCompare(String(nameOf(y) || ""))));
+  return [...new Set([me && me.id, ...ids].filter(Boolean))].sort((x, y) => (x === (me && me.id) ? -1 : y === (me && me.id) ? 1 : cmpText(String(nameOf(x) || ""), String(nameOf(y) || ""))));
 }
 function stashTaster() {
   if (bmode !== "rate") return;   // the rating part is only open in "Rate the cup"; in the brew form nobody's rating changes
@@ -2756,7 +2663,7 @@ function renderTasters() {
 $("b-guest").addEventListener("input", () => { renderTasters(); $("ovlab").textContent = tasters.length > 1 ? "Overall, for " + tName({ guest: true, guest_name: $("b-guest").value.trim() || null }) : "Overall"; });
 // the tasters of a saved brew, from its ratings (or, for a brew saved before, from its own stars and scores)
 function tastersOf(b) {
-  const sc = b.brew_scores || [], rs = (b.brew_ratings || []).slice().sort((x, y) => String(x.created_at || "").localeCompare(String(y.created_at || "")) || String(x.id).localeCompare(String(y.id)));
+  const sc = b.brew_scores || [], rs = (b.brew_ratings || []).slice().sort((x, y) => cmpRaw(String(x.created_at || ""), String(y.created_at || "")) || cmpRaw(String(x.id), String(y.id)));
   const sco = list => { const o = {}; list.forEach(x => { o[x.attribute] = x.score; }); return o; };
   if (rs.length) return rs.map(r => ({ id: r.id, rater_id: r.is_guest ? null : r.rater_id, guest: !!r.is_guest, guest_name: r.guest_name || null, rating: r.rating == null ? null : Number(r.rating), balance: r.balance == null ? null : Number(r.balance), drink: r.drink || null, milk: r.milk || null, drank: r.drank_at || null, note: r.note || null, scores: sco(sc.filter(x => x.rating_id === r.id)) }));
   if (b.rating != null || sc.length) return [{ rater_id: b.made_by || b.created_by || null, guest: false, guest_name: null, rating: b.rating == null ? null : Number(b.rating), balance: null, drink: null, milk: null, scores: sco(sc) }];
@@ -3469,7 +3376,7 @@ async function openCoffee(id, dev, wantForm, rid) {
 // an archived note and whether friends see it
 function drawHead(c, all) {
   const pu = c.photo_path ? coffeeUrls[c.photo_path] : null, pt = c.photo_path ? (coffeeThumbs[c.photo_path] || pu) : null;
-  const grp = (all.length ? all : coffeeData).filter(x => gk(x) === gk(c)).sort((x, y) => String(y.created_at).localeCompare(String(x.created_at)));
+  const grp = (all.length ? all : coffeeData).filter(x => gk(x) === gk(c)).sort((x, y) => cmpRaw(String(y.created_at), String(x.created_at)));
   const bags = grp.length > 1 && grp[0].id === c.id ? grp : null;   // "Bag 3" and the earlier bags: on the newest bag's page
   const keep = ["douts", "darch", "frshare"].map(id => $(id));
   const art = card(c, pu, coffeeCounts[c.id] || 0, coffeeRates[c.id] || [], bags, pt, { page: true, button: $("newbrew") });
@@ -3643,7 +3550,7 @@ async function loadBrews() {
   if (my !== brewLoadId) return;
   const outs = !ob.error && ob.data ? ob.data : (coffeeOuts[cur.id] || []); coffeeOuts[cur.id] = outs;
   coffeeUsed[cur.id] = data.reduce((x, b) => x + (Number(b.dose_g) || 0), 0) + outs.reduce((x, o) => x + Number(o.grams), 0);
-  const ds = data.filter(b => Number(b.dose_g) > 0).sort((a, b) => String(a.brewed_at).localeCompare(String(b.brewed_at))).slice(-5).map(b => Number(b.dose_g)).sort((x, y) => x - y);
+  const ds = data.filter(b => Number(b.dose_g) > 0).sort((a, b) => cmpRaw(String(a.brewed_at), String(b.brewed_at))).slice(-5).map(b => Number(b.dose_g)).sort((x, y) => x - y);
   if (ds.length) coffeeDose[cur.id] = ds[Math.floor(ds.length / 2)];
   coffeeCounts[cur.id] = data.length; coffeeRates[cur.id] = data.map(b => ({ r: brewAvg(b), d: !!b.is_dialin }));
   drawHead(cur, headAll);
@@ -3941,14 +3848,14 @@ const nameOf = id => (id && (names[id] || fnames[id])) || null;
 function fillWho(ids) {
   const s = $("bflt-who"), keep = s.value; s.textContent = "";
   const o = el("option", "", "Made by"); o.value = ""; s.appendChild(o);
-  ids.slice().sort((x, y) => String(nameOf(x) || "").localeCompare(String(nameOf(y) || ""))).forEach(id => { const x = el("option", "", nameOf(id)); x.value = id; s.appendChild(x); });
+  ids.slice().sort((x, y) => cmpText(String(nameOf(x) || ""), String(nameOf(y) || ""))).forEach(id => { const x = el("option", "", nameOf(id)); x.value = id; s.appendChild(x); });
   s.value = ids.includes(keep) ? keep : "";
 }
 // "Made by" in the brew form: everyone who has set a name. It starts on whoever is signed in.
 function fillMadeBy(want) {
   const s = $("b-madeby"), keep = want === undefined ? s.value : want;
   const inThis = hhOk && hh ? new Set((hhMembers[hh] || []).map(m => m.user_id)) : null;
-  const ids = Object.keys(names).filter(id => !inThis || inThis.has(id)).sort((x, y) => String(names[x] || "").localeCompare(String(names[y] || "")));
+  const ids = Object.keys(names).filter(id => !inThis || inThis.has(id)).sort((x, y) => cmpText(String(names[x] || ""), String(names[y] || "")));
   s.textContent = "";
   const o = el("option", "", "Not set"); o.value = ""; s.appendChild(o);
   if (me && !names[me.id]) ids.unshift(me.id);

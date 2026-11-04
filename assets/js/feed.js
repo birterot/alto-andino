@@ -129,10 +129,13 @@ window.ALTO_FEED = (function () {
       const say = () => {};   // a quiet part of Home: when the activity cannot load, it simply is not there
       const me = { id: ctx.me };
       let names = {}, prefsOf = {}, open = false, feedN = 40, feedId = 0, feedMore = false, feedItems = [];
+      // sorting: dates and ids letter by letter (ISO dates sort right that way), names with one shared collator (fast, unlike localeCompare on each pair)
+      const cmpRaw = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+      let collator = null; const cmpText = (a, b) => (collator || (collator = new Intl.Collator())).compare(a, b);
       const nameOf = id => (id && names[id]) || null;
       const inHH = q => (ctx.hid ? q.eq("household_id", ctx.hid) : q);
       // who: you first, then everyone who shows up in the activity
-      const hhPeople = () => { const s = new Set([me.id]); feedItems.forEach(x => (x.who || []).forEach(id => { if (id) s.add(id); })); return [...s].sort((x, y) => (x === me.id ? -1 : y === me.id ? 1 : String(nameOf(x) || "").localeCompare(String(nameOf(y) || "")))); };
+      const hhPeople = () => { const s = new Set([me.id]); feedItems.forEach(x => (x.who || []).forEach(id => { if (id) s.add(id); })); return [...s].sort((x, y) => (x === me.id ? -1 : y === me.id ? 1 : cmpText(String(nameOf(x) || ""), String(nameOf(y) || "")))); };
       const ICONS = { bag: "M6.5 8h11l1 12.5h-13z M9 8V6.5a3 3 0 016 0V8", plus: "M12 5v14 M5 12h14", check: "M4.5 12.5l5 5L19.5 7",
         cup: "M5 9h11v5a5 5 0 01-5 5h-1a5 5 0 01-5-5V9z M16 10h2a2 2 0 010 4h-2 M8 3v3 M12 3v3", cart: "M3 4h2.5l2 11h10.5l2-8H6.8 M9.5 19.5h.01 M17 19.5h.01" };
       function ico(name, size) {
@@ -168,7 +171,7 @@ window.ALTO_FEED = (function () {
         const items = [];
         brews.forEach(b => items.push({ k: "brew", t: new Date(b.brewed_at), b, c: byId[b.coffee_id], who: [b.made_by || b.created_by, ...(b.brew_ratings || []).filter(r => !r.is_guest).map(r => r.rater_id)] }));
         const first = {};
-        cs.slice().sort((x, y) => String(x.created_at || "").localeCompare(String(y.created_at || ""))).forEach(c => { if (!first[gk(c)]) first[gk(c)] = c.id; });
+        cs.slice().sort((x, y) => cmpRaw(String(x.created_at || ""), String(y.created_at || ""))).forEach(c => { if (!first[gk(c)]) first[gk(c)] = c.id; });
         cs.forEach(c => {
           if (c.created_at) items.push({ k: "add", t: new Date(c.created_at), c, again: first[gk(c)] !== c.id, who: [c.created_by] });
           if (c.open_date) items.push({ k: "open", t: localDay(c.open_date, 0), c, who: [] });   // a date without a time: opened at the start of the day,
@@ -458,7 +461,7 @@ window.ALTO_FEED = (function () {
       }
       // tastersOf
       function tastersOf(b) {
-        const sc = b.brew_scores || [], rs = (b.brew_ratings || []).slice().sort((x, y) => String(x.created_at || "").localeCompare(String(y.created_at || "")) || String(x.id).localeCompare(String(y.id)));
+        const sc = b.brew_scores || [], rs = (b.brew_ratings || []).slice().sort((x, y) => cmpRaw(String(x.created_at || ""), String(y.created_at || "")) || cmpRaw(String(x.id), String(y.id)));
         const sco = list => { const o = {}; list.forEach(x => { o[x.attribute] = x.score; }); return o; };
         if (rs.length) return rs.map(r => ({ id: r.id, rater_id: r.is_guest ? null : r.rater_id, guest: !!r.is_guest, guest_name: r.guest_name || null, rating: r.rating == null ? null : Number(r.rating), balance: r.balance == null ? null : Number(r.balance), drink: r.drink || null, milk: r.milk || null, drank: r.drank_at || null, note: r.note || null, scores: sco(sc.filter(x => x.rating_id === r.id)) }));
         if (b.rating != null || sc.length) return [{ rater_id: b.made_by || b.created_by || null, guest: false, guest_name: null, rating: b.rating == null ? null : Number(b.rating), balance: null, drink: null, milk: null, scores: sco(sc) }];

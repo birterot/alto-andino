@@ -176,13 +176,14 @@
   drawAsk();
   // Then, quietly: your brews of the last two months straight from the database, for the line under the greeting and the
   // caffeine (also brews someone else logged and you rated). Supabase's own library renews the login if it ran out.
-  if (session && window.CAFFEINE) setTimeout(freshen, 900);
+  // (not while the opening animation plays: loading the database library then made it stutter on the phone)
+  var afterIntro = function (fn, ms) { var w = function () { if (document.documentElement.classList.contains("intro")) setTimeout(w, 300); else setTimeout(fn, ms); }; w(); };
+  if (session && window.CAFFEINE) afterIntro(freshen, 900);
   // the activity at the end of Home (assets/js/feed.js): after the opening animation; off in Settings > Home (on this phone)
   var act = document.getElementById("activity"), feedOff = get("alto.homefeed") === "off";
   if (act && session && !feedOff) {
     var startFeed = function () { if (window.ALTO_FEED) ALTO_FEED.mount(act, { getDb: getDb, me: session.user.id, hid: (shelf && shelf.hh) || get("alto.household"), root: "", open: location.hash === "#activity" }); };
-    var waitIntro = function () { if (document.documentElement.classList.contains("intro")) setTimeout(waitIntro, 400); else setTimeout(startFeed, 300); };
-    setTimeout(waitIntro, 600);
+    afterIntro(startFeed, location.hash === "#activity" ? 50 : 1500);   // after the fresh numbers above, one thing at a time (at once when it was asked for)
     window.addEventListener("hashchange", function () { if (location.hash === "#activity") { var f = document.getElementById("afold"); if (f && f.getAttribute("aria-expanded") !== "true") f.click(); else act.scrollIntoView({ behavior: "smooth" }); } });
   }
   var dbP = null;   // Supabase's library, loaded once when Home needs it (after the opening animation)
