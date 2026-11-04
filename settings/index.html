@@ -169,6 +169,7 @@ label.chk input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var
   <section class="set" id="tabset" data-tab="home">
     <h2>Bottom bar</h2>
     <p class="hint">Home and More always sit at the ends. Choose the three buttons in between; whatever is not in the bar is under More. It changes right away, on this phone.</p>
+    <p class="hint" id="s-tabweb" hidden>The bar is for the app on your home screen. In the browser the menu stays at the top. You can still choose here; it shows when you open the app.</p>
     <label>Left<select id="s-tab0"></select></label>
     <label>Middle<select id="s-tab1"></select></label>
     <label>Right<select id="s-tab2"></select></label>
@@ -371,6 +372,7 @@ function initTabs() {
     };
   });
   $("s-tabreset").onclick = () => { T.set(null); draw(); };
+  $("s-tabweb").hidden = T.isApp;
   draw();
 }
 initTabs();
