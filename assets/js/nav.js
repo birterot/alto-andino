@@ -1,4 +1,4 @@
-/* Top bar with a burger menu, shared by every page, plus the Alto Andino wordmark,
+/* Top bar (search, the logo, quick buttons) and a bar at the bottom as on the iPhone (Home, three of your choice, More), shared by every page, plus the Alto Andino wordmark,
    breadcrumbs and previous/next links in the book chapters.
    Add <script src="PATH/assets/js/nav.js" defer></script> to a page to get it.
    To rename a section or add a menu entry, change the lists right below.
@@ -41,6 +41,18 @@
     ["analytics", "Analytics", "analytics/index.html"],   // only for the app's admins (see "usage" at the end)
     ["requests", "Sign-up requests", "requests/index.html"]   // only for the app's admins (supabase/42_invite_only.sql)
   ];
+  // The bar at the bottom: Home and More stay, the three in between are yours (Settings, kept on this phone: alto.tabbar)
+  var TABS = [                // key (as in ITEMS), short label, icon
+    ["journal", "Shelf", "journal"], ["log", "Log a Brew", "log"], ["trends", "Trends", "trends"], ["friends", "Friends", "friends"],
+    ["cupping", "Cupping", "cupping"], ["recent", "Recent", "recent"], ["mine", "My Brews", "mine"], ["calc", "Calculator", "calc"], ["book", "Bean to Cup", "book"]
+  ];
+  var TABS_DEFAULT = ["journal", "log", "trends"];
+  function tabsGet() {
+    var t = null; try { t = JSON.parse(localStorage.getItem("alto.tabbar") || "null"); } catch (e) {}
+    var ok = TABS.map(function (x) { return x[0]; });
+    if (!Array.isArray(t) || t.length !== 3 || t.some(function (k, i) { return ok.indexOf(k) < 0 || t.indexOf(k) !== i; })) t = TABS_DEFAULT.slice();
+    return t;
+  }
   var CHAPTERS = [            // file name, label (order = menu order and the previous/next order)
     ["processing", "Processing"],
     ["roasting", "Roasting"],
@@ -61,6 +73,16 @@
     ".topnav .bar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;max-width:900px;margin:0 auto;padding:6px 8px;height:57px}" +
     ".topnav .side{display:flex;align-items:center;gap:4px}.topnav .side.r{justify-content:flex-end}" +
     ".topnav .iconbtn[hidden]{display:none}" +
+    // the bar at the bottom: Home, three of your choice (Settings), More; flat, the page you are on in the brand colour
+    ".tbar{position:fixed;left:0;right:0;bottom:0;z-index:55;background:var(--bg,#fff);border-top:1px solid var(--line,#ccc);padding:5px 6px calc(env(safe-area-inset-bottom,0px) + 4px);transition:opacity .5s}" +
+    "html.intro .tbar{opacity:0}body.kbd .tbar{display:none}" +
+    ".tbar .tbrow{display:grid;grid-template-columns:repeat(5,1fr);max-width:560px;margin:0 auto}" +
+    ".tbar a,.tbar button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:3px 0 2px;min-height:50px;border:0;background:none;color:var(--mut,#666);text-decoration:none;font:500 10.5px/1.2 system-ui,-apple-system,sans-serif;letter-spacing:.01em;cursor:pointer;-webkit-tap-highlight-color:transparent}" +
+    ".tbar .tbi{display:grid;place-items:center;height:32px}" +
+    ".tbar [aria-current],.tbar .tbon{color:var(--brand,#6B4A2E)}.tbar [aria-current] svg,.tbar .tbon svg{stroke-width:2.1}" +
+    ".tbar .tbmid .tbi{width:52px;border-radius:999px;background:var(--act,#4A2F1C);color:var(--on-act,#fff)}.tbar .tbmid{color:var(--ink,#222)}" +
+    ".tbar a:focus-visible,.tbar button:focus-visible{outline:2px solid currentColor;outline-offset:-2px;border-radius:10px}" +
+    "body.hasbar{padding-bottom:64px}" +
     "@media (max-width:350px){.topnav .lockup>span{display:none}}" +   // very small phones: the mountain only, so all four buttons fit
     ".topnav .iconbtn{width:44px;height:44px;display:grid;place-items:center;background:none;border:0;color:var(--brand,#6B4A2E);cursor:pointer;border-radius:8px;text-decoration:none;flex:none}" +
     ".topnav .where{display:flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:0 4px;color:inherit;text-decoration:none}" +
@@ -68,16 +90,18 @@
     ".topnav .wm{width:112px}.topnav .logo{display:block;height:18px;width:auto;color:var(--brand,#6B4A2E);flex:none}" +
     // mountain and name sit on one base line: the bottom of the mountain meets the bottom of the letters
     ".topnav .lockup{display:flex;align-items:flex-end;gap:9px}.topnav .lockup .wm{margin-bottom:-0.66px}" +
-    ".navback{position:fixed;inset:0;background:rgba(20,14,10,.38);z-index:40;opacity:0;transition:opacity .18s}" +
+    ".navback{position:fixed;inset:0;background:rgba(20,14,10,.38);z-index:52;opacity:0;transition:opacity .18s}" +
     ".navback.on{opacity:1}" +
-    ".topnav nav{position:absolute;left:8px;right:8px;top:calc(100% + 6px);max-width:380px;background:var(--card,#fff);border:1px solid var(--line,#ccc);border-radius:16px;box-shadow:0 14px 36px rgba(20,14,10,.22);padding:8px;max-height:calc(100vh - 80px);overflow:auto}" +
-    ".topnav nav[hidden]{display:none}" +
-    ".topnav nav a{display:flex;align-items:center;gap:14px;padding:11px 14px;min-height:48px;border-radius:10px;color:inherit;text-decoration:none;font-size:16px}" +
-    ".topnav nav a svg{flex:none;color:var(--accent,#8A6A4A)}" +
-    ".topnav nav .mrow{display:flex;align-items:center}.topnav nav .mrow a{flex:1}" +
-    ".topnav nav .mtog{width:44px;height:44px;flex:none;display:grid;place-items:center;border:0;background:none;color:var(--mut,#666);border-radius:10px;cursor:pointer}" +
-    ".topnav nav .mtog svg{transition:transform .15s}.topnav nav .mtog.open svg{transform:rotate(180deg)}" +
-    ".topnav nav .subs[hidden]{display:none}" +
+    "#navmenu{position:fixed;left:0;right:0;bottom:0;z-index:54;max-width:560px;margin:0 auto;background:var(--card,#fff);border:1px solid var(--line,#ccc);border-bottom:0;border-radius:18px 18px 0 0;padding:8px 12px calc(env(safe-area-inset-bottom,0px) + 72px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - 70px);overflow:auto;overscroll-behavior:contain}" +
+    "#navmenu .grab{width:38px;height:5px;border-radius:3px;background:var(--line,#ccc);margin:2px auto 8px}" +
+    "#navmenu .mh{margin:0 8px 4px;font:400 22px/1.3 Georgia,\"Times New Roman\",serif;color:var(--ink,#222)}" +
+    "#navmenu[hidden],#navmenu [hidden]{display:none}" +
+    "#navmenu a{display:flex;align-items:center;gap:14px;padding:11px 14px;min-height:48px;border-radius:10px;color:inherit;text-decoration:none;font-size:16px}" +
+    "#navmenu a svg{flex:none;color:var(--accent,#8A6A4A)}" +
+    "#navmenu .mrow{display:flex;align-items:center}#navmenu .mrow a{flex:1}" +
+    "#navmenu .mtog{width:44px;height:44px;flex:none;display:grid;place-items:center;border:0;background:none;color:var(--mut,#666);border-radius:10px;cursor:pointer}" +
+    "#navmenu .mtog svg{transition:transform .15s}#navmenu .mtog.open svg{transform:rotate(180deg)}" +
+    "#navmenu .subs[hidden]{display:none}" +
     ".srch{position:fixed;inset:0;z-index:120;background:rgba(20,14,10,.35);padding:calc(env(safe-area-inset-top,0px) + 8px) 10px 10px}" +
     ".srch[hidden]{display:none}" +
     ".srch .sbox{max-width:640px;margin:0 auto;background:var(--bg,#fff);border-radius:16px;box-shadow:0 18px 50px rgba(20,14,10,.3);max-height:calc(100dvh - 40px);display:flex;flex-direction:column;overflow:hidden}" +
@@ -92,10 +116,10 @@
     ".srch .sh{color:var(--mut,#666);font-size:14px;margin:14px 6px}" +
     ".ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 62px);z-index:60;width:38px;height:38px;margin-left:-19px;border-radius:999px;background:var(--card,#fff);border:1px solid var(--line,#ccc);box-shadow:0 4px 14px rgba(20,14,10,.15);display:grid;place-items:center;color:var(--accent,#8A6A4A);opacity:0;transform:translateY(-50px);pointer-events:none}" +
     ".ptr.go svg{animation:ptrspin .8s linear infinite}@keyframes ptrspin{to{transform:rotate(360deg)}}" +
-    ".topnav nav a:hover{background:var(--bg,#f5f5f5)}" +
-    ".topnav nav a.child{margin-left:23px;padding:6px 12px 6px 18px;min-height:38px;border-radius:0 10px 10px 0;border-left:1px solid var(--line,#ccc);font-size:14.5px;color:var(--mut,#666)}" +
-    ".topnav nav a[aria-current=page]{background:var(--bg,#f5f5f5);font-weight:600;color:var(--ink,#000)}" +
-    ".topnav nav a.child[aria-current=page]{border-left:2px solid var(--accent,#8A6A4A)}" +
+    "#navmenu a:hover{background:var(--bg,#f5f5f5)}" +
+    "#navmenu a.child{margin-left:23px;padding:6px 12px 6px 18px;min-height:38px;border-radius:0 10px 10px 0;border-left:1px solid var(--line,#ccc);font-size:14.5px;color:var(--mut,#666)}" +
+    "#navmenu a[aria-current=page]{background:var(--bg,#f5f5f5);font-weight:600;color:var(--ink,#000)}" +
+    "#navmenu a.child[aria-current=page]{border-left:2px solid var(--accent,#8A6A4A)}" +
     ".topnav a:focus-visible,.topnav button:focus-visible{outline:2px solid currentColor;outline-offset:-2px}" +
     ".crumbs{font-size:13px;color:var(--mut,#666);margin:0 0 14px}.crumbs a{color:inherit}.crumbs span{margin:0 6px}" +
     ".pager{display:flex;justify-content:space-between;gap:12px;margin-top:56px;padding-top:20px;border-top:1px solid var(--line,#ccc)}" +
@@ -137,15 +161,10 @@
   Array.prototype.forEach.call(document.querySelectorAll("[data-wordmark]"), function (h) { wordmark(h); });
   Array.prototype.forEach.call(document.querySelectorAll("[data-mark]"), function (h) { h.textContent = ""; h.appendChild(brandSvg(MARK)); });
 
-  var ICON_MENU = "M4 7h16M4 12h16M4 17h16", ICON_CLOSE = "M6 6l12 12M18 6L6 18";
   var head = document.createElement("header");
   head.className = "topnav";
   var bar = document.createElement("div");
   bar.className = "bar";
-  var btn = document.createElement("button");
-  btn.className = "iconbtn"; btn.type = "button";
-  btn.setAttribute("aria-label", "Menu"); btn.setAttribute("aria-expanded", "false"); btn.setAttribute("aria-controls", "navmenu");
-  btn.appendChild(svgEl(24, function (s) { s.appendChild(pathEl(ICON_MENU)); }));
   var where = document.createElement("a");
   where.className = "where"; where.href = root + "index.html";
   if (!isHome) {
@@ -154,17 +173,19 @@
     lock.appendChild(logo); where.setAttribute("aria-label", "Alto Andino, home");
     var nm = document.createElement("span"); lock.appendChild(nm); wordmark(nm);
   } else where.setAttribute("aria-hidden", "true");
-  var left = document.createElement("div"); left.className = "side l"; left.appendChild(btn);
-  // ☰ 🔍   ALTO ANDINO   (cup+) 🧮 : log a brew from anywhere (not shown on the Log a brew page itself)
+  var left = document.createElement("div"); left.className = "side l";
+  var inBar = tabsGet();
+  // 🔍   ALTO ANDINO   (cup+) 🧮 : log a brew and the calculator from anywhere, unless they are in the bar at the bottom
   var lb = document.createElement("a");
   lb.className = "iconbtn logbtn"; lb.href = root + "journal/index.html#log"; lb.setAttribute("aria-label", "Log a brew"); lb.title = "Log a brew";
   lb.appendChild(icon("log", 24)); lb.firstChild.setAttribute("stroke-width", "1.5");   // a bit lighter than the menu lines: the cup and the calculator have more lines, so they looked bolder
-  var showLb = function () { lb.hidden = /\/journal\//.test(path) && location.hash === "#log"; };
+  var showLb = function () { lb.hidden = inBar.indexOf("log") >= 0 || (/\/journal\//.test(path) && location.hash === "#log"); };
   showLb(); window.addEventListener("hashchange", showLb);
   var right = document.createElement("div"); right.className = "side r"; right.appendChild(lb);
   bar.appendChild(left); bar.appendChild(where); bar.appendChild(right);
-  if (!isCalc) {   // shortcut to the calculator, on every page
-    var cb = document.createElement("a");
+  var cb = null;
+  if (!isCalc) {   // shortcut to the calculator, on every page (unless it is in the bar)
+    cb = document.createElement("a");
     cb.className = "iconbtn"; cb.href = root + "calc/index.html"; cb.setAttribute("aria-label", "Calculator"); cb.title = "Calculator";
     cb.appendChild(icon("calc", 24)); right.appendChild(cb);
     cb.firstChild.setAttribute("stroke-width", "1.5");
@@ -175,10 +196,11 @@
   sb.appendChild(svgEl(23, function (s) { s.appendChild(pathEl("M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z M16 16l5 5")); }));
   left.appendChild(sb);
   sb.addEventListener("click", function () { openSearch(); });
-  // no separate home button: the logo in the middle takes you home
+  // the logo in the middle takes you home too
 
   var menu = document.createElement("nav");
-  menu.id = "navmenu"; menu.hidden = true; menu.setAttribute("aria-label", "Main");
+  menu.id = "navmenu"; menu.hidden = true; menu.setAttribute("aria-label", "More");
+  (function () { var g = document.createElement("div"); g.className = "grab"; menu.appendChild(g); var h = document.createElement("p"); h.className = "mh"; h.textContent = "More"; menu.appendChild(h); })();
   var links = [];
   function addLink(key, label, href, sub, ic) {
     var a = document.createElement("a");
@@ -190,7 +212,7 @@
   // "Bean to cup" keeps its chapters folded away (open inside the book, or with the little arrow)
   var subs = null;
   ITEMS.forEach(function (it) {
-    if (it[0] === "log" || it[0] === "calc") return;   // not in the menu: both are buttons in the top bar (still section tabs and Home tiles)
+    if (it[0] === "home") return;   // More: everything that is not in the bar at the bottom (syncMenu)
     if ((it[0] === "analytics" || it[0] === "requests") && !isAdmin()) return;
     addLink(it[0], it[1], it[2], false, it[0]);
     if (it[0] === "book") {
@@ -206,15 +228,51 @@
       tg.addEventListener("click", function (e) { e.stopPropagation(); setSubs(subs.hidden); });
     }
   });
-  head.appendChild(bar); head.appendChild(menu);
+  head.appendChild(bar);
   var back = document.createElement("div"); back.className = "navback"; back.hidden = true;
   document.body.insertAdjacentElement("afterbegin", back);
   document.body.insertAdjacentElement("afterbegin", head);
+  document.body.appendChild(menu);
+  // the bar at the bottom
+  var tbar = document.createElement("nav"); tbar.className = "tbar"; tbar.setAttribute("aria-label", "Main");
+  var trow = document.createElement("div"); trow.className = "tbrow"; tbar.appendChild(trow);
+  var btn = document.createElement("button"); btn.type = "button"; btn.setAttribute("aria-expanded", "false"); btn.setAttribute("aria-controls", "navmenu");
+  function tab(el, key, label, ic) {
+    var i = document.createElement("span"); i.className = "tbi"; i.appendChild(key === "more" ? svgEl(25, function (s) { s.setAttribute("stroke-width", "3"); s.appendChild(pathEl("M5 12h.01M12 12h.01M19 12h.01")); }) : icon(ic, key === "log" ? 22 : 25));
+    if (key !== "log") i.firstChild.setAttribute("stroke-width", "1.6");
+    var t = document.createElement("span"); t.textContent = label; el.appendChild(i); el.appendChild(t); el.dataset.k = key;
+    if (key === "log") el.className = "tbmid";
+    trow.appendChild(el); return el;
+  }
+  function drawBar() {
+    trow.textContent = "";
+    var home = document.createElement("a"); home.href = root + "index.html"; tab(home, "home", "Home", "home");
+    inBar.forEach(function (k) {
+      var t = TABS.filter(function (x) { return x[0] === k; })[0], it = ITEMS.filter(function (x) { return x[0] === k; })[0];
+      var a = document.createElement("a"); a.href = root + it[2]; tab(a, k, t[1], t[2]);
+    });
+    while (btn.firstChild) btn.removeChild(btn.firstChild);
+    tab(btn, "more", "More");
+    markBar();
+  }
+  function markBar() {
+    var now = current(); if (/^ch-/.test(now)) now = "book";
+    var hit = false;
+    Array.prototype.forEach.call(trow.children, function (a) {
+      if (a === btn) return;
+      var on = a.dataset.k === now; hit = hit || on;
+      if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+    });
+    btn.classList.toggle("tbon", !hit || !menu.hidden);   // a page from More (Settings, Feedback ...): More is lit
+  }
+  document.body.appendChild(tbar); document.body.classList.add("hasbar");
+  // typing: the bar makes room for the keyboard
+  document.addEventListener("focusin", function (e) { var t = e.target; if (t && (t.tagName === "TEXTAREA" || t.tagName === "SELECT" || (t.tagName === "INPUT" && !/^(checkbox|radio|range|button|submit|reset|file|color)$/i.test(t.type)) || t.isContentEditable)) document.body.classList.add("kbd"); });
+  document.addEventListener("focusout", function () { setTimeout(function () { var a = document.activeElement; if (!a || !/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) document.body.classList.remove("kbd"); }, 50); });
 
   function setOpen(open) {
     menu.hidden = !open;
-    btn.setAttribute("aria-expanded", String(open));
-    btn.querySelector("path").setAttribute("d", open ? ICON_CLOSE : ICON_MENU);
+    btn.setAttribute("aria-expanded", String(open)); markBar();
     if (open) { back.hidden = false; requestAnimationFrame(function () { back.classList.add("on"); }); }
     else { back.classList.remove("on"); back.hidden = true; }
   }
@@ -230,7 +288,7 @@
     return "home";
   }
   function markActive() {
-    var now = current();
+    var now = current(); markBar();
     links.forEach(function (a) { if (a.dataset.k === now) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
   }
   // Feedback knows which page you came from
@@ -238,10 +296,22 @@
   btn.addEventListener("click", function () { setOpen(menu.hidden); });
   menu.addEventListener("click", function (e) { if (e.target.closest("a")) setOpen(false); });
   back.addEventListener("click", function () { setOpen(false); });
-  document.addEventListener("click", function (e) { if (!head.contains(e.target) && !menu.hidden) setOpen(false); });
+  document.addEventListener("click", function (e) { if (!menu.contains(e.target) && !btn.contains(e.target) && !menu.hidden) setOpen(false); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !menu.hidden) { setOpen(false); btn.focus(); } });
   window.addEventListener("hashchange", markActive);
-  markActive();
+  function syncMenu() {   // More holds what is not in the bar; the top bar's quick buttons only when they are not in it either
+    links.forEach(function (a) {
+      var k = a.dataset.k, off = inBar.indexOf(k) >= 0 || (k.indexOf("ch-") === 0 && inBar.indexOf("book") >= 0);
+      var row = a.parentNode && a.parentNode.className === "mrow" ? a.parentNode : a; row.hidden = off;
+    });
+    if (subs && inBar.indexOf("book") >= 0) subs.hidden = true;
+    showLb(); if (cb) cb.hidden = inBar.indexOf("calc") >= 0;
+  }
+  syncMenu(); drawBar(); markActive();
+  // Settings changes the bar: redraw it here, and on other open pages
+  window.altoTabs = { list: TABS.map(function (x) { var it = ITEMS.filter(function (y) { return y[0] === x[0]; })[0]; return [x[0], x[0] === "book" ? BOOK : it[1]]; }), get: tabsGet, fixed: ["Home", "More"],
+    set: function (t) { try { if (t) localStorage.setItem("alto.tabbar", JSON.stringify(t)); else localStorage.removeItem("alto.tabbar"); } catch (e) {} inBar = tabsGet(); syncMenu(); drawBar(); return inBar; } };
+  window.addEventListener("storage", function (e) { if (e.key === "alto.tabbar") { inBar = tabsGet(); syncMenu(); drawBar(); } });
 
   // Headings in title case ("Golden Rules for Fresh Coffee"): every word capitalised except small words in the middle.
   // Words with capitals or digits of their own stay as they are (V60, SCA, iPhone), and so do names people typed:
@@ -264,7 +334,7 @@
       return out;
     }).join("");
   }
-  var HEAD = "h1,h2,h3,h4,summary,.topnav nav a,.crumbs,.pager a,.sectabs a", KEEP = ".cc h3,#dname,.bc h3,dialog,[data-case=keep],.vlist,.res,details.cup summary";
+  var HEAD = "h1,h2,h3,h4,summary,#navmenu a,#navmenu .mh,.crumbs,.pager a,.sectabs a", KEEP = ".cc h3,#dname,.bc h3,dialog,[data-case=keep],.vlist,.res,details.cup summary";
   function caseIn(root) {
     var list = [];
     if (root.matches && root.matches(HEAD)) list.push(root);
