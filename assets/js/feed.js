@@ -1,5 +1,5 @@
 /* Activity: what happened in the household (brews, new coffees and bags, cuppings), as Home's last part.
-   Folded: this week in cups, and the newest entries. "Show all activity" unfolds the full feed with its filters and
+   Folded: this week in cups, and the newest entries. "Show all" unfolds the full feed with its filters and
    "Show older" (it used to be the Recent activity page of the Coffee Shelf, whose code this follows).
      ALTO_FEED.mount(host, { getDb, me, hid, root, open })   getDb: Home's Supabase client (one per page), me: your id,
                                                               hid: the household, root: the site's root, open: unfolded
@@ -104,7 +104,9 @@ window.ALTO_FEED = (function () {
 #activity .ah{display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 2px}
 #activity .ah h2{margin:0;font:400 21px/1.3 "Iowan Old Style",Palatino,Georgia,serif;color:var(--ink)}
 #activity .lhead{margin-top:10px}
-#activity .afold{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:44px;margin:6px 0 0;border:0;border-radius:12px;background:none;font:inherit;font-size:14.5px;font-weight:600;color:var(--ink);cursor:pointer}
+#activity .ah{align-items:center}
+#activity.aopen .ah{position:sticky;top:calc(env(safe-area-inset-top,0px) + 58px);z-index:5;margin:0 -20px;padding:4px 20px;background:var(--bg);border-bottom:1px solid var(--line)}
+#activity .afold{display:inline-flex;align-items:center;gap:4px;min-height:40px;margin:0 -6px 0 0;padding:0 6px;border:0;border-radius:10px;background:none;font:inherit;font-size:14.5px;font-weight:600;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent}
 #activity .afold svg{transition:transform .2s}#activity .afold[aria-expanded=true] svg{transform:rotate(180deg)}
 #activity .afull[hidden],#activity [hidden]{display:none}
 `;
@@ -114,15 +116,14 @@ window.ALTO_FEED = (function () {
     Promise.all([ctx.getDb(), need(root)]).then(([db]) => build(db)).catch(() => {});
     function build(db) {
       if (!document.getElementById("afeedcss")) { const st = document.createElement("style"); st.id = "afeedcss"; st.textContent = CSS; document.head.appendChild(st); }
-      host.innerHTML = '<div class="ah"><h2>Activity</h2></div>' +
+      host.innerHTML = '<div class="ah"><h2>Activity</h2><button type="button" class="afold" id="afold" aria-expanded="false" aria-controls="afull"><span>Show all</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div>' +
         '<section class="lhead" id="rhead" hidden></section>' +
         '<div class="afull" id="afull" hidden><div class="filters" id="rfilters">' +
         '<select id="rflt-kind" aria-label="What to show"><option value="">Everything</option><option value="brew">Brews</option><option value="bag">Coffees and bags</option><option value="cup">Cuppings</option></select>' +
         '<select id="rflt-who" aria-label="Who"></select>' +
         '<select id="rflt-when" aria-label="When"><option value="">Any time</option><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="month">This month</option><option value="custom">Dates…</option></select>' +
         '</div><div class="when2" id="rwhen" hidden><label>From<input type="date" id="rw-from"></label><label>To<input type="date" id="rw-to"></label></div></div>' +
-        '<div id="feed"></div><button type="button" class="btn ghost" id="rmore" hidden>Show older</button>' +
-        '<button type="button" class="afold" id="afold" aria-expanded="false" aria-controls="afull"><span>Show all activity</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>';
+        '<div id="feed"></div><button type="button" class="btn ghost" id="rmore" hidden>Show older</button>';
       host.hidden = false;
       const $ = id => document.getElementById(id);
       const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -519,13 +520,13 @@ window.ALTO_FEED = (function () {
       function opt0(s, v, t) { const o = el("option", "", t); o.value = v; s.appendChild(o); }
       // fold and unfold
       function openAll(on, quiet) {
-        open = on; $("afull").hidden = !on; const f = $("afold"); f.setAttribute("aria-expanded", String(on)); f.firstChild.textContent = on ? "Show less" : "Show all activity";
+        open = on; $("afull").hidden = !on; host.classList.toggle("aopen", on); const f = $("afold"); f.setAttribute("aria-expanded", String(on)); f.firstChild.textContent = on ? "Show less" : "Show all";   // unfolded: the heading with Show less stays in sight
         if (!on) { $("rflt-kind").value = ""; $("rflt-who").value = ""; $("rflt-when").value = ""; $("rwhen").hidden = true; [...$("rflt-when").options].filter(o => o.value.startsWith("d:")).forEach(o => o.remove()); feedN = 40; }
         if (quiet) return;
         // at once, from what is already there (folding needs nothing new; unfolding shows the first entries right away),
         // then fresh from the database: on a slow connection the list used to stay open until the answer came
         const timed = !on && feedTimed; renderFeed();
-        if (!on) host.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (!on && host.getBoundingClientRect().top < 0) host.scrollIntoView({ behavior: "smooth", block: "start" });
         if (on || timed) loadFeed();
       }
       $("afold").onclick = () => openAll(!open);
