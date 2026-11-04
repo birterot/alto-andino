@@ -144,10 +144,15 @@ svg.fwheel .fn{font:500 26px "Iowan Old Style",Palatino,Georgia,serif;fill:var(-
 .leg i.fsw{width:12px;height:12px;border-radius:3px;background:var(--ink)}
 .fdet{margin-top:10px;padding:12px 14px;border-radius:12px;background:var(--one-track);border-left:4px solid var(--fc,var(--one))}
 .card .info.tinfo{display:inline-block;width:19px;height:19px;margin:0 0 0 5px;vertical-align:2px;font-size:11px;line-height:17px;padding:0}
-.fdet .fdh{margin:0 0 6px;font-size:15.5px;font-weight:600;color:var(--ink)}
-.frow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14.5px}.frow b{font-weight:500;color:var(--mut);font-variant-numeric:tabular-nums}
-.fdet .small{margin:4px 0 6px}
-.fdet .fgh{margin:10px 0 2px;font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+.fdet .fdh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0}.fdet .fdh b{font-size:16px;font-weight:600;color:var(--ink)}.fdet .fdh span{font-size:13.5px;color:var(--mut)}
+.fdet .fpb{height:4px;margin:7px 0 2px;border-radius:2px;background:color-mix(in srgb,var(--fc) 18%,transparent);overflow:hidden}.fdet .fpb i{display:block;height:100%;background:var(--fc);border-radius:2px}
+.fdet .fgr{margin-top:12px}
+.fdet .fgh{margin:0 0 4px;font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+.frow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 0;font-size:14.5px}.frow b{flex:none;font-weight:500;color:var(--mut);font-variant-numeric:tabular-nums;font-size:13.5px}
+.frow .fnm{display:flex;align-items:center;gap:8px;min-width:0}.fdot{flex:none;width:9px;height:9px;border-radius:50%;background:var(--fc)}
+.frow .fyou{font-size:11.5px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:0 7px;line-height:17px}
+.fchips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px}.fchips .fto{font-size:12.5px;color:var(--mut);margin-right:2px}
+.fchip{font-size:13px;line-height:24px;padding:0 10px;border-radius:999px;border:1px dashed color-mix(in srgb,var(--fc) 55%,var(--line));color:var(--mut)}
 details.ftidy{margin-top:4px}
 details.ftidy summary{cursor:pointer;font-size:14.5px;font-weight:600;color:var(--one);padding:8px 0}
 .ftrow.fum button{flex:none;min-height:34px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--one);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
@@ -974,12 +979,26 @@ function flavourWheel() {
     const f = fams.find(x => x.f === sel); det.textContent = "";
     det.style.setProperty("--fc", f.col); sws.forEach(i => { i.style.background = f.col; });
     const ofF = f.slots.filter(x => x.wheel).length;
-    det.appendChild(el("p", "fdh", f.f + " · " + f.gotW + " of " + ofF + " found" + (f.count ? "" : " · not counted")));
-    f.groups.forEach(gr => {
-      const got = gr.slots.filter(x => x.t).sort((a, b) => (b.t.avg || 0) - (a.t.avg || 0) || b.t.cups - a.t.cups), rest = gr.slots.filter(x => !x.t).map(x => x.n);
-      if (f.groups.length > 1 || gr.g !== f.f) det.appendChild(el("p", "fgh", gr.g));
-      got.forEach(x => { const r = el("div", "frow"); r.append(el("span", "", x.n + (x.wheel ? "" : " · yours")), el("b", "", (x.t.avg != null ? fmtS(x.t.avg) + " · " : "") + x.t.cups + (x.t.cups === 1 ? " cup" : " cups"))); det.appendChild(r); });
-      if (rest.length) det.appendChild(el("p", "small", (got.length ? "Still to find: " : "") + rest.join(", ")));
+    // the family, how far you got (a thin bar in its colour)
+    const hd = el("div", "fdh"); const ownF = f.got - f.gotW;   // found, but not on the SCA wheel: yours
+    hd.append(el("b", "", f.f), el("span", "", f.gotW + " of " + ofF + " found" + (ownF ? " \u00B7 " + ownF + " of your own" : "") + (f.count ? "" : " \u00B7 not counted")));
+    const pb = el("div", "fpb"), pi = el("i"); pi.style.width = (ofF ? Math.round(100 * f.gotW / ofF) : 0) + "%"; pb.appendChild(pi);
+    det.append(hd, pb);
+    // the groups: a group of one note with its own name (Black tea, Vanilla ...) goes with the others under "Also"
+    const solo = gr => gr.slots.length === 1 && gr.slots[0].n.toLowerCase() === gr.g.toLowerCase();
+    const blocks = f.groups.filter(gr => !solo(gr)).map(gr => [gr.g, gr.slots]);
+    const singles = f.groups.filter(solo).flatMap(gr => gr.slots);
+    if (singles.length) blocks.push([blocks.length ? "Also" : "", singles]);
+    blocks.forEach(([name, slots]) => {
+      const got = slots.filter(x => x.t).sort((a, b) => (b.t.avg || 0) - (a.t.avg || 0) || b.t.cups - a.t.cups), rest = slots.filter(x => !x.t);
+      const g = el("div", "fgr"); if (name) g.appendChild(el("p", "fgh", name));
+      got.forEach(x => {   // found: a dot in how much you liked it, the name, stars and cups
+        const r = el("div", "frow"), dot = el("i", "fdot"), nm = el("span", "fnm"); dot.style.opacity = op(x.t.avg);
+        nm.append(dot, document.createTextNode(x.n)); if (!x.wheel) nm.appendChild(el("small", "fyou", "yours"));
+        r.append(nm, el("b", "", (x.t.avg != null ? fmtS(x.t.avg) + " \u00B7 " : "") + x.t.cups + (x.t.cups === 1 ? " cup" : " cups"))); g.appendChild(r);
+      });
+      if (rest.length) { const cs = el("div", "fchips"); rest.forEach(x => cs.appendChild(el("span", "fchip", x.n))); if (got.length) cs.prepend(el("span", "fto", "To find:")); g.appendChild(cs); }
+      det.appendChild(g);
     });
   }
   show();
