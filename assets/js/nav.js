@@ -1,7 +1,8 @@
 /* Top bar (search, the logo, quick buttons), shared by every page. Opened from the home screen (the app): a bar at the bottom
    as on the iPhone (Home, three of your choice, More). In a browser (the website): the menu at the top left, as before. plus the Alto Andino wordmark,
    breadcrumbs and previous/next links in the book chapters.
-   Add <script src="PATH/assets/js/nav.js" defer></script> to a page to get it.
+   Add <script src="PATH/assets/js/nav.js?v=N" defer></script> to a page to get it (raise N on every page when this file changes,
+   so phones do not keep an old copy).
    To rename a section or add a menu entry, change the lists right below.
    Any element with data-wordmark becomes the Alto Andino wordmark, any element with data-mark the mountain logo. */
 (function () {
@@ -78,15 +79,16 @@
     ".topnav .side{display:flex;align-items:center;gap:4px}.topnav .side.r{justify-content:flex-end}" +
     ".topnav .iconbtn[hidden]{display:none}" +
     // the bar at the bottom: Home, three of your choice (Settings), More; flat, the page you are on in the brand colour
-    ".tbar{position:fixed;left:0;right:0;bottom:0;z-index:55;background:var(--bg,#fff);border-top:1px solid var(--line,#ccc);padding:5px 6px calc(env(safe-area-inset-bottom,0px) + 4px);transition:opacity .5s}" +
+    // it floats, as in WhatsApp or Instagram, but flat: a capsule with a thin line, no shadow, no glass
+    ".tbar{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);z-index:55;max-width:520px;margin:0 auto;background:var(--card,#fff);border:1px solid var(--line,#ccc);border-radius:999px;padding:5px 6px;transition:opacity .5s}" +
     "html.intro .tbar{opacity:0}body.kbd .tbar{display:none}" +
-    ".tbar .tbrow{display:grid;grid-template-columns:repeat(5,1fr);max-width:560px;margin:0 auto}" +
-    ".tbar a,.tbar button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:3px 0 2px;min-height:50px;border:0;background:none;color:var(--mut,#666);text-decoration:none;font:500 10.5px/1.2 system-ui,-apple-system,sans-serif;letter-spacing:.01em;cursor:pointer;-webkit-tap-highlight-color:transparent}" +
+    ".tbar .tbrow{display:grid;grid-template-columns:repeat(5,1fr);gap:2px}" +
+    ".tbar a,.tbar button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 3px;min-height:50px;border:0;border-radius:999px;background:none;color:var(--mut,#666);text-decoration:none;font:500 10.5px/1.2 system-ui,-apple-system,sans-serif;letter-spacing:.01em;cursor:pointer;-webkit-tap-highlight-color:transparent}" +
     ".tbar .tbi{display:grid;place-items:center;height:32px}" +
-    ".tbar [aria-current],.tbar .tbon{color:var(--brand,#6B4A2E)}.tbar [aria-current] svg,.tbar .tbon svg{stroke-width:2.1}" +
-    ".tbar .tbmid .tbi{width:52px;border-radius:999px;background:var(--act,#4A2F1C);color:var(--on-act,#fff)}.tbar .tbmid{color:var(--ink,#222)}" +
+    ".tbar [aria-current],.tbar .tbon{color:var(--brand,#6B4A2E);background:color-mix(in srgb,var(--brand,#6B4A2E) 10%,transparent)}.tbar .tbmid[aria-current]{background:none}.tbar.tbopen [aria-current]:not(.tbmid){background:none;color:var(--mut,#666)}.tbar.tbopen [aria-current] svg{stroke-width:1.6}.tbar [data-k=more] svg{stroke-width:3.4!important}.tbar [aria-current] svg,.tbar .tbon svg{stroke-width:2.1}" +
+    ".tbar .tbmid .tbi{width:50px;border-radius:999px;background:var(--act,#4A2F1C);color:var(--on-act,#fff)}.tbar .tbmid{color:var(--ink,#222)}" +
     ".tbar a:focus-visible,.tbar button:focus-visible{outline:2px solid currentColor;outline-offset:-2px;border-radius:10px}" +
-    "body.hasbar{padding-bottom:64px}" +
+    "body.hasbar{padding-bottom:84px}" +
     "@media (max-width:350px){.topnav .lockup>span{display:none}}" +   // very small phones: the mountain only, so all four buttons fit
     ".topnav .iconbtn{width:44px;height:44px;display:grid;place-items:center;background:none;border:0;color:var(--brand,#6B4A2E);cursor:pointer;border-radius:8px;text-decoration:none;flex:none}" +
     ".topnav .where{display:flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:0 4px;color:inherit;text-decoration:none}" +
@@ -98,7 +100,7 @@
     ".navback.on{opacity:1}" +
     "#navmenu.drop{position:absolute;left:8px;right:8px;top:calc(100% + 6px);max-width:380px;background:var(--card,#fff);border:1px solid var(--line,#ccc);border-radius:16px;box-shadow:0 14px 36px rgba(20,14,10,.22);padding:8px;max-height:calc(100vh - 80px);overflow:auto}" +
     ".navback.drop{z-index:40}" +
-    "#navmenu.sheet{position:fixed;left:0;right:0;bottom:0;z-index:54;max-width:560px;margin:0 auto;background:var(--card,#fff);border:1px solid var(--line,#ccc);border-bottom:0;border-radius:18px 18px 0 0;padding:8px 12px calc(env(safe-area-inset-bottom,0px) + 72px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - 70px);overflow:auto;overscroll-behavior:contain}" +
+    "#navmenu.sheet{position:fixed;left:0;right:0;bottom:0;z-index:54;max-width:560px;margin:0 auto;background:var(--card,#fff);border:1px solid var(--line,#ccc);border-bottom:0;border-radius:18px 18px 0 0;padding:8px 12px calc(env(safe-area-inset-bottom,0px) + 86px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - 70px);overflow:auto;overscroll-behavior:contain}" +
     "#navmenu .grab{width:38px;height:5px;border-radius:3px;background:var(--line,#ccc);margin:2px auto 8px}" +
     "#navmenu .mh{margin:0 8px 4px;font:400 22px/1.3 Georgia,\"Times New Roman\",serif;color:var(--ink,#222)}" +
     "#navmenu[hidden],#navmenu [hidden]{display:none}" +
@@ -187,7 +189,7 @@
     btn.appendChild(svgEl(24, function (s) { s.appendChild(pathEl(ICON_MENU)); })); left.appendChild(btn);
   }
   var inBar = isApp ? tabsGet() : [];
-  // 🔍   ALTO ANDINO   (cup+) 🧮 : log a brew and the calculator from anywhere, unless they are in the bar at the bottom
+  // (☰) 🧮   ALTO ANDINO   (cup+) 🔍 : log a brew and the calculator from anywhere, unless they are in the bar at the bottom
   var lb = document.createElement("a");
   lb.className = "iconbtn logbtn"; lb.href = root + "journal/index.html#log"; lb.setAttribute("aria-label", "Log a brew"); lb.title = "Log a brew";
   lb.appendChild(icon("log", 24)); lb.firstChild.setAttribute("stroke-width", "1.5");   // a bit lighter than the menu lines: the cup and the calculator have more lines, so they looked bolder
@@ -199,14 +201,14 @@
   if (!isCalc) {   // shortcut to the calculator, on every page (unless it is in the bar)
     cb = document.createElement("a");
     cb.className = "iconbtn"; cb.href = root + "calc/index.html"; cb.setAttribute("aria-label", "Calculator"); cb.title = "Calculator";
-    cb.appendChild(icon("calc", 24)); right.appendChild(cb);
+    cb.appendChild(icon("calc", 24)); left.appendChild(cb);   // on the left, so the logo stays in the middle
     cb.firstChild.setAttribute("stroke-width", "1.5");
   }
   // Search, on every page: pages, your coffees, devices, drinks, processes and calculator recipes
   var sb = document.createElement("button");
   sb.className = "iconbtn"; sb.type = "button"; sb.setAttribute("aria-label", "Search"); sb.title = "Search";
   sb.appendChild(svgEl(23, function (s) { s.appendChild(pathEl("M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z M16 16l5 5")); }));
-  left.appendChild(sb);
+  right.appendChild(sb);   // search at the right end, as in iPhone apps
   sb.addEventListener("click", function () { openSearch(); });
   // the logo in the middle takes you home too
 
@@ -249,8 +251,8 @@
   var tbar = document.createElement("nav"); tbar.className = "tbar"; tbar.setAttribute("aria-label", "Main");
   var trow = document.createElement("div"); trow.className = "tbrow"; tbar.appendChild(trow);
   function tab(el, key, label, ic) {
-    var i = document.createElement("span"); i.className = "tbi"; i.appendChild(key === "more" ? svgEl(25, function (s) { s.setAttribute("stroke-width", "3"); s.appendChild(pathEl("M5 12h.01M12 12h.01M19 12h.01")); }) : icon(ic, key === "log" ? 22 : 25));
-    if (key !== "log") i.firstChild.setAttribute("stroke-width", "1.6");
+    var i = document.createElement("span"); i.className = "tbi"; i.appendChild(key === "more" ? svgEl(25, function (s) { s.setAttribute("stroke-width", "3.4"); s.appendChild(pathEl("M5 12h.01M12 12h.01M19 12h.01")); }) : icon(ic, key === "log" ? 22 : 25));
+    if (key !== "log" && key !== "more") i.firstChild.setAttribute("stroke-width", "1.6");
     var t = document.createElement("span"); t.textContent = label; el.appendChild(i); el.appendChild(t); el.dataset.k = key;
     if (key === "log") el.className = "tbmid";
     trow.appendChild(el); return el;
@@ -277,6 +279,7 @@
       if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     });
     btn.classList.toggle("tbon", !hit || !menu.hidden);   // a page from More (Settings, Feedback ...): More is lit
+    tbar.classList.toggle("tbopen", !menu.hidden);   // More open: only More is lit
   }
   if (isApp) { document.body.appendChild(tbar); document.body.classList.add("hasbar"); }
   // typing: the bar makes room for the keyboard
