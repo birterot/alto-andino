@@ -329,7 +329,10 @@ details.calcbox[open] summary small{display:none}
 .dvrow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px}
 .dvrow button,.modes button{font:inherit;font-size:14px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
 .dvrow button{display:inline-flex;align-items:center;gap:7px;padding-left:11px}.dvrow button svg{flex:none;width:20px;height:20px}
-.dvrow.devchips{flex-wrap:nowrap;overflow-x:auto;margin:6px -16px 4px;padding:2px 16px 4px;scrollbar-width:none}.dvrow.devchips::-webkit-scrollbar{display:none}.dvrow.devchips button{flex:none;white-space:nowrap}.devsel{display:none!important}
+/* the devices as one row to swipe through, the same in Log a brew, the brew form and Trends */
+.dvrow.devchips,#devrow{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.dvrow.devchips::-webkit-scrollbar,#devrow::-webkit-scrollbar{display:none}
+.dvrow.devchips button,#devrow button{flex:none;white-space:nowrap}
+.dvrow.devchips{margin:6px -16px 4px;padding:2px 16px 4px}#devrow{margin:8px -20px 16px;padding:2px 20px 4px}.devsel{display:none!important}
 .dvrow button.on,.modes button.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
 .modes{display:flex;gap:8px;margin:8px 0 4px}
 details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:var(--bg)}
@@ -3341,6 +3344,15 @@ function renderPick() {
   if (!logDev || !devs.includes(logDev)) logDev = devs.includes(store.get("alto.device")) ? store.get("alto.device") : (devs.includes("Manual espresso machine") ? "Manual espresso machine" : devs[0]);
   const row = $("devrow"); row.textContent = "";
   devs.slice().sort((x, y) => (typeOf(y) === "espresso") - (typeOf(x) === "espresso")).forEach(d => { const b = el("button", d === logDev ? "on" : ""); if (window.DEVICONS) b.appendChild(DEVICONS.svg(d, typeOf(d))); b.appendChild(document.createTextNode(d)); b.type = "button"; b.onclick = () => { logDev = d; renderPick(); }; row.appendChild(b); });
+  { const sx = row.dataset.sx; const lit = row.querySelector(".on");   // the row stays where you swiped it; the first time, the chosen one in sight
+    row.onscroll = null;
+    requestAnimationFrame(() => {
+      const x0 = row.firstElementChild ? row.firstElementChild.offsetLeft : 0, at = lit ? lit.offsetLeft - x0 : 0, w = lit ? lit.offsetWidth : 0;
+      let x = sx != null ? Number(sx) : at;
+      if (lit && (at < x || at + w > x + row.clientWidth - 2 * x0)) x = at;   // the chosen one always in sight
+      row.scrollLeft = Math.max(0, x); row.dataset.sx = row.scrollLeft;
+      row.onscroll = () => { row.dataset.sx = row.scrollLeft; };
+    }); }
   const box = $("picklist"); box.textContent = "";
   const dev = logMode === "device" ? logDev : null, t = dev ? typeOf(dev) : "";
   const go = c => { location.hash = "c=" + c.id + (dev ? "&d=" + encodeURIComponent(dev) : "") + "&new"; };
