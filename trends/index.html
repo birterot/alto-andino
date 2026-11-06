@@ -27,6 +27,12 @@
 .tabs{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:none;margin:16px -20px 0;padding:0 20px 2px;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tabs .tab{flex:none}
+/* the device filter: small pills with the device's icon, a row to swipe (smaller and filled, unlike the tabs above) */
+.ctl .fdevs{flex:1 1 100%;display:flex;gap:6px;overflow-x:auto;margin:0 -20px;padding:0 20px 2px;scrollbar-width:none;order:0}.ctl .fdevs::-webkit-scrollbar{display:none}
+.ctl .fdevs button{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:34px;max-width:none;padding:0 12px 0 9px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;white-space:nowrap;cursor:pointer}
+.ctl .fdevs button svg{flex:none;width:18px;height:18px}
+.ctl .fdevs button.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
+.devsel{display:none!important}.ctl .fdevs[hidden]{display:none}
 .ctl{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 18px}
 .ctl select,.ctl button{font:inherit;font-size:14.5px;min-height:42px;border-radius:999px;border:1px solid var(--line);color:var(--ink);background-color:var(--card);min-width:0;flex:1 1 150px;max-width:100%}
 #f-coffee{flex-basis:100%}
@@ -293,7 +299,8 @@ th{color:var(--mut);font-weight:500}
 
 <div class="ctl" id="filters">
   <select id="f-coffee" aria-label="Coffee"></select>
-  <select id="f-device" aria-label="Device"></select>
+  <div class="fdevs" id="f-devchips" role="group" aria-label="Device"></div>
+  <select id="f-device" class="devsel" aria-label="Device" tabindex="-1"></select>
   <select id="f-grinder" aria-label="Grinder" hidden></select>
   <select id="f-who" aria-label="Made by"></select>
   <select id="f-rater" aria-label="Rated by"></select>
@@ -308,7 +315,7 @@ th{color:var(--mut);font-weight:500}
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script src="../assets/js/config.js"></script>
-<script src="../assets/js/nav.js?v=6" defer></script>
+<script src="../assets/js/nav.js?v=7" defer></script>
 <script src="../assets/js/scales.js"></script>
 <script src="../assets/js/stars.js"></script>
 <script src="../data/devices.js"></script>
@@ -318,7 +325,7 @@ th{color:var(--mut);font-weight:500}
 <script src="../assets/js/people.js"></script>
 <script src="../assets/js/caffeine.js"></script>
 <script src="../assets/js/charts.js"></script>
-<script src="../assets/js/devicons.js"></script>
+<script src="../assets/js/devicons.js?v=2"></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
 const $ = id => document.getElementById(id);
@@ -1658,7 +1665,7 @@ function fillFilters() {
   if (!cs.length) { const o = el("option", "", "No coffees with brews"); o.value = ""; csel.appendChild(o); }
   csel.value = state.coffee;
   const devs = [...new Set(state.brews.map(b => b.device).filter(Boolean))].sort();
-  state.device = fill("f-device", "All devices", devs.map(d => [d, d]), state.device);
+  state.device = fill("f-device", "All devices", devs.map(d => [d, d]), state.device); drawDevFilter();
   const grs = [...new Set(state.brews.map(b => b.grinder).filter(Boolean))].sort();
   state.grinderF = fill("f-grinder", "All grinders", grs.map(g => [g, g]), state.grinderF);
   $("f-grinder").hidden = grs.length < 2;
@@ -1780,7 +1787,19 @@ function leaveDemo() {
 const saved = ({ time: "coffee", dial: "coffee", ins: "taste" })[store.get("alto.trends.view")] || store.get("alto.trends.view"); if (VIEWS[saved]) state.view = saved;
 document.querySelectorAll(".tabs .tab").forEach(t => { t.onclick = () => { state.view = t.dataset.v; store.set("alto.trends.view", state.view); render(); }; });
 $("f-coffee").onchange = () => { state.coffee = $("f-coffee").value; state.recipe = ""; render(); };
-$("f-device").onchange = () => { state.device = $("f-device").value; render(); };
+$("f-device").onchange = () => { state.device = $("f-device").value; drawDevFilter(); render(); };
+// the device filter as pills with icons (the menu behind keeps the value); hidden with fewer than two devices
+function drawDevFilter() {
+  const s = $("f-device"), box = $("f-devchips"); box.textContent = "";
+  const opts = [...s.options]; box.hidden = opts.length < 3;
+  opts.forEach(o => {
+    const on = s.value === o.value, b = el("button", on ? "on" : ""); b.type = "button"; b.setAttribute("aria-pressed", String(on));
+    if (o.value) b.appendChild(devIcon(o.value)); b.appendChild(document.createTextNode(o.value ? o.textContent : "All devices"));
+    b.onclick = () => { if (s.value === o.value) return; s.value = o.value; s.dispatchEvent(new Event("change")); };
+    box.appendChild(b);
+  });
+  const lit = box.querySelector(".on"); if (lit && lit.previousElementSibling) requestAnimationFrame(() => { box.scrollLeft = Math.max(0, lit.offsetLeft - box.firstElementChild.offsetLeft); });
+}
 $("f-grinder").onchange = () => { state.grinderF = $("f-grinder").value; state.grinder = state.grinderF; render(); };
 $("f-who").onchange = () => { state.who = $("f-who").value; render(); };
 $("f-rater").onchange = () => { state.rater = $("f-rater").value; render(); };
