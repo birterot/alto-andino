@@ -159,7 +159,7 @@ window.ALTO_FEED = (function () {
         if (ids.length) {
           const [rb, rc] = await Promise.all([
             (rg ? db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,note,created_at)").in("coffee_id", ids).gte("brewed_at", rg.a.toISOString()).lt("brewed_at", rg.b.toISOString()).order("brewed_at", { ascending: false }).limit(1000)
-              : db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,note,created_at)").in("coffee_id", ids).order("brewed_at", { ascending: false }).limit((open ? feedN : 8) + 1)),
+              : db.from("brews").select("*, brew_ratings(id,rater_id,is_guest,guest_name,rating,balance,drink,milk,note,created_at)").in("coffee_id", ids).order("brewed_at", { ascending: false }).limit((open ? feedN : 10) + 1)),
             db.from("cuppings").select("session_id,coffee_id,cupped_at,cupper_id,is_guest,guest_name,total").in("coffee_id", ids).order("cupped_at", { ascending: false }).limit(open ? 500 : 20)
           ]);
           if (my !== feedId) return;
@@ -168,7 +168,7 @@ window.ALTO_FEED = (function () {
         }
         drawWeek(ids, byId, my);
         // only as far back as the brews go: older coffees and cuppings come with "Show older"
-        const n0 = open ? feedN : 8; feedMore = !rg && brews.length > n0; if (feedMore) brews = brews.slice(0, n0);
+        const n0 = open ? feedN : 10; feedMore = !rg && brews.length > n0; if (feedMore) brews = brews.slice(0, n0);
         const cutoff = feedMore ? new Date(brews[brews.length - 1].brewed_at) : null;
         const items = [];
         brews.forEach(b => items.push({ k: "brew", t: new Date(b.brewed_at), b, c: byId[b.coffee_id], who: [b.made_by || b.created_by, ...(b.brew_ratings || []).filter(r => !r.is_guest).map(r => r.rater_id)] }));
@@ -203,10 +203,8 @@ window.ALTO_FEED = (function () {
         const list = feedItems.filter(x => (!kind || KIND[kind].includes(x.k)) && (!who || x.who.includes(who)));
         const box = $("feed"); box.textContent = "";
         $("rmore").hidden = !feedMore || !open;
-        if (!open) {   // folded: the newest entries, two brews at most (not the cup waiting for your stars: Home has a note for it)
-          let nb = 0;
-          const few = feedItems.filter(x => !(x.k === "brew" && tastersOf(x.b).some(t => !t.guest && me && t.rater_id === me.id && isPending(t))))
-            .filter(x => { if (x.k !== "brew") return true; nb++; return nb <= 2; }).slice(0, 3);
+        if (!open) {   // folded: the five newest entries (not the cup waiting for your stars: Home has a note for it)
+          const few = feedItems.filter(x => !(x.k === "brew" && tastersOf(x.b).some(t => !t.guest && me && t.rater_id === me.id && isPending(t)))).slice(0, 5);
           if (!few.length) { box.appendChild(el("p", "hint", "Nothing here yet. Brews, new coffees and bags, and cuppings show up here, newest first.")); return; }
           let d0 = ""; few.forEach(x => { const dk = x.t.toDateString(); if (dk !== d0) { d0 = dk; box.appendChild(el("h3", "day", dayLabel(x.t))); } box.appendChild(feedCard(x)); });
           return;
