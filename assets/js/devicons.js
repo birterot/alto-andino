@@ -5,6 +5,7 @@
 window.DEVICONS = (function () {
   var P = {
     lever: "M3.5 21h15 M16 21V6 M17.5 6.8L5.5 2.8 M5.5 2.8L3 2 M10.25 4.6V8 M12.25 10.5H16 M8.25 8h4v6.5h-4z M9.25 14.5l.5 2h1l.5-2",   // a lever press (Flair): post, lever, chamber with its spout
+    auto: "M5.5 7h13v13.5h-13z M8.5 7l1-4h5l1 4 M8 9.75h4.5v2.5H8z M15 11h1.5 M8.5 15h7v5.5 M8.5 15v5.5 M12 15v1.75",   // fully automatic: a closed box with the bean hopper on top, a display, the cup under its spout
     espresso: "M3.5 3h17v6h-17z M5 9v10.5 M19 9v10.5 M3.5 19.5h17 M9.5 9h5v2h-5z M14.5 10h3.5 M11 11v1.5 M13 11v1.5 M8 16.5h8",   // a machine with its group head, portafilter and drip tray
     chemex: "M6.5 3h11L13.4 11 17.5 21h-11l4.1-10L6.5 3z M9.6 9.5h4.8 M9.9 12.5h4.2 M12 12.5v-3",   // an hourglass with the wooden collar in its waist
     filter: "M4 5h16l-6 9h-4L4 5z M12 14v3 M7 20h10",   // a dripper
@@ -16,11 +17,12 @@ window.DEVICONS = (function () {
   function key(name, type) {
     var n = name || "";
     if (/cold ?brew/i.test(n)) return "cold";
-    if (/manual espresso|lever|flair/i.test(n)) return "lever";
+    if (/manual espresso|\blever\b|flair/i.test(n)) return "lever";   // (not "Clever": a word on its own)
     if (/chemex/i.test(n)) return "chemex";
     if (/aero ?press/i.test(n)) return "aero";
     if (/french press/i.test(n)) return "immersion";
     if (/moka/i.test(n)) return "moka";
+    if (/fully automatic|bean.?to.?cup|super.?automatic|vollautomat/i.test(n)) return "auto";   // apart from the semi-automatic, which has the portafilter
     return ({ espresso: "espresso", filter: "filter", immersion: "immersion", moka: "moka" })[type] || "filter";
   }
   function svg(name, type, cls) {

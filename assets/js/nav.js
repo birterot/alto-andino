@@ -86,6 +86,8 @@
     // the bar at the bottom: Home, three of your choice (Settings), More; flat, the page you are on in the brand colour
     // it floats, as in WhatsApp or Instagram, but flat: a capsule with a thin line, no shadow, no glass
     ".tbar{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);z-index:55;max-width:520px;margin:0 auto;background:var(--card,#fff);border:1px solid var(--line,#ccc);border-radius:999px;padding:5px 6px;transition:opacity .5s}" +
+    // a little see-through, the page softly blurred behind it, as on the iPhone (still flat: no shadow); solid where blur is not known
+    "@supports ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){.tbar{background:color-mix(in srgb,var(--card,#fff) 72%,transparent);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5)}}" +
     "html.intro .tbar{opacity:0}body.kbd .tbar{display:none}" +
     ".tbar .tbrow{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:2px}" +
     // one soft capsule under the lit button, sliding over when you tap another (as in iPhone apps)

@@ -291,6 +291,7 @@ input:disabled{background:var(--bg);cursor:not-allowed}
 details.calcbox{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:var(--bg)}
 .when{margin:14px 0 4px}
 .when .wl{display:block;font-size:13.5px;color:var(--mut)}
+.devf{margin:14px 0 0}.devf .wl{display:block;font-size:13.5px;color:var(--mut)}.devf .devnew{margin-top:6px}.devf .devnew:has(input[hidden]){display:none}
 .wchips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
 .wchips button{font:inherit;font-size:14px;min-height:36px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
 .wchips button.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
@@ -327,6 +328,11 @@ details.calcbox[open] summary small{display:none}
 .calcacts .reset{margin:0}
 .dvrow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px}
 .dvrow button,.modes button{font:inherit;font-size:14px;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.dvrow button{display:inline-flex;align-items:center;gap:7px;padding-left:11px}.dvrow button svg{flex:none;width:20px;height:20px}
+/* the devices as one row to swipe through, the same in Log a brew, the brew form and Trends */
+.dvrow.devchips,#devrow{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.dvrow.devchips::-webkit-scrollbar,#devrow::-webkit-scrollbar{display:none}
+.dvrow.devchips button,#devrow button{flex:none;white-space:nowrap}
+.dvrow.devchips{margin:6px -16px 4px;padding:2px 16px 4px}#devrow{margin:8px -20px 16px;padding:2px 20px 4px}.devsel{display:none!important}
 .dvrow button.on,.modes button.on{background:var(--act);border-color:var(--act);color:var(--on-act)}
 .modes{display:flex;gap:8px;margin:8px 0 4px}
 details.add.how{max-width:420px;margin:14px 0 6px;padding:12px 14px;background:var(--bg)}
@@ -659,10 +665,11 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
           <div class="wchips" id="wchips"></div>
           <input type="datetime-local" id="b-when" aria-label="When you had the coffee" hidden>
         </div>
-        <label>Device
-          <select id="b-device"></select>
-          <input id="b-device-new" placeholder="Name of the new device" hidden>
-        </label>
+        <div class="devf"><span class="wl" id="devl">Device</span>
+          <div class="dvrow devchips" id="b-devchips" role="group" aria-labelledby="devl"></div>
+          <select id="b-device" class="devsel" aria-labelledby="devl" tabindex="-1"></select>
+          <label class="devnew"><input id="b-device-new" placeholder="Name of the new device" aria-label="Name of the new device" hidden></label>
+        </div>
         <details class="add how" id="howbox" hidden><summary id="howsum">How to brew</summary><div id="howbody"></div></details>
         <details class="add calcbox adv" id="calcbox">
           <summary>Plan with the calculator <small id="calcsum"></small></summary>
@@ -821,12 +828,12 @@ try { if (!Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-tok
 <script src="../data/processing.js"></script>
 <script src="../data/defaults.js"></script>
 <script src="../data/flavours.js"></script>
-<script src="../assets/js/devicons.js"></script>
+<script src="../assets/js/devicons.js?v=2"></script>
 <script src="../assets/js/people.js"></script>
 <script src="../data/drinks.js"></script>
 <script src="../assets/js/calcui.js"></script>
 <script src="../assets/js/photoview.js"></script>
-<script src="../assets/js/nav.js?v=6" defer></script>
+<script src="../assets/js/nav.js?v=7" defer></script>
 <script>
 const db = supabase.createClient(SUPA.url, SUPA.key);
 const $ = id => document.getElementById(id);
@@ -863,6 +870,25 @@ function fill(id, base, used, fixed) {   // fixed: only the base list, no "Other
   base.forEach(x => add(x));
   if (!fixed) { used.filter(x => !base.includes(x)).sort().forEach(x => add(x)); add("__other", "Other (add new)..."); }
   s.value = [...s.options].some(o => o.value === keep) ? keep : "";
+}
+// The device in the brew form as pills with their icons; the menu behind them keeps the value (set it, then drawDevChips)
+const PLUS = "M12 5v14 M5 12h14";
+function drawDevChips() {
+  const s = $("b-device"), box = $("b-devchips"); if (!box) return;
+  // the same pills as before: only which one is lit changes (rebuilt, a tap that starts while a field loses focus got lost)
+  const want = [...s.options].filter(o => !(o.value === "" && s.value !== "")).map(o => o.value).join("|");
+  if (box.dataset.k === want) { [...box.children].forEach(b => { const on = b.dataset.v === s.value; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); }); return; }
+  box.dataset.k = want; box.textContent = "";
+  const rank = o => (o.value === "__other" ? 3 : o.value === "" ? 2 : typeOf(o.value) === "espresso" ? 0 : 1);   // espresso first, as in Log a brew
+  [...s.options].map((o, i) => [o, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]).forEach(o => {
+    if (o.value === "" && s.value !== "") return;   // "Unknown" only while it is the one (an old brew without a device)
+    const on = s.value === o.value, b = el("button", on ? "on" : ""); b.type = "button"; b.dataset.v = o.value; b.setAttribute("aria-pressed", String(on));
+    if (o.value === "__other") { const i = document.createElementNS("http://www.w3.org/2000/svg", "svg"); i.setAttribute("viewBox", "0 0 24 24"); i.setAttribute("fill", "none"); i.setAttribute("stroke", "currentColor"); i.setAttribute("stroke-width", "1.6"); i.setAttribute("stroke-linecap", "round"); i.setAttribute("aria-hidden", "true"); const pa = document.createElementNS("http://www.w3.org/2000/svg", "path"); pa.setAttribute("d", PLUS); i.appendChild(pa); b.appendChild(i); b.appendChild(document.createTextNode("Another device")); }
+    else { if (o.value && window.DEVICONS) b.appendChild(DEVICONS.svg(o.value, typeOf(o.value))); b.appendChild(document.createTextNode(o.text)); }
+    b.onclick = () => { if (s.value === o.value) return; s.value = o.value; s.dispatchEvent(new Event("change")); drawDevChips(); if (o.value === "__other") $("b-device-new").focus(); };
+    box.appendChild(b);
+  });
+  const on = box.querySelector(".on"); if (on) requestAnimationFrame(() => { box.scrollLeft = Math.max(0, on.offsetLeft - box.firstElementChild.offsetLeft); });   // one row to swipe through: the chosen one in sight
 }
 function otherBox(id) {
   const s = $(id), t = $(id + "-new");
@@ -2726,6 +2752,7 @@ function renderHow() {
 }
 $("howbox").addEventListener("toggle", () => store.set("alto.howopen", $("howbox").open ? "1" : ""));
 function applyType() {
+  drawDevChips();
   renderHow(); if (store.get("alto.howopen") === "1" && !$("howbox").hidden) $("howbox").open = true;
   const esp = isEsp(typeOf(chosen("b-device")));
   ["b-pressure", "b-pibar", "b-pis"].forEach(id => {
@@ -2817,7 +2844,7 @@ function restoreDraft() {
   if (!d || !d.f || Date.now() - d.t > 7 * 864e5) return false;
   (d.notes || []).forEach(addNote);
   BF.forEach(i => { if (d.f[i] == null) return; if (i === "b-device" || i === "b-grinder") setSel(i, d.f[i]); else $(i).value = d.f[i]; });
-  $("b-device-new").hidden = $("b-device").value !== "__other";
+  $("b-device-new").hidden = $("b-device").value !== "__other"; drawDevChips();
   $("b-dialin").checked = !!d.dial;
   prof = Array.isArray(d.prof) ? d.prof : []; renderProf();
   touched = new Set(d.touched || []); edited = true; delete $("b-when").dataset.q; renderWhen();
@@ -3316,7 +3343,16 @@ function renderPick() {
   const devs = deviceList();
   if (!logDev || !devs.includes(logDev)) logDev = devs.includes(store.get("alto.device")) ? store.get("alto.device") : (devs.includes("Manual espresso machine") ? "Manual espresso machine" : devs[0]);
   const row = $("devrow"); row.textContent = "";
-  devs.slice().sort((x, y) => (typeOf(y) === "espresso") - (typeOf(x) === "espresso")).forEach(d => { const b = el("button", d === logDev ? "on" : "", d); b.type = "button"; b.onclick = () => { logDev = d; renderPick(); }; row.appendChild(b); });
+  devs.slice().sort((x, y) => (typeOf(y) === "espresso") - (typeOf(x) === "espresso")).forEach(d => { const b = el("button", d === logDev ? "on" : ""); if (window.DEVICONS) b.appendChild(DEVICONS.svg(d, typeOf(d))); b.appendChild(document.createTextNode(d)); b.type = "button"; b.onclick = () => { logDev = d; renderPick(); }; row.appendChild(b); });
+  { const sx = row.dataset.sx; const lit = row.querySelector(".on");   // the row stays where you swiped it; the first time, the chosen one in sight
+    row.onscroll = null;
+    requestAnimationFrame(() => {
+      const x0 = row.firstElementChild ? row.firstElementChild.offsetLeft : 0, at = lit ? lit.offsetLeft - x0 : 0, w = lit ? lit.offsetWidth : 0;
+      let x = sx != null ? Number(sx) : at;
+      if (lit && (at < x || at + w > x + row.clientWidth - 2 * x0)) x = at;   // the chosen one always in sight
+      row.scrollLeft = Math.max(0, x); row.dataset.sx = row.scrollLeft;
+      row.onscroll = () => { row.dataset.sx = row.scrollLeft; };
+    }); }
   const box = $("picklist"); box.textContent = "";
   const dev = logMode === "device" ? logDev : null, t = dev ? typeOf(dev) : "";
   const go = c => { location.hash = "c=" + c.id + (dev ? "&d=" + encodeURIComponent(dev) : "") + "&new"; };
@@ -3363,7 +3399,7 @@ async function openCoffee(id, dev, wantForm, rid) {
   // devices you do not own (ticked in Settings) stay out, even if used for this coffee before; your own names ("French press (1 l)") stay in
   const std = deviceList(true), devs = deviceList(), owns = devs.length < std.length;
   fill("b-device", devs, [...new Set((dv || []).map(b => DEV_OLD[b.device] || b.device).filter(Boolean))].filter(d => !owns || !std.includes(d)));
-  otherBox("b-device");
+  otherBox("b-device"); drawDevChips();
   newBrewSetup(dev);
   // From "Brews" on a card: the form stays folded into one line, so the brews are right below the coffee.
   // From "Log a brew" (or with an unsaved draft): the form is open.
