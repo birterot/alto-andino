@@ -1160,27 +1160,28 @@ function sweetSpot() {
 // ---------- 6 + 7 + 8: us ----------
 // ---------- the barista ranking: fair, on the same coffees, as a little race ----------
 function baristaRace(list, ppl) {
-  const m = card("Barista ranking", "Fair, on the same coffees: on every coffee more than one of you brewed, your stars against the household's average for it (everyone counts the same, however often they brew it). So a tricky coffee, or experimenting a lot, does not count against you. A lead grows with every coffee you both brew: at the start everyone is close to level, and faded lanes are still early. Dial-ins are left out. Your stars under each name are weighted the same way: coffee by coffee, starting at the household's usual stars.");
+  const m = card("Barista ranking", "Fair, on the same coffees: on every coffee more than one of you brewed, your stars against the household's average for it (everyone counts the same, however often they brew it). So a tricky coffee, or experimenting a lot, does not count against you. A lead grows with every coffee you both brew: at the start everyone is close to level, and faded lanes are still early. Under 0.2\u2605 it is neck and neck, as that can still be luck. Dial-ins are left out. Your stars under each name are weighted the same way: coffee by coffee, starting at the household's usual stars.");
   m.querySelector("h2").prepend(ic("trophy", "h2i"));
   if (!ppl.length) { empty(m, "Brews show up here once they have a \u201CMade by\u201D."); return; }
   const rated = list.filter(b => b.rating != null && !b.dialin && b.who);
   const byC = {}; rated.forEach(b => (byC[grpOf(b)] = byC[grpOf(b)] || []).push(b));
-  // per coffee more than one of you brewed: how far your stars are from the household's average for it. Weighted:
-  // a coffee counts n/(n+2) by your brews of it (1 brew a third, 4 brews two thirds), and everyone starts level, as if
-  // one coffee at exactly average sat there already, so a lead grows over several coffees
+  // per coffee more than one of you brewed: how far your stars are from the household's average for it. Weighted by
+  // how many cups both sides made of it (yours against everyone else's: 1 and 1 counts 0.5, 4 and 4 counts 2, 20 and 2
+  // counts 1.8), so with two of you, one's lead is exactly the other's gap. Everyone starts level, as if 2 such cups
+  // with no difference sat there already, so a lead grows with every coffee you both brew
   const dev = {};
   Object.values(byC).forEach(xs => {
     const per = {}; xs.forEach(b => (per[b.who] = per[b.who] || []).push(b.rating));
     if (Object.keys(per).length < 2) return;   // only coffees more than one of you brewed
     const bar = avg(Object.values(per).map(avg));   // every barista counts once for the coffee's average
-    Object.keys(per).forEach(who => { const a = per[who], w = a.length / (a.length + 2), d = avg(a) - bar, o = dev[who] = dev[who] || { s: 0, w: 0, raw: 0, n: 0, c: 0 };
+    Object.keys(per).forEach(who => { const a = per[who], rest = xs.length - a.length, w = a.length * rest / (a.length + rest), d = avg(a) - bar, o = dev[who] = dev[who] || { s: 0, w: 0, raw: 0, n: 0, c: 0 };
       o.s += w * d; o.w += w; o.raw += a.length * d; o.n += a.length; o.c++; });
   });
   const hhAll = avg(rated.map(b => b.rating));
   const rows = ppl.map(id => {
     const mine = rated.filter(b => b.who === id), st = mine.map(b => b.rating), d = dev[id];
     const ws = st.length ? shrunkBy(mine.map(b => [grpOf(b), b.rating]), hhAll) : null;   // your stars, weighted coffee by coffee (see shrunkBy)
-    return { id, brews: list.filter(b => b.who === id).length, rated: st.length, stars: ws && ws.value, plain: ws && ws.raw, sEarly: !ws || ws.early, score: d ? d.s / (d.w + 1) : null, raw: d ? d.raw / d.n : null, cmp: d ? d.n : 0, cc: d ? d.c : 0, early: !d || d.w < 1, best: st.length ? Math.max(...st) : null };
+    return { id, brews: list.filter(b => b.who === id).length, rated: st.length, stars: ws && ws.value, plain: ws && ws.raw, sEarly: !ws || ws.early, score: d ? d.s / (d.w + 2) : null, raw: d ? d.raw / d.n : null, cmp: d ? d.n : 0, cc: d ? d.c : 0, early: !d || d.w < 2, best: st.length ? Math.max(...st) : null };
   });
   const fair = rows.filter(r => r.cmp >= 1).sort((a, b) => b.score - a.score);
   const byMed = !fair.length;   // nobody brewed the same coffee yet: by everyone's weighted stars for now
@@ -1189,9 +1190,9 @@ function baristaRace(list, ppl) {
   if (ranked.length < 2) { needMore(m, ppl.length < 2 ? "A ranking needs a second barista: brews made by someone else in the household." : "A few more rated brews each, of the same coffees, and the race starts."); }
   else {
     // the leader, in one line
-    const a = ranked[0], b = ranked[1], gap = r1(val(a)) - r1(val(b)), close = gap < 0.1;   // as the lanes show it
+    const a = ranked[0], b = ranked[1], gap = r1(val(a)) - r1(val(b)), close = gap < 0.2 || (!byMed && (a.early || b.early)) || (byMed && (a.sEarly || b.sEarly));   // as the lanes show it; under 0.2★, or early, it can still be luck
     const ban = el("div", "lead"); ban.appendChild(ic(close ? "level" : "crown", "crown"));
-    ban.appendChild(el("p", "", close ? "Neck and neck: " + andList(ranked.slice(0, 2).map(r => nameOf(r.id))) + (byMed ? " get the same stars so far." : " make equally good cups of the same coffees.")
+    ban.appendChild(el("p", "", close ? "Neck and neck: " + andList(ranked.slice(0, 2).map(r => nameOf(r.id))) + (gap >= 0.05 ? " are too close to call yet." : byMed ? " get the same stars so far." : " make equally good cups of the same coffees.")
       : nameOf(a.id) + " leads" + (byMed ? " with " + fmtS(a.stars) : " by " + gap.toFixed(1) + "\u2605 on the same coffees") + "."));
     m.appendChild(ban);
     // the race: one lane each, the further right the better, the flag at the leader's end
@@ -1201,7 +1202,7 @@ function baristaRace(list, ppl) {
       const lane = el("div", "lane" + ((byMed ? r.sEarly : r.early) ? " unsure" : "")), runner = el("span", "runner");
       runner.style.left = (8 + 64 * (val(r) - lo) / span) + "%";   // stays clear of the flag
       runner.appendChild(avatar(r.id));
-      lane.append(i === 0 ? ic("trophy", "lpos lcup") : el("span", "lpos", String(i + 1)), el("span", "lname", nameOf(r.id)));
+      lane.append(i === 0 && !close ? ic("trophy", "lpos lcup") : el("span", "lpos", close && i < 2 ? "=" : String(i + 1)), el("span", "lname", nameOf(r.id)));   // too close to call: no trophy yet
       const track = el("span", "track"); track.append(runner, ic("flag", "flag")); lane.appendChild(track);
       lane.appendChild(el("b", "lval", byMed ? fmtS(r.stars) : (r.score >= 0 ? "+" : "\u2212") + r1(Math.abs(r.score)).toFixed(1) + "\u2605"));
       race.appendChild(lane);

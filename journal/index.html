@@ -2128,6 +2128,7 @@ $("cf").onsubmit = async e => {
     if (editing) {   // editing: show exactly what changed, old next to new
       const ch = coffeeChanges(editing, row);
       if (photo) ch.push(["Photo", "new photo", editing.photo_path ? "old photo" : ""]);
+      else if ($("f-ppos").value && $("f-ppos").value !== (editing.photo_pos || "")) ch.push(["Photo", "moved or zoomed", ""]);   // the framing is not in the row yet (it is added on saving)
       if (!ch.length) { nothingChanged(() => { endEdit(); say("Closed, nothing was changed."); }); return; }
       ok = await confirmSave("Save these changes?", ch, "Save changes", ch.length === 1 ? "You changed one thing:" : "You changed " + ch.length + " things:");
     } else {
