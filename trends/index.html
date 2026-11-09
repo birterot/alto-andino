@@ -1159,9 +1159,8 @@ function sweetSpot() {
 
 // ---------- 6 + 7 + 8: us ----------
 // ---------- the barista ranking: fair, on the same coffees, as a little race ----------
-const median = a => { const s = a.slice().sort((x, y) => x - y), k = s.length; return k ? (k % 2 ? s[(k - 1) / 2] : (s[k / 2 - 1] + s[k / 2]) / 2) : null; };
 function baristaRace(list, ppl) {
-  const m = card("Barista ranking", "Fair, on the same coffees: on every coffee more than one of you brewed, your stars against the household's average for it (everyone counts the same, however often they brew it). So a tricky coffee, or experimenting a lot, does not count against you. A lead grows with every coffee you both brew: at the start everyone is close to level, and faded lanes are still early. Dial-ins are left out. The typical cup is the median: half your cups are better, half worse.");
+  const m = card("Barista ranking", "Fair, on the same coffees: on every coffee more than one of you brewed, your stars against the household's average for it (everyone counts the same, however often they brew it). So a tricky coffee, or experimenting a lot, does not count against you. A lead grows with every coffee you both brew: at the start everyone is close to level, and faded lanes are still early. Dial-ins are left out. Your stars under each name are weighted the same way: coffee by coffee, starting at the household's usual stars.");
   m.querySelector("h2").prepend(ic("trophy", "h2i"));
   if (!ppl.length) { empty(m, "Brews show up here once they have a \u201CMade by\u201D."); return; }
   const rated = list.filter(b => b.rating != null && !b.dialin && b.who);
@@ -1177,44 +1176,46 @@ function baristaRace(list, ppl) {
     Object.keys(per).forEach(who => { const a = per[who], w = a.length / (a.length + 2), d = avg(a) - bar, o = dev[who] = dev[who] || { s: 0, w: 0, raw: 0, n: 0, c: 0 };
       o.s += w * d; o.w += w; o.raw += a.length * d; o.n += a.length; o.c++; });
   });
+  const hhAll = avg(rated.map(b => b.rating));
   const rows = ppl.map(id => {
     const mine = rated.filter(b => b.who === id), st = mine.map(b => b.rating), d = dev[id];
-    return { id, brews: list.filter(b => b.who === id).length, rated: st.length, med: median(st), score: d ? d.s / (d.w + 1) : null, raw: d ? d.raw / d.n : null, cmp: d ? d.n : 0, cc: d ? d.c : 0, early: !d || d.w < 1, best: st.length ? Math.max(...st) : null };
+    const ws = st.length ? shrunkBy(mine.map(b => [grpOf(b), b.rating]), hhAll) : null;   // your stars, weighted coffee by coffee (see shrunkBy)
+    return { id, brews: list.filter(b => b.who === id).length, rated: st.length, stars: ws && ws.value, plain: ws && ws.raw, sEarly: !ws || ws.early, score: d ? d.s / (d.w + 1) : null, raw: d ? d.raw / d.n : null, cmp: d ? d.n : 0, cc: d ? d.c : 0, early: !d || d.w < 1, best: st.length ? Math.max(...st) : null };
   });
   const fair = rows.filter(r => r.cmp >= 1).sort((a, b) => b.score - a.score);
-  const byMed = !fair.length;   // nobody brewed the same coffee yet: by the typical cup for now
-  const ranked = byMed ? rows.filter(r => r.rated >= 3).sort((a, b) => b.med - a.med || b.rated - a.rated) : fair;
-  const val = r => byMed ? r.med : r.score;
+  const byMed = !fair.length;   // nobody brewed the same coffee yet: by everyone's weighted stars for now
+  const ranked = byMed ? rows.filter(r => r.rated >= 1).sort((a, b) => b.stars - a.stars || b.rated - a.rated) : fair;
+  const val = r => byMed ? r.stars : r.score;
   if (ranked.length < 2) { needMore(m, ppl.length < 2 ? "A ranking needs a second barista: brews made by someone else in the household." : "A few more rated brews each, of the same coffees, and the race starts."); }
   else {
     // the leader, in one line
     const a = ranked[0], b = ranked[1], gap = r1(val(a)) - r1(val(b)), close = gap < 0.1;   // as the lanes show it
     const ban = el("div", "lead"); ban.appendChild(ic(close ? "level" : "crown", "crown"));
-    ban.appendChild(el("p", "", close ? "Neck and neck: " + andList(ranked.slice(0, 2).map(r => nameOf(r.id))) + (byMed ? " have the same typical cup." : " make equally good cups of the same coffees.")
-      : nameOf(a.id) + " leads" + (byMed ? " with a typical cup of " + fmtS(a.med) : " by " + gap.toFixed(1) + "\u2605 on the same coffees") + "."));
+    ban.appendChild(el("p", "", close ? "Neck and neck: " + andList(ranked.slice(0, 2).map(r => nameOf(r.id))) + (byMed ? " get the same stars so far." : " make equally good cups of the same coffees.")
+      : nameOf(a.id) + " leads" + (byMed ? " with " + fmtS(a.stars) : " by " + gap.toFixed(1) + "\u2605 on the same coffees") + "."));
     m.appendChild(ban);
     // the race: one lane each, the further right the better, the flag at the leader's end
     const lo = Math.min(...ranked.map(val)), hi = Math.max(...ranked.map(val)), span = Math.max(hi - lo, byMed ? 1 : 0.5);
     const race = el("div", "race");
     ranked.forEach((r, i) => {
-      const lane = el("div", "lane" + (r.early && !byMed ? " unsure" : "")), runner = el("span", "runner");
+      const lane = el("div", "lane" + ((byMed ? r.sEarly : r.early) ? " unsure" : "")), runner = el("span", "runner");
       runner.style.left = (8 + 64 * (val(r) - lo) / span) + "%";   // stays clear of the flag
       runner.appendChild(avatar(r.id));
       lane.append(i === 0 ? ic("trophy", "lpos lcup") : el("span", "lpos", String(i + 1)), el("span", "lname", nameOf(r.id)));
       const track = el("span", "track"); track.append(runner, ic("flag", "flag")); lane.appendChild(track);
-      lane.appendChild(el("b", "lval", byMed ? fmtS(r.med) : (r.score >= 0 ? "+" : "\u2212") + r1(Math.abs(r.score)).toFixed(1) + "\u2605"));
+      lane.appendChild(el("b", "lval", byMed ? fmtS(r.stars) : (r.score >= 0 ? "+" : "\u2212") + r1(Math.abs(r.score)).toFixed(1) + "\u2605"));
       race.appendChild(lane);
     });
     m.appendChild(race);
     if (!byMed && ranked.some(r => r.early)) m.appendChild(el("p", "small", "Faded lanes: early, not enough of the same coffees yet. Leads start small and grow with every coffee you both brew."));
-    if (byMed) m.appendChild(el("p", "small", "No coffee brewed by more than one of you yet, so this is by the typical cup for now. Brew the same coffee to race fairly."));
+    if (byMed) m.appendChild(el("p", "small", "No coffee brewed by more than one of you yet, so this is by everyone's stars for now. Brew the same coffee to race fairly."));
   }
   // everyone's numbers, as small tiles
   const tiles = el("div", "tiles"); m.appendChild(tiles);
   rows.slice().sort((a, b) => b.brews - a.brews).forEach(r => {
     const t = el("div", "tile"), l = el("div", "tl"); l.append(avatar(r.id), document.createTextNode(nameOf(r.id))); t.appendChild(l);
-    t.appendChild(el("div", "tv", r.med != null ? fmtS(r.med) : "\u2013"));
-    t.appendChild(el("div", "ts", "typical cup (median)"));
+    t.appendChild(el("div", "tv", r.stars != null ? fmtS(r.stars) : "\u2013"));
+    t.appendChild(el("div", "ts", "your stars" + (r.stars != null && r.sEarly ? ", early" : "")));
     t.appendChild(el("div", "ts", r.brews + (r.brews === 1 ? " brew" : " brews") + (r.cc ? " \u00B7 " + r.cc + (r.cc === 1 ? " shared coffee" : " shared coffees") : "")));
     tiles.appendChild(t);
   });
@@ -1224,7 +1225,7 @@ function baristaRace(list, ppl) {
   const top = rated.slice().sort((a, b) => b.rating - a.rating || b.t - a.t)[0]; if (top && top.rating >= 4) titles.push(["star", "Best cup", nameOf(top.who) + " \u00B7 " + fmtS(top.rating)]);
   if (titles.length) { const tl = el("div", "titles"); titles.forEach(([e, k, v]) => { const d = el("span", "ttl"); d.append(ic(e, "tti"), document.createTextNode(k + " "), el("b", "", v)); tl.appendChild(d); }); m.appendChild(tl); }
   const f2 = v => v != null ? (v >= 0 ? "+" : "") + (Math.round(v * 100) / 100).toFixed(2) : null;
-  numbers(m, ["Barista", "Brews", "Rated", "Typical cup", "Same coffees (weighted, vs household)", "Same coffees (plain)", "Shared coffees", "Compared brews"], rows.map(r => [nameOf(r.id), r.brews, r.rated, r.med != null ? r1(r.med).toFixed(1) : null, f2(r.score), f2(r.raw), r.cc, r.cmp]));
+  numbers(m, ["Barista", "Brews", "Rated", "Stars (weighted)", "Plain average", "Same coffees (weighted, vs household)", "Same coffees (plain)", "Shared coffees", "Compared brews"], rows.map(r => [nameOf(r.id), r.brews, r.rated, r.stars != null ? r1(r.stars).toFixed(1) : null, r.plain != null ? r1(r.plain).toFixed(1) : null, f2(r.score), f2(r.raw), r.cc, r.cmp]));
 }
 function viewFreshTab() {
   viewFresh();
